@@ -27,6 +27,8 @@ import { ProximityVoice } from './net/voice';
 import { parseIceServers } from './net/peerConnection';
 import { authClient } from '$lib/auth-client';
 import { gameState } from './gameState';
+import type { HostedWorldVisibility } from '$lib/worldVisibility';
+import type { PlayerInfo } from './net/protocol';
 import { PUBLIC_STUN_URLS } from '$env/static/public';
 
 export interface MountedGame {
@@ -82,43 +84,98 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 		gameState.userName = data?.user.name ?? null;
 	}
 	await refreshUser();
+	const localPlayerId = crypto.randomUUID();
+	let refreshWorldsTab = () => {};
 
 	async function ensureLocalAudio() {
 		if (!localAudio) localAudio = await voice.getLocalMicTrack();
 		return localAudio ?? undefined;
 	}
 
-	async function hostCurrentWorld(): Promise<void> {
-		if (!gameState.userId) return; // hosting requires an account (see plan: better-auth required to host)
+	async function hostCurrentWorld(visibility: HostedWorldVisibility): Promise<void> {
+		if (!gameState.userId) throw new Error('Inicia sesión para alojar un mundo');
 		const track = await ensureLocalAudio();
 
 		const res = await fetch('/api/worlds', {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify({ name: 'My Lobby', sceneSnapshot: sceneGraph.serialize() })
+			body: JSON.stringify({ name: 'My Lobby', visibility, sceneSnapshot: sceneGraph.serialize() })
 		});
-		if (!res.ok) return;
-		const { world, session } = (await res.json()) as { world: { id: string }; session: { roomCode: string } };
+		if (!res.ok) throw new Error('No se pudo alojar el mundo');
+		const { world, session } = (await res.json()) as {
+			world: { id: string; name: string; visibility: HostedWorldVisibility };
+			session: { roomCode: string; startedAt: string }
+		};
 
 		gameState.worldId = world.id;
+		gameState.worldName = world.name;
+		gameState.worldVisibility = world.visibility;
+		gameState.sessionStartedAt = session.startedAt;
 		gameState.roomCode = session.roomCode;
 		gameState.role = 'host';
 
-		hostAuthority = new HostAuthority(scene, xr, sceneGraph, grabSystem, session.roomCode, iceServers, {
-			localTrack: track,
-			onRemoteStream: (_guestId, stream, targetNode) => voice.addPeer(_guestId, stream, targetNode)
-		});
+		hostAuthority = new HostAuthority(
+			scene,
+			xr,
+			sceneGraph,
+			grabSystem,
+			session.roomCode,
+			iceServers,
+			{ playerId: localPlayerId, displayName: gameState.userName ?? 'Host', role: 'host' } satisfies PlayerInfo,
+			{
+				localTrack: track,
+				onRemoteStream: (_guestId, stream, targetNode) => voice.addPeer(_guestId, stream, targetNode)
+			}
+		);
+	}
+
+	async function stopHostingWorld(): Promise<void> {
+		if (!gameState.worldId) return;
+		const worldId = gameState.worldId;
+		const res = await fetch(`/api/worlds/${worldId}/host`, { method: 'DELETE' });
+		if (!res.ok) throw new Error('No se pudo cerrar la sesión');
+		hostAuthority?.dispose();
+		hostAuthority = null;
+		gameState.worldId = null;
+		gameState.worldName = null;
+		gameState.roomCode = null;
+		gameState.worldVisibility = null;
+		gameState.sessionStartedAt = null;
+		gameState.role = 'solo';
 	}
 
 	async function joinWorld(roomCode: string): Promise<void> {
 		const track = await ensureLocalAudio();
+		gameState.worldId = null;
+		gameState.worldName = null;
 		gameState.roomCode = roomCode;
+		gameState.worldVisibility = null;
+		gameState.sessionStartedAt = null;
 		gameState.role = 'guest';
 
-		guestSync = new GuestSync(scene, xr, sceneGraph, grabSystem, roomCode, iceServers, {
-			localTrack: track,
-			onRemoteStream: (stream, targetNode) => voice.addPeer('host', stream, targetNode)
-		});
+		guestSync = new GuestSync(
+			scene,
+			xr,
+			sceneGraph,
+			grabSystem,
+			roomCode,
+			iceServers,
+			{ playerId: localPlayerId, displayName: gameState.userName ?? 'Guest', role: 'guest' } satisfies PlayerInfo,
+			{
+				localTrack: track,
+				onRemoteStream: (stream, targetNode) => voice.addPeer('host', stream, targetNode)
+			},
+			() => {
+				guestSync = null;
+				gameState.worldId = null;
+				gameState.worldName = null;
+				gameState.roomCode = null;
+				gameState.worldVisibility = null;
+				gameState.sessionStartedAt = null;
+				gameState.role = 'solo';
+				refreshWorldsTab();
+			}
+		);
 	}
 
 	function spawnFromInventory(slotData: SlotTree): void {
@@ -135,28 +192,46 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 			position: [spawnPosition.x, spawnPosition.y, spawnPosition.z]
 		};
 		sceneGraph.addSlot(root);
-		if (guestSync) guestSync.requestSpawn(root);
+		if (gameState.role === 'guest') guestSync?.requestSpawn(root);
+		else hostAuthority?.broadcastSnapshot();
 	}
 
 	const inspector = createInspectorPanel(scene, sceneGraph);
 
 	const dash = createDashPanel(scene, sceneGraph, {
 		onHostWorld: hostCurrentWorld,
+		onStopHosting: stopHostingWorld,
 		onJoinWorld: joinWorld,
 		onSpawnItem: spawnFromInventory,
 		onLocomotionSettingsChanged: () => locomotion.applySettings(),
 		onExitVr: () => xr.baseExperience.exitXRAsync(),
 		onToggleInspector: () => inspector.root.setEnabled(!inspector.root.isEnabled())
 	});
+	refreshWorldsTab = dash.refreshWorldsTab;
 
 	setupPointerAndGrabControllers(scene, xr, sceneGraph, grabSystem, {
-		onGrab: (grabberId, slotId) => guestSync?.requestGrab(grabberId, slotId),
-		onRelease: (grabberId) => guestSync?.requestRelease(grabberId)
+		onGrab: (grabberId, slotId) => {
+			if (gameState.role === 'host') hostAuthority?.broadcastSnapshot();
+			else guestSync?.requestGrab(grabberId, slotId);
+		},
+		onRelease: (grabberId, slotId) => {
+			if (gameState.role === 'host') hostAuthority?.broadcastSnapshot();
+			else guestSync?.requestRelease(grabberId, slotId);
+		}
 	});
 	setupPanelToggle(scene, xr, dash.root, getActiveCamera, { keyboardKey: 'm', buttonIdPattern: /x-button|menu/i });
 	setupPanelToggle(scene, xr, inspector.root, getActiveCamera, { keyboardKey: 'i', buttonIdPattern: /a-button/i });
-	setupRadialMenuForHand(scene, xr, sceneGraph, grabSystem, 'left', /y-button/i);
-	setupRadialMenuForHand(scene, xr, sceneGraph, grabSystem, 'right', /b-button/i);
+	const radialNetwork = {
+		onDelete: (slotId: string) => {
+			if (gameState.role === 'guest') guestSync?.requestDelete(slotId);
+			else {
+				sceneGraph.removeSlot(slotId);
+				hostAuthority?.broadcastSnapshot();
+			}
+		}
+	};
+	setupRadialMenuForHand(scene, xr, sceneGraph, grabSystem, 'left', /y-button/i, radialNetwork);
+	setupRadialMenuForHand(scene, xr, sceneGraph, grabSystem, 'right', /b-button/i, radialNetwork);
 
 	scene.onBeforeRenderObservable.add(() => {
 		const camera = getActiveCamera();

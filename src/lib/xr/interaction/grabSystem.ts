@@ -23,12 +23,17 @@ export class GrabSystem {
 	private grabberOf = new Map<string, string>(); // grabberId -> slotId
 	private grabbersOfSlot = new Map<string, Map<string, TransformNode>>(); // slotId -> grabberId -> node
 	private twoPoint = new Map<string, TwoPointState>();
+	private originalParent = new Map<string, TransformNode | null>();
 
 	constructor(
 		scene: Scene,
 		private sceneGraph: SceneGraph
 	) {
 		scene.onBeforeRenderObservable.add(() => this.update());
+	}
+
+	getGrabbersForSlot(slotId: string): string[] {
+		return [...(this.grabbersOfSlot.get(slotId)?.keys() ?? [])];
 	}
 
 	isHolding(grabberId: string): boolean {
@@ -48,6 +53,10 @@ export class GrabSystem {
 		if (!live || !grabbable) return;
 
 		let grabbers = this.grabbersOfSlot.get(targetSlotId);
+		if (grabbers && (grabbers.size >= 2 || !grabbable.scalable)) return;
+		if (!grabbers) {
+			this.originalParent.set(targetSlotId, live.node.parent as TransformNode | null);
+		}
 		if (!grabbers) {
 			grabbers = new Map();
 			this.grabbersOfSlot.set(targetSlotId, grabbers);
@@ -86,10 +95,15 @@ export class GrabSystem {
 		this.twoPoint.delete(slotId);
 
 		const live = this.sceneGraph.getLive(slotId);
-		if (!live) return;
+		if (!live) {
+			this.grabbersOfSlot.delete(slotId);
+			this.originalParent.delete(slotId);
+			return;
+		}
 
-		live.node.setParent(null);
+		live.node.setParent(this.originalParent.get(slotId) ?? null);
 		this.grabbersOfSlot.delete(slotId);
+		this.originalParent.delete(slotId);
 	}
 
 	/** Release every grabber holding anything (e.g. controller disconnected). */

@@ -2,6 +2,8 @@ import { randomBytes } from 'node:crypto';
 import { prisma } from '../db';
 import { UnauthorizedError, ForbiddenError, NotFoundError } from '../errors';
 import type { SlotTree } from '$lib/ecs/types';
+import type { HostedWorldVisibility } from '$lib/worldVisibility';
+import { getActiveRoomCodes } from '../rooms';
 
 export interface SessionUser {
 	id: string;
@@ -15,9 +17,25 @@ function generateRoomCode(): string {
 
 /** Used by the Dash "Worlds" tab (fetched via /api/worlds) — every currently-hosted session. */
 export async function listActiveWorldSessions() {
-	return prisma.worldSession.findMany({
+	const activeSessions = await prisma.worldSession.findMany({
 		where: { endedAt: null },
-		include: { world: { select: { id: true, name: true, hostUserId: true } } },
+		select: { id: true, roomCode: true, startedAt: true }
+	});
+	const liveRoomCodes = getActiveRoomCodes();
+	const gracePeriod = new Date(Date.now() - 5_000);
+	const staleSessionIds = activeSessions
+		.filter((session) => session.startedAt < gracePeriod && !liveRoomCodes.has(session.roomCode))
+		.map((session) => session.id);
+	if (staleSessionIds.length > 0) {
+		await prisma.worldSession.updateMany({
+			where: { id: { in: staleSessionIds }, endedAt: null },
+			data: { endedAt: new Date() }
+		});
+	}
+
+	return prisma.worldSession.findMany({
+		where: { endedAt: null, world: { visibility: 'public' } },
+		include: { world: { select: { id: true, name: true, hostUserId: true, visibility: true } } },
 		orderBy: { startedAt: 'desc' }
 	});
 }
@@ -42,7 +60,7 @@ export async function getActiveSessionByRoomCode(roomCode: string) {
  */
 export async function startHostingSession(
 	user: SessionUser | null,
-	params: { worldId?: string; name?: string; sceneSnapshot: SlotTree }
+	params: { worldId?: string; name?: string; visibility: HostedWorldVisibility; sceneSnapshot: SlotTree }
 ) {
 	if (!user) throw new UnauthorizedError();
 
@@ -52,13 +70,14 @@ export async function startHostingSession(
 	world = world
 		? await prisma.world.update({
 				where: { id: world.id },
-				data: { sceneData: params.sceneSnapshot as object }
+				data: { sceneData: params.sceneSnapshot as object, visibility: params.visibility }
 			})
 		: await prisma.world.create({
 				data: {
 					name: params.name ?? 'My Lobby',
 					hostUserId: user.id,
-					sceneData: params.sceneSnapshot as object
+					sceneData: params.sceneSnapshot as object,
+					visibility: params.visibility
 				}
 			});
 

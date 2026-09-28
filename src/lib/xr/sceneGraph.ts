@@ -53,10 +53,15 @@ export class SceneGraph {
 	}
 
 	removeSlot(slotId: string): void {
-		const entry = this.live.get(slotId);
-		if (!entry) return;
-		entry.node.dispose();
-		this.live.delete(slotId);
+		const idsToRemove = [...this.live.entries()]
+			.filter(([id, entry]) => id === slotId || this.isDescendantOf(entry.slot, slotId))
+			.map(([id]) => id);
+		for (const id of idsToRemove) {
+			const entry = this.live.get(id);
+			if (!entry) continue;
+			entry.node.dispose();
+			this.live.delete(id);
+		}
 	}
 
 	getLive(slotId: string): LiveSlot | undefined {
@@ -76,12 +81,22 @@ export class SceneGraph {
 	serialize(): SlotTree {
 		return [...this.live.values()]
 			.filter((entry) => !entry.system)
-			.map(({ slot, node }) => ({
-			...slot,
-			position: node.position.asArray() as Slot['position'],
-			rotation: (node.rotationQuaternion ?? Quaternion.Identity()).asArray() as Slot['rotation'],
-			scale: node.scaling.asArray() as Slot['scale']
-		}));
+			.map(({ slot, node }) => {
+				// A grabbed node is temporarily parented to a hand. Serialize it in
+				// its Slot parent space so remote peers receive the same world pose,
+				// without breaking the live grab relationship.
+				const expectedParent = slot.parentId ? this.live.get(slot.parentId)?.node ?? null : null;
+				const transientParent = node.parent;
+				if (transientParent !== expectedParent) node.setParent(expectedParent);
+				const serialized = {
+					...slot,
+					position: node.position.asArray() as Slot['position'],
+					rotation: (node.rotationQuaternion ?? Quaternion.Identity()).asArray() as Slot['rotation'],
+					scale: node.scaling.asArray() as Slot['scale']
+				};
+				if (transientParent !== expectedParent) node.setParent(transientParent);
+				return serialized;
+			});
 	}
 
 	/**
@@ -110,6 +125,24 @@ export class SceneGraph {
 			existing.node.rotationQuaternion = Quaternion.FromArray(slot.rotation);
 			existing.node.scaling = Vector3.FromArray(slot.scale);
 		}
+
+		// Apply hierarchy after every slot exists so incoming local transforms are
+		// interpreted against the correct parent.
+		for (const slot of tree) {
+			if (ignoreSlotIds.has(slot.id)) continue;
+			const node = this.live.get(slot.id)?.node;
+			if (!node) continue;
+			node.parent = slot.parentId ? this.live.get(slot.parentId)?.node ?? null : null;
+		}
+	}
+
+	private isDescendantOf(slot: Slot, ancestorId: string): boolean {
+		let parentId = slot.parentId;
+		while (parentId) {
+			if (parentId === ancestorId) return true;
+			parentId = this.live.get(parentId)?.slot.parentId ?? null;
+		}
+		return false;
 	}
 
 	private spawnNode(slot: Slot): TransformNode {

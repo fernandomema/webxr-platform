@@ -3,9 +3,14 @@
  * the Dash panel UI — not a Svelte store, since none of this lives inside
  * component reactivity; read on demand (e.g. when a tab is opened).
  */
+import type { WorldVisibility } from '$lib/worldVisibility';
+
 export interface GameState {
 	worldId: string | null;
+	worldName: string | null;
 	roomCode: string | null;
+	worldVisibility: WorldVisibility | null;
+	sessionStartedAt: string | null;
 	role: 'solo' | 'host' | 'guest';
 	userId: string | null;
 	userName: string | null;
@@ -17,7 +22,10 @@ export interface GameState {
 
 export const gameState: GameState = {
 	worldId: null,
+	worldName: null,
 	roomCode: null,
+	worldVisibility: null,
+	sessionStartedAt: null,
 	role: 'solo',
 	userId: null,
 	userName: null,

@@ -1,4 +1,4 @@
-import { MeshBuilder, StandardMaterial, Color3, Vector3, type Scene, type Mesh } from '@babylonjs/core';
+import { MeshBuilder, StandardMaterial, Color3, Vector3, Quaternion, type Scene, type Mesh } from '@babylonjs/core';
 
 export interface GhostRig {
 	head: Mesh;
@@ -36,8 +36,11 @@ export function createGhostRig(scene: Scene, color = '#38bdf8'): GhostRig {
 		rightHand,
 		setPose({ head: h, leftHand: l, rightHand: r }) {
 			head.position = Vector3.FromArray(h.position);
+			head.rotationQuaternion = Quaternion.FromArray(h.rotation);
 			leftHand.position = Vector3.FromArray(l.position);
+			leftHand.rotationQuaternion = Quaternion.FromArray(l.rotation);
 			rightHand.position = Vector3.FromArray(r.position);
+			rightHand.rotationQuaternion = Quaternion.FromArray(r.rotation);
 		},
 		dispose() {
 			head.dispose();

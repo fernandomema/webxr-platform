@@ -68,6 +68,13 @@ export default function signalingHandler(ws: WebSocket, _req: IncomingMessage) {
 	});
 
 	ws.on('close', () => {
-		removeSocket(ws);
+		const hostedRoomCodes = removeSocket(ws);
+		if (hostedRoomCodes.length > 0) {
+			void import('./sessionLifecycle.ts').then(({ endSessionsByRoomCodes }) =>
+				endSessionsByRoomCodes(hostedRoomCodes)
+			).catch((err) => {
+				console.error('Failed to close disconnected world sessions', err);
+			});
+		}
 	});
 }

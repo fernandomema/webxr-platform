@@ -4,22 +4,24 @@ import type { GrabSystem } from '../interaction/grabSystem';
 import type { Slot } from '$lib/ecs/types';
 import { SignalingClient, type SignalingMessage } from './signalingClient';
 import { PeerLink } from './peerConnection';
-import type { WorldSyncMessage } from './protocol';
+import type { PlayerInfo, WorldStateMessage, WorldSyncMessage } from './protocol';
+import { createGhostRig, type GhostRig, type TransformPose } from '../avatar/defaultAvatar';
 
-const PRESENCE_INTERVAL_MS = 100;
+const PRESENCE_INTERVAL_MS = 50;
 
-/**
- * Runs on a joining client. Applies the host's scene-snapshot broadcasts
- * locally, sends its own grab/release/spawn requests and periodic hand/head
- * presence, and renders nothing authoritative — the host has final say.
- * Local grabs are still applied optimistically via the shared GrabSystem for
- * responsiveness; the next snapshot reconciles anything that drifted.
- */
+/** Applies host-authoritative world state and renders every remote participant. */
 export class GuestSync {
 	private signaling: SignalingClient;
 	private link: PeerLink | null = null;
 	private locallyGrabbed = new Set<string>();
 	private presenceTimer: ReturnType<typeof setInterval> | null = null;
+	private pendingIceCandidates: RTCIceCandidateInit[] = [];
+	private remoteAvatars = new Map<string, GhostRig>();
+	private players = new Map<string, PlayerInfo>();
+	private lastPresenceSequences = new Map<string, number>();
+	private presenceSequence = 0;
+	private worldRevision = 0;
+	private disposed = false;
 	readonly hostProxy: TransformNode;
 
 	constructor(
@@ -29,10 +31,12 @@ export class GuestSync {
 		private grabSystem: GrabSystem,
 		private roomCode: string,
 		private iceServers: RTCIceServer[],
+		private localPlayer: PlayerInfo,
 		private voice?: {
 			localTrack?: { track: MediaStreamTrack; stream: MediaStream };
 			onRemoteStream?(stream: MediaStream, targetNode: TransformNode): void;
-		}
+		},
+		private onSessionEnded?: () => void
 	) {
 		this.hostProxy = new TransformNode('host-proxy', scene);
 		this.signaling = new SignalingClient(roomCode, 'join');
@@ -42,15 +46,31 @@ export class GuestSync {
 
 	private handleSignaling(msg: SignalingMessage): void {
 		if (msg.type === 'offer') void this.acceptOffer(msg.payload as RTCSessionDescriptionInit);
-		else if (msg.type === 'ice-candidate') void this.link?.addIceCandidate(msg.payload as RTCIceCandidateInit);
-		else if (msg.type === 'host-left') this.dispose();
+		else if (msg.type === 'ice-candidate') {
+			if (this.link) void this.link.addIceCandidate(msg.payload as RTCIceCandidateInit);
+			else this.pendingIceCandidates.push(msg.payload as RTCIceCandidateInit);
+		} else if (msg.type === 'host-left') {
+			this.endSession();
+		}
+	}
+
+	private endSession(): void {
+		if (this.disposed) return;
+		this.dispose();
+		this.onSessionEnded?.();
 	}
 
 	private async acceptOffer(offer: RTCSessionDescriptionInit): Promise<void> {
 		this.link = new PeerLink(
 			{
 				iceServers: this.iceServers,
-				onData: (data) => this.handleData(data as WorldSyncMessage),
+				onData: (data, channel) => this.handleData(data, channel),
+				onOpen: () => {
+					this.link?.send({ kind: 'player-hello', player: this.localPlayer });
+				},
+				onConnectionStateChange: (state) => {
+					if (state === 'failed' || state === 'closed') this.endSession();
+				},
 				onRemoteTrack: (_track, streams) => {
 					if (streams[0]) this.voice?.onRemoteStream?.(streams[0], this.hostProxy);
 				}
@@ -61,53 +81,141 @@ export class GuestSync {
 			this.signaling.send({ type: 'ice-candidate', roomCode: this.roomCode, payload: candidate });
 		});
 		if (this.voice?.localTrack) this.link.addLocalAudioTrack(this.voice.localTrack.track, this.voice.localTrack.stream);
+		for (const candidate of this.pendingIceCandidates.splice(0)) await this.link.addIceCandidate(candidate);
 
 		const answer = await this.link.createAnswer(offer);
 		this.signaling.send({ type: 'answer', roomCode: this.roomCode, payload: answer });
 	}
 
-	private handleData(msg: WorldSyncMessage): void {
-		if (msg.kind === 'scene-snapshot') {
-			this.sceneGraph.reconcile(msg.tree, this.locallyGrabbed);
-		} else if (msg.kind === 'presence') {
-			// any presence a guest *receives* is, by construction, the host's own (its one peer)
+	private ensureAvatar(player: PlayerInfo): GhostRig | null {
+		if (player.playerId === this.localPlayer.playerId) return null;
+		let avatar = this.remoteAvatars.get(player.playerId);
+		if (!avatar) {
+			avatar = createGhostRig(this.scene, player.role === 'host' ? '#fbbf24' : '#38bdf8');
+			this.remoteAvatars.set(player.playerId, avatar);
+		}
+		this.players.set(player.playerId, player);
+		return avatar;
+	}
+
+	private syncPlayers(players: PlayerInfo[]): void {
+		const remoteIds = new Set(players.filter((player) => player.playerId !== this.localPlayer.playerId).map((player) => player.playerId));
+		for (const playerId of this.remoteAvatars.keys()) {
+			if (!remoteIds.has(playerId)) this.removeAvatar(playerId);
+		}
+		for (const player of players) this.ensureAvatar(player);
+	}
+
+	private removeAvatar(playerId: string): void {
+		this.remoteAvatars.get(playerId)?.dispose();
+		this.remoteAvatars.delete(playerId);
+		this.players.delete(playerId);
+		this.lastPresenceSequences.delete(playerId);
+	}
+
+	private applyPresence(msg: Extract<WorldStateMessage, { kind: 'presence' }>): void {
+		if (msg.player.playerId === this.localPlayer.playerId) return;
+		const previousSequence = this.lastPresenceSequences.get(msg.player.playerId) ?? 0;
+		if (msg.sequence <= previousSequence) return;
+		this.lastPresenceSequences.set(msg.player.playerId, msg.sequence);
+		const avatar = this.ensureAvatar(msg.player);
+		if (!avatar) return;
+		avatar.setPose({
+			head: msg.head,
+			leftHand: msg.hands.left ?? msg.head,
+			rightHand: msg.hands.right ?? msg.head
+		});
+		if (msg.player.role === 'host') {
 			this.hostProxy.position.set(...msg.head.position);
+			this.hostProxy.rotationQuaternion = avatar.head.rotationQuaternion?.clone() ?? null;
+		}
+	}
+
+	private handleData(data: unknown, channel: 'reliable' | 'state'): void {
+		if (channel === 'state') {
+			const msg = data as WorldStateMessage;
+			if (msg.kind === 'presence') this.applyPresence(msg);
+			else if (msg.kind === 'scene-state') {
+				if (msg.revision <= this.worldRevision) return;
+				if (msg.revision > this.worldRevision + 1) {
+					this.link?.send({ kind: 'resync-request', haveRevision: this.worldRevision });
+				}
+				this.worldRevision = msg.revision;
+				this.sceneGraph.reconcile(msg.tree, this.locallyGrabbed);
+			}
+			return;
+		}
+
+		const msg = data as WorldSyncMessage;
+		switch (msg.kind) {
+			case 'scene-snapshot':
+				if (msg.revision < this.worldRevision) break;
+				this.worldRevision = msg.revision;
+				this.sceneGraph.reconcile(msg.tree, this.locallyGrabbed);
+				this.syncPlayers(msg.players);
+				this.link?.send({ kind: 'snapshot-ack', revision: msg.revision });
+				break;
+			case 'player-left':
+				this.removeAvatar(msg.playerId);
+				break;
+			case 'interaction-result':
+				if (!msg.accepted && msg.slotId) this.locallyGrabbed.delete(msg.slotId);
+				break;
 		}
 	}
 
 	private sendPresence(): void {
 		if (!this.link) return;
 		const camera = this.xr.baseExperience.camera;
-		const head = { position: camera.position.asArray() as [number, number, number], rotation: (camera.rotationQuaternion?.asArray() ?? [0, 0, 0, 1]) as [number, number, number, number] };
-		const hands: Partial<Record<'left' | 'right', { position: [number, number, number]; rotation: [number, number, number, number] }>> = {};
+		const head: TransformPose = {
+			position: camera.globalPosition.asArray() as TransformPose['position'],
+			rotation: (camera.rotationQuaternion?.asArray() ?? [0, 0, 0, 1]) as TransformPose['rotation']
+		};
+		const hands: Partial<Record<'left' | 'right', TransformPose>> = {};
 		for (const controller of this.xr.input.controllers) {
 			if (controller.inputSource.handedness === 'none') continue;
 			const node = controller.grip ?? controller.pointer;
 			hands[controller.inputSource.handedness] = {
-				position: node.absolutePosition.asArray() as [number, number, number],
-				rotation: (node.rotationQuaternion?.asArray() ?? [0, 0, 0, 1]) as [number, number, number, number]
+				position: node.absolutePosition.asArray() as TransformPose['position'],
+				rotation: (node.rotationQuaternion?.asArray() ?? [0, 0, 0, 1]) as TransformPose['rotation']
 			};
 		}
-		this.link.send({ kind: 'presence', head, hands } satisfies WorldSyncMessage);
+		this.link.sendState({
+			kind: 'presence',
+			player: this.localPlayer,
+			sequence: ++this.presenceSequence,
+			timestamp: Date.now(),
+			head,
+			hands
+		});
 	}
 
 	requestGrab(grabberId: string, slotId: string): void {
 		this.locallyGrabbed.add(slotId);
-		this.link?.send({ kind: 'grab-request', slotId, grabberId } satisfies WorldSyncMessage);
+		this.link?.send({ kind: 'grab-request', requestId: crypto.randomUUID(), slotId, grabberId });
 	}
 
 	requestRelease(grabberId: string, slotId?: string): void {
 		if (slotId) this.locallyGrabbed.delete(slotId);
-		this.link?.send({ kind: 'release-request', grabberId } satisfies WorldSyncMessage);
+		this.link?.send({ kind: 'release-request', requestId: crypto.randomUUID(), grabberId });
 	}
 
 	requestSpawn(slot: Slot): void {
-		this.link?.send({ kind: 'spawn-request', slot } satisfies WorldSyncMessage);
+		this.link?.send({ kind: 'spawn-request', requestId: crypto.randomUUID(), slot });
+	}
+
+	requestDelete(slotId: string): void {
+		this.link?.send({ kind: 'delete-request', requestId: crypto.randomUUID(), slotId });
 	}
 
 	dispose(): void {
+		if (this.disposed) return;
+		this.disposed = true;
 		if (this.presenceTimer) clearInterval(this.presenceTimer);
 		this.link?.close();
 		this.signaling.close();
+		for (const avatar of this.remoteAvatars.values()) avatar.dispose();
+		this.remoteAvatars.clear();
+		this.hostProxy.dispose();
 	}
 }

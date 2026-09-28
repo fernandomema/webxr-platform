@@ -16,13 +16,15 @@ import { availableInventoryFolders, getInventoryAdapter } from '$lib/inventory/r
 import type { InventoryAdapter, InventoryFolder, InventoryItem } from '$lib/inventory/types';
 import { gameState, getInventoryContext } from '../gameState';
 import { xrSettings, saveSettings, type MovementMode, type RotationMode } from '../settings';
+import { WORLD_VISIBILITY_INFO, type HostedWorldVisibility } from '$lib/worldVisibility';
 
 const TABS = ['Worlds', 'Inventory', 'Settings', 'Account'] as const;
 type Tab = (typeof TABS)[number];
 
 export interface DashPanelCallbacks {
-	onHostWorld(): Promise<void>;
-	onJoinWorld(roomCode: string): void;
+	onHostWorld(visibility: HostedWorldVisibility): Promise<void>;
+	onStopHosting(): Promise<void>;
+	onJoinWorld(roomCode: string): Promise<void>;
 	onSpawnItem(slotData: SlotTree): void;
 	onLocomotionSettingsChanged(): void;
 	onExitVr(): Promise<void>;
@@ -134,40 +136,148 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	worldsList.top = '10px';
 	contentByTab.Worlds.addControl(worldsList);
 
-	const hostBtn = Button.CreateSimpleButton('host-btn', 'Alojar este mundo');
-	hostBtn.height = '56px';
-	hostBtn.color = 'white';
-	hostBtn.background = '#16a34a';
-	hostBtn.cornerRadius = 8;
-	hostBtn.paddingTop = '8px';
-	hostBtn.onPointerClickObservable.add(() => {
-		hostBtn.textBlock!.text = 'Alojando…';
-		callbacks.onHostWorld().finally(() => {
-			hostBtn.textBlock!.text = 'Alojar este mundo';
-		});
+	const worldsTitle = new TextBlock('worlds-title', '¿Cómo quieres compartir este mundo?');
+	worldsTitle.color = 'white';
+	worldsTitle.fontSize = 22;
+	worldsTitle.height = '42px';
+	worldsList.addControl(worldsTitle);
+
+	const worldsHint = new TextBlock('worlds-hint', 'Solo necesitas alojarlo si quieres que entren otras personas.');
+	worldsHint.color = '#9ca3af';
+	worldsHint.fontSize = 16;
+	worldsHint.height = '36px';
+	worldsList.addControl(worldsHint);
+
+	const visibilityOptions = new StackPanel('world-visibility-options');
+	const visibilityButtons: Button[] = [];
+	visibilityOptions.width = 1;
+	worldsList.addControl(visibilityOptions);
+
+	const worldActionStatus = new TextBlock('world-action-status', '');
+	worldActionStatus.color = '#fbbf24';
+	worldActionStatus.fontSize = 16;
+	worldActionStatus.height = '34px';
+	worldsList.addControl(worldActionStatus);
+
+	const sessionPanel = new StackPanel('active-session-panel');
+	sessionPanel.width = 1;
+	sessionPanel.isVisible = false;
+	worldsList.addControl(sessionPanel);
+
+	const sessionInfo = new TextBlock('active-session-info', '');
+	sessionInfo.color = '#86efac';
+	sessionInfo.fontSize = 19;
+	sessionInfo.height = '104px';
+	sessionPanel.addControl(sessionInfo);
+
+	const stopHostingBtn = Button.CreateSimpleButton('stop-hosting-btn', 'Dejar de alojar');
+	stopHostingBtn.height = '52px';
+	stopHostingBtn.color = 'white';
+	stopHostingBtn.background = '#991b1b';
+	stopHostingBtn.cornerRadius = 8;
+	stopHostingBtn.onPointerClickObservable.add(async () => {
+		stopHostingBtn.isEnabled = false;
+		worldActionStatus.text = 'Cerrando la sesión…';
+		try {
+			await callbacks.onStopHosting();
+			worldActionStatus.text = '';
+			refreshWorldsTab();
+		} catch (err) {
+			worldActionStatus.text = err instanceof Error ? err.message : 'No se pudo cerrar la sesión';
+			stopHostingBtn.isEnabled = true;
+		}
 	});
-	worldsList.addControl(hostBtn);
+	sessionPanel.addControl(stopHostingBtn);
+
+	function addVisibilityOption(visibility: HostedWorldVisibility | 'solo') {
+		const info = WORLD_VISIBILITY_INFO[visibility];
+		const btn = Button.CreateSimpleButton(
+			`world-visibility-${visibility}`,
+			`${info.label} — ${info.description}`
+		);
+		btn.height = '58px';
+		btn.color = 'white';
+		btn.background = visibility === 'solo' ? '#2563eb' : '#16a34a';
+		btn.cornerRadius = 8;
+		btn.paddingTop = '5px';
+		btn.onPointerClickObservable.add(async () => {
+			if (visibility === 'solo') {
+				worldActionStatus.text = 'Mundo local activo. Nadie puede entrar.';
+				return;
+			}
+			if (!gameState.userId) {
+				worldActionStatus.text = 'Inicia sesión en la pestaña Cuenta para alojar un mundo.';
+				return;
+			}
+			btn.isEnabled = false;
+			worldActionStatus.text = `Alojando como ${info.label.toLowerCase()}…`;
+			try {
+				await callbacks.onHostWorld(visibility);
+				worldActionStatus.text = '';
+				refreshWorldsTab();
+			} catch (err) {
+				worldActionStatus.text = err instanceof Error ? err.message : 'No se pudo alojar el mundo';
+				btn.isEnabled = true;
+			}
+		});
+		visibilityButtons.push(btn);
+		visibilityOptions.addControl(btn);
+	}
+
+	addVisibilityOption('solo');
+	addVisibilityOption('friends');
+	addVisibilityOption('friends-plus');
+	addVisibilityOption('public');
+
+	const publicWorldsTitle = new TextBlock('public-worlds-title', 'Mundos públicos activos');
+	publicWorldsTitle.color = '#d1d5db';
+	publicWorldsTitle.fontSize = 18;
+	publicWorldsTitle.height = '38px';
+	publicWorldsTitle.top = '10px';
+	worldsList.addControl(publicWorldsTitle);
 
 	async function refreshWorldsTab() {
-		for (const child of [...worldsList.children]) {
-			if (child !== hostBtn) worldsList.removeControl(child);
+		const isConnected = gameState.role === 'host' || gameState.role === 'guest';
+		visibilityOptions.isVisible = !isConnected;
+		sessionPanel.isVisible = isConnected;
+		publicWorldsTitle.isVisible = gameState.role !== 'guest';
+		stopHostingBtn.isVisible = gameState.role === 'host';
+		if (!isConnected) for (const btn of visibilityButtons) btn.isEnabled = true;
+		if (gameState.role === 'host') {
+			const visibility = gameState.worldVisibility ? WORLD_VISIBILITY_INFO[gameState.worldVisibility].label : 'Alojada';
+			const startedAt = gameState.sessionStartedAt
+				? new Date(gameState.sessionStartedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+				: '—';
+			sessionInfo.text = `Sesión activa\n${gameState.worldName ?? 'Mi mundo'} · ${visibility}\nCódigo de sala: ${gameState.roomCode ?? '—'} · Desde ${startedAt}`;
+		} else if (gameState.role === 'guest') {
+			sessionInfo.text = `Conectado a una sesión\nCódigo de sala: ${gameState.roomCode ?? '—'}`;
 		}
-		hostBtn.isVisible = gameState.role === 'solo';
 
+		for (const child of [...worldsList.children]) {
+			if (child !== worldsTitle && child !== worldsHint && child !== visibilityOptions && child !== worldActionStatus && child !== sessionPanel && child !== publicWorldsTitle) worldsList.removeControl(child);
+		}
+		if (gameState.role === 'guest') return;
 		try {
 			const res = await fetch('/api/worlds');
-			const sessions = (await res.json()) as Array<{
-				roomCode: string;
-				world: { name: string };
-			}>;
+			if (!res.ok) return;
+			const sessions = (await res.json()) as Array<{ roomCode: string; world: { name: string } }>;
+			if (sessions.length === 0) {
+				const empty = new TextBlock('public-worlds-empty', 'No hay sesiones públicas activas ahora.');
+				empty.color = '#9ca3af';
+				empty.height = '34px';
+				worldsList.addControl(empty);
+			}
 			for (const session of sessions) {
-				const row = Button.CreateSimpleButton(`world-${session.roomCode}`, `${session.world.name} — Unirse`);
+				const row = Button.CreateSimpleButton(`world-${session.roomCode}`, `${session.world.name} · Pública — Unirse`);
 				row.height = '56px';
 				row.color = 'white';
 				row.background = '#1f2937';
 				row.cornerRadius = 8;
 				row.paddingTop = '6px';
-				row.onPointerClickObservable.add(() => callbacks.onJoinWorld(session.roomCode));
+				row.onPointerClickObservable.add(async () => {
+					await callbacks.onJoinWorld(session.roomCode);
+					refreshWorldsTab();
+				});
 				worldsList.addControl(row);
 			}
 		} catch {
@@ -466,7 +576,8 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	const statusText = new TextBlock('settings-status', '');
 	statusText.color = 'white';
 	statusText.fontSize = 22;
-	statusText.height = '40px';
+	statusText.height = '72px';
+	statusText.text = 'Comprobando sesión…';
 	settingsStack.addControl(statusText);
 
 	const emailInput = new InputText('email-input');
@@ -475,6 +586,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	emailInput.color = 'white';
 	emailInput.background = '#1f2937';
 	emailInput.placeholderText = 'Email';
+	emailInput.isVisible = false;
 	settingsStack.addControl(emailInput);
 
 	const usernameInput = new InputText('username-input');
@@ -484,6 +596,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	usernameInput.background = '#1f2937';
 	usernameInput.placeholderText = 'Usuario (para registrarte, o para entrar sin email)';
 	usernameInput.margin = '4px';
+	usernameInput.isVisible = false;
 	settingsStack.addControl(usernameInput);
 
 	const passwordInput = new InputText('password-input');
@@ -493,6 +606,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	passwordInput.background = '#1f2937';
 	passwordInput.placeholderText = 'Contraseña';
 	passwordInput.margin = '4px';
+	passwordInput.isVisible = false;
 	settingsStack.addControl(passwordInput);
 
 	const virtualKeyboard = VirtualKeyboard.CreateDefaultLayout('dash-keyboard');
@@ -536,7 +650,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		return btn;
 	}
 
-	authButton('login-btn', 'Entrar', async () => {
+	const loginBtn = authButton('login-btn', 'Entrar', async () => {
 		statusText.text = 'Entrando…';
 		// no email typed but a username was -> log in by username instead
 		const { error } =
@@ -547,7 +661,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		await refreshSession();
 	});
 
-	authButton('register-btn', 'Registrarse', async () => {
+	const registerBtn = authButton('register-btn', 'Registrarse', async () => {
 		statusText.text = 'Creando cuenta…';
 		const { error } = await authClient.signUp.email({
 			email: emailInput.text,
@@ -559,7 +673,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		await refreshSession();
 	});
 
-	authButton('discord-btn', 'Discord', async () => {
+	const discordBtn = authButton('discord-btn', 'Discord', async () => {
 		await authClient.signIn.social({ provider: 'discord', callbackURL: window.location.href });
 	});
 
@@ -568,14 +682,23 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		await refreshSession();
 	});
 	logoutBtn.isVisible = false;
+	loginBtn.isVisible = false;
+	registerBtn.isVisible = false;
+	discordBtn.isVisible = false;
 
 	async function refreshSession() {
 		const { data } = await authClient.getSession();
-		gameState.userId = data?.user.id ?? null;
-		gameState.userName = data?.user.name ?? null;
-		statusText.text = data?.user ? `Sesión: ${data.user.name}` : 'Sin sesión';
-		logoutBtn.isVisible = Boolean(data?.user);
+		const user = data?.user ?? null;
+		gameState.userId = user?.id ?? null;
+		gameState.userName = user?.name ?? null;
+		statusText.text = user ? `Sesión activa\n${user.name} · ${user.email}` : 'Sin sesión';
+		for (const input of [emailInput, usernameInput, passwordInput]) input.isVisible = !user;
+		loginBtn.isVisible = !user;
+		registerBtn.isVisible = !user;
+		discordBtn.isVisible = !user;
+		logoutBtn.isVisible = Boolean(user);
 		refreshInventoryTab();
+		refreshWorldsTab();
 	}
 	void refreshSession();
 

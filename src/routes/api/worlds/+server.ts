@@ -14,6 +14,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		const body = await request.json();
 		const result = await startHostingSession(locals.user, {
 			name: body.name,
+			visibility: body.visibility,
 			sceneSnapshot: body.sceneSnapshot
 		});
 		return json(result);

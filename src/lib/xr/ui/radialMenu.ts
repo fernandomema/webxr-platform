@@ -24,6 +24,10 @@ const ITEM_SIZE = 110;
 const HOVER_DEADZONE = 0.35;
 const FOLLOW_OFFSET = new Vector3(0, 0.05, 0);
 
+export interface RadialMenuNetworkHooks {
+	onDelete?(slotId: string): void;
+}
+
 interface RadialItem {
 	label: string;
 	isEnabled(): boolean;
@@ -50,7 +54,8 @@ export function setupRadialMenuForHand(
 	sceneGraph: SceneGraph,
 	grabSystem: GrabSystem,
 	hand: Hand,
-	buttonPattern: RegExp
+	buttonPattern: RegExp,
+	network?: RadialMenuNetworkHooks
 ): void {
 	const plane = MeshBuilder.CreatePlane(`radial-menu-${hand}`, { size: 0.22 }, scene);
 	const material = new StandardMaterial(`radial-menu-mat-${hand}`, scene);
@@ -85,7 +90,8 @@ export function setupRadialMenuForHand(
 				isEnabled: () => true,
 				onSelect: () => {
 					grabSystem.release(hand);
-					sceneGraph.removeSlot(slotId);
+					if (network?.onDelete) network.onDelete(slotId);
+					else sceneGraph.removeSlot(slotId);
 				}
 			}
 		];

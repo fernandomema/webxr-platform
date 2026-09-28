@@ -18,7 +18,7 @@ const LASER_MAX_LENGTH = 5;
 
 export interface PointerControllerNetworkHooks {
 	onGrab?(grabberId: string, slotId: string): void;
-	onRelease?(grabberId: string): void;
+	onRelease?(grabberId: string, slotId?: string): void;
 }
 
 /** Stable per-hand id ('left' | 'right'), used both locally and sent to the host when networked. */
@@ -127,18 +127,22 @@ export function setupPointerAndGrabControllers(
 					);
 					if (targetSlotId) {
 						grabSystem.grab(grabberId, grabberNode, targetSlotId);
-						network?.onGrab?.(grabberId, targetSlotId);
+						if (grabSystem.getHeldSlot(grabberId) === targetSlotId) {
+							network?.onGrab?.(grabberId, targetSlotId);
+						}
 					}
 				} else {
+					const releasedSlotId = grabSystem.getHeldSlot(grabberId) ?? undefined;
 					grabSystem.release(grabberId);
-					network?.onRelease?.(grabberId);
+					network?.onRelease?.(grabberId, releasedSlotId);
 				}
 			});
 		});
 
 		controller.onDisposeObservable.add(() => {
+			const releasedSlotId = grabSystem.getHeldSlot(grabberId) ?? undefined;
 			grabSystem.release(grabberId);
-			network?.onRelease?.(grabberId);
+			network?.onRelease?.(grabberId, releasedSlotId);
 			const visual = visuals.get(grabberId);
 			visual?.beam.dispose();
 			visual?.dot.dispose();

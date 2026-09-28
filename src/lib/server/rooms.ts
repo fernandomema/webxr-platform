@@ -45,15 +45,22 @@ export function getRoom(roomCode: string): Room | undefined {
 	return rooms.get(roomCode);
 }
 
+export function getActiveRoomCodes(): Set<string> {
+	return new Set(rooms.keys());
+}
+
 /** Called on socket close: drops the room (if it was the host) or removes the guest, notifying the other side. */
-export function removeSocket(socket: WebSocket): void {
+export function removeSocket(socket: WebSocket): string[] {
 	const id = connectionIdFor(socket);
+	const hostedRoomCodes: string[] = [];
 	for (const [code, room] of rooms) {
 		if (room.host === socket) {
 			for (const guest of room.guests.values()) send(guest, { type: 'host-left', roomCode: code });
+			hostedRoomCodes.push(code);
 			rooms.delete(code);
 		} else if (room.guests.delete(id)) {
 			send(room.host, { type: 'guest-left', roomCode: code, guestId: id });
 		}
 	}
+	return hostedRoomCodes;
 }
