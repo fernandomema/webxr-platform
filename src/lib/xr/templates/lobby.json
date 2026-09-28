@@ -1,0 +1,40 @@
+[
+	{
+		"id": "floor",
+		"parentId": null,
+		"name": "Floor",
+		"position": [0, 0, 0],
+		"rotation": [0, 0, 0, 1],
+		"scale": [1, 1, 1],
+		"components": [
+			{ "type": "meshRenderer", "meshRef": "ground", "color": "#4b5563" },
+			{ "type": "collider", "shape": "box" }
+		]
+	},
+	{
+		"id": "test-cube-1",
+		"parentId": null,
+		"name": "Test Cube 1",
+		"position": [-0.6, 1, -1.5],
+		"rotation": [0, 0, 0, 1],
+		"scale": [0.3, 0.3, 0.3],
+		"components": [
+			{ "type": "meshRenderer", "meshRef": "box", "color": "#f97316" },
+			{ "type": "collider", "shape": "box" },
+			{ "type": "grabbable", "scalable": true }
+		]
+	},
+	{
+		"id": "test-cube-2",
+		"parentId": null,
+		"name": "Test Cube 2",
+		"position": [0.6, 1, -1.5],
+		"rotation": [0, 0, 0, 1],
+		"scale": [0.3, 0.3, 0.3],
+		"components": [
+			{ "type": "meshRenderer", "meshRef": "sphere", "color": "#22c55e" },
+			{ "type": "collider", "shape": "sphere" },
+			{ "type": "grabbable", "scalable": true }
+		]
+	}
+]

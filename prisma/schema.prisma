@@ -1,0 +1,171 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// --- better-auth ---
+
+model user {
+  id              String    @id
+  name            String
+  email           String
+  emailVerified   Boolean   @default(false)
+  image           String?
+  username        String?
+  displayUsername String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  sessions        session[]
+  accounts        account[]
+  worlds          world[]
+  cloudItems      cloudInventoryItem[]
+  cloudFolders    cloudInventoryFolder[]
+
+  @@unique([email])
+  @@unique([username])
+}
+
+model session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+}
+
+model account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  user      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+// --- worlds / hosting ---
+
+model world {
+  id         String   @id @default(cuid())
+  name       String
+  visibility String   @default("public") // public | unlisted | private
+  hostUserId String
+  hostUser   user     @relation(fields: [hostUserId], references: [id], onDelete: Cascade)
+  sceneData  Json // serialized Slot tree template (see src/lib/ecs)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  sessions        worldSession[]
+  worldInventory  worldInventoryItem[]
+  worldFolders    worldInventoryFolder[]
+
+  @@index([hostUserId])
+}
+
+model worldSession {
+  id         String    @id @default(cuid())
+  worldId    String
+  world      world     @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  hostUserId String
+  roomCode   String    @unique
+  startedAt  DateTime  @default(now())
+  endedAt    DateTime? // null = currently active
+
+  @@index([worldId])
+  @@index([endedAt])
+}
+
+// --- inventory: cloud + world backends (local backend lives in browser IndexedDB) ---
+// Folders form a tree per owner/world (parentId null = that root's own top level).
+
+model cloudInventoryFolder {
+  id        String                 @id @default(cuid())
+  ownerId   String
+  owner     user                   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  parentId  String?
+  parent    cloudInventoryFolder?  @relation("CloudFolderChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children  cloudInventoryFolder[] @relation("CloudFolderChildren")
+  name      String
+  createdAt DateTime               @default(now())
+  items     cloudInventoryItem[]
+
+  @@index([ownerId])
+  @@index([parentId])
+}
+
+model cloudInventoryItem {
+  id           String                @id @default(cuid())
+  ownerId      String
+  owner        user                  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  folderId     String?
+  folder       cloudInventoryFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  name         String
+  slotData     Json
+  thumbnailUrl String?
+  createdAt    DateTime              @default(now())
+
+  @@index([ownerId])
+  @@index([folderId])
+}
+
+model worldInventoryFolder {
+  id        String                 @id @default(cuid())
+  worldId   String
+  world     world                  @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  parentId  String?
+  parent    worldInventoryFolder?  @relation("WorldFolderChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children  worldInventoryFolder[] @relation("WorldFolderChildren")
+  name      String
+  createdAt DateTime               @default(now())
+  items     worldInventoryItem[]
+
+  @@index([worldId])
+  @@index([parentId])
+}
+
+model worldInventoryItem {
+  id           String                @id @default(cuid())
+  worldId      String
+  world        world                 @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  folderId     String?
+  folder       worldInventoryFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  name         String
+  slotData     Json
+  thumbnailUrl String?
+  createdAt    DateTime              @default(now())
+
+  @@index([worldId])
+  @@index([folderId])
+}

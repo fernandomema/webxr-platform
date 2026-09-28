@@ -1,0 +1,86 @@
+msgid ""
+msgstr ""
+"Source-Language: en\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2\n"
+"X-Plurals-Order: one, other\n"
+
+#~ msgid "Error al entrar"
+#~ msgstr "Error al entrar"
+
+#: src/routes/register/+page.svelte
+msgid "Email"
+msgstr "Email"
+
+#~ msgid "Contraseña"
+#~ msgstr "Contraseña"
+
+#~ msgid "Entrar"
+#~ msgstr "Entrar"
+
+#~ msgid "Crear cuenta"
+#~ msgstr "Crear cuenta"
+
+#~ msgid "Error al registrarse"
+#~ msgstr "Error al registrarse"
+
+#~ msgid "Nombre"
+#~ msgstr "Nombre"
+
+#~ msgid "Registrarse"
+#~ msgstr "Registrarse"
+
+#~ msgid "Ya tengo cuenta"
+#~ msgstr "Ya tengo cuenta"
+
+#~ msgid "Usuario"
+#~ msgstr "Usuario"
+
+#~ msgid "Email o usuario"
+#~ msgstr "Email o usuario"
+
+#: src/routes/register/+page.svelte
+msgid "Sign-up failed"
+msgstr "Sign-up failed"
+
+#: src/routes/register/+page.svelte
+msgid "Name"
+msgstr "Name"
+
+#: src/routes/register/+page.svelte
+msgid "Username"
+msgstr "Username"
+
+#: src/routes/login/+page.svelte
+#: src/routes/register/+page.svelte
+msgid "Password"
+msgstr "Password"
+
+#: src/routes/login/+page.svelte
+#: src/routes/register/+page.svelte
+msgid "Create an account"
+msgstr "Create an account"
+
+#: src/routes/register/+page.svelte
+msgid "Create account"
+msgstr "Create account"
+
+#: src/routes/register/+page.svelte
+msgid "I already have an account"
+msgstr "I already have an account"
+
+#: src/routes/login/+page.svelte
+msgid "Sign-in failed"
+msgstr "Sign-in failed"
+
+#: src/routes/login/+page.svelte
+msgid "Email or username"
+msgstr "Email or username"
+
+#: src/routes/login/+page.svelte
+#: src/routes/login/+page.svelte
+msgid "Sign in"
+msgstr "Sign in"
