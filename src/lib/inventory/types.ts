@@ -31,5 +31,6 @@ export interface InventoryAdapter {
 	deleteFolder(ctx: InventoryContext, folderId: string): Promise<void>;
 	listItems(ctx: InventoryContext, folderId: string | null): Promise<InventoryItem[]>;
 	saveItem(ctx: InventoryContext, folderId: string | null, name: string, slotData: SlotTree): Promise<InventoryItem>;
+	updateItem?(ctx: InventoryContext, itemId: string, folderId: string | null, name: string, slotData: SlotTree): Promise<InventoryItem>;
 	deleteItem(ctx: InventoryContext, itemId: string): Promise<void>;
 }

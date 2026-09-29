@@ -84,3 +84,535 @@ msgstr "Email or username"
 #: src/routes/login/+page.svelte
 msgid "Sign in"
 msgstr "Sign in"
+
+#: src/routes/studio/+page.svelte
+msgid "Untitled asset"
+msgstr "Untitled asset"
+
+#~ msgid "Local workspace"
+#~ msgstr "Local workspace"
+
+#: src/routes/studio/+page.svelte
+#: src/routes/studio/+page.svelte
+msgid "Guest workspace"
+msgstr "Guest workspace"
+
+#. 0: session.data.user.name
+#: src/routes/studio/+page.svelte
+msgid "{0}'s workspace"
+msgstr "{0}'s workspace"
+
+#: src/routes/studio/+page.svelte
+msgid "Cloud workspace"
+msgstr "Cloud workspace"
+
+#. 0: adapter.label
+#: src/routes/studio/+page.svelte
+msgid "{0} library synced"
+msgstr "{0} library synced"
+
+#: src/routes/studio/+page.svelte
+msgid "Could not load library"
+msgstr "Could not load library"
+
+#: src/routes/studio/+page.svelte
+msgid "Folder name"
+msgstr "Folder name"
+
+#: src/routes/studio/+page.svelte
+#: src/routes/studio/+page.svelte
+msgid "New folder"
+msgstr "New folder"
+
+#: src/routes/studio/+page.svelte
+msgid "Could not create folder"
+msgstr "Could not create folder"
+
+#: src/routes/studio/+page.svelte
+msgid "New asset ready"
+msgstr "New asset ready"
+
+#. 0: item.name
+#: src/routes/studio/+page.svelte
+msgid "{0} loaded"
+msgstr "{0} loaded"
+
+#. 0: saved.name
+#: src/routes/studio/+page.svelte
+msgid "{0} saved"
+msgstr "{0} saved"
+
+#: src/routes/studio/+page.svelte
+msgid "Could not save asset"
+msgstr "Could not save asset"
+
+#. 0: selectedItem.name
+#: src/routes/studio/+page.svelte
+msgid "Delete “{0}”?"
+msgstr "Delete “{0}”?"
+
+#: src/routes/studio/+page.svelte
+msgid "Asset deleted"
+msgstr "Asset deleted"
+
+#: src/routes/studio/+page.svelte
+msgid "Could not delete asset"
+msgstr "Could not delete asset"
+
+#: src/routes/studio/+page.svelte
+msgid "New object"
+msgstr "New object"
+
+#: src/routes/studio/+page.svelte
+msgid "Logic node"
+msgstr "Logic node"
+
+#: src/routes/studio/+page.svelte
+msgid "Desktop authoring studio for WebXR assets, scene graphs and code blocks."
+msgstr "Desktop authoring studio for WebXR assets, scene graphs and code blocks."
+
+#: src/routes/studio/+page.svelte
+msgid "Studio · WebXR Platform"
+msgstr "Studio · WebXR Platform"
+
+#: src/routes/studio/+page.svelte
+msgid "WebXR <0>Studio</0>"
+msgstr "WebXR <0>Studio</0>"
+
+#: src/routes/studio/+page.svelte
+msgid "⌘ K"
+msgstr "⌘ K"
+
+#: src/routes/studio/+page.svelte
+msgid "Saving…"
+msgstr "Saving…"
+
+#: src/routes/studio/+page.svelte
+msgid "Save asset"
+msgstr "Save asset"
+
+#: src/routes/studio/+page.svelte
+msgid "⌘ S"
+msgstr "⌘ S"
+
+#: src/routes/studio/+page.svelte
+msgid "Library"
+msgstr "Library"
+
+#: src/routes/studio/+page.svelte
+msgid "Preview"
+msgstr "Preview"
+
+#: src/routes/studio/+page.svelte
+#: src/routes/studio/+page.svelte
+#: src/routes/studio/+page.svelte
+msgid "Assets"
+msgstr "Assets"
+
+#: src/routes/studio/+page.svelte
+#: src/routes/studio/+page.svelte
+#: src/routes/studio/+page.svelte
+msgid "Scene"
+msgstr "Scene"
+
+#: src/routes/studio/+page.svelte
+#: src/routes/studio/+page.svelte
+msgid "Code"
+msgstr "Code"
+
+#: src/routes/studio/+page.svelte
+msgid "Open runtime"
+msgstr "Open runtime"
+
+#: src/routes/studio/+page.svelte
+msgid "Runtime"
+msgstr "Runtime"
+
+#: src/routes/studio/+page.svelte
+msgid "Project library"
+msgstr "Project library"
+
+#: src/routes/studio/+page.svelte
+#: src/routes/studio/+page.svelte
+msgid "Inventory"
+msgstr "Inventory"
+
+#: src/routes/studio/+page.svelte
+#: src/routes/studio/+page.svelte
+msgid "Create asset"
+msgstr "Create asset"
+
+#: src/routes/studio/+page.svelte
+msgid "Search assets"
+msgstr "Search assets"
+
+#: src/routes/studio/+page.svelte
+msgid "Folders"
+msgstr "Folders"
+
+#: src/routes/studio/+page.svelte
+#: src/routes/studio/+page.svelte
+msgid "All assets"
+msgstr "All assets"
+
+#: src/routes/studio/+page.svelte
+msgid "<0/>Loading library"
+msgstr "<0/>Loading library"
+
+#: src/routes/studio/+page.svelte
+msgid "No assets here yet"
+msgstr "No assets here yet"
+
+#: src/routes/studio/+page.svelte
+msgid "Create a reusable object to start building."
+msgstr "Create a reusable object to start building."
+
+#: src/routes/studio/+page.svelte
+msgid "Code <0/>"
+msgstr "Code <0/>"
+
+#: src/routes/studio/+page.svelte
+msgid "New"
+msgstr "New"
+
+#: src/routes/studio/+page.svelte
+msgid "Delete"
+msgstr "Delete"
+
+#: src/routes/studio/+page.svelte
+msgid "Select a slot"
+msgstr "Select a slot"
+
+#: src/routes/studio/+page.svelte
+msgid "Code block editor"
+msgstr "Code block editor"
+
+#: src/routes/studio/+page.svelte
+msgid "No issues"
+msgstr "No issues"
+
+#. 0: diagnostics.length; 1: diagnostics.length === 1 ? '' \\: 's'
+#: src/routes/studio/+page.svelte
+msgid "{0} issue{1}"
+msgstr "{0} issue{1}"
+
+#: src/routes/studio/+page.svelte
+msgid "JavaScript"
+msgstr "JavaScript"
+
+#: src/routes/studio/+page.svelte
+msgid "Runs in the bounded <0/> runtime"
+msgstr "Runs in the bounded <0/> runtime"
+
+#: src/routes/studio/+page.svelte
+msgid "Tab size 2 · UTF-8"
+msgstr "Tab size 2 · UTF-8"
+
+#: src/routes/studio/+page.svelte
+msgid "Diagnostics"
+msgstr "Diagnostics"
+
+#: src/routes/studio/+page.svelte
+msgid "Everything looks good."
+msgstr "Everything looks good."
+
+#. 0: diagnostic.line
+#: src/routes/studio/+page.svelte
+msgid "Line {0}"
+msgstr "Line {0}"
+
+#: src/routes/studio/+page.svelte
+msgid "Select a code block"
+msgstr "Select a code block"
+
+#: src/routes/studio/+page.svelte
+msgid "Select a slot with a Code Block component, or add one from the inspector."
+msgstr "Select a slot with a Code Block component, or add one from the inspector."
+
+#: src/routes/studio/+page.svelte
+msgid "Add code block"
+msgstr "Add code block"
+
+#: src/routes/studio/+page.svelte
+msgid "Asset canvas"
+msgstr "Asset canvas"
+
+#~ msgid "Select"
+#~ msgstr "Select"
+
+#~ msgid "Move"
+#~ msgstr "Move"
+
+#: src/routes/studio/+page.svelte
+msgid "Scale"
+msgstr "Scale"
+
+#: src/routes/studio/+page.svelte
+msgid "Add a slot to begin."
+msgstr "Add a slot to begin."
+
+#~ msgid "X"
+#~ msgstr "X"
+
+#~ msgid "Y"
+#~ msgstr "Y"
+
+#~ msgid "Z"
+#~ msgstr "Z"
+
+#: src/routes/studio/+page.svelte
+msgid "Scene graph"
+msgstr "Scene graph"
+
+#. 0: stats.slots; 1: stats.components
+#: src/routes/studio/+page.svelte
+msgid "{0} slots · {1} components"
+msgstr "{0} slots · {1} components"
+
+#: src/routes/studio/+page.svelte
+msgid "◇ Mesh object"
+msgstr "◇ Mesh object"
+
+#: src/routes/studio/+page.svelte
+msgid "{} Logic node"
+msgstr "{} Logic node"
+
+#: src/routes/studio/+page.svelte
+msgid "＋ Add slot"
+msgstr "＋ Add slot"
+
+#: src/routes/studio/+page.svelte
+msgid "Nothing selected"
+msgstr "Nothing selected"
+
+#: src/routes/studio/+page.svelte
+msgid "Inspector"
+msgstr "Inspector"
+
+#: src/routes/studio/+page.svelte
+msgid "Delete selected slot"
+msgstr "Delete selected slot"
+
+#: src/routes/studio/+page.svelte
+msgid "Transform"
+msgstr "Transform"
+
+#: src/routes/studio/+page.svelte
+msgid "Local"
+msgstr "Local"
+
+#: src/routes/studio/+page.svelte
+msgid "Position"
+msgstr "Position"
+
+#: src/routes/studio/+page.svelte
+msgid "Rotation"
+msgstr "Rotation"
+
+#: src/routes/studio/+page.svelte
+msgid "Render"
+msgstr "Render"
+
+#: src/routes/studio/+page.svelte
+msgid "Interaction"
+msgstr "Interaction"
+
+#: src/routes/studio/+page.svelte
+msgid "Logic"
+msgstr "Logic"
+
+#: src/routes/studio/+page.svelte
+msgid "Media"
+msgstr "Media"
+
+#: src/routes/studio/+page.svelte
+msgid "World"
+msgstr "World"
+
+#: src/routes/studio/+page.svelte
+msgid "Components"
+msgstr "Components"
+
+#: src/routes/studio/+page.svelte
+msgid "This slot is empty. Add a component to give it behaviour."
+msgstr "This slot is empty. Add a component to give it behaviour."
+
+#: src/routes/studio/+page.svelte
+msgid "Open in code editor <0/>"
+msgstr "Open in code editor <0/>"
+
+#: src/routes/studio/+page.svelte
+msgid "Remove component"
+msgstr "Remove component"
+
+#: src/routes/studio/+page.svelte
+msgid "Name<0/>"
+msgstr "Name<0/>"
+
+#: src/routes/studio/+page.svelte
+msgid "Select an object"
+msgstr "Select an object"
+
+#: src/routes/studio/+page.svelte
+msgid "Choose a slot in the scene graph to inspect its transform and components."
+msgstr "Choose a slot in the scene graph to inspect its transform and components."
+
+#: src/routes/studio/+page.svelte
+msgid "Folder"
+msgstr "Folder"
+
+#. 0: field
+#: src/routes/studio/+page.svelte
+msgid "Toggle {0}"
+msgstr "Toggle {0}"
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "CodeBlockContext"
+msgstr "CodeBlockContext"
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Bounded runtime context available to every code block."
+msgstr "Bounded runtime context available to every code block."
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Self API"
+msgstr "Self API"
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Read and manipulate this slot."
+msgstr "Read and manipulate this slot."
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "World API"
+msgstr "World API"
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Host-aware spawning, deletion and shared state."
+msgstr "Host-aware spawning, deletion and shared state."
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Hierarchy API"
+msgstr "Hierarchy API"
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Query slots, children and parents."
+msgstr "Query slots, children and parents."
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Grab API"
+msgstr "Grab API"
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Inspect whether this slot is held and by whom."
+msgstr "Inspect whether this slot is held and by whom."
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Math API"
+msgstr "Math API"
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Small vector and quaternion helpers."
+msgstr "Small vector and quaternion helpers."
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Write a message to the Inspector debug feed."
+msgstr "Write a message to the Inspector debug feed."
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Return the current Slot data."
+msgstr "Return the current Slot data."
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Read this slot world position."
+msgstr "Read this slot world position."
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Set this slot world position."
+msgstr "Set this slot world position."
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Whether at least one player is holding this slot."
+msgstr "Whether at least one player is holding this slot."
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Grabber ids currently holding this slot."
+msgstr "Grabber ids currently holding this slot."
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Request a new slot from the host."
+msgstr "Request a new slot from the host."
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Request deletion of this slot."
+msgstr "Request deletion of this slot."
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Check whether this peer is authoritative."
+msgstr "Check whether this peer is authoritative."
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Return direct children of a slot."
+msgstr "Return direct children of a slot."
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Add two vectors."
+msgstr "Add two vectors."
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Scale a vector."
+msgstr "Scale a vector."
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Format CodeBlock"
+msgstr "Format CodeBlock"
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Monaco JavaScript editor"
+msgstr "Monaco JavaScript editor"
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "<0/>Starting Monaco language services…"
+msgstr "<0/>Starting Monaco language services…"
+
+#: src/routes/studio/+page.svelte
+msgid "Format"
+msgstr "Format"
+
+#. 0: tree.length; 1: tree.length === 1 ? '' \\: 's'
+#: src/routes/studio/+page.svelte
+msgid "Raw JSON applied — {0} slot{1}"
+msgstr "Raw JSON applied — {0} slot{1}"
+
+#: src/routes/studio/+page.svelte
+msgid "Raw JSON"
+msgstr "Raw JSON"
+
+#: src/routes/studio/+page.svelte
+#: src/routes/studio/+page.svelte
+msgid "Raw"
+msgstr "Raw"
+
+#: src/routes/studio/+page.svelte
+msgid "Raw asset JSON"
+msgstr "Raw asset JSON"
+
+#: src/routes/studio/+page.svelte
+msgid "Reload from asset"
+msgstr "Reload from asset"
+
+#: src/routes/studio/+page.svelte
+#: src/routes/studio/+page.svelte
+msgid "JSON"
+msgstr "JSON"
+
+#: src/routes/studio/+page.svelte
+msgid "Paste a single slot or a whole exported subtree (an array) — a root plus its descendants, linked by parentId — then Apply."
+msgstr "Paste a single slot or a whole exported subtree (an array) — a root plus its descendants, linked by parentId — then Apply."
+
+#: src/routes/studio/+page.svelte
+msgid "Apply JSON"
+msgstr "Apply JSON"
+
+#: src/routes/studio/+page.svelte
+msgid "Drag to rotate · scroll to zoom · right-drag to pan"
+msgstr "Drag to rotate · scroll to zoom · right-drag to pan"

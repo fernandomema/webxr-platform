@@ -87,6 +87,15 @@ export const localInventoryAdapter: InventoryAdapter = {
 		return item;
 	},
 
+	async updateItem(_ctx, itemId, folderId, name, slotData) {
+		const items = await withStore<InventoryItem[]>(ITEMS_STORE, 'readonly', (store) => store.getAll());
+		const existing = items.find((item) => item.id === itemId);
+		if (!existing) throw new Error('Inventory item not found');
+		const updated: InventoryItem = { ...existing, folderId, name, slotData };
+		await withStore(ITEMS_STORE, 'readwrite', (store) => store.put(updated));
+		return updated;
+	},
+
 	async deleteItem(_ctx, itemId) {
 		await withStore(ITEMS_STORE, 'readwrite', (store) => store.delete(itemId));
 	}

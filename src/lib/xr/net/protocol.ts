@@ -1,4 +1,4 @@
-import type { Slot, SlotTree } from '$lib/ecs/types';
+import type { MediaControlAction, Slot, SlotTree } from '$lib/ecs/types';
 import type { TransformPose } from '../avatar/defaultAvatar';
 
 export type PlayerInfo = {
@@ -18,7 +18,8 @@ export type WorldSyncMessage =
 	| { kind: 'grab-request'; requestId: string; slotId: string; grabberId: string }
 	| { kind: 'release-request'; requestId: string; grabberId: string }
 	| { kind: 'spawn-request'; requestId: string; slot: Slot }
-	| { kind: 'delete-request'; requestId: string; slotId: string };
+	| { kind: 'delete-request'; requestId: string; slotId: string }
+	| { kind: 'media-control-request'; requestId: string; slotId: string; action: MediaControlAction };
 
 /** High-frequency state messages sent on the unordered/unreliable channel. */
 export type WorldStateMessage =

@@ -47,6 +47,16 @@ export const cloudInventoryAdapter: InventoryAdapter = {
 		return (await res.json()) as InventoryItem;
 	},
 
+	async updateItem(_ctx, itemId, folderId, name, slotData) {
+		const res = await fetch(`/api/inventory/${itemId}`, {
+			method: 'PUT',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ folderId, name, slotData })
+		});
+		if (!res.ok) throw new Error(`Failed to update cloud item (${res.status})`);
+		return (await res.json()) as InventoryItem;
+	},
+
 	async deleteItem(_ctx, itemId) {
 		await fetch(`/api/inventory/${itemId}`, { method: 'DELETE' });
 	}

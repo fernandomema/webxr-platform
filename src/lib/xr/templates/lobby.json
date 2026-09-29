@@ -3,38 +3,1197 @@
 		"id": "floor",
 		"parentId": null,
 		"name": "Floor",
-		"position": [0, 0, 0],
-		"rotation": [0, 0, 0, 1],
-		"scale": [1, 1, 1],
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
 		"components": [
-			{ "type": "meshRenderer", "meshRef": "ground", "color": "#4b5563" },
-			{ "type": "collider", "shape": "box" }
+			{
+				"type": "meshRenderer",
+				"meshRef": "ground",
+				"color": "#4b5563"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "demo-container",
+		"parentId": null,
+		"name": "Demo Group",
+		"position": [
+			0,
+			0.8,
+			-1.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			},
+			{
+				"type": "grabbable",
+				"scalable": true
+			}
 		]
 	},
 	{
 		"id": "test-cube-1",
-		"parentId": null,
+		"parentId": "demo-container",
 		"name": "Test Cube 1",
-		"position": [-0.6, 1, -1.5],
-		"rotation": [0, 0, 0, 1],
-		"scale": [0.3, 0.3, 0.3],
+		"position": [
+			-0.6,
+			0.2,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.3,
+			0.3,
+			0.3
+		],
 		"components": [
-			{ "type": "meshRenderer", "meshRef": "box", "color": "#f97316" },
-			{ "type": "collider", "shape": "box" },
-			{ "type": "grabbable", "scalable": true }
+			{
+				"type": "meshRenderer",
+				"meshRef": "box",
+				"color": "#f97316"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
 		]
 	},
 	{
 		"id": "test-cube-2",
-		"parentId": null,
+		"parentId": "demo-container",
 		"name": "Test Cube 2",
-		"position": [0.6, 1, -1.5],
-		"rotation": [0, 0, 0, 1],
-		"scale": [0.3, 0.3, 0.3],
+		"position": [
+			0.6,
+			0.2,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.3,
+			0.3,
+			0.3
+		],
 		"components": [
-			{ "type": "meshRenderer", "meshRef": "sphere", "color": "#22c55e" },
-			{ "type": "collider", "shape": "sphere" },
-			{ "type": "grabbable", "scalable": true }
+			{
+				"type": "meshRenderer",
+				"meshRef": "sphere",
+				"color": "#22c55e"
+			},
+			{
+				"type": "collider",
+				"shape": "sphere"
+			}
+		]
+	},
+	{
+		"id": "lobby-mirror",
+		"parentId": null,
+		"name": "Mirror",
+		"position": [
+			-1.35,
+			1.45,
+			-2.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.15,
+			0.85,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "plane",
+				"color": "#dbeafe"
+			},
+			{
+				"type": "mirror",
+				"resolution": 512
+			},
+			{
+				"type": "grabbable",
+				"scalable": true
+			}
+		]
+	},
+	{
+		"id": "lobby-video-player",
+		"parentId": null,
+		"name": "Video Player",
+		"position": [
+			0,
+			2.65,
+			-2.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.2,
+			0.675,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "plane",
+				"color": "#111827"
+			},
+			{
+				"type": "videoPlayer",
+				"url": "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+				"loop": true,
+				"muted": true,
+				"playing": false,
+				"currentTime": 0
+			},
+			{
+				"type": "grabbable",
+				"scalable": true
+			}
+		]
+	},
+	{
+		"id": "lobby-audio-player",
+		"parentId": null,
+		"name": "Audio Player",
+		"position": [
+			1.15,
+			0.9,
+			-1.4
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.35,
+			0.35,
+			0.35
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "box",
+				"color": "#7c3aed"
+			},
+			{
+				"type": "audioPlayer",
+				"url": "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3",
+				"loop": true,
+				"playing": false,
+				"currentTime": 0
+			},
+			{
+				"type": "grabbable",
+				"scalable": true
+			}
+		]
+	},
+	{
+		"id": "demo-explosive-crate",
+		"parentId": null,
+		"name": "Explosive Crate",
+		"position": [
+			-2.2,
+			0.9,
+			-1.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.3,
+			0.3,
+			0.3
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "box",
+				"color": "#dc2626"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "codeBlock",
+				"code": "return {\n  getRadialItems() {\n    return [{\n      label: 'Explode',\n      isEnabled: () => true,\n      onSelect: () => {\n        ctx.particles.burst({ color: '#f97316', count: 50, durationMs: 900 });\n        ctx.world.deleteSelf();\n      }\n    }];\n  }\n};"
+			}
+		]
+	},
+	{
+		"id": "demo-door-post",
+		"parentId": null,
+		"name": "Door Hinge Post",
+		"position": [
+			2,
+			1,
+			-1.8
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.06,
+			2,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "box",
+				"color": "#44403c"
+			}
+		]
+	},
+	{
+		"id": "demo-door-panel",
+		"parentId": null,
+		"name": "Door Panel",
+		"position": [
+			2.4,
+			1,
+			-1.8
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			1.9,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "box",
+				"color": "#92400e"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "codeBlock",
+				"code": "let pivot = null;\nlet restY = 0;\nconst HALF_WIDTH = 0.4;\nconst MIN_ANGLE = -Math.PI * 0.55;\nconst MAX_ANGLE = 0;\n\nreturn {\n  onSpawn() {\n    // Runs identically on every peer at spawn time, so the hinge geometry\n    // is always consistent even for bystanders who never grab the door.\n    const pos = ctx.self.getWorldPosition();\n    restY = pos[1];\n    pivot = [pos[0] - HALF_WIDTH, pos[1], pos[2]];\n  },\n  tick() {\n    if (!ctx.grab.isHeld()) return;\n    const p = ctx.self.getWorldPosition();\n    let angle = Math.atan2(p[2] - pivot[2], p[0] - pivot[0]);\n    if (angle > MAX_ANGLE) angle = MAX_ANGLE;\n    if (angle < MIN_ANGLE) angle = MIN_ANGLE;\n    // Overrides whatever the raw (free 6DOF) grab-follow produced this\n    // frame with a position/rotation constrained to swing only around the\n    // hinge pivot, on a single (Y) axis, clamped to a believable range.\n    ctx.self.setWorldPosition([\n      pivot[0] + Math.cos(angle) * HALF_WIDTH,\n      restY,\n      pivot[2] + Math.sin(angle) * HALF_WIDTH\n    ]);\n    ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle([0, 1, 0], angle));\n  }\n};"
+			}
+		]
+	},
+	{
+		"id": "demo-light-bulb",
+		"parentId": null,
+		"name": "Light Bulb",
+		"position": [
+			3.2,
+			1.3,
+			-1.8
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.18,
+			0.18,
+			0.18
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "sphere",
+				"color": "#374151"
+			}
+		]
+	},
+	{
+		"id": "demo-light-switch",
+		"parentId": null,
+		"name": "Light Switch",
+		"position": [
+			3.2,
+			0.9,
+			-1.8
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.04,
+			0.22,
+			0.04
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "box",
+				"color": "#d4d4d8"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "codeBlock",
+				"code": "let pivot = null;\nlet isOn = false;\nconst ON_COLOR = '#facc15';\nconst OFF_COLOR = '#374151';\nconst RADIUS = 0.22;\nconst RANGE = Math.PI / 6;\n\nreturn {\n  onSpawn() {\n    pivot = ctx.self.getWorldPosition();\n  },\n  tick() {\n    if (!ctx.grab.isHeld()) return;\n    const p = ctx.self.getWorldPosition();\n    let angle = Math.atan2(p[1] - pivot[1], p[0] - pivot[0]);\n    if (angle > RANGE) angle = RANGE;\n    if (angle < -RANGE) angle = -RANGE;\n    ctx.self.setWorldPosition([\n      pivot[0] + Math.cos(angle) * RADIUS,\n      pivot[1] + Math.sin(angle) * RADIUS,\n      pivot[2]\n    ]);\n    ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle([0, 0, 1], angle));\n    isOn = angle > 0;\n  },\n  onRelease() {\n    // Cross-object mutation: host/solo-only (see setComponentField's doc\n    // comment) — a guest flipping the switch is a documented no-op, self-\n    // corrected by the next broadcast, same as every other guest-triggered\n    // mutation in this app.\n    const bulb = ctx.hierarchy.findByName('Light Bulb');\n    if (bulb) ctx.world.setComponentField(bulb.id, 'meshRenderer', 'color', isOn ? ON_COLOR : OFF_COLOR);\n  }\n};"
+			}
+		]
+	},
+	{
+		"id": "demo-bouncy-ball",
+		"parentId": null,
+		"name": "Bouncy Ball",
+		"position": [
+			-1.1,
+			1.35,
+			-1.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.18,
+			0.18,
+			0.18
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "sphere",
+				"color": "#38bdf8"
+			},
+			{
+				"type": "collider",
+				"shape": "sphere"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "codeBlock",
+				"code": "let velocity = [0, 0, 0];\nlet previousPosition = null;\nconst GRAVITY = -9.81;\nconst RADIUS = 0.09;\nconst BOUNCE = 0.78;\nconst FRICTION = 0.86;\nconst MAX_THROW_SPEED = 8;\nconst REST_SPEED = 0.45;\n\nfunction clampThrowSpeed(v) {\n  const speed = ctx.math.vecLength(v);\n  if (speed <= MAX_THROW_SPEED) return v;\n  return ctx.math.vecScale(ctx.math.vecNormalize(v), MAX_THROW_SPEED);\n}\n\nreturn {\n  onSpawn() {\n    previousPosition = ctx.self.getWorldPosition();\n  },\n  onGrab() {\n    velocity = [0, 0, 0];\n    previousPosition = ctx.self.getWorldPosition();\n  },\n  tick(dt) {\n    const safeDt = Math.min(Math.max(dt, 1 / 120), 1 / 20);\n    const position = ctx.self.getWorldPosition();\n\n    // Every peer measures the hand motion so a local release has a useful\n    // throw velocity. Only the host advances the free-flight simulation.\n    if (ctx.grab.isHeld()) {\n      if (previousPosition) {\n        velocity = clampThrowSpeed(ctx.math.vecScale(\n          ctx.math.vecSub(position, previousPosition),\n          1 / safeDt\n        ));\n      }\n      previousPosition = position;\n      return;\n    }\n\n    previousPosition = position;\n    if (!ctx.world.isHost()) return;\n\n    velocity[1] += GRAVITY * safeDt;\n    const nextPosition = ctx.math.vecAdd(position, ctx.math.vecScale(velocity, safeDt));\n    if (nextPosition[1] <= RADIUS) {\n      nextPosition[1] = RADIUS;\n      if (velocity[1] < 0) velocity[1] = -velocity[1] * BOUNCE;\n      velocity[0] *= FRICTION;\n      velocity[2] *= FRICTION;\n      if (velocity[1] < REST_SPEED) velocity[1] = 0;\n    }\n\n    ctx.self.setWorldPosition(nextPosition);\n  },\n  getRadialItems() {\n    return [{\n      label: 'Reset Ball',\n      isEnabled: () => ctx.world.isHost(),\n      onSelect: () => {\n        velocity = [0, 0, 0];\n        ctx.self.setWorldPosition([-1.1, 1.35, -1.2]);\n      }\n    }];\n  }\n};"
+			}
+		]
+	},
+	{
+		"id": "demo-bowling-alley",
+		"parentId": null,
+		"name": "Bowling Alley",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			},
+			{
+				"type": "grabbable",
+				"scalable": true
+			}
+		]
+	},
+	{
+		"id": "demo-bowling-alley-lane",
+		"parentId": "demo-bowling-alley",
+		"name": "Bowling Lane",
+		"position": [
+			-0.5,
+			0.03,
+			-4.6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9,
+			0.06,
+			3.4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "box",
+				"color": "#a16207"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "demo-bowling-alley-ball",
+		"parentId": "demo-bowling-alley",
+		"name": "Bowling Ball",
+		"position": [
+			-0.5,
+			0.17,
+			-3.1
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.22,
+			0.22,
+			0.22
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "sphere",
+				"color": "#2563eb"
+			},
+			{
+				"type": "collider",
+				"shape": "sphere"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "scriptState",
+				"data": {}
+			},
+			{
+				"type": "codeBlock",
+				"code": "let spawnPos = null;\nlet spawnRot = null;\nlet previousPosition = null;\nlet velocity = [0, 0, 0];\nlet currentThrower = null; // { id, name } captured at grab time\nlet hitPinsThisThrow = new Set();\nlet lastResetSeen = 0;\n\n// Sits at the spawn point doing nothing until grabbed — without this, the\n// very first tick (and every tick right after a return finishes) would see\n// \"grounded, ~zero velocity\" and immediately think the throw is over,\n// triggering startReturn() again forever.\nlet atRest = true;\nlet elapsedSinceRelease = 0;\nconst MIN_ROLL_TIME = 0.35; // don't call it \"stopped\" before it's had a moment to actually roll\n\nconst GRAVITY = -9.81;\nconst LANE_SURFACE_Y = 0.06;\nconst BALL_RADIUS = 0.11;\nconst ROLL_FRICTION = 0.35;\nconst STOP_SPEED = 0.05;\nconst MAX_THROW_SPEED = 6;\nconst HIT_RADIUS = 0.16;\nconst PIN_IMPULSE = 1.8;\nconst PIT_Z = -6.6; // past the last pin row — falling off the end starts the return\nconst FRAME_COUNT = 10;\n\n// --- ball-return rail: a simulated 3-leg path back to the start, like a\n// real bowling alley's mechanical return, so the ball never needs to be\n// walked back by hand. Timed to feel like an actual mechanism, not a snap. ---\nconst RAIL_X_OFFSET = -0.65;\nconst RAIL_Y = 0.02;\nconst DROP_DURATION = 0.6;\nconst RISE_DURATION = 0.6;\nconst RAIL_SPEED = 1.1;\n\nlet returning = false;\nlet returnLegs = [];\nlet returnLegIndex = 0;\nlet returnT = 0;\n\nfunction lerpVec(a, b, t) {\n  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];\n}\n\nfunction findSiblings() {\n  const parent = ctx.hierarchy.getParent(ctx.self.id);\n  return parent ? ctx.hierarchy.getChildren(parent.id) : [];\n}\n\nfunction getScoreState(scoreboard) {\n  const comp = scoreboard.components.find((c) => c.type === 'scriptState');\n  return (comp && comp.data) || {};\n}\n\nfunction sumTurns(turns) {\n  return turns.reduce((a, b) => a + b, 0);\n}\n\n// Recomputes the scoreboard's visible grid (columns/rows/status) from the\n// raw turn-history state — the scoreboard component only knows how to lay\n// out a grid, all the bowling-specific meaning is built here.\nfunction renderBoard(scoreboard, state) {\n  const columns = [];\n  for (let i = 1; i <= FRAME_COUNT; i++) columns.push(String(i));\n  columns.push('Total');\n\n  const players = Object.values(state.players || {});\n  const sorted = [...players].sort((a, b) => sumTurns(b.turns) - sumTurns(a.turns));\n  const leaderTotal = sorted.length > 0 ? sumTurns(sorted[0].turns) : -1;\n\n  const rows = sorted.map((p) => {\n    const recentTurns = p.turns.slice(-FRAME_COUNT);\n    const blanks = Array(FRAME_COUNT - recentTurns.length).fill('');\n    const total = sumTurns(p.turns);\n    return {\n      name: p.name,\n      cells: [...blanks, ...recentTurns.map(String), String(total)],\n      highlight: state.playerName === p.name,\n      isLeader: total > 0 && total === leaderTotal\n    };\n  });\n\n  const status = state.playerName ? `Up: ${state.playerName} — throw ${state.throwsThisTurn + 1}/2` : 'Grab the ball to play!';\n\n  ctx.world.setComponentField(scoreboard.id, 'scoreboard', 'columns', columns);\n  ctx.world.setComponentField(scoreboard.id, 'scoreboard', 'rows', rows);\n  ctx.world.setComponentField(scoreboard.id, 'scoreboard', 'status', status);\n}\n\n// Ends the current throw: scores it against whoever grabbed the ball,\n// registering them on the scoreboard if this is their first throw, and\n// resets the pins once a turn (2 throws, or a strike) is complete.\nfunction finishThrow() {\n  if (!ctx.world.isHost() || !currentThrower) return;\n  const siblings = findSiblings();\n  const scoreboard = siblings.find((s) => s.name === 'Scoreboard');\n  if (!scoreboard) return;\n\n  const knocked = hitPinsThisThrow.size;\n  const state = getScoreState(scoreboard);\n  const players = { ...(state.players || {}) };\n  const existing = players[currentThrower.id] || { name: currentThrower.name, turns: [] };\n\n  const isSameTurnPlayer = state.playerId === currentThrower.id;\n  const pendingFirstThrow = isSameTurnPlayer ? state.pendingFirstThrow || 0 : 0;\n  const throwsThisTurn = isSameTurnPlayer ? (state.throwsThisTurn || 0) + 1 : 1;\n  const turnDone = knocked >= 10 || throwsThisTurn >= 2;\n\n  const turns = turnDone ? [...existing.turns, pendingFirstThrow + knocked] : existing.turns;\n  players[currentThrower.id] = { name: currentThrower.name, turns };\n\n  const nextState = {\n    players,\n    throwsThisTurn: turnDone ? 0 : throwsThisTurn,\n    playerId: turnDone ? null : currentThrower.id,\n    playerName: turnDone ? null : currentThrower.name,\n    pendingFirstThrow: turnDone ? 0 : knocked\n  };\n  ctx.world.setComponentField(scoreboard.id, 'scriptState', 'data', nextState);\n  renderBoard(scoreboard, nextState);\n\n  if (knocked >= 10) {\n    // strike — a bigger crash than a normal pin knock\n    ctx.audio.play({ noiseMix: 1, durationMs: 500, volume: 0.7 });\n  }\n\n  if (turnDone) {\n    const now = Date.now();\n    for (const s of siblings) {\n      if (s.name.startsWith('Pin ')) ctx.world.setComponentField(s.id, 'scriptState', 'data', { resetRequestedAt: now });\n    }\n  }\n  currentThrower = null;\n}\n\nfunction startReturn(fromPos) {\n  finishThrow();\n  const railX = spawnPos[0] + RAIL_X_OFFSET;\n  const dropTo = [railX, RAIL_Y, fromPos[2]];\n  const travelTo = [railX, RAIL_Y, spawnPos[2]];\n  const travelDist = Math.abs(dropTo[2] - travelTo[2]);\n  returnLegs = [\n    { from: fromPos, to: dropTo, duration: DROP_DURATION },\n    { from: dropTo, to: travelTo, duration: Math.max(travelDist / RAIL_SPEED, 0.3) },\n    { from: travelTo, to: spawnPos, duration: RISE_DURATION }\n  ];\n  returnLegIndex = 0;\n  returnT = 0;\n  returning = true;\n  velocity = [0, 0, 0];\n}\n\nreturn {\n  onSpawn() {\n    spawnPos = ctx.self.getWorldPosition();\n    spawnRot = ctx.self.getWorldRotation();\n    previousPosition = spawnPos;\n  },\n  onGrab() {\n    const holders = ctx.grab.heldBy();\n    if (holders.length > 0) currentThrower = ctx.world.getPlayer(holders[0]);\n    hitPinsThisThrow = new Set();\n    returning = false;\n    atRest = false;\n    elapsedSinceRelease = 0;\n    previousPosition = ctx.self.getWorldPosition();\n  },\n  tick(dt) {\n    const safeDt = Math.min(Math.max(dt, 1 / 120), 1 / 20);\n\n    // An external reset (the reset button, or a fresh turn) wins over\n    // whatever this ball was doing, as long as nobody's currently holding it.\n    const stateComp = ctx.self.getComponent('scriptState');\n    const resetAt = stateComp && stateComp.data && stateComp.data.resetRequestedAt;\n    if (resetAt && resetAt !== lastResetSeen && !ctx.grab.isHeld()) {\n      lastResetSeen = resetAt;\n      returning = false;\n      atRest = true;\n      velocity = [0, 0, 0];\n      hitPinsThisThrow = new Set();\n      currentThrower = null;\n      ctx.self.setWorldPosition(spawnPos);\n      ctx.self.setWorldRotation(spawnRot);\n      previousPosition = spawnPos;\n      return;\n    }\n\n    const position = ctx.self.getWorldPosition();\n\n    // Every peer measures the hand motion so a local release has a useful\n    // throw velocity. Only the host advances the simulation once released.\n    if (ctx.grab.isHeld()) {\n      velocity = ctx.math.vecScale(ctx.math.vecSub(position, previousPosition), 1 / safeDt);\n      const speed = ctx.math.vecLength(velocity);\n      if (speed > MAX_THROW_SPEED) velocity = ctx.math.vecScale(ctx.math.vecNormalize(velocity), MAX_THROW_SPEED);\n      previousPosition = position;\n      return;\n    }\n    previousPosition = position;\n    if (!ctx.world.isHost()) return;\n\n    if (returning) {\n      const leg = returnLegs[returnLegIndex];\n      returnT += safeDt;\n      const t = Math.min(returnT / leg.duration, 1);\n      ctx.self.setWorldPosition(lerpVec(leg.from, leg.to, t));\n      if (t >= 1) {\n        returnLegIndex += 1;\n        returnT = 0;\n        if (returnLegIndex >= returnLegs.length) {\n          returning = false;\n          atRest = true;\n          ctx.self.setWorldRotation(spawnRot);\n          ctx.audio.play({ frequency: 100, pitchDrop: 40, noiseMix: 0.4, durationMs: 150, volume: 0.35 });\n        }\n      }\n      return;\n    }\n\n    // Sitting idle at the spawn point (initial load, or just finished\n    // returning) — nothing to simulate until it's grabbed again.\n    if (atRest) return;\n\n    elapsedSinceRelease += safeDt;\n\n    // free flight + rolling — real gravity so a release mid-air actually\n    // falls to the lane instead of hovering at release height\n    velocity[1] += GRAVITY * safeDt;\n    const next = ctx.math.vecAdd(position, ctx.math.vecScale(velocity, safeDt));\n    const grounded = next[1] <= LANE_SURFACE_Y + BALL_RADIUS;\n    if (grounded) {\n      next[1] = LANE_SURFACE_Y + BALL_RADIUS;\n      velocity[1] = 0;\n      velocity[0] *= 1 - ROLL_FRICTION * safeDt;\n      velocity[2] *= 1 - ROLL_FRICTION * safeDt;\n    }\n    ctx.self.setWorldPosition(next);\n\n    if (next[2] <= PIT_Z) {\n      startReturn(next);\n      return;\n    }\n    if (grounded && elapsedSinceRelease > MIN_ROLL_TIME && ctx.math.vecLength([velocity[0], 0, velocity[2]]) < STOP_SPEED) {\n      startReturn(next);\n      return;\n    }\n\n    // sphere-vs-pin hit detection via the generic spatial query\n    for (const other of ctx.world.findNear(next, HIT_RADIUS)) {\n      if (other.id === ctx.self.id || !other.name.startsWith('Pin ')) continue;\n      if (!hitPinsThisThrow.has(other.id)) {\n        hitPinsThisThrow.add(other.id);\n        ctx.audio.play({ frequency: 180, pitchDrop: 60, noiseMix: 0.55, durationMs: 180, volume: 0.5 });\n      }\n      const dir = ctx.math.vecNormalize([other.position[0] - next[0], 0, other.position[2] - next[2]]);\n      ctx.world.setComponentField(other.id, 'velocity', 'linear', ctx.math.vecScale(dir, PIN_IMPULSE));\n    }\n  },\n  getRadialItems() {\n    return [{\n      label: 'Reset Ball',\n      isEnabled: () => true,\n      onSelect: () => {\n        returning = false;\n        atRest = true;\n        velocity = [0, 0, 0];\n        hitPinsThisThrow = new Set();\n        currentThrower = null;\n        ctx.self.setWorldPosition(spawnPos);\n        ctx.self.setWorldRotation(spawnRot);\n      }\n    }];\n  }\n};"
+			}
+		]
+	},
+	{
+		"id": "demo-bowling-alley-pin-1",
+		"parentId": "demo-bowling-alley",
+		"name": "Pin 1",
+		"position": [
+			-0.5,
+			0.25,
+			-5.6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.09,
+			0.38,
+			0.09
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "cylinder",
+				"color": "#fefce8"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "velocity",
+				"linear": [
+					0,
+					0,
+					0
+				],
+				"drag": 1.4
+			},
+			{
+				"type": "scriptState",
+				"data": {}
+			},
+			{
+				"type": "codeBlock",
+				"code": "let spawnPos = null;\nlet spawnRot = null;\nlet fallAmount = 0;\nlet fallAxis = [1, 0, 0];\nlet lastResetSeen = 0;\nconst FALL_SPEED = 3.5;\nconst SETTLE_SPEED = 0.03;\n\nreturn {\n  onSpawn() {\n    spawnPos = ctx.self.getWorldPosition();\n    spawnRot = ctx.self.getWorldRotation();\n  },\n  tick(dt) {\n    // The ball (or the reset button) signals a reset by writing a fresh\n    // timestamp here — scripts can't call each other directly, so this\n    // component field is the pub/sub channel (see types.ts's scriptState doc).\n    const stateComp = ctx.self.getComponent('scriptState');\n    const resetAt = stateComp && stateComp.data && stateComp.data.resetRequestedAt;\n    if (resetAt && resetAt !== lastResetSeen && !ctx.grab.isHeld()) {\n      lastResetSeen = resetAt;\n      fallAmount = 0;\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n      ctx.self.setWorldPosition(spawnPos);\n      ctx.self.setWorldRotation(spawnRot);\n      return;\n    }\n\n    if (ctx.grab.isHeld()) {\n      fallAmount = 0;\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n      return;\n    }\n\n    const comp = ctx.self.getComponent('velocity');\n    const v = comp ? comp.linear : [0, 0, 0];\n    const speed = ctx.math.vecLength(v);\n    if (speed <= SETTLE_SPEED) return;\n\n    // capture the fall axis once, from the hit direction, then keep tipping\n    // toward it even as the (host-integrated) velocity keeps decaying\n    if (fallAmount === 0) {\n      const horizontal = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      fallAxis = ctx.math.vecCross([0, 1, 0], horizontal);\n    }\n    fallAmount = Math.min(fallAmount + dt * FALL_SPEED, 1);\n    ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle(fallAxis, fallAmount * (Math.PI / 2)));\n  },\n  getRadialItems() {\n    return [{\n      label: 'Stand Up',\n      isEnabled: () => fallAmount > 0.05,\n      onSelect: () => {\n        fallAmount = 0;\n        ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n        ctx.self.setWorldPosition(spawnPos);\n        ctx.self.setWorldRotation(spawnRot);\n      }\n    }];\n  }\n};"
+			}
+		]
+	},
+	{
+		"id": "demo-bowling-alley-pin-2",
+		"parentId": "demo-bowling-alley",
+		"name": "Pin 2",
+		"position": [
+			-0.6,
+			0.25,
+			-5.82
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.09,
+			0.38,
+			0.09
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "cylinder",
+				"color": "#fefce8"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "velocity",
+				"linear": [
+					0,
+					0,
+					0
+				],
+				"drag": 1.4
+			},
+			{
+				"type": "scriptState",
+				"data": {}
+			},
+			{
+				"type": "codeBlock",
+				"code": "let spawnPos = null;\nlet spawnRot = null;\nlet fallAmount = 0;\nlet fallAxis = [1, 0, 0];\nlet lastResetSeen = 0;\nconst FALL_SPEED = 3.5;\nconst SETTLE_SPEED = 0.03;\n\nreturn {\n  onSpawn() {\n    spawnPos = ctx.self.getWorldPosition();\n    spawnRot = ctx.self.getWorldRotation();\n  },\n  tick(dt) {\n    // The ball (or the reset button) signals a reset by writing a fresh\n    // timestamp here — scripts can't call each other directly, so this\n    // component field is the pub/sub channel (see types.ts's scriptState doc).\n    const stateComp = ctx.self.getComponent('scriptState');\n    const resetAt = stateComp && stateComp.data && stateComp.data.resetRequestedAt;\n    if (resetAt && resetAt !== lastResetSeen && !ctx.grab.isHeld()) {\n      lastResetSeen = resetAt;\n      fallAmount = 0;\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n      ctx.self.setWorldPosition(spawnPos);\n      ctx.self.setWorldRotation(spawnRot);\n      return;\n    }\n\n    if (ctx.grab.isHeld()) {\n      fallAmount = 0;\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n      return;\n    }\n\n    const comp = ctx.self.getComponent('velocity');\n    const v = comp ? comp.linear : [0, 0, 0];\n    const speed = ctx.math.vecLength(v);\n    if (speed <= SETTLE_SPEED) return;\n\n    // capture the fall axis once, from the hit direction, then keep tipping\n    // toward it even as the (host-integrated) velocity keeps decaying\n    if (fallAmount === 0) {\n      const horizontal = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      fallAxis = ctx.math.vecCross([0, 1, 0], horizontal);\n    }\n    fallAmount = Math.min(fallAmount + dt * FALL_SPEED, 1);\n    ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle(fallAxis, fallAmount * (Math.PI / 2)));\n  },\n  getRadialItems() {\n    return [{\n      label: 'Stand Up',\n      isEnabled: () => fallAmount > 0.05,\n      onSelect: () => {\n        fallAmount = 0;\n        ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n        ctx.self.setWorldPosition(spawnPos);\n        ctx.self.setWorldRotation(spawnRot);\n      }\n    }];\n  }\n};"
+			}
+		]
+	},
+	{
+		"id": "demo-bowling-alley-pin-3",
+		"parentId": "demo-bowling-alley",
+		"name": "Pin 3",
+		"position": [
+			-0.4,
+			0.25,
+			-5.82
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.09,
+			0.38,
+			0.09
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "cylinder",
+				"color": "#fefce8"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "velocity",
+				"linear": [
+					0,
+					0,
+					0
+				],
+				"drag": 1.4
+			},
+			{
+				"type": "scriptState",
+				"data": {}
+			},
+			{
+				"type": "codeBlock",
+				"code": "let spawnPos = null;\nlet spawnRot = null;\nlet fallAmount = 0;\nlet fallAxis = [1, 0, 0];\nlet lastResetSeen = 0;\nconst FALL_SPEED = 3.5;\nconst SETTLE_SPEED = 0.03;\n\nreturn {\n  onSpawn() {\n    spawnPos = ctx.self.getWorldPosition();\n    spawnRot = ctx.self.getWorldRotation();\n  },\n  tick(dt) {\n    // The ball (or the reset button) signals a reset by writing a fresh\n    // timestamp here — scripts can't call each other directly, so this\n    // component field is the pub/sub channel (see types.ts's scriptState doc).\n    const stateComp = ctx.self.getComponent('scriptState');\n    const resetAt = stateComp && stateComp.data && stateComp.data.resetRequestedAt;\n    if (resetAt && resetAt !== lastResetSeen && !ctx.grab.isHeld()) {\n      lastResetSeen = resetAt;\n      fallAmount = 0;\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n      ctx.self.setWorldPosition(spawnPos);\n      ctx.self.setWorldRotation(spawnRot);\n      return;\n    }\n\n    if (ctx.grab.isHeld()) {\n      fallAmount = 0;\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n      return;\n    }\n\n    const comp = ctx.self.getComponent('velocity');\n    const v = comp ? comp.linear : [0, 0, 0];\n    const speed = ctx.math.vecLength(v);\n    if (speed <= SETTLE_SPEED) return;\n\n    // capture the fall axis once, from the hit direction, then keep tipping\n    // toward it even as the (host-integrated) velocity keeps decaying\n    if (fallAmount === 0) {\n      const horizontal = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      fallAxis = ctx.math.vecCross([0, 1, 0], horizontal);\n    }\n    fallAmount = Math.min(fallAmount + dt * FALL_SPEED, 1);\n    ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle(fallAxis, fallAmount * (Math.PI / 2)));\n  },\n  getRadialItems() {\n    return [{\n      label: 'Stand Up',\n      isEnabled: () => fallAmount > 0.05,\n      onSelect: () => {\n        fallAmount = 0;\n        ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n        ctx.self.setWorldPosition(spawnPos);\n        ctx.self.setWorldRotation(spawnRot);\n      }\n    }];\n  }\n};"
+			}
+		]
+	},
+	{
+		"id": "demo-bowling-alley-pin-4",
+		"parentId": "demo-bowling-alley",
+		"name": "Pin 4",
+		"position": [
+			-0.7,
+			0.25,
+			-6.04
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.09,
+			0.38,
+			0.09
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "cylinder",
+				"color": "#fefce8"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "velocity",
+				"linear": [
+					0,
+					0,
+					0
+				],
+				"drag": 1.4
+			},
+			{
+				"type": "scriptState",
+				"data": {}
+			},
+			{
+				"type": "codeBlock",
+				"code": "let spawnPos = null;\nlet spawnRot = null;\nlet fallAmount = 0;\nlet fallAxis = [1, 0, 0];\nlet lastResetSeen = 0;\nconst FALL_SPEED = 3.5;\nconst SETTLE_SPEED = 0.03;\n\nreturn {\n  onSpawn() {\n    spawnPos = ctx.self.getWorldPosition();\n    spawnRot = ctx.self.getWorldRotation();\n  },\n  tick(dt) {\n    // The ball (or the reset button) signals a reset by writing a fresh\n    // timestamp here — scripts can't call each other directly, so this\n    // component field is the pub/sub channel (see types.ts's scriptState doc).\n    const stateComp = ctx.self.getComponent('scriptState');\n    const resetAt = stateComp && stateComp.data && stateComp.data.resetRequestedAt;\n    if (resetAt && resetAt !== lastResetSeen && !ctx.grab.isHeld()) {\n      lastResetSeen = resetAt;\n      fallAmount = 0;\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n      ctx.self.setWorldPosition(spawnPos);\n      ctx.self.setWorldRotation(spawnRot);\n      return;\n    }\n\n    if (ctx.grab.isHeld()) {\n      fallAmount = 0;\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n      return;\n    }\n\n    const comp = ctx.self.getComponent('velocity');\n    const v = comp ? comp.linear : [0, 0, 0];\n    const speed = ctx.math.vecLength(v);\n    if (speed <= SETTLE_SPEED) return;\n\n    // capture the fall axis once, from the hit direction, then keep tipping\n    // toward it even as the (host-integrated) velocity keeps decaying\n    if (fallAmount === 0) {\n      const horizontal = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      fallAxis = ctx.math.vecCross([0, 1, 0], horizontal);\n    }\n    fallAmount = Math.min(fallAmount + dt * FALL_SPEED, 1);\n    ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle(fallAxis, fallAmount * (Math.PI / 2)));\n  },\n  getRadialItems() {\n    return [{\n      label: 'Stand Up',\n      isEnabled: () => fallAmount > 0.05,\n      onSelect: () => {\n        fallAmount = 0;\n        ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n        ctx.self.setWorldPosition(spawnPos);\n        ctx.self.setWorldRotation(spawnRot);\n      }\n    }];\n  }\n};"
+			}
+		]
+	},
+	{
+		"id": "demo-bowling-alley-pin-5",
+		"parentId": "demo-bowling-alley",
+		"name": "Pin 5",
+		"position": [
+			-0.5,
+			0.25,
+			-6.04
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.09,
+			0.38,
+			0.09
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "cylinder",
+				"color": "#fefce8"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "velocity",
+				"linear": [
+					0,
+					0,
+					0
+				],
+				"drag": 1.4
+			},
+			{
+				"type": "scriptState",
+				"data": {}
+			},
+			{
+				"type": "codeBlock",
+				"code": "let spawnPos = null;\nlet spawnRot = null;\nlet fallAmount = 0;\nlet fallAxis = [1, 0, 0];\nlet lastResetSeen = 0;\nconst FALL_SPEED = 3.5;\nconst SETTLE_SPEED = 0.03;\n\nreturn {\n  onSpawn() {\n    spawnPos = ctx.self.getWorldPosition();\n    spawnRot = ctx.self.getWorldRotation();\n  },\n  tick(dt) {\n    // The ball (or the reset button) signals a reset by writing a fresh\n    // timestamp here — scripts can't call each other directly, so this\n    // component field is the pub/sub channel (see types.ts's scriptState doc).\n    const stateComp = ctx.self.getComponent('scriptState');\n    const resetAt = stateComp && stateComp.data && stateComp.data.resetRequestedAt;\n    if (resetAt && resetAt !== lastResetSeen && !ctx.grab.isHeld()) {\n      lastResetSeen = resetAt;\n      fallAmount = 0;\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n      ctx.self.setWorldPosition(spawnPos);\n      ctx.self.setWorldRotation(spawnRot);\n      return;\n    }\n\n    if (ctx.grab.isHeld()) {\n      fallAmount = 0;\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n      return;\n    }\n\n    const comp = ctx.self.getComponent('velocity');\n    const v = comp ? comp.linear : [0, 0, 0];\n    const speed = ctx.math.vecLength(v);\n    if (speed <= SETTLE_SPEED) return;\n\n    // capture the fall axis once, from the hit direction, then keep tipping\n    // toward it even as the (host-integrated) velocity keeps decaying\n    if (fallAmount === 0) {\n      const horizontal = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      fallAxis = ctx.math.vecCross([0, 1, 0], horizontal);\n    }\n    fallAmount = Math.min(fallAmount + dt * FALL_SPEED, 1);\n    ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle(fallAxis, fallAmount * (Math.PI / 2)));\n  },\n  getRadialItems() {\n    return [{\n      label: 'Stand Up',\n      isEnabled: () => fallAmount > 0.05,\n      onSelect: () => {\n        fallAmount = 0;\n        ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n        ctx.self.setWorldPosition(spawnPos);\n        ctx.self.setWorldRotation(spawnRot);\n      }\n    }];\n  }\n};"
+			}
+		]
+	},
+	{
+		"id": "demo-bowling-alley-pin-6",
+		"parentId": "demo-bowling-alley",
+		"name": "Pin 6",
+		"position": [
+			-0.3,
+			0.25,
+			-6.04
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.09,
+			0.38,
+			0.09
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "cylinder",
+				"color": "#fefce8"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "velocity",
+				"linear": [
+					0,
+					0,
+					0
+				],
+				"drag": 1.4
+			},
+			{
+				"type": "scriptState",
+				"data": {}
+			},
+			{
+				"type": "codeBlock",
+				"code": "let spawnPos = null;\nlet spawnRot = null;\nlet fallAmount = 0;\nlet fallAxis = [1, 0, 0];\nlet lastResetSeen = 0;\nconst FALL_SPEED = 3.5;\nconst SETTLE_SPEED = 0.03;\n\nreturn {\n  onSpawn() {\n    spawnPos = ctx.self.getWorldPosition();\n    spawnRot = ctx.self.getWorldRotation();\n  },\n  tick(dt) {\n    // The ball (or the reset button) signals a reset by writing a fresh\n    // timestamp here — scripts can't call each other directly, so this\n    // component field is the pub/sub channel (see types.ts's scriptState doc).\n    const stateComp = ctx.self.getComponent('scriptState');\n    const resetAt = stateComp && stateComp.data && stateComp.data.resetRequestedAt;\n    if (resetAt && resetAt !== lastResetSeen && !ctx.grab.isHeld()) {\n      lastResetSeen = resetAt;\n      fallAmount = 0;\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n      ctx.self.setWorldPosition(spawnPos);\n      ctx.self.setWorldRotation(spawnRot);\n      return;\n    }\n\n    if (ctx.grab.isHeld()) {\n      fallAmount = 0;\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n      return;\n    }\n\n    const comp = ctx.self.getComponent('velocity');\n    const v = comp ? comp.linear : [0, 0, 0];\n    const speed = ctx.math.vecLength(v);\n    if (speed <= SETTLE_SPEED) return;\n\n    // capture the fall axis once, from the hit direction, then keep tipping\n    // toward it even as the (host-integrated) velocity keeps decaying\n    if (fallAmount === 0) {\n      const horizontal = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      fallAxis = ctx.math.vecCross([0, 1, 0], horizontal);\n    }\n    fallAmount = Math.min(fallAmount + dt * FALL_SPEED, 1);\n    ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle(fallAxis, fallAmount * (Math.PI / 2)));\n  },\n  getRadialItems() {\n    return [{\n      label: 'Stand Up',\n      isEnabled: () => fallAmount > 0.05,\n      onSelect: () => {\n        fallAmount = 0;\n        ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n        ctx.self.setWorldPosition(spawnPos);\n        ctx.self.setWorldRotation(spawnRot);\n      }\n    }];\n  }\n};"
+			}
+		]
+	},
+	{
+		"id": "demo-bowling-alley-pin-7",
+		"parentId": "demo-bowling-alley",
+		"name": "Pin 7",
+		"position": [
+			-0.8,
+			0.25,
+			-6.26
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.09,
+			0.38,
+			0.09
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "cylinder",
+				"color": "#fefce8"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "velocity",
+				"linear": [
+					0,
+					0,
+					0
+				],
+				"drag": 1.4
+			},
+			{
+				"type": "scriptState",
+				"data": {}
+			},
+			{
+				"type": "codeBlock",
+				"code": "let spawnPos = null;\nlet spawnRot = null;\nlet fallAmount = 0;\nlet fallAxis = [1, 0, 0];\nlet lastResetSeen = 0;\nconst FALL_SPEED = 3.5;\nconst SETTLE_SPEED = 0.03;\n\nreturn {\n  onSpawn() {\n    spawnPos = ctx.self.getWorldPosition();\n    spawnRot = ctx.self.getWorldRotation();\n  },\n  tick(dt) {\n    // The ball (or the reset button) signals a reset by writing a fresh\n    // timestamp here — scripts can't call each other directly, so this\n    // component field is the pub/sub channel (see types.ts's scriptState doc).\n    const stateComp = ctx.self.getComponent('scriptState');\n    const resetAt = stateComp && stateComp.data && stateComp.data.resetRequestedAt;\n    if (resetAt && resetAt !== lastResetSeen && !ctx.grab.isHeld()) {\n      lastResetSeen = resetAt;\n      fallAmount = 0;\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n      ctx.self.setWorldPosition(spawnPos);\n      ctx.self.setWorldRotation(spawnRot);\n      return;\n    }\n\n    if (ctx.grab.isHeld()) {\n      fallAmount = 0;\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n      return;\n    }\n\n    const comp = ctx.self.getComponent('velocity');\n    const v = comp ? comp.linear : [0, 0, 0];\n    const speed = ctx.math.vecLength(v);\n    if (speed <= SETTLE_SPEED) return;\n\n    // capture the fall axis once, from the hit direction, then keep tipping\n    // toward it even as the (host-integrated) velocity keeps decaying\n    if (fallAmount === 0) {\n      const horizontal = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      fallAxis = ctx.math.vecCross([0, 1, 0], horizontal);\n    }\n    fallAmount = Math.min(fallAmount + dt * FALL_SPEED, 1);\n    ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle(fallAxis, fallAmount * (Math.PI / 2)));\n  },\n  getRadialItems() {\n    return [{\n      label: 'Stand Up',\n      isEnabled: () => fallAmount > 0.05,\n      onSelect: () => {\n        fallAmount = 0;\n        ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n        ctx.self.setWorldPosition(spawnPos);\n        ctx.self.setWorldRotation(spawnRot);\n      }\n    }];\n  }\n};"
+			}
+		]
+	},
+	{
+		"id": "demo-bowling-alley-pin-8",
+		"parentId": "demo-bowling-alley",
+		"name": "Pin 8",
+		"position": [
+			-0.6,
+			0.25,
+			-6.26
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.09,
+			0.38,
+			0.09
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "cylinder",
+				"color": "#fefce8"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "velocity",
+				"linear": [
+					0,
+					0,
+					0
+				],
+				"drag": 1.4
+			},
+			{
+				"type": "scriptState",
+				"data": {}
+			},
+			{
+				"type": "codeBlock",
+				"code": "let spawnPos = null;\nlet spawnRot = null;\nlet fallAmount = 0;\nlet fallAxis = [1, 0, 0];\nlet lastResetSeen = 0;\nconst FALL_SPEED = 3.5;\nconst SETTLE_SPEED = 0.03;\n\nreturn {\n  onSpawn() {\n    spawnPos = ctx.self.getWorldPosition();\n    spawnRot = ctx.self.getWorldRotation();\n  },\n  tick(dt) {\n    // The ball (or the reset button) signals a reset by writing a fresh\n    // timestamp here — scripts can't call each other directly, so this\n    // component field is the pub/sub channel (see types.ts's scriptState doc).\n    const stateComp = ctx.self.getComponent('scriptState');\n    const resetAt = stateComp && stateComp.data && stateComp.data.resetRequestedAt;\n    if (resetAt && resetAt !== lastResetSeen && !ctx.grab.isHeld()) {\n      lastResetSeen = resetAt;\n      fallAmount = 0;\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n      ctx.self.setWorldPosition(spawnPos);\n      ctx.self.setWorldRotation(spawnRot);\n      return;\n    }\n\n    if (ctx.grab.isHeld()) {\n      fallAmount = 0;\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n      return;\n    }\n\n    const comp = ctx.self.getComponent('velocity');\n    const v = comp ? comp.linear : [0, 0, 0];\n    const speed = ctx.math.vecLength(v);\n    if (speed <= SETTLE_SPEED) return;\n\n    // capture the fall axis once, from the hit direction, then keep tipping\n    // toward it even as the (host-integrated) velocity keeps decaying\n    if (fallAmount === 0) {\n      const horizontal = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      fallAxis = ctx.math.vecCross([0, 1, 0], horizontal);\n    }\n    fallAmount = Math.min(fallAmount + dt * FALL_SPEED, 1);\n    ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle(fallAxis, fallAmount * (Math.PI / 2)));\n  },\n  getRadialItems() {\n    return [{\n      label: 'Stand Up',\n      isEnabled: () => fallAmount > 0.05,\n      onSelect: () => {\n        fallAmount = 0;\n        ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n        ctx.self.setWorldPosition(spawnPos);\n        ctx.self.setWorldRotation(spawnRot);\n      }\n    }];\n  }\n};"
+			}
+		]
+	},
+	{
+		"id": "demo-bowling-alley-pin-9",
+		"parentId": "demo-bowling-alley",
+		"name": "Pin 9",
+		"position": [
+			-0.4,
+			0.25,
+			-6.26
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.09,
+			0.38,
+			0.09
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "cylinder",
+				"color": "#fefce8"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "velocity",
+				"linear": [
+					0,
+					0,
+					0
+				],
+				"drag": 1.4
+			},
+			{
+				"type": "scriptState",
+				"data": {}
+			},
+			{
+				"type": "codeBlock",
+				"code": "let spawnPos = null;\nlet spawnRot = null;\nlet fallAmount = 0;\nlet fallAxis = [1, 0, 0];\nlet lastResetSeen = 0;\nconst FALL_SPEED = 3.5;\nconst SETTLE_SPEED = 0.03;\n\nreturn {\n  onSpawn() {\n    spawnPos = ctx.self.getWorldPosition();\n    spawnRot = ctx.self.getWorldRotation();\n  },\n  tick(dt) {\n    // The ball (or the reset button) signals a reset by writing a fresh\n    // timestamp here — scripts can't call each other directly, so this\n    // component field is the pub/sub channel (see types.ts's scriptState doc).\n    const stateComp = ctx.self.getComponent('scriptState');\n    const resetAt = stateComp && stateComp.data && stateComp.data.resetRequestedAt;\n    if (resetAt && resetAt !== lastResetSeen && !ctx.grab.isHeld()) {\n      lastResetSeen = resetAt;\n      fallAmount = 0;\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n      ctx.self.setWorldPosition(spawnPos);\n      ctx.self.setWorldRotation(spawnRot);\n      return;\n    }\n\n    if (ctx.grab.isHeld()) {\n      fallAmount = 0;\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n      return;\n    }\n\n    const comp = ctx.self.getComponent('velocity');\n    const v = comp ? comp.linear : [0, 0, 0];\n    const speed = ctx.math.vecLength(v);\n    if (speed <= SETTLE_SPEED) return;\n\n    // capture the fall axis once, from the hit direction, then keep tipping\n    // toward it even as the (host-integrated) velocity keeps decaying\n    if (fallAmount === 0) {\n      const horizontal = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      fallAxis = ctx.math.vecCross([0, 1, 0], horizontal);\n    }\n    fallAmount = Math.min(fallAmount + dt * FALL_SPEED, 1);\n    ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle(fallAxis, fallAmount * (Math.PI / 2)));\n  },\n  getRadialItems() {\n    return [{\n      label: 'Stand Up',\n      isEnabled: () => fallAmount > 0.05,\n      onSelect: () => {\n        fallAmount = 0;\n        ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n        ctx.self.setWorldPosition(spawnPos);\n        ctx.self.setWorldRotation(spawnRot);\n      }\n    }];\n  }\n};"
+			}
+		]
+	},
+	{
+		"id": "demo-bowling-alley-pin-10",
+		"parentId": "demo-bowling-alley",
+		"name": "Pin 10",
+		"position": [
+			-0.2,
+			0.25,
+			-6.26
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.09,
+			0.38,
+			0.09
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "cylinder",
+				"color": "#fefce8"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "velocity",
+				"linear": [
+					0,
+					0,
+					0
+				],
+				"drag": 1.4
+			},
+			{
+				"type": "scriptState",
+				"data": {}
+			},
+			{
+				"type": "codeBlock",
+				"code": "let spawnPos = null;\nlet spawnRot = null;\nlet fallAmount = 0;\nlet fallAxis = [1, 0, 0];\nlet lastResetSeen = 0;\nconst FALL_SPEED = 3.5;\nconst SETTLE_SPEED = 0.03;\n\nreturn {\n  onSpawn() {\n    spawnPos = ctx.self.getWorldPosition();\n    spawnRot = ctx.self.getWorldRotation();\n  },\n  tick(dt) {\n    // The ball (or the reset button) signals a reset by writing a fresh\n    // timestamp here — scripts can't call each other directly, so this\n    // component field is the pub/sub channel (see types.ts's scriptState doc).\n    const stateComp = ctx.self.getComponent('scriptState');\n    const resetAt = stateComp && stateComp.data && stateComp.data.resetRequestedAt;\n    if (resetAt && resetAt !== lastResetSeen && !ctx.grab.isHeld()) {\n      lastResetSeen = resetAt;\n      fallAmount = 0;\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n      ctx.self.setWorldPosition(spawnPos);\n      ctx.self.setWorldRotation(spawnRot);\n      return;\n    }\n\n    if (ctx.grab.isHeld()) {\n      fallAmount = 0;\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n      return;\n    }\n\n    const comp = ctx.self.getComponent('velocity');\n    const v = comp ? comp.linear : [0, 0, 0];\n    const speed = ctx.math.vecLength(v);\n    if (speed <= SETTLE_SPEED) return;\n\n    // capture the fall axis once, from the hit direction, then keep tipping\n    // toward it even as the (host-integrated) velocity keeps decaying\n    if (fallAmount === 0) {\n      const horizontal = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      fallAxis = ctx.math.vecCross([0, 1, 0], horizontal);\n    }\n    fallAmount = Math.min(fallAmount + dt * FALL_SPEED, 1);\n    ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle(fallAxis, fallAmount * (Math.PI / 2)));\n  },\n  getRadialItems() {\n    return [{\n      label: 'Stand Up',\n      isEnabled: () => fallAmount > 0.05,\n      onSelect: () => {\n        fallAmount = 0;\n        ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n        ctx.self.setWorldPosition(spawnPos);\n        ctx.self.setWorldRotation(spawnRot);\n      }\n    }];\n  }\n};"
+			}
+		]
+	},
+	{
+		"id": "demo-bowling-alley-reset-button",
+		"parentId": "demo-bowling-alley",
+		"name": "Reset Button",
+		"position": [
+			0.05,
+			0.9,
+			-3.1
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.06,
+			0.06,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "box",
+				"color": "#ef4444"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			},
+			{
+				"type": "pressableButton",
+				"axis": [
+					0,
+					-1,
+					0
+				],
+				"travel": 0.03,
+				"radius": 0.07,
+				"threshold": 0.9
+			},
+			{
+				"type": "codeBlock",
+				"code": "const FRAME_COUNT = 10;\n\nfunction sumTurns(turns) {\n  return turns.reduce((a, b) => a + b, 0);\n}\n\nreturn {\n  onPress() {\n    const parent = ctx.hierarchy.getParent(ctx.self.id);\n    if (!parent) return;\n    const siblings = ctx.hierarchy.getChildren(parent.id);\n    const now = Date.now();\n\n    ctx.audio.play({ frequency: 900, pitchDrop: 300, noiseMix: 0.15, durationMs: 90, volume: 0.4 });\n\n    for (const s of siblings) {\n      if (s.name.startsWith('Pin ') || s.name === 'Bowling Ball') {\n        ctx.world.setComponentField(s.id, 'scriptState', 'data', { resetRequestedAt: now });\n      }\n    }\n\n    const scoreboard = siblings.find((s) => s.name === 'Scoreboard');\n    if (!scoreboard) return;\n    const comp = scoreboard.components.find((c) => c.type === 'scriptState');\n    const players = (comp && comp.data && comp.data.players) || {};\n    const nextState = { players, throwsThisTurn: 0, playerId: null, playerName: null, pendingFirstThrow: 0 };\n    ctx.world.setComponentField(scoreboard.id, 'scriptState', 'data', nextState);\n\n    const columns = [];\n    for (let i = 1; i <= FRAME_COUNT; i++) columns.push(String(i));\n    columns.push('Total');\n\n    const sorted = Object.values(players).sort((a, b) => sumTurns(b.turns) - sumTurns(a.turns));\n    const leaderTotal = sorted.length > 0 ? sumTurns(sorted[0].turns) : -1;\n    const rows = sorted.map((p) => {\n      const recentTurns = p.turns.slice(-FRAME_COUNT);\n      const blanks = Array(FRAME_COUNT - recentTurns.length).fill('');\n      const total = sumTurns(p.turns);\n      return {\n        name: p.name,\n        cells: [...blanks, ...recentTurns.map(String), String(total)],\n        highlight: false,\n        isLeader: total > 0 && total === leaderTotal\n      };\n    });\n\n    ctx.world.setComponentField(scoreboard.id, 'scoreboard', 'columns', columns);\n    ctx.world.setComponentField(scoreboard.id, 'scoreboard', 'rows', rows);\n    ctx.world.setComponentField(scoreboard.id, 'scoreboard', 'status', 'Grab the ball to play!');\n  }\n};"
+			}
+		]
+	},
+	{
+		"id": "demo-bowling-alley-scoreboard",
+		"parentId": "demo-bowling-alley",
+		"name": "Scoreboard",
+		"position": [
+			-0.5,
+			1.9,
+			-2.75
+		],
+		"rotation": [
+			0,
+			1,
+			0,
+			0
+		],
+		"scale": [
+			1.6,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "plane",
+				"color": "#081029"
+			},
+			{
+				"type": "scoreboard",
+				"title": "Bowling",
+				"status": "Grab the ball to play!",
+				"columns": [
+					"1",
+					"2",
+					"3",
+					"4",
+					"5",
+					"6",
+					"7",
+					"8",
+					"9",
+					"10",
+					"Total"
+				],
+				"rows": []
+			},
+			{
+				"type": "scriptState",
+				"data": {
+					"players": {},
+					"throwsThisTurn": 0,
+					"playerId": null,
+					"playerName": null,
+					"pendingFirstThrow": 0
+				}
+			}
 		]
 	}
 ]

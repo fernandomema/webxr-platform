@@ -73,6 +73,7 @@ export function setupRadialMenuForHand(
 
 	function buildItems(slotId: string): RadialItem[] {
 		return [
+			...sceneGraph.getRadialExtras(slotId),
 			{
 				label: 'Guardar',
 				isEnabled: () => gameState.currentInventoryAdapterId !== null,

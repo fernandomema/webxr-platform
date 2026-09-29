@@ -53,3 +53,14 @@ export async function deleteCloudItem(user: SessionUser | null, itemId: string) 
 	if (item.ownerId !== user.id) throw new ForbiddenError();
 	await prisma.cloudInventoryItem.delete({ where: { id: itemId } });
 }
+
+export async function updateCloudItem(user: SessionUser | null, itemId: string, folderId: string | null, name: string, slotData: SlotTree) {
+	if (!user) throw new UnauthorizedError();
+	const item = await prisma.cloudInventoryItem.findUnique({ where: { id: itemId } });
+	if (!item) throw new NotFoundError();
+	if (item.ownerId !== user.id) throw new ForbiddenError();
+	return prisma.cloudInventoryItem.update({
+		where: { id: itemId },
+		data: { folderId, name, slotData: slotData as object }
+	});
+}

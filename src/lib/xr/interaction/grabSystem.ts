@@ -48,29 +48,39 @@ export class GrabSystem {
 	grab(grabberId: string, grabberNode: TransformNode, targetSlotId: string | null): void {
 		if (!targetSlotId || this.grabberOf.has(grabberId)) return;
 
-		const live = this.sceneGraph.getLive(targetSlotId);
+		const effectiveTargetId = this.sceneGraph.resolveGrabTarget(targetSlotId);
+		if (!effectiveTargetId) return;
+		const live = this.sceneGraph.getLive(effectiveTargetId);
 		const grabbable = live && isGrabbable(live.slot);
 		if (!live || !grabbable) return;
 
-		let grabbers = this.grabbersOfSlot.get(targetSlotId);
+		let grabbers = this.grabbersOfSlot.get(effectiveTargetId);
 		if (grabbers && (grabbers.size >= 2 || !grabbable.scalable)) return;
 		if (!grabbers) {
-			this.originalParent.set(targetSlotId, live.node.parent as TransformNode | null);
+			this.originalParent.set(effectiveTargetId, live.node.parent as TransformNode | null);
 		}
 		if (!grabbers) {
 			grabbers = new Map();
-			this.grabbersOfSlot.set(targetSlotId, grabbers);
+			this.grabbersOfSlot.set(effectiveTargetId, grabbers);
 		}
 		grabbers.set(grabberId, grabberNode);
-		this.grabberOf.set(grabberId, targetSlotId);
+		this.grabberOf.set(grabberId, effectiveTargetId);
 
 		if (grabbers.size === 1) {
 			live.node.setParent(grabberNode);
 		} else if (grabbers.size === 2 && grabbable.scalable) {
 			live.node.setParent(null);
-			this.beginTwoPoint(targetSlotId, [...grabbers.values()]);
+			this.beginTwoPoint(effectiveTargetId, [...grabbers.values()]);
 		}
 		// a 3rd simultaneous grabber, or a non-scalable slot's 2nd grabber, is ignored
+
+		if (grabbers.size === 1) {
+			try {
+				this.sceneGraph.getLive(effectiveTargetId)?.runtime?.onGrab?.();
+			} catch (err) {
+				console.error(`[grabSystem] onGrab threw for ${effectiveTargetId}`, err);
+			}
+		}
 	}
 
 	release(grabberId: string): void {
@@ -104,6 +114,14 @@ export class GrabSystem {
 		live.node.setParent(this.originalParent.get(slotId) ?? null);
 		this.grabbersOfSlot.delete(slotId);
 		this.originalParent.delete(slotId);
+
+		// Fires exactly once per release() call — even the two-point "drop both
+		// hands at once" path above only ever reaches here a single time.
+		try {
+			live.runtime?.onRelease?.();
+		} catch (err) {
+			console.error(`[grabSystem] onRelease threw for ${slotId}`, err);
+		}
 	}
 
 	/** Release every grabber holding anything (e.g. controller disconnected). */

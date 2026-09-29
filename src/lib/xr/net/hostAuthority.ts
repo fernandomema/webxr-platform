@@ -55,6 +55,12 @@ export class HostAuthority {
 		return [this.localPlayer, ...[...this.guests.values()].map((entry) => entry.player)];
 	}
 
+	/** Resolves a player id (the host's own `localPlayer.playerId`, or a connected guest's id) to its display name — used to attribute codeBlock-driven actions (e.g. who threw a ball) to a player. */
+	getPlayerDisplayName(playerId: string): string | undefined {
+		if (playerId === this.localPlayer.playerId) return this.localPlayer.displayName;
+		return this.guests.get(playerId)?.player.displayName;
+	}
+
 	private getLocalPresence(): Extract<WorldStateMessage, { kind: 'presence' }> {
 		const camera = this.xr.baseExperience.camera;
 		const head: TransformPose = {
@@ -221,6 +227,9 @@ export class HostAuthority {
 			case 'delete-request':
 				if (this.sceneGraph.getLive(msg.slotId)) this.sceneGraph.removeSlot(msg.slotId);
 				this.broadcastSnapshot();
+				break;
+			case 'media-control-request':
+				if (this.sceneGraph.controlMedia(msg.slotId, msg.action)) this.broadcastSnapshot();
 				break;
 		}
 	}

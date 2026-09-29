@@ -1,7 +1,7 @@
 import { TransformNode, type Scene, type WebXRDefaultExperience } from '@babylonjs/core';
 import type { SceneGraph } from '../sceneGraph';
 import type { GrabSystem } from '../interaction/grabSystem';
-import type { Slot } from '$lib/ecs/types';
+import type { MediaControlAction, Slot } from '$lib/ecs/types';
 import { SignalingClient, type SignalingMessage } from './signalingClient';
 import { PeerLink } from './peerConnection';
 import type { PlayerInfo, WorldStateMessage, WorldSyncMessage } from './protocol';
@@ -206,6 +206,10 @@ export class GuestSync {
 
 	requestDelete(slotId: string): void {
 		this.link?.send({ kind: 'delete-request', requestId: crypto.randomUUID(), slotId });
+	}
+
+	requestMediaControl(slotId: string, action: MediaControlAction): void {
+		this.link?.send({ kind: 'media-control-request', requestId: crypto.randomUUID(), slotId, action });
 	}
 
 	dispose(): void {

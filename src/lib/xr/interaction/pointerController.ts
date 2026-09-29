@@ -196,16 +196,17 @@ function resolveGrabTarget(
 	if (laserActiveForHand) {
 		const mesh = pointerSelection.getMeshUnderPointer(controller.uniqueId);
 		const slotId = sceneGraph.getSlotIdForNode(mesh);
-		if (slotId) return slotId;
+		if (slotId) return sceneGraph.resolveGrabTarget(slotId);
 	}
 
 	const gripPosition = (controller.grip ?? controller.pointer).absolutePosition;
 	let closest: { slotId: string; distance: number } | null = null;
 	for (const { slot, node } of sceneGraph.allSlots()) {
-		if (!slot.components.some((c) => c.type === 'grabbable')) continue;
+		const effectiveTargetId = sceneGraph.resolveGrabTarget(slot.id);
+		if (!effectiveTargetId) continue;
 		const distance = Vector3.Distance(node.absolutePosition, gripPosition);
 		if (distance <= HAND_GRAB_RADIUS && (!closest || distance < closest.distance)) {
-			closest = { slotId: slot.id, distance };
+			closest = { slotId: effectiveTargetId, distance };
 		}
 	}
 	return closest?.slotId ?? null;

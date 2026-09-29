@@ -52,6 +52,17 @@ export const worldInventoryAdapter: InventoryAdapter = {
 		return (await res.json()) as InventoryItem;
 	},
 
+	async updateItem(ctx, itemId, folderId, name, slotData) {
+		if (!ctx.worldId) throw new Error('No active world to update');
+		const res = await fetch(`/api/worlds/${ctx.worldId}/inventory/${itemId}`, {
+			method: 'PUT',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ folderId, name, slotData })
+		});
+		if (!res.ok) throw new Error(`Failed to update world item (${res.status})`);
+		return (await res.json()) as InventoryItem;
+	},
+
 	async deleteItem(ctx, itemId) {
 		if (!ctx.worldId) return;
 		await fetch(`/api/worlds/${ctx.worldId}/inventory/${itemId}`, { method: 'DELETE' });

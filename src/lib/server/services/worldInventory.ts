@@ -54,3 +54,13 @@ export async function deleteWorldItem(user: SessionUser | null, worldId: string,
 	await assertHost(user, worldId);
 	await prisma.worldInventoryItem.delete({ where: { id: itemId } });
 }
+
+export async function updateWorldItem(user: SessionUser | null, worldId: string, itemId: string, folderId: string | null, name: string, slotData: SlotTree) {
+	await assertHost(user, worldId);
+	const item = await prisma.worldInventoryItem.findUnique({ where: { id: itemId } });
+	if (!item || item.worldId !== worldId) throw new NotFoundError();
+	return prisma.worldInventoryItem.update({
+		where: { id: itemId },
+		data: { folderId, name, slotData: slotData as object }
+	});
+}

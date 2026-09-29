@@ -5,12 +5,15 @@ import {
 	Vector3,
 	UniversalCamera,
 	WebXRState,
+	WebXREnterExitUIButton,
 	type AbstractMesh
 } from '@babylonjs/core';
 import lobbyTemplate from './templates/lobby.json';
-import type { Slot, SlotTree } from '$lib/ecs/types';
+import type { SlotTree } from '$lib/ecs/types';
+import { instantiate } from '$lib/ecs/serialize';
 import { SceneGraph } from './sceneGraph';
 import { GrabSystem } from './interaction/grabSystem';
+import { PressableButtonSystem } from './interaction/pressableButtonSystem';
 import { setupPointerAndGrabControllers } from './interaction/pointerController';
 import { setupPanelToggle } from './interaction/panelToggle';
 import { setupRotationController } from './interaction/rotationController';
@@ -51,8 +54,66 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 	desktopCamera.keysRight.push(68); // D
 	scene.activeCamera = desktopCamera;
 
-	const sceneGraph = new SceneGraph(scene);
+	let hostAuthority: HostAuthority | null = null;
+	let guestSync: GuestSync | null = null;
+	const sceneGraph = new SceneGraph(scene, {
+		onMediaControl: (slotId, action) => {
+			// Apply immediately on the local client so a click also unlocks
+			// browser audio/video policies; the host remains authoritative.
+			sceneGraph.controlMedia(slotId, action);
+			if (gameState.role === 'guest') guestSync?.requestMediaControl(slotId, action);
+			else hostAuthority?.broadcastSnapshot();
+		},
+		isHost: () => gameState.role !== 'guest',
+		// codeBlock's world.spawn()/deleteSelf()/deleteSlot() — same routing as
+		// spawnFromInventory/radialNetwork.onDelete below, just reusable for scripts.
+		onSpawnRequest: (slot) => {
+			sceneGraph.addSlot(slot);
+			if (gameState.role === 'guest') guestSync?.requestSpawn(slot);
+			else hostAuthority?.broadcastSnapshot();
+		},
+		onDeleteRequest: (slotId) => {
+			if (gameState.role === 'guest') guestSync?.requestDelete(slotId);
+			else {
+				sceneGraph.removeSlot(slotId);
+				hostAuthority?.broadcastSnapshot();
+			}
+		},
+		onSlotMutated: () => {
+			if (gameState.role !== 'guest') hostAuthority?.broadcastSnapshot();
+		},
+		// codeBlock's world.getPlayer(grabberId) — resolves a GrabSystem grabberId
+		// ("left"/"right" for this session's own hands, "<guestId>:hand" for a
+		// guest hand mirrored on the host's own GrabSystem, see hostAuthority.ts)
+		// to a stable id + display name, for attributing script-driven actions
+		// (e.g. the bowling scoreboard) to whichever player triggered them.
+		resolvePlayer: (grabberId) => {
+			const colonIndex = grabberId.indexOf(':');
+			if (colonIndex !== -1) {
+				const guestId = grabberId.slice(0, colonIndex);
+				return { id: guestId, name: hostAuthority?.getPlayerDisplayName(guestId) ?? 'Guest' };
+			}
+			return {
+				id: localPlayerId,
+				name: gameState.userName ?? (gameState.role === 'guest' ? 'Guest' : gameState.role === 'host' ? 'Host' : 'Player')
+			};
+		}
+	});
 	sceneGraph.load(lobbyTemplate as SlotTree);
+
+	const createXRButton = (label: string, sessionMode: XRSessionMode, referenceSpaceType: XRReferenceSpaceType) => {
+		const button = document.createElement('button');
+		button.textContent = label;
+		button.style.margin = '6px';
+		button.style.padding = '10px 14px';
+		button.style.border = '0';
+		button.style.borderRadius = '8px';
+		button.style.background = '#2563eb';
+		button.style.color = 'white';
+		button.style.font = '600 14px system-ui, sans-serif';
+		return new WebXREnterExitUIButton(button, sessionMode, referenceSpaceType);
+	};
+	const xrButtons = [createXRButton('Enter VR', 'immersive-vr', 'local-floor')];
 
 	const floorMesh = sceneGraph.getLive('floor')?.node as AbstractMesh | undefined;
 	const xr = await scene.createDefaultXRExperienceAsync({
@@ -60,23 +121,44 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 		// Babylon's pointer-selection feature defaults to ONE "attached"
 		// controller at a time (switching between them), which made only one
 		// laser actually pick/grab at once — enable both simultaneously.
-		pointerSelectionOptions: { enablePointerSelectionOnAllControllers: true }
+		pointerSelectionOptions: { enablePointerSelectionOnAllControllers: true },
+		uiOptions: { customButtons: xrButtons }
 	});
-
 	const getActiveCamera = () => (xr.baseExperience.state === WebXRState.IN_XR ? xr.baseExperience.camera : desktopCamera);
 
 	loadSettings();
 	const grabSystem = new GrabSystem(scene, sceneGraph);
+	sceneGraph.setGrabQuery(grabSystem);
+	// Same "grip if present, else pointer" node pointerController.ts already
+	// uses as each hand/controller's interaction point — reused here so a
+	// pressable button reacts identically to hand-tracking and controllers.
+	new PressableButtonSystem(scene, sceneGraph, () => xr.input.controllers.map((c) => c.grip ?? c.pointer));
 	const locomotion = setupLocomotion(xr, floorMesh ? [floorMesh] : []);
 	setupRotationController(scene, xr);
 	setupMovementController(scene, xr);
 	setupHandControllerSwitch(xr);
+	// Registered after GrabSystem (so any two-point grab's per-frame transform
+	// write, GrabSystem.update() — also on this observable — has already run
+	// before a codeBlock's tick() reads/corrects the transform) but AFTER
+	// movement/rotation too: those are load-bearing for basic controller
+	// input, so they must never be at the mercy of an uncaught throw from
+	// this scene-graph/codeBlock tick that happens to be registered earlier
+	// in the same Observable's notification order. tick() itself is also
+	// defensively try/caught internally (see sceneGraph.ts) — this is a
+	// second, outer layer in case something here throws before even
+	// reaching it.
+	scene.onBeforeRenderObservable.add(() => {
+		try {
+			const dt = scene.getEngine().getDeltaTime() / 1000;
+			const removed = sceneGraph.tick(dt);
+			if (removed > 0 && gameState.role !== 'guest') hostAuthority?.broadcastSnapshot();
+		} catch (err) {
+			console.error('[engine] sceneGraph.tick threw', err);
+		}
+	});
 	const iceServers = parseIceServers(PUBLIC_STUN_URLS);
 	const voice = new ProximityVoice();
 	let localAudio: { track: MediaStreamTrack; stream: MediaStream } | null = null;
-
-	let hostAuthority: HostAuthority | null = null;
-	let guestSync: GuestSync | null = null;
 
 	async function refreshUser(): Promise<void> {
 		const { data } = await authClient.getSession();
@@ -180,23 +262,31 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 
 	function spawnFromInventory(slotData: SlotTree): void {
 		if (slotData.length === 0) return;
-		// Ignore the saved position: it may have been captured while the object
-		// was still held (parented to a hand), which is a meaningless local
-		// offset as a world position — spawn in front of the player instead.
+		// Ignore the saved root position: it may have been captured while the
+		// object was still held (parented to a hand), which is a meaningless
+		// local offset as a world position — spawn in front of the player
+		// instead. Descendants keep their saved LOCAL position/rotation/scale
+		// relative to the root (instantiate() only repositions index 0), and
+		// every slot gets a fresh id (with parentId remapped to match) so the
+		// same inventory item can be spawned more than once without id
+		// collisions — this is what actually respawns the whole subtree
+		// (previously only the root was recreated, silently dropping every
+		// child, e.g. an entire saved Bowling Alley coming back empty).
 		const camera = getActiveCamera();
 		const spawnPosition = camera.globalPosition.add(camera.getForwardRay().direction.scale(0.6));
-		const root: Slot = {
-			...slotData[0],
-			id: crypto.randomUUID(),
-			parentId: null,
-			position: [spawnPosition.x, spawnPosition.y, spawnPosition.z]
-		};
-		sceneGraph.addSlot(root);
-		if (gameState.role === 'guest') guestSync?.requestSpawn(root);
-		else hostAuthority?.broadcastSnapshot();
+		const tree = instantiate(slotData, [spawnPosition.x, spawnPosition.y, spawnPosition.z]);
+		for (const slot of tree) {
+			sceneGraph.addSlot(slot);
+			if (gameState.role === 'guest') guestSync?.requestSpawn(slot);
+		}
+		if (gameState.role !== 'guest') hostAuthority?.broadcastSnapshot();
 	}
 
-	const inspector = createInspectorPanel(scene, sceneGraph);
+	const inspector = createInspectorPanel(scene, sceneGraph, {
+		onSceneChanged: () => {
+			if (gameState.role !== 'guest') hostAuthority?.broadcastSnapshot();
+		}
+	});
 
 	const dash = createDashPanel(scene, sceneGraph, {
 		onHostWorld: hostCurrentWorld,
@@ -253,6 +343,7 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 			hostAuthority?.dispose();
 			guestSync?.dispose();
 			voice.dispose();
+			sceneGraph.dispose();
 			engine.dispose();
 		}
 	};
