@@ -1,5 +1,6 @@
 import {
 	Mesh,
+	Matrix,
 	MeshBuilder,
 	StandardMaterial,
 	Color3,
@@ -9,16 +10,19 @@ import {
 	type Scene,
 	type AbstractMesh
 } from '@babylonjs/core';
-import type { MediaControlAction, Slot, SlotTree, Vec3 } from '$lib/ecs/types';
+import type { MediaControlAction, Slot, SlotTree, UIEvent, Vec3 } from '$lib/ecs/types';
 import { findComponent, isGrabbable } from '$lib/ecs/types';
 import { meshRefKey, normalizeMeshRef, type AssetId, type MeshRef } from '$lib/assets/ref';
 import type { ModelInstance, ModelLease, ModelLibrary, ModelState } from './modelLibrary';
 import { setupMirrorSurface } from './specialSurfaces';
-import { setupAudioPlayerSurface, setupVideoPlayerSurface, type MediaRuntimeBinding } from './mediaSurfaces';
+import { setupAudioPlayerSurface, type MediaRuntimeBinding } from './mediaSurfaces';
 import { setupParticleBurst } from './particleEffects';
+import { setupStroke } from './strokeRenderer';
+import { setupSkybox } from './skyboxRenderer';
 import { setupImpactSound } from './impactSoundEffects';
 import { setupTextDisplay } from './textDisplaySurface';
 import { setupScoreboard } from './scoreboardSurface';
+import { setupUIPanel, type UIMediaState, type UIPanelBinding } from './uiPanelSurface';
 import { createCodeBlockHandlers, type CodeBlockHost, type RadialItemDef, type CodeBlockLogEntry, type HandEvent, type TriggerEvent } from './codeBlockRuntime';
 
 interface LiveSlot {
@@ -36,6 +40,8 @@ interface LiveSlot {
 	};
 	/** Load state of this slot's model, for the inspector and the network layer. */
 	assetState?: ModelState;
+	/** Present on a `uiPanel` root: the controls rendered from its uiElement subtree. */
+	ui?: UIPanelBinding;
 	runtime?: {
 		dispose: () => void;
 		sync?: (slot: Slot) => void;
@@ -44,6 +50,7 @@ interface LiveSlot {
 		onGrab?: () => void;
 		onRelease?: () => void;
 		onPress?: () => void;
+		onUIEvent?: (event: UIEvent) => void;
 		onEquip?: (event: HandEvent) => void;
 		onUnequip?: (event: HandEvent) => void;
 		onTrigger?: (event: TriggerEvent) => boolean | void;
@@ -54,6 +61,8 @@ interface LiveSlot {
 
 export interface SceneGraphOptions {
 	onMediaControl?: (slotId: string, action: MediaControlAction) => void;
+	/** Routes UI interactions (button press, input change/submit) through the host-authoritative world channel. */
+	onUIEvent?: (event: UIEvent) => void;
 	/** codeBlock's `world.spawn`/`deleteSelf`/`deleteSlot` — route through the host-authoritative sync pipeline (see engine.ts, mirrors onMediaControl). */
 	onSpawnRequest?: (slot: Slot) => void;
 	onDeleteRequest?: (slotId: string) => void;
@@ -115,6 +124,7 @@ export class SceneGraph {
 			const node = this.live.get(slot.id)?.node;
 			if (node) this.activateCodeBlock(slot, node);
 		}
+		this.syncUIPanels();
 	}
 
 	addSlot(slot: Slot, options?: { system?: boolean }): TransformNode {
@@ -128,6 +138,7 @@ export class SceneGraph {
 			if (parent) node.parent = parent;
 		}
 		this.activateCodeBlock(slot, node);
+		this.syncUIPanels();
 		return node;
 	}
 
@@ -142,6 +153,7 @@ export class SceneGraph {
 			entry.node.dispose();
 			this.live.delete(id);
 		}
+		this.syncUIPanels();
 	}
 
 	dispose(): void {
@@ -237,6 +249,43 @@ export class SceneGraph {
 		return true;
 	}
 
+	/**
+	 * Delivers a UI interaction: a pressed button's own `onPress`, then `onUIEvent`
+	 * on the element and every ancestor (so one codeBlock on the panel can drive
+	 * the whole UI). The caller decides whether this is local or host-authoritative.
+	 */
+	dispatchUIEvent(event: UIEvent): boolean {
+		const entry = this.live.get(event.slotId);
+		const element = entry && findComponent(entry.slot, 'uiElement');
+		if (!entry || !element) return false;
+		let handled = false;
+		if (event.type === 'press' && element.kind === 'button' && entry.runtime?.onPress) {
+			entry.runtime.onPress();
+			handled = true;
+		}
+		for (let current: LiveSlot | undefined = entry; current; current = current.slot.parentId ? this.live.get(current.slot.parentId) : undefined) {
+			if (!current.runtime?.onUIEvent) continue;
+			current.runtime.onUIEvent(event);
+			handled = true;
+		}
+		return handled;
+	}
+
+	private findUIBinding(slotId: string): UIPanelBinding | undefined {
+		for (let entry = this.live.get(slotId); entry; entry = entry.slot.parentId ? this.live.get(entry.slot.parentId) : undefined) {
+			if (entry.ui) return entry.ui;
+		}
+		return undefined;
+	}
+
+	getUIMedia(slotId: string): UIMediaState | undefined {
+		return this.findUIBinding(slotId)?.getMedia(slotId);
+	}
+
+	getUIInputText(slotId: string): string | undefined {
+		return this.findUIBinding(slotId)?.getInputText(slotId);
+	}
+
 	allSlots(): LiveSlot[] {
 		return [...this.live.values()];
 	}
@@ -305,6 +354,7 @@ export class SceneGraph {
 			const node = entry.node;
 			node.parent = slot.parentId ? this.live.get(slot.parentId)?.node ?? null : null;
 		}
+		this.syncUIPanels();
 	}
 
 	/** Applies frequent pose updates without re-sending component payloads such as world packages. */
@@ -335,11 +385,15 @@ export class SceneGraph {
 		const mesh = findComponent(slot, 'meshRenderer');
 		const ref = mesh ? normalizeMeshRef(mesh.meshRef) : null;
 		const modelAssetId = ref?.kind === 'asset' ? ref.assetId : null;
+		const uiPanel = findComponent(slot, 'uiPanel');
+		const worldWidth = uiPanel?.worldWidth ?? 1.2;
 		const node: TransformNode = mesh
 			? modelAssetId
 				? new Mesh(slot.id, this.scene) // empty: the visible parts are its children (see bindModel)
 				: this.createMesh(slot.id, ref!, mesh.color)
-			: new TransformNode(slot.id, this.scene);
+			: uiPanel
+				? MeshBuilder.CreatePlane(slot.id, { width: worldWidth, height: worldWidth * uiPanel.height / uiPanel.width }, this.scene)
+				: new TransformNode(slot.id, this.scene);
 
 		node.position = Vector3.FromArray(slot.position);
 		node.rotationQuaternion = Quaternion.FromArray(slot.rotation);
@@ -353,14 +407,27 @@ export class SceneGraph {
 		if (mesh && !modelAssetId) {
 			const mirror = findComponent(slot, 'mirror');
 			if (mirror) entry.runtime = { dispose: setupMirrorSurface(this.scene, node as AbstractMesh, mirror.resolution) };
-			const video = findComponent(slot, 'videoPlayer');
-			if (video) entry.runtime = this.createMediaRuntime(slot, node as AbstractMesh, setupVideoPlayerSurface);
 			const audio = findComponent(slot, 'audioPlayer');
 			if (audio) entry.runtime = this.createMediaRuntime(slot, node as AbstractMesh, setupAudioPlayerSurface);
 			const textDisplay = findComponent(slot, 'textDisplay');
 			if (textDisplay) entry.runtime = setupTextDisplay(this.scene, node as AbstractMesh, textDisplay);
 			const scoreboard = findComponent(slot, 'scoreboard');
 			if (scoreboard) entry.runtime = setupScoreboard(this.scene, node as AbstractMesh, scoreboard);
+		}
+		if (uiPanel && node instanceof Mesh) {
+			const binding = setupUIPanel(
+				this.scene,
+				node,
+				uiPanel,
+				() => this.getSubtree(slot.id).map((child) => child.slot),
+				(event) => {
+					if (this.options.onUIEvent) this.options.onUIEvent(event);
+					else this.dispatchUIEvent(event);
+				}
+			);
+			entry.ui = binding;
+			const previousRuntime = entry.runtime;
+			entry.runtime = { ...(previousRuntime ?? { dispose: () => {} }), dispose: () => previousRuntime?.dispose(), sync: (currentSlot) => { previousRuntime?.sync?.(currentSlot ?? slot); binding.sync(); } };
 		}
 		// particleBurst/impactSound don't require a mesh, and are always
 		// root-level slots with a self-contained world position (see
@@ -377,6 +444,10 @@ export class SceneGraph {
 			);
 			entry.runtime = { dispose };
 		}
+		const skybox = findComponent(slot, 'skybox');
+		if (skybox) entry.runtime = setupSkybox(this.scene, node, skybox);
+		const stroke = findComponent(slot, 'stroke');
+		if (stroke) entry.runtime = setupStroke(this.scene, node, stroke);
 		const impactSound = findComponent(slot, 'impactSound');
 		if (impactSound) entry.runtime = { dispose: setupImpactSound(this.scene, node, impactSound) };
 		return node;
@@ -397,7 +468,7 @@ export class SceneGraph {
 		if (!codeBlock) return;
 		const handlers = createCodeBlockHandlers(slot.id, node, codeBlock.code, this.buildCodeBlockHost());
 		const entry = this.live.get(slot.id);
-		if (entry) entry.runtime = { dispose: () => {}, ...handlers };
+		if (entry) entry.runtime = { ...(entry.runtime ?? { dispose: () => {} }), ...handlers };
 	}
 
 	private buildCodeBlockHost(): CodeBlockHost {
@@ -410,18 +481,20 @@ export class SceneGraph {
 			isHost: () => this.options.isHost?.() ?? true,
 			requestSpawn: (slot) => this.options.onSpawnRequest?.(slot),
 			requestDelete: (slotId) => this.options.onDeleteRequest?.(slotId),
-			setComponentField: (slotId, componentType, field, value) => {
+			setComponentField: (slotId, componentType, field, value, broadcast = true) => {
 				// Host/solo-only: a guest calling this would only affect its own
 				// unauthoritative copy, silently reverted by the next broadcast —
 				// so it's a documented no-op rather than a confusing flash-then-revert.
 				if (!(this.options.isHost?.() ?? true)) return;
-				if (this.setComponentField(slotId, componentType, field, value)) {
+				if (this.setComponentField(slotId, componentType, field, value) && broadcast) {
 					this.options.onSlotMutated?.(slotId);
 				}
 			},
 			findNear: (worldPos, radius) => this.findSlotsNear(worldPos, radius),
 			resolvePlayer: (grabberId) => this.options.resolvePlayer?.(grabberId) ?? { id: grabberId, name: 'Player' },
-			getEquipHolder: (slotId) => this.equipQuery?.getHolderOfSlotOrAncestor(slotId) ?? null
+			getEquipHolder: (slotId) => this.equipQuery?.getHolderOfSlotOrAncestor(slotId) ?? null,
+			getUIMedia: (slotId) => this.getUIMedia(slotId),
+			getUIInputText: (slotId) => this.getUIInputText(slotId)
 		};
 	}
 
@@ -551,7 +624,14 @@ export class SceneGraph {
 		// so a LOCAL mutation (e.g. a script updating its own scoreboard) also
 		// redraws immediately, not just once a broadcast round-trips back.
 		entry.runtime?.sync?.(entry.slot);
+		this.syncUIPanels();
 		return true;
+	}
+
+	private syncUIPanels(): void {
+		for (const entry of this.live.values()) {
+			if (findComponent(entry.slot, 'uiPanel')) entry.runtime?.sync?.(entry.slot);
+		}
 	}
 
 	private createMediaRuntime<T extends Slot['components'][number]>(
@@ -559,7 +639,7 @@ export class SceneGraph {
 		mesh: AbstractMesh,
 		setup: (scene: Scene, mesh: AbstractMesh, component: T, callbacks: { onControl(action: MediaControlAction): void }) => MediaRuntimeBinding
 	): LiveSlot['runtime'] {
-		const component = slot.components.find((candidate) => candidate.type === 'videoPlayer' || candidate.type === 'audioPlayer') as T;
+		const component = slot.components.find((candidate) => candidate.type === 'audioPlayer') as T;
 		const runtime = setup(this.scene, mesh, component, {
 			onControl: (action) => this.options.onMediaControl?.(slot.id, action)
 		});
@@ -698,6 +778,13 @@ export class SceneGraph {
 			case 'ground':
 				mesh = MeshBuilder.CreateGround(id, { width: 20, height: 20 }, this.scene);
 				break;
+			case 'disc': {
+				// A flat round floor of diameter 1, facing up (Babylon discs face -Z until turned).
+				const disc = MeshBuilder.CreateDisc(id, { radius: 0.5, tessellation: 96, sideOrientation: Mesh.DOUBLESIDE }, this.scene);
+				disc.bakeTransformIntoVertices(Matrix.RotationX(Math.PI / 2));
+				mesh = disc;
+				break;
+			}
 			case 'sphere':
 				mesh = MeshBuilder.CreateSphere(id, { diameter: 1 }, this.scene);
 				break;

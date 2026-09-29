@@ -29,6 +29,7 @@ import { setupPointerAndGrabControllers } from './interaction/pointerController'
 import { setupPanelToggle } from './interaction/panelToggle';
 import { setupRotationController } from './interaction/rotationController';
 import { setupMovementController } from './interaction/movementController';
+import { setupPlayerBody } from './interaction/playerBody';
 import { setupLocomotion } from './locomotion';
 import { setupHandControllerSwitch } from './interaction/handControllerSwitch';
 import { createDashPanel } from './ui/dashPanel';
@@ -98,6 +99,10 @@ export async function mountGame(
 			sceneGraph.controlMedia(slotId, action);
 			if (gameState.role === 'guest') guestSync?.requestMediaControl(slotId, action);
 			else hostAuthority?.broadcastSnapshot();
+		},
+		onUIEvent: (event) => {
+			if (gameState.role === 'guest') guestSync?.requestUIEvent(event);
+			else if (sceneGraph.dispatchUIEvent(event) && event.type !== 'change') hostAuthority?.broadcastSnapshot();
 		},
 		isHost: () => gameState.role !== 'guest',
 		// codeBlock's world.spawn()/deleteSelf()/deleteSlot() — same routing as
@@ -195,17 +200,18 @@ export async function mountGame(
 	// uses as each hand/controller's interaction point — reused here so a
 	// pressable button reacts identically to hand-tracking and controllers.
 	let locomotion: ReturnType<typeof setupLocomotion> | null = null;
+	const playerBody = setupPlayerBody(scene, sceneGraph, xr, desktopCamera, { x: desktopCamera.position.x, z: desktopCamera.position.z });
 	let refreshTeleportFloors = () => {};
 	if (xr) {
 		new PressableButtonSystem(scene, sceneGraph, () => xr.input.controllers.map((c) => c.grip ?? c.pointer));
 		locomotion = setupLocomotion(xr, floorMesh ? [floorMesh] : []);
 		refreshTeleportFloors = () => {
 			locomotion?.updateFloorMeshes(sceneGraph.allSlots()
-				.filter((entry) => !entry.system && entry.slot.components.some((component) => component.type === 'meshRenderer' && isBuiltinMesh(component.meshRef, 'ground')))
+				.filter((entry) => !entry.system && entry.slot.components.some((component) => component.type === 'meshRenderer' && (isBuiltinMesh(component.meshRef, 'ground') || isBuiltinMesh(component.meshRef, 'disc'))))
 				.map((entry) => entry.node as AbstractMesh));
 		};
 		setupRotationController(scene, xr);
-		setupMovementController(scene, xr);
+		setupMovementController(scene, xr, playerBody);
 		setupHandControllerSwitch(xr);
 	}
 	// Registered after GrabSystem (so any two-point grab's per-frame transform
@@ -221,6 +227,7 @@ export async function mountGame(
 	scene.onBeforeRenderObservable.add(() => {
 		try {
 			const dt = scene.getEngine().getDeltaTime() / 1000;
+			playerBody.update(dt);
 			const removed = sceneGraph.tick(dt);
 			if (removed > 0 && gameState.role !== 'guest') hostAuthority?.broadcastSnapshot();
 		} catch (err) {

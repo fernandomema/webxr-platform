@@ -5,7 +5,7 @@ import type { Slot, SlotTree } from '../ecs/types';
  * reference: a built-in primitive, or the SHA-256 of a model's bytes. Bytes,
  * signed URLs and `blob:` URLs never appear in a scene.
  */
-export const BUILTIN_MESH_IDS = ['box', 'sphere', 'plane', 'ground', 'cylinder'] as const;
+export const BUILTIN_MESH_IDS = ['box', 'sphere', 'plane', 'ground', 'cylinder', 'disc'] as const;
 export type BuiltinMeshId = (typeof BUILTIN_MESH_IDS)[number];
 
 /** `sha256:` followed by 64 lowercase hex characters. */

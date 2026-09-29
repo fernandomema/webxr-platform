@@ -1,11 +1,8 @@
 import {
 	AbstractEngine,
 	ActionManager,
-	Color3,
 	ExecuteCodeAction,
 	Sound,
-	StandardMaterial,
-	VideoTexture,
 	type AbstractMesh,
 	type Scene
 } from '@babylonjs/core';
@@ -13,8 +10,7 @@ import {
 	findComponent,
 	type AudioPlayerComponent,
 	type MediaControlAction,
-	type Slot,
-	type VideoPlayerComponent
+	type Slot
 } from '$lib/ecs/types';
 
 export interface MediaRuntimeBinding {
@@ -54,120 +50,6 @@ function installMediaControl(
 	);
 	mesh.actionManager = actionManager;
 	return actionManager;
-}
-
-export function setupVideoPlayerSurface(
-	scene: Scene,
-	mesh: AbstractMesh,
-	initial: VideoPlayerComponent,
-	callbacks: MediaSurfaceCallbacks
-): MediaRuntimeBinding {
-	let component = initial;
-	let sourceUrl = resolveMediaUrl(component.url);
-	const video = document.createElement('video');
-	video.crossOrigin = 'anonymous';
-	video.playsInline = true;
-	video.preload = 'auto';
-	video.loop = component.loop ?? false;
-	video.muted = component.muted ?? false;
-	video.volume = clampVolume(component.volume);
-	video.src = sourceUrl;
-
-	const texture = new VideoTexture(
-		`${mesh.name}-video-texture`,
-		video,
-		scene,
-		false,
-		false,
-		3,
-		{
-			autoPlay: false,
-			muted: video.muted,
-			loop: video.loop,
-			autoUpdateTexture: true,
-			independentVideoSource: true
-		}
-	);
-	const material = new StandardMaterial(`${mesh.name}-video-material`, scene);
-	material.diffuseColor = Color3.White();
-	material.emissiveColor = Color3.White();
-	material.diffuseTexture = texture;
-	material.emissiveTexture = texture;
-	material.backFaceCulling = false;
-	mesh.material = material;
-	mesh.metadata = { ...(mesh.metadata ?? {}), specialSurface: 'video-player' };
-	const actionManager = installMediaControl(scene, mesh, callbacks);
-
-	const applyPlayback = () => {
-		const targetTime = component.currentTime ?? 0;
-		if (Number.isFinite(targetTime) && video.readyState >= HTMLMediaElement.HAVE_METADATA) {
-			if (Math.abs(video.currentTime - targetTime) > 0.35) video.currentTime = Math.max(0, targetTime);
-		}
-		if (component.playing) {
-			void video.play().catch(() => {
-				// Autoplay policies can require one local user gesture before playback.
-			});
-		} else {
-			video.pause();
-		}
-	};
-
-	video.addEventListener('play', () => (component.playing = true));
-	video.addEventListener('pause', () => {
-		component.playing = false;
-		component.currentTime = video.currentTime;
-	});
-	video.addEventListener('timeupdate', () => {
-		component.currentTime = video.currentTime;
-	});
-	video.addEventListener('ended', () => {
-		if (!video.loop) {
-			component.playing = false;
-			component.currentTime = 0;
-		}
-	});
-
-	const sync = (slot: Slot) => {
-		const next = findComponent(slot, 'videoPlayer');
-		if (!next) return;
-		const nextUrl = resolveMediaUrl(next.url);
-		if (nextUrl !== sourceUrl) {
-			sourceUrl = nextUrl;
-			video.src = sourceUrl;
-			video.load();
-		}
-		component = next;
-		video.loop = component.loop ?? false;
-		video.muted = component.muted ?? false;
-		video.volume = clampVolume(component.volume);
-		applyPlayback();
-	};
-
-	const control = (action: MediaControlAction) => {
-		component.playing = action === 'toggle' ? !component.playing : action === 'play';
-		if (component.playing) {
-			applyPlayback();
-		} else {
-			component.currentTime = video.currentTime;
-			video.pause();
-		}
-	};
-
-	if (component.autoplay) {
-		component.playing = true;
-		applyPlayback();
-	}
-
-	return {
-		dispose() {
-		video.pause();
-		actionManager.dispose();
-		texture.dispose();
-		material.dispose();
-	},
-		sync,
-		control
-	};
 }
 
 export function setupAudioPlayerSurface(

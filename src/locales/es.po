@@ -1222,6 +1222,7 @@ msgid "Text"
 msgstr ""
 
 #: src/lib/studio/components/AddObjectMenu.svelte
+#: src/lib/studio/components/AddObjectMenu.svelte
 msgid "Hello"
 msgstr ""
 
@@ -1861,4 +1862,80 @@ msgstr ""
 
 #: src/routes/logout/+page.svelte
 msgid "Signing out..."
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI panel"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI Panel"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI container"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI Container"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI text"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI Text"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI button"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI Button"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "Button"
+msgstr ""
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "GET a JSON document over https."
+msgstr ""
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Playback state of a video UI element on this peer."
+msgstr ""
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Current text of an input UI element on this peer."
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI text input"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI Input"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "Type here"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI image"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI Image"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI video"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI Video"
 msgstr ""

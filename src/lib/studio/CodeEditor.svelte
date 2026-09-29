@@ -33,6 +33,9 @@
 		{ label: 'ctx.hierarchy', detail: 'Hierarchy API', documentation: 'Query slots, children and parents.' },
 		{ label: 'ctx.grab', detail: 'Grab API', documentation: 'Inspect whether this slot is held and by whom.' },
 		{ label: 'ctx.math', detail: 'Math API', documentation: 'Small vector and quaternion helpers.' },
+		{ label: 'ctx.net.fetchJson(url)', detail: '(url: string) => Promise<unknown>', documentation: 'GET a JSON document over https.' },
+		{ label: 'ctx.ui.getMedia(id)', detail: '(id: string) => { currentTime, duration, paused, ended, ready, error } | undefined', documentation: 'Playback state of a video UI element on this peer.' },
+		{ label: 'ctx.ui.getInputText(id)', detail: '(id: string) => string | undefined', documentation: 'Current text of an input UI element on this peer.' },
 		{ label: 'ctx.log', detail: '(…args: unknown[]) => void', documentation: 'Write a message to the Inspector debug feed.' },
 		{ label: 'ctx.self.getSlot()', detail: '() => Slot | undefined', documentation: 'Return the current Slot data.' },
 		{ label: 'ctx.self.getWorldPosition()', detail: '() => Vec3', documentation: 'Read this slot world position.' },
@@ -60,6 +63,7 @@
 		{ label: 'onGrab', detail: 'lifecycle handler', insertText: 'onGrab() {\n\t$0\n}' },
 		{ label: 'onRelease', detail: 'lifecycle handler', insertText: 'onRelease() {\n\t$0\n}' },
 		{ label: 'onPress', detail: 'button handler', insertText: 'onPress() {\n\t$0\n}' },
+		{ label: 'onUIEvent', detail: '(event: { type: press|change|submit, slotId, text? }) => void', insertText: 'onUIEvent(e) {\n\t$0\n}' },
 		{ label: 'tick', detail: '(dt: number) => void', insertText: 'tick(dt) {\n\t$0\n}' },
 		{ label: 'getRadialItems', detail: 'radial menu handler', insertText: 'getRadialItems() {\n\treturn [];\n}' }
 	];
@@ -98,7 +102,7 @@
 				const lineBeforeCursor = model.getLineContent(position.lineNumber).slice(0, position.column - 1);
 				const insertForContext = (label: string) => {
 					if (lineBeforeCursor.endsWith('ctx.')) return label.startsWith('ctx.') ? label.slice(4) : label;
-					if (/ctx\.(self|world|hierarchy|grab|math)\.$/.test(lineBeforeCursor)) return label.split('.').at(-1) ?? label;
+					if (/ctx\.(self|world|hierarchy|grab|math|net|ui)\.$/.test(lineBeforeCursor)) return label.split('.').at(-1) ?? label;
 					return label;
 				};
 				const suggestions = [

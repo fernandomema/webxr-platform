@@ -30,7 +30,7 @@ export const TEMPLATES: StudioTemplate[] = [
 	{
 		id: 'lobby',
 		label: 'Lobby',
-		description: 'The default lobby with demo props, a bowling lane and media players.',
+		description: 'The default lobby: a glowing spawn pad, a welcome sign and a paint brush.',
 		kind: 'world',
 		defaultName: 'My lobby',
 		build: () => cloneTree(lobby as SlotTree)

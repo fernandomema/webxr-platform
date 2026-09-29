@@ -1222,6 +1222,7 @@ msgid "Text"
 msgstr "Text"
 
 #: src/lib/studio/components/AddObjectMenu.svelte
+#: src/lib/studio/components/AddObjectMenu.svelte
 msgid "Hello"
 msgstr "Hello"
 
@@ -1862,3 +1863,79 @@ msgstr "Sign-out failed"
 #: src/routes/logout/+page.svelte
 msgid "Signing out..."
 msgstr "Signing out..."
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI panel"
+msgstr "UI panel"
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI Panel"
+msgstr "UI Panel"
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI container"
+msgstr "UI container"
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI Container"
+msgstr "UI Container"
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI text"
+msgstr "UI text"
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI Text"
+msgstr "UI Text"
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI button"
+msgstr "UI button"
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI Button"
+msgstr "UI Button"
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "Button"
+msgstr "Button"
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "GET a JSON document over https."
+msgstr "GET a JSON document over https."
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Playback state of a video UI element on this peer."
+msgstr "Playback state of a video UI element on this peer."
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Current text of an input UI element on this peer."
+msgstr "Current text of an input UI element on this peer."
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI text input"
+msgstr "UI text input"
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI Input"
+msgstr "UI Input"
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "Type here"
+msgstr "Type here"
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI image"
+msgstr "UI image"
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI Image"
+msgstr "UI Image"
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI video"
+msgstr "UI video"
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "UI Video"
+msgstr "UI Video"

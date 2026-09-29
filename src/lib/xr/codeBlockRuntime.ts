@@ -1,5 +1,6 @@
 import { Vector3, Quaternion, type TransformNode } from '@babylonjs/core';
-import type { Slot, Vec3, Quat } from '$lib/ecs/types';
+import type { Slot, UIEvent, Vec3, Quat } from '$lib/ecs/types';
+import type { UIMediaState } from './uiPanelSurface';
 
 /** What SceneGraph exposes to a codeBlock's compiled handlers — narrow, read-mostly, no Babylon types leak into `ctx`. */
 export interface CodeBlockHost {
@@ -12,13 +13,17 @@ export interface CodeBlockHost {
 	requestSpawn(slot: Slot): void;
 	requestDelete(slotId: string): void;
 	/** Host/solo only — a guest's call is a documented no-op, corrected by the next broadcast anyway. */
-	setComponentField(slotId: string, componentType: string, field: string, value: unknown): void;
+	setComponentField(slotId: string, componentType: string, field: string, value: unknown, broadcast?: boolean): void;
 	/** Every non-system Slot whose world position is within `radius` of `worldPos` — a generic spatial query for proximity/collision-style logic (hit detection, triggers, area effects), not tied to any one demo. O(live slot count) per call. */
 	findNear(worldPos: Vec3, radius: number): Slot[];
 	/** Resolves a grabberId (from `getGrabbers`/`ctx.grab.heldBy()`) to a stable player id + display name — generic attribution for scripts that need to know "who did this" (scoreboards, ownership tags, logs), not tied to any one demo. */
 	resolvePlayer(grabberId: string): { id: string; name: string };
 	/** Which player/hand has this slot — or one of its ancestors — equipped, if any. */
 	getEquipHolder(slotId: string): { playerId: string; hand: 'left' | 'right' } | null;
+	/** Playback state, on this peer, of the `video` uiElement `slotId`. */
+	getUIMedia(slotId: string): UIMediaState | undefined;
+	/** Current text, on this peer, of the `input` uiElement `slotId`. */
+	getUIInputText(slotId: string): string | undefined;
 }
 
 /** Who and which hand an equip/unequip/trigger event is about. */
@@ -50,6 +55,11 @@ export interface CodeBlockHandlers {
 	onRelease?(): void;
 	/** Fired by PressableButtonSystem once a `pressableButton` component's depression crosses its threshold — see interaction/pressableButtonSystem.ts. Unrelated to grabbing. */
 	onPress?(): void;
+	/**
+	 * A UI interaction on this element or any uiElement below it: `press` (button), `change` (input text,
+	 * debounced) or `submit` (Enter in an input). Runs once, on the host (or solo player).
+	 */
+	onUIEvent?(event: UIEvent): void;
 	/** Fired when this object (or the object this one is a child of) is equipped in a hand. */
 	onEquip?(event: HandEvent): void;
 	onUnequip?(event: HandEvent): void;
@@ -229,8 +239,9 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 			},
 			deleteSelf: () => host.requestDelete(slotId),
 			deleteSlot: (id: string) => host.requestDelete(id),
-			setComponentField: (targetId: string, componentType: string, field: string, value: unknown) =>
-				host.setComponentField(targetId, componentType, field, value),
+			/** `broadcast: false` updates this peer only (no snapshot to guests) — for per-frame updates, followed by a broadcasting call once in a while. */
+			setComponentField: (targetId: string, componentType: string, field: string, value: unknown, broadcast = true) =>
+				host.setComponentField(targetId, componentType, field, value, broadcast),
 			findNear: (worldPos: Vec3, radius: number) => host.findNear(worldPos, radius),
 			getPlayer: (grabberId: string) => host.resolvePlayer(grabberId)
 		},
@@ -279,6 +290,26 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 					]
 				});
 			}
+		},
+		net: {
+			/** GET a JSON document over https. Rejects on a network/HTTP error or a non-JSON body. Runs on whichever peer calls it, so gate shared work behind `world.isHost()`. */
+			fetchJson: async (url: string): Promise<unknown> => {
+				const parsed = new URL(url);
+				if (parsed.protocol !== 'https:') throw new Error('net.fetchJson only allows https URLs');
+				const response = await fetch(parsed.href, { headers: { accept: 'application/json' } });
+				if (!response.ok) {
+					// Servers often explain the failure in a JSON body; surface its first line.
+					const detail = await response.json().then((body: { message?: string; error?: string }) => String(body.message ?? body.error ?? '').split('\n')[0].slice(0, 90), () => '');
+					throw new Error(detail || `HTTP ${response.status} from ${parsed.host}`);
+				}
+				return response.json();
+			}
+		},
+		ui: {
+			/** Playback state of a `video` uiElement on this peer (position, duration, paused, ended...). Write `playing`/`src`/`currentTime` with `world.setComponentField` to control it. */
+			getMedia: (slotId: string) => host.getUIMedia(slotId),
+			/** What the user has typed in an `input` uiElement. */
+			getInputText: (slotId: string) => host.getUIInputText(slotId)
 		},
 		math,
 		log: (...args: unknown[]) => {
@@ -345,6 +376,7 @@ export function createCodeBlockHandlers(slotId: string, node: TransformNode, cod
 		onGrab: safe('onGrab'),
 		onRelease: safe('onRelease'),
 		onPress: safe('onPress'),
+		onUIEvent: safe('onUIEvent'),
 		onEquip: safe('onEquip'),
 		onUnequip: safe('onUnequip'),
 		onTrigger: safe('onTrigger'),

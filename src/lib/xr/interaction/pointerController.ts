@@ -39,6 +39,8 @@ function grabberIdFor(controller: WebXRInputSource): string {
 interface LaserVisual {
 	beam: Mesh; // height=1, stretched/positioned each frame to reach the hit point (or LASER_MAX_LENGTH)
 	dot: Mesh; // small sphere shown at the hit point, hidden otherwise
+	beamMaterial: StandardMaterial;
+	dotMaterial: StandardMaterial;
 	ray: Ray;
 }
 
@@ -83,7 +85,7 @@ function createLaserVisual(scene: Scene, parent: WebXRInputSource['pointer']): L
 	dot.isPickable = false;
 	dot.setEnabled(false);
 
-	return { beam, dot, ray: new Ray(Vector3.Zero(), Vector3.Forward()) };
+	return { beam, dot, beamMaterial: beamMat, dotMaterial: dotMat, ray: new Ray(Vector3.Zero(), Vector3.Forward()) };
 }
 
 /**
@@ -297,6 +299,11 @@ export function setupPointerAndGrabControllers(
 			// explicit isEnabled()/isVisible checks here, the laser kept hitting a
 			// hidden (setEnabled(false)) panel as if it were still there.
 			const hit = scene.pickWithRay(visual.ray, (mesh) => mesh.isPickable && mesh.isEnabled() && mesh.isVisible);
+
+			const hitSlotId = sceneGraph.getSlotIdForNode(hit?.pickedMesh);
+			const canGrab = Boolean(hitSlotId && sceneGraph.resolveGrabTarget(hitSlotId));
+			visual.beamMaterial.emissiveColor = Color3.FromHexString(canGrab ? '#f97316' : '#60a5fa');
+			visual.dotMaterial.emissiveColor = Color3.FromHexString(canGrab ? '#fdba74' : '#93c5fd');
 
 			const length = hit?.pickedPoint ? Vector3.Distance(visual.ray.origin, hit.pickedPoint) : LASER_MAX_LENGTH;
 			visual.beam.setEnabled(true);

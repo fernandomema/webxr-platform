@@ -2,7 +2,7 @@ import { TransformNode, type Scene, type UniversalCamera, type WebXRDefaultExper
 import type { SceneGraph } from '../sceneGraph';
 import type { GrabSystem } from '../interaction/grabSystem';
 import type { EquipmentSystem } from '../interaction/equipmentSystem';
-import type { MediaControlAction, Slot } from '$lib/ecs/types';
+import type { MediaControlAction, Slot, UIEvent } from '$lib/ecs/types';
 import { SignalingClient, type SignalingMessage } from './signalingClient';
 import { PeerLink } from './peerConnection';
 import type { PlayerInfo, WorldStateMessage, WorldSyncMessage } from './protocol';
@@ -246,6 +246,10 @@ export class GuestSync {
 
 	requestMediaControl(slotId: string, action: MediaControlAction): void {
 		this.link?.send({ kind: 'media-control-request', requestId: crypto.randomUUID(), slotId, action });
+	}
+
+	requestUIEvent(event: UIEvent): void {
+		this.link?.send({ kind: 'ui-event-request', requestId: crypto.randomUUID(), event });
 	}
 
 	dispose(): void {

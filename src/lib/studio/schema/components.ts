@@ -71,6 +71,57 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		create: () => ({ type: 'textDisplay', title: 'New label', lines: ['Edit this text'] })
 	},
 	{
+		type: 'uiPanel',
+		label: 'UI Panel',
+		group: 'Render',
+		description: 'Render child UI nodes on a world-space panel.',
+		glyph: '▤',
+		fields: [
+			{ key: 'width', label: 'Design width', kind: 'number', min: 64, max: 4096, step: 64 },
+			{ key: 'height', label: 'Design height', kind: 'number', min: 64, max: 4096, step: 64 },
+			{ key: 'worldWidth', label: 'World width', kind: 'number', min: 0.1, max: 10, step: 0.1, optional: true, default: 1.2, unit: 'm' },
+			{ key: 'background', label: 'Background', kind: 'color', optional: true, default: '#111827' }
+		],
+		create: () => ({ type: 'uiPanel', width: 1024, height: 640, worldWidth: 1.2, background: '#111827' })
+	},
+	{
+		type: 'uiElement',
+		label: 'UI Element',
+		group: 'Render',
+		description: 'Render this node as a container, text, button, text input, image or video. Add a Code Block with onPress / onUIEvent for behavior.',
+		glyph: '▱',
+		fields: [
+			{ key: 'kind', label: 'Element type', kind: 'enum', options: [
+				{ value: 'container', label: 'Container' },
+				{ value: 'text', label: 'Text' },
+				{ value: 'button', label: 'Button' },
+				{ value: 'input', label: 'Text input' },
+				{ value: 'image', label: 'Image' },
+				{ value: 'video', label: 'Video' }
+			] },
+			{ key: 'visible', label: 'Visible', kind: 'bool', optional: true, default: true },
+			{ key: 'width', label: 'Width', kind: 'number', min: 1, step: 1, optional: true, default: 240, unit: 'px' },
+			{ key: 'height', label: 'Height', kind: 'number', min: 1, step: 1, optional: true, default: 44, unit: 'px' },
+			{ key: 'flexDirection', label: 'Direction', kind: 'enum', options: [{ value: 'column', label: 'Column' }, { value: 'row', label: 'Row' }], optional: true, default: 'column' },
+			{ key: 'gap', label: 'Gap', kind: 'number', min: 0, step: 1, optional: true, default: 8, unit: 'px' },
+			{ key: 'margin', label: 'Margin', kind: 'number', min: 0, step: 1, optional: true, default: 0, unit: 'px' },
+			{ key: 'padding', label: 'Padding', kind: 'number', min: 0, step: 1, optional: true, default: 8, unit: 'px' },
+			{ key: 'background', label: 'Background', kind: 'color', optional: true, default: '#1f2937' },
+			{ key: 'color', label: 'Text color', kind: 'color', optional: true, default: '#ffffff' },
+			{ key: 'text', label: 'Text', kind: 'text', optional: true, default: '' },
+			{ key: 'fontSize', label: 'Font size', kind: 'number', min: 8, max: 128, step: 1, optional: true, default: 24, unit: 'px' },
+			{ key: 'fontWeight', label: 'Font weight', kind: 'enum', options: [{ value: 'normal', label: 'Normal' }, { value: 'bold', label: 'Bold' }], optional: true, default: 'normal' },
+			{ key: 'overflow', label: 'Overflow', kind: 'enum', options: [{ value: 'visible', label: 'Visible' }, { value: 'scroll', label: 'Scroll' }], optional: true, default: 'visible', help: 'Containers only. Scroll needs a fixed height.' },
+			{ key: 'src', label: 'Source URL', kind: 'url', optional: true, help: 'Image or video URL.' },
+			{ key: 'placeholder', label: 'Placeholder', kind: 'text', optional: true, default: '' },
+			{ key: 'playing', label: 'Playing', kind: 'bool', optional: true, default: false },
+			{ key: 'loop', label: 'Loop', kind: 'bool', optional: true, default: false },
+			{ key: 'muted', label: 'Muted', kind: 'bool', optional: true, default: false },
+			{ key: 'volume', label: 'Volume', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 1 }
+		],
+		create: () => ({ type: 'uiElement', kind: 'container', flexDirection: 'column', visible: true, gap: 8, padding: 8 })
+	},
+	{
 		type: 'scoreboard',
 		label: 'Scoreboard',
 		group: 'Render',
@@ -194,21 +245,6 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		create: () => ({ type: 'audioPlayer', url: '', loop: false, volume: 1 })
 	},
 	{
-		type: 'videoPlayer',
-		label: 'Video Player',
-		group: 'Media',
-		description: 'Play a video on the surface of this object.',
-		glyph: '▶',
-		fields: [
-			{ key: 'url', label: 'Video URL', kind: 'url' },
-			{ key: 'autoplay', label: 'Autoplay', kind: 'bool', optional: true, default: false },
-			{ key: 'loop', label: 'Loop', kind: 'bool', optional: true, default: true },
-			{ key: 'muted', label: 'Muted', kind: 'bool', optional: true, default: true },
-			{ key: 'volume', label: 'Volume', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 1 }
-		],
-		create: () => ({ type: 'videoPlayer', url: '', autoplay: false, loop: true, muted: true, volume: 1 })
-	},
-	{
 		type: 'codeBlock',
 		label: 'Code Block',
 		group: 'Logic',
@@ -252,6 +288,33 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 			{ key: 'durationMs', label: 'Duration', kind: 'number', min: 100, max: 10000, step: 100, unit: 'ms', optional: true, default: 900 }
 		],
 		create: () => ({ type: 'particleBurst', color: '#a78bfa', count: 24, durationMs: 900 })
+	},
+	{
+		type: 'skybox',
+		label: 'Skybox',
+		group: 'World',
+		description: 'A gradient sky with optional stars behind the whole scene.',
+		glyph: '☾',
+		fields: [
+			{ key: 'topColor', label: 'Top', kind: 'color', default: '#0b1030' },
+			{ key: 'horizonColor', label: 'Horizon', kind: 'color', default: '#7c3aed' },
+			{ key: 'bottomColor', label: 'Ground', kind: 'color', default: '#0f172a' },
+			{ key: 'stars', label: 'Stars', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 0.8 }
+		],
+		create: () => ({ type: 'skybox', topColor: '#0b1030', horizonColor: '#7c3aed', bottomColor: '#0f172a', stars: 0.8 })
+	},
+	{
+		type: 'stroke',
+		label: 'Stroke',
+		group: 'World',
+		description: 'A freehand line drawn by the paint brush.',
+		glyph: '〰',
+		advanced: true,
+		fields: [
+			{ key: 'color', label: 'Color', kind: 'color', default: '#ef4444' },
+			{ key: 'width', label: 'Width', kind: 'number', min: 0.002, max: 0.2, step: 0.002, unit: 'm', default: 0.018 }
+		],
+		create: () => ({ type: 'stroke', points: [], color: '#ef4444', width: 0.018 })
 	},
 	{
 		type: 'expires',

@@ -36,7 +36,7 @@ export function getComponentDetailRenderer(type: Component['type']): ComponentDe
 }
 
 function mediaSourceRenderer(component: Component, ctx: ComponentDetailContext): void {
-	if (component.type !== 'videoPlayer' && component.type !== 'audioPlayer') return;
+	if (component.type !== 'audioPlayer') return;
 	const source = new TextBlock('', `Source: ${component.url || 'Not configured'}`);
 	source.color = '#d1d5db';
 	source.fontSize = 14;
@@ -46,7 +46,6 @@ function mediaSourceRenderer(component: Component, ctx: ComponentDetailContext):
 	ctx.container.addControl(source);
 }
 
-registerComponentDetail('videoPlayer', mediaSourceRenderer);
 registerComponentDetail('audioPlayer', mediaSourceRenderer);
 
 registerComponentDetail('codeBlock', (_component, ctx) => {

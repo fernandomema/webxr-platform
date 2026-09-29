@@ -75,7 +75,7 @@ export function lintCode(code: string): CodeDiagnostic[] {
 		return diagnostics;
 	}
 	if (!/return\s*\{/.test(code)) diagnostics.push({ severity: 'warning', message: 'Return an object to expose event handlers.', line: 1 });
-	else if (!/(onSpawn|onGrab|onRelease|onPress|onEquip|onUnequip|onTrigger|tick|getRadialItems)\s*[(:]/.test(code)) {
+	else if (!/(onSpawn|onGrab|onRelease|onPress|onUIEvent|onEquip|onUnequip|onTrigger|tick|getRadialItems)\s*[(:]/.test(code)) {
 		diagnostics.push({ severity: 'info', message: 'Add at least one lifecycle handler to make this block active.', line: 1 });
 	}
 	lines.forEach((text, index) => {

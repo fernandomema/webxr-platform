@@ -482,96 +482,149 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		} catch { /* offline */ }
 	}
 
-	// --- Inventory tab: root picker + quota bar, breadcrumb, a toolbar that
-	// swaps to selection actions, and a scrollable grid of folders/items.
-	// Single click selects, double click opens a folder or spawns an item. ---
-	const CELL_W = 148;
-	const CELL_H = 100;
+	// --- Inventory tab -------------------------------------------------------
+	// Two compact rows above the grid:
+	//   1. source switcher (segmented control)            usage bar
+	//   2. breadcrumb                       contextual actions (+ Folder / selection)
+	// Single click selects a cell, double click opens a folder or spawns an item.
+	const INV = {
+		bg: '#0f172a', surface: '#1e293b', surfaceHover: '#273449', border: '#334155',
+		text: '#f1f5f9', muted: '#94a3b8', accent: '#6366f1', accentSoft: '#312e81', accentBorder: '#818cf8',
+		danger: '#b91c1c', ok: '#22c55e', warn: '#f59e0b', error: '#ef4444'
+	};
+	const KIND_STYLE = {
+		folder: { icon: '📁', tint: '#78350f', label: 'Folder' },
+		object: { icon: '📦', tint: '#1e3a8a', label: 'Object' },
+		world: { icon: '🌍', tint: '#5b21b6', label: 'World' }
+	} as const;
+	const CELL_W = 156;
+	const CELL_H = 108;
+	const CELL_GAP = 6;
 	const GRID_COLUMNS = 6;
 	const DOUBLE_CLICK_MS = 400;
+	const SIDE_MARGIN = 20;
 
-	function topAligned<T extends Control>(control: T, top: number): T {
+	function place<T extends Control>(control: T, top: number, side: 'left' | 'right'): T {
 		control.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
 		control.top = `${top}px`;
+		control.horizontalAlignment = side === 'left' ? Control.HORIZONTAL_ALIGNMENT_LEFT : Control.HORIZONTAL_ALIGNMENT_RIGHT;
+		control.left = side === 'left' ? `${SIDE_MARGIN}px` : `${-SIDE_MARGIN}px`;
 		return control;
 	}
 
-	const inventoryRoots = topAligned(new StackPanel('inventory-roots'), 6);
+	// Row 1: source switcher + usage bar.
+	const inventoryRootsFrame = place(new Rectangle('inventory-roots-frame'), 8, 'left');
+	inventoryRootsFrame.height = '44px';
+	inventoryRootsFrame.adaptWidthToChildren = true;
+	inventoryRootsFrame.background = INV.bg;
+	inventoryRootsFrame.thickness = 1;
+	inventoryRootsFrame.color = INV.border;
+	inventoryRootsFrame.cornerRadius = 12;
+	contentByTab.Inventory.addControl(inventoryRootsFrame);
+	const inventoryRoots = new StackPanel('inventory-roots');
 	inventoryRoots.isVertical = false;
 	inventoryRoots.height = '44px';
-	inventoryRoots.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-	inventoryRoots.left = '20px';
 	inventoryRoots.adaptWidthToChildren = true;
-	contentByTab.Inventory.addControl(inventoryRoots);
+	inventoryRootsFrame.addControl(inventoryRoots);
 
-	// Usage bar (only for adapters that report it, e.g. cloud storage).
-	const quotaTrack = topAligned(new Rectangle('inventory-quota'), 14);
-	quotaTrack.width = '300px';
-	quotaTrack.height = '28px';
-	quotaTrack.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-	quotaTrack.left = '-20px';
-	quotaTrack.background = '#1f2937';
-	quotaTrack.color = '#374151';
-	quotaTrack.thickness = 1;
-	quotaTrack.cornerRadius = 6;
-	quotaTrack.isVisible = false;
-	contentByTab.Inventory.addControl(quotaTrack);
+	const quotaGroup = place(new StackPanel('inventory-quota-group'), 8, 'right');
+	quotaGroup.isVertical = true;
+	quotaGroup.width = '300px';
+	quotaGroup.height = '44px';
+	quotaGroup.isVisible = false;
+	contentByTab.Inventory.addControl(quotaGroup);
+	const quotaCaption = new TextBlock('inventory-quota-caption', 'Storage');
+	quotaCaption.height = '20px';
+	quotaCaption.fontSize = 14;
+	quotaCaption.color = INV.muted;
+	quotaCaption.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+	quotaGroup.addControl(quotaCaption);
+	const quotaTrack = new Rectangle('inventory-quota-track');
+	quotaTrack.height = '10px';
+	quotaTrack.width = 1;
+	quotaTrack.paddingTop = '4px';
+	quotaTrack.thickness = 0;
+	quotaTrack.background = INV.surface;
+	quotaTrack.cornerRadius = 5;
+	quotaGroup.addControl(quotaTrack);
 	const quotaFill = new Rectangle('inventory-quota-fill');
 	quotaFill.height = 1;
 	quotaFill.width = 0;
 	quotaFill.thickness = 0;
-	quotaFill.cornerRadius = 6;
+	quotaFill.cornerRadius = 5;
 	quotaFill.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
 	quotaTrack.addControl(quotaFill);
-	const quotaLabel = new TextBlock('inventory-quota-label', '');
-	quotaLabel.color = 'white';
-	quotaLabel.fontSize = 15;
-	quotaTrack.addControl(quotaLabel);
 
-	const inventoryPath = topAligned(new StackPanel('inventory-path'), 56);
+	// Row 2: breadcrumb (left) and contextual actions (right).
+	const inventoryPath = place(new StackPanel('inventory-path'), 60, 'left');
 	inventoryPath.isVertical = false;
-	inventoryPath.height = '36px';
-	inventoryPath.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-	inventoryPath.left = '20px';
+	inventoryPath.height = '40px';
 	inventoryPath.adaptWidthToChildren = true;
 	contentByTab.Inventory.addControl(inventoryPath);
 
-	const inventoryToolbar = topAligned(new StackPanel('inventory-toolbar'), 98);
+	const inventoryToolbar = place(new StackPanel('inventory-toolbar'), 60, 'right');
 	inventoryToolbar.isVertical = false;
-	inventoryToolbar.height = '48px';
-	inventoryToolbar.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-	inventoryToolbar.left = '20px';
+	inventoryToolbar.height = '40px';
 	inventoryToolbar.adaptWidthToChildren = true;
 	contentByTab.Inventory.addControl(inventoryToolbar);
 
-	function toolbarButton(name: string, text: string, background: string, width: number, onClick: () => void): Button {
+	function actionButton(name: string, text: string, background: string, width: number, onClick: () => void): Button {
 		const btn = Button.CreateSimpleButton(name, text);
 		btn.width = `${width}px`;
-		btn.height = '44px';
-		btn.color = 'white';
+		btn.height = '36px';
+		btn.color = INV.text;
 		btn.background = background;
-		btn.cornerRadius = 8;
-		btn.paddingRight = '6px';
-		btn.fontSize = 18;
+		btn.thickness = 0;
+		btn.cornerRadius = 10;
+		btn.paddingLeft = '4px';
+		btn.fontSize = 16;
 		btn.onPointerClickObservable.add(onClick);
 		return btn;
 	}
 
-	const newFolderBtn = toolbarButton('new-folder-btn', '+ Folder', '#16a34a', 130, async () => {
+	const newFolderBtn = actionButton('new-folder-btn', '＋ Folder', INV.surface, 110, async () => {
 		if (!activeAdapter) return;
 		await activeAdapter.createFolder(getInventoryContext(), currentFolderId(), `Folder ${new Date().toLocaleTimeString()}`);
 		refreshList();
 	});
 
-	const inventoryScroll = topAligned(new ScrollViewer('inventory-scroll'), 152);
-	inventoryScroll.width = 0.96;
-	inventoryScroll.height = '360px';
-	inventoryScroll.barColor = '#7c3aed';
+	// The grid, with a toast pinned over its bottom edge for feedback.
+	const inventoryScroll = place(new ScrollViewer('inventory-scroll'), 108, 'left');
+	inventoryScroll.width = `${GRID_COLUMNS * (CELL_W + CELL_GAP) + 16}px`;
+	inventoryScroll.height = '404px';
+	inventoryScroll.barColor = INV.accent;
+	inventoryScroll.barBackground = INV.bg;
+	inventoryScroll.barSize = 8;
 	inventoryScroll.thickness = 0;
 	contentByTab.Inventory.addControl(inventoryScroll);
 	const inventoryList = new StackPanel('inventory-list');
 	inventoryList.width = 1;
 	inventoryScroll.addControl(inventoryList);
+
+	const toast = new Rectangle('inventory-toast');
+	toast.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+	toast.top = '-14px';
+	toast.width = '560px';
+	toast.height = '40px';
+	toast.background = '#020617';
+	toast.thickness = 1;
+	toast.cornerRadius = 20;
+	toast.isVisible = false;
+	toast.isPointerBlocker = false;
+	contentByTab.Inventory.addControl(toast);
+	const toastText = new TextBlock('inventory-toast-text', '');
+	toastText.fontSize = 16;
+	toastText.color = INV.text;
+	toast.addControl(toastText);
+	let toastTimer: ReturnType<typeof setTimeout> | undefined;
+
+	function showMessage(text: string, tone: 'ok' | 'error' | 'info' = 'info') {
+		toastText.text = text;
+		toast.color = tone === 'ok' ? INV.ok : tone === 'error' ? INV.error : INV.border;
+		toast.isVisible = true;
+		clearTimeout(toastTimer);
+		toastTimer = setTimeout(() => { toast.isVisible = false; }, 3500);
+	}
 
 	let activeAdapter: InventoryAdapter | null = null;
 	// breadcrumb: [{id: null, name: adapter.label}, ...subfolders]
@@ -583,37 +636,25 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	let selected: Entry | null = null;
 	const cellByKey = new Map<string, Rectangle>();
 	let lastClick = { key: '', at: 0 };
-	let message: { text: string; color: string } | null = null;
 
 	function currentFolderId(): string | null {
 		return path.length > 0 ? path[path.length - 1].id : null;
-	}
-
-	function setStatus(container: StackPanel, text: string, color = '#9ca3af') {
-		for (const child of [...container.children]) container.removeControl(child);
-		const t = new TextBlock('inventory-status', text);
-		t.color = color;
-		t.height = '32px';
-		container.addControl(t);
-	}
-
-	function showMessage(text: string, color: string) {
-		message = { text, color };
-		refreshToolbar();
 	}
 
 	function entryKey(entry: Entry): string {
 		return `${entry.type}:${entry.id}`;
 	}
 
+	function paintCell(key: string, cell: Rectangle, hovered = false) {
+		const isSelected = selected !== null && key === entryKey(selected);
+		cell.background = isSelected ? INV.accentSoft : hovered ? INV.surfaceHover : INV.surface;
+		cell.color = isSelected ? INV.accentBorder : INV.border;
+		cell.thickness = isSelected ? 2 : 1;
+	}
+
 	function select(entry: Entry | null) {
 		selected = entry;
-		message = null;
-		for (const [key, cell] of cellByKey) {
-			const isSelected = entry !== null && key === entryKey(entry);
-			cell.background = isSelected ? '#2563eb' : '#1f2937';
-			cell.color = isSelected ? '#93c5fd' : '#374151';
-		}
+		for (const [key, cell] of cellByKey) paintCell(key, cell);
 		refreshToolbar();
 	}
 
@@ -628,6 +669,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			refreshList();
 		} else if (entry.item.kind === 'world') {
 			callbacks.onSpawnWorldOrb(entry.item, adapter.id);
+			showMessage(`Placed “${entry.name}” as a world orb`, 'ok');
 		} else {
 			callbacks.onSpawnItem(entry.item.slotData);
 		}
@@ -639,25 +681,13 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		const entry = selected;
 		if (!adapter) return;
 		if (!entry) {
-			if (message) {
-				const text = new TextBlock('inventory-message', message.text);
-				text.width = '900px'; text.height = '44px'; text.color = message.color; text.fontSize = 17;
-				text.textWrapping = true;
-				inventoryToolbar.addControl(text);
-				return;
-			}
 			inventoryToolbar.addControl(newFolderBtn);
 			return;
 		}
 
-		const label = new TextBlock('inventory-selected', entry.name);
-		label.width = '240px'; label.height = '44px'; label.color = '#e5e7eb'; label.fontSize = 18;
-		label.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-		inventoryToolbar.addControl(label);
-
 		if (entry.type === 'folder') {
-			inventoryToolbar.addControl(toolbarButton('tb-open', 'Open', '#2563eb', 100, () => activate(entry)));
-			inventoryToolbar.addControl(toolbarButton('tb-delete', 'Delete', '#991b1b', 110, async () => {
+			inventoryToolbar.addControl(actionButton('tb-open', 'Open', INV.accent, 90, () => activate(entry)));
+			inventoryToolbar.addControl(actionButton('tb-delete', 'Delete', INV.danger, 100, async () => {
 				await adapter.deleteFolder(getInventoryContext(), entry.id);
 				select(null);
 				refreshList();
@@ -665,14 +695,14 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		} else {
 			const item = entry.item;
 			const isWorld = item.kind === 'world';
-			inventoryToolbar.addControl(toolbarButton('tb-spawn', isWorld ? 'Place orb' : 'Spawn', '#2563eb', isWorld ? 130 : 100, () => activate(entry)));
+			inventoryToolbar.addControl(actionButton('tb-spawn', isWorld ? 'Place orb' : 'Spawn', INV.accent, isWorld ? 116 : 94, () => activate(entry)));
 			if (isWorld) {
-				inventoryToolbar.addControl(toolbarButton('tb-load', 'Load', '#0f766e', 90, async () => {
+				inventoryToolbar.addControl(actionButton('tb-load', 'Load', '#0f766e', 84, async () => {
 					try { await callbacks.onLaunchWorldItem(item, adapter.id); }
-					catch (error) { showMessage(error instanceof Error ? error.message : 'Could not load world', '#f87171'); }
+					catch (error) { showMessage(error instanceof Error ? error.message : 'Could not load world', 'error'); }
 				}));
 				if (gameState.userId) {
-					inventoryToolbar.addControl(toolbarButton('tb-publish', 'Publish', '#7c3aed', 110, async () => {
+					inventoryToolbar.addControl(actionButton('tb-publish', 'Publish', '#7c3aed', 100, async () => {
 						try {
 							validateWorldScene(item.slotData);
 							const res = await fetch('/api/published-worlds', {
@@ -680,28 +710,28 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 								body: JSON.stringify({ name: item.name, scene: item.slotData })
 							});
 							if (!res.ok) throw new Error('Could not publish world');
-							showMessage('World published. Find it in the Worlds tab.', '#86efac');
-						} catch (error) { showMessage(error instanceof Error ? error.message : 'Could not publish world', '#f87171'); }
+							showMessage('World published. Find it in the Worlds tab.', 'ok');
+						} catch (error) { showMessage(error instanceof Error ? error.message : 'Could not publish world', 'error'); }
 					}));
 				}
 			}
-			if (adapter.updateItem && path.length > 1) {
+			if (adapter.updateItem && path.length > 1 && !isWorld) {
 				const parentId = path[path.length - 2].id;
-				inventoryToolbar.addControl(toolbarButton('tb-move', 'Move up', '#374151', 110, async () => {
+				inventoryToolbar.addControl(actionButton('tb-move', 'Move up', INV.surface, 100, async () => {
 					try {
 						await adapter.updateItem!(getInventoryContext(), item.id, parentId, item.name, item.slotData);
 						select(null);
 						refreshList();
-					} catch (error) { showMessage(error instanceof Error ? error.message : 'Could not move item', '#f87171'); }
+					} catch (error) { showMessage(error instanceof Error ? error.message : 'Could not move item', 'error'); }
 				}));
 			}
-			inventoryToolbar.addControl(toolbarButton('tb-delete', 'Delete', '#991b1b', 110, async () => {
+			inventoryToolbar.addControl(actionButton('tb-delete', 'Delete', INV.danger, 90, async () => {
 				await adapter.deleteItem(getInventoryContext(), item.id);
 				select(null);
 				refreshList();
 			}));
 		}
-		inventoryToolbar.addControl(toolbarButton('tb-close', '✕', '#374151', 50, () => select(null)));
+		inventoryToolbar.addControl(actionButton('tb-close', '✕', INV.surface, 40, () => select(null)));
 	}
 
 	function formatBytes(bytes: number): string {
@@ -715,7 +745,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 
 	async function refreshUsage() {
 		const adapter = activeAdapter;
-		quotaTrack.isVisible = false;
+		quotaGroup.isVisible = false;
 		if (!adapter?.usage) return;
 		try {
 			const usage = await adapter.usage(getInventoryContext());
@@ -724,9 +754,9 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			const limited = usage.total > 0;
 			const ratio = limited ? Math.min(1, usage.used / usage.total) : 0;
 			quotaFill.width = ratio;
-			quotaFill.background = ratio > 0.9 ? '#dc2626' : ratio > 0.75 ? '#d97706' : '#16a34a';
-			quotaLabel.text = limited ? `${format(usage.used)} / ${format(usage.total)}` : `${format(usage.used)} used`;
-			quotaTrack.isVisible = true;
+			quotaFill.background = ratio > 0.9 ? INV.error : ratio > 0.75 ? INV.warn : INV.ok;
+			quotaCaption.text = limited ? `${format(usage.used)} of ${format(usage.total)} · ${Math.round(ratio * 100)}%` : `${format(usage.used)} used`;
+			quotaGroup.isVisible = true;
 		} catch {
 			// usage is informational; keep the bar hidden
 		}
@@ -734,16 +764,32 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 
 	function refreshPath() {
 		for (const child of [...inventoryPath.children]) inventoryPath.removeControl(child);
-		path.forEach((crumb, i) => {
-			const btn = Button.CreateSimpleButton(`crumb-${i}`, crumb.name);
-			btn.height = '34px';
-			btn.width = `${Math.min(220, 40 + crumb.name.length * 11)}px`;
-			btn.fontSize = 16;
-			btn.color = 'white';
-			btn.background = i === path.length - 1 ? '#2563eb' : '#1f2937';
-			btn.cornerRadius = 6;
-			btn.paddingRight = '4px';
+		// Long trails collapse to "… › parent › current" so the row never grows into the actions.
+		const visible = path.length > 3 ? path.slice(-2) : path;
+		const offset = path.length - visible.length;
+		if (offset > 0) {
+			const dots = new TextBlock('crumb-collapsed', '…  ›');
+			dots.width = '44px'; dots.height = '36px'; dots.fontSize = 18; dots.color = INV.muted;
+			inventoryPath.addControl(dots);
+		}
+		visible.forEach((crumb, index) => {
+			const i = index + offset;
+			const isLast = i === path.length - 1;
+			const label = crumb.name.length > 16 ? `${crumb.name.slice(0, 15)}…` : crumb.name;
+			const btn = Button.CreateSimpleButton(`crumb-${i}`, label);
+			btn.height = '36px';
+			btn.width = `${28 + label.length * 10}px`;
+			btn.fontSize = 18;
+			btn.color = isLast ? INV.text : INV.muted;
+			btn.background = 'transparent';
+			btn.thickness = 0;
+			btn.cornerRadius = 8;
+			if (!isLast) {
+				btn.onPointerEnterObservable.add(() => { btn.color = INV.text; });
+				btn.onPointerOutObservable.add(() => { btn.color = INV.muted; });
+			}
 			btn.onPointerClickObservable.add(() => {
+				if (isLast) return;
 				path = path.slice(0, i + 1);
 				gameState.currentInventoryFolderId = crumb.id;
 				selected = null;
@@ -751,6 +797,11 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 				refreshList();
 			});
 			inventoryPath.addControl(btn);
+			if (!isLast) {
+				const sep = new TextBlock(`crumb-sep-${i}`, '›');
+				sep.width = '20px'; sep.height = '36px'; sep.fontSize = 20; sep.color = INV.muted;
+				inventoryPath.addControl(sep);
+			}
 		});
 	}
 
@@ -767,38 +818,57 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		return 9;
 	}
 
-	function createCell(entry: Entry, icon: string): Rectangle {
+	function createCell(entry: Entry): Rectangle {
 		const key = entryKey(entry);
+		const kind = entry.type === 'folder' ? 'folder' : entry.item.kind === 'world' ? 'world' : 'object';
+		const style = KIND_STYLE[kind];
+		const meta = kind === 'world' && entry.type === 'item' ? `World · v${entry.item.revisionNumber ?? 1}` : style.label;
+
 		const cell = new Rectangle(`cell-${key}`);
 		cell.width = `${CELL_W}px`;
 		cell.height = `${CELL_H}px`;
-		cell.background = '#1f2937';
-		cell.color = '#374151';
-		cell.thickness = 2;
-		cell.cornerRadius = 8;
+		cell.cornerRadius = 12;
 		cell.isPointerBlocker = true;
 		cell.hoverCursor = 'pointer';
 
-		const iconText = new TextBlock(`cell-icon-${key}`, icon);
-		iconText.fontSize = 28;
-		iconText.height = '36px';
-		iconText.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-		iconText.top = '4px';
-		iconText.color = 'white';
-		cell.addControl(iconText);
+		const badge = new Rectangle(`cell-badge-${key}`);
+		badge.width = '38px'; badge.height = '38px';
+		badge.background = style.tint; badge.thickness = 0; badge.cornerRadius = 10;
+		badge.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+		badge.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+		badge.left = '10px'; badge.top = '10px';
+		badge.isHitTestVisible = false;
+		const glyph = new TextBlock(`cell-icon-${key}`, style.icon);
+		glyph.fontSize = 22;
+		badge.addControl(glyph);
+		cell.addControl(badge);
 
-		const nameW = CELL_W - 14;
-		const nameH = CELL_H - 46;
+		const tag = new TextBlock(`cell-meta-${key}`, meta);
+		tag.fontSize = 13; tag.color = INV.muted;
+		tag.width = `${CELL_W - 64}px`; tag.height = '20px';
+		tag.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+		tag.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+		tag.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+		tag.left = '56px'; tag.top = '10px';
+		tag.isHitTestVisible = false;
+		cell.addControl(tag);
+
+		const nameW = CELL_W - 20;
+		const nameH = CELL_H - 58;
 		const name = new TextBlock(`cell-name-${key}`, entry.name);
-		name.width = `${nameW}px`;
-		name.height = `${nameH}px`;
-		name.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-		name.top = '-4px';
+		name.width = `${nameW}px`; name.height = `${nameH}px`;
 		name.textWrapping = true;
-		name.color = 'white';
+		name.color = INV.text;
 		name.fontSize = fitFontSize(entry.name, nameW, nameH);
+		name.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+		name.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+		name.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+		name.top = '-8px';
+		name.isHitTestVisible = false;
 		cell.addControl(name);
 
+		cell.onPointerEnterObservable.add(() => paintCell(key, cell, true));
+		cell.onPointerOutObservable.add(() => paintCell(key, cell));
 		cell.onPointerClickObservable.add(() => {
 			const now = Date.now();
 			if (lastClick.key === key && now - lastClick.at <= DOUBLE_CLICK_MS) {
@@ -810,14 +880,27 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			select(entry);
 		});
 		cellByKey.set(key, cell);
+		paintCell(key, cell);
 		return cell;
+	}
+
+	function showListNotice(title: string, hint = '', color = INV.muted) {
+		for (const child of [...inventoryList.children]) inventoryList.removeControl(child);
+		const heading = new TextBlock('inventory-notice', title);
+		heading.height = hint ? '44px' : '60px'; heading.fontSize = 22; heading.color = color; heading.paddingTop = '40px';
+		inventoryList.addControl(heading);
+		if (hint) {
+			const sub = new TextBlock('inventory-notice-hint', hint);
+			sub.height = '34px'; sub.fontSize = 16; sub.color = INV.muted; sub.paddingTop = '40px';
+			inventoryList.addControl(sub);
+		}
 	}
 
 	async function refreshList() {
 		if (!activeAdapter) return;
 		const adapter = activeAdapter;
 		const folderId = currentFolderId();
-		setStatus(inventoryList, 'Loading…');
+		showListNotice('Loading…');
 		cellByKey.clear();
 		void refreshUsage();
 
@@ -830,37 +913,36 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			]);
 		} catch (err) {
 			console.error(`Failed to list inventory (${adapter.id})`, err);
-			setStatus(inventoryList, 'Could not load the inventory (see console)', '#f87171');
+			showListNotice('Could not load the inventory', 'See the console for details.', INV.error);
 			return;
 		}
 		if (adapter !== activeAdapter) return;
 
-		for (const child of [...inventoryList.children]) inventoryList.removeControl(child);
-		const entries: Array<{ entry: Entry; icon: string }> = [
-			...folders.map((folder) => ({ entry: { type: 'folder', id: folder.id, name: folder.name, folder } as Entry, icon: '📁' })),
-			...items.map((item) => ({ entry: { type: 'item', id: item.id, name: item.name, item } as Entry, icon: item.kind === 'world' ? '🌍' : '📦' }))
+		const entries: Entry[] = [
+			...folders.map((folder): Entry => ({ type: 'folder', id: folder.id, name: folder.name, folder })),
+			...items.map((item): Entry => ({ type: 'item', id: item.id, name: item.name, item }))
 		];
 		if (entries.length === 0) {
-			setStatus(inventoryList, '(empty)');
+			showListNotice('Nothing here yet', 'Add a folder, or save a world from the Session tab.');
 			select(null);
 			return;
 		}
+		for (const child of [...inventoryList.children]) inventoryList.removeControl(child);
 		for (let start = 0; start < entries.length; start += GRID_COLUMNS) {
 			const row = new StackPanel(`inventory-row-${start}`);
 			row.isVertical = false;
-			row.height = `${CELL_H + 8}px`;
+			row.height = `${CELL_H + CELL_GAP}px`;
 			row.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-			for (const { entry, icon } of entries.slice(start, start + GRID_COLUMNS)) {
-				const cell = createCell(entry, icon);
-				cell.paddingRight = '6px';
-				cell.paddingBottom = '6px';
+			for (const entry of entries.slice(start, start + GRID_COLUMNS)) {
+				const cell = createCell(entry);
+				cell.paddingRight = `${CELL_GAP}px`;
+				cell.paddingBottom = `${CELL_GAP}px`;
 				row.addControl(cell);
 			}
 			inventoryList.addControl(row);
 		}
 		// Keep the selection across a refresh if the entry still exists.
-		const keep = selected && cellByKey.has(entryKey(selected)) ? selected : null;
-		select(keep);
+		select(selected && cellByKey.has(entryKey(selected)) ? selected : null);
 	}
 
 	function selectAdapter(adapter: InventoryAdapter) {
@@ -879,14 +961,17 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 
 		const folders = availableInventoryFolders(getInventoryContext());
 		for (const folder of folders) {
+			const isActive = folder === activeAdapter;
 			const btn = Button.CreateSimpleButton(`root-${folder.id}`, folder.label);
-			btn.width = '160px';
-			btn.height = '42px';
+			btn.width = '120px';
+			btn.height = '36px';
 			btn.fontSize = 18;
-			btn.color = 'white';
-			btn.background = folder === activeAdapter ? '#2563eb' : '#374151';
-			btn.cornerRadius = 8;
-			btn.paddingRight = '6px';
+			btn.color = isActive ? INV.text : INV.muted;
+			btn.background = isActive ? INV.accent : 'transparent';
+			btn.thickness = 0;
+			btn.cornerRadius = 9;
+			btn.paddingLeft = '4px';
+			btn.paddingRight = '4px';
 			btn.onPointerClickObservable.add(() => selectAdapter(folder));
 			inventoryRoots.addControl(btn);
 		}

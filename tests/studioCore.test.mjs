@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import * as ops from '../src/lib/studio/tree/ops.ts';
 import { quatToEuler, eulerToQuat } from '../src/lib/math/euler.ts';
 import { History } from '../src/lib/studio/state/history.ts';
+import { readFileSync } from 'node:fs';
 import { COMPONENT_SCHEMAS, componentSchema, addableComponents } from '../src/lib/studio/schema/components.ts';
 
 const ids = () => {
@@ -99,7 +100,7 @@ test('euler <-> quaternion round trips', () => {
 
 test('every component type has a schema and a valid blank instance', () => {
   const types = COMPONENT_SCHEMAS.map((s) => s.type);
-  assert.equal(new Set(types).size, 19);
+  assert.equal(new Set(types).size, 22);
   for (const schema of COMPONENT_SCHEMAS) {
     assert.equal(componentSchema(schema.type), schema);
     if (schema.type === 'worldPortal') continue; // created from the world library, not blank
@@ -135,4 +136,18 @@ test('lintCode ignores brackets in strings and comments and reports real problem
   assert.equal(lintCode('return { tick( };')[0].severity, 'error');
   assert.equal(lintCode('return { onSpawn() { window.alert(1); } };')[0].line, 1);
   assert.equal(lintCode('const x = 1;')[0].severity, 'warning');
+});
+
+test('the lobby YouTube player is a valid UI tree whose script compiles and finds its elements', () => {
+  const lobby = JSON.parse(readFileSync(new URL('../src/lib/xr/templates/lobby.json', import.meta.url), 'utf8'));
+  const ids = new Set(lobby.map((slot) => slot.id));
+  assert.equal(ids.size, lobby.length);
+  for (const slot of lobby) assert.ok(slot.parentId === null || ids.has(slot.parentId));
+  const root = lobby.find((slot) => slot.id === 'lobby-yt-youtube-player');
+  const tree = lobby.filter((slot) => slot.id.startsWith('lobby-yt-'));
+  const names = new Set(tree.map((slot) => slot.name));
+  const code = root.components.find((c) => c.type === 'codeBlock').code;
+  assert.doesNotThrow(() => new Function('ctx', code));
+  for (const [, name] of code.matchAll(/'(YT [A-Za-z ]+)'/g)) { if (!name.endsWith(' ')) assert.ok(names.has(name), name); }
+  assert.ok(tree.some((slot) => slot.components.some((c) => c.type === 'uiElement' && c.kind === 'video')));
 });

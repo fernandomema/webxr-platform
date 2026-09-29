@@ -275,6 +275,9 @@ export class HostAuthority {
 			case 'media-control-request':
 				if (this.sceneGraph.controlMedia(msg.slotId, msg.action)) this.broadcastSnapshot();
 				break;
+			case 'ui-event-request':
+				if (this.sceneGraph.dispatchUIEvent(msg.event) && msg.event.type !== 'change') this.broadcastSnapshot();
+				break;
 		}
 	}
 

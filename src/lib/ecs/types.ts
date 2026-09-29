@@ -67,18 +67,6 @@ export interface MirrorComponent {
 	resolution?: number;
 }
 
-export interface VideoPlayerComponent {
-	type: 'videoPlayer';
-	/** A browser-loadable media URL (for example MP4/WebM/HLS when supported). */
-	url: string;
-	autoplay?: boolean;
-	loop?: boolean;
-	muted?: boolean;
-	volume?: number;
-	playing?: boolean;
-	currentTime?: number;
-}
-
 export interface AudioPlayerComponent {
 	type: 'audioPlayer';
 	/** A browser-loadable audio URL (for example MP3/OGG/WAV when supported). */
@@ -116,6 +104,29 @@ export interface ParticleBurstComponent {
 	color?: string;
 	count?: number;
 	durationMs?: number;
+}
+
+/**
+ * A freehand line drawn through `points` (world-space, flat [x, y, z, ...]),
+ * rendered as a single tube. One slot per brush stroke keeps long drawings
+ * cheap: one mesh and one snapshot entry instead of one slot per segment.
+ */
+export interface StrokeComponent {
+	type: 'stroke';
+	points: number[];
+	color: string;
+	/** Line thickness (diameter) in meters. */
+	width: number;
+}
+
+/** A gradient sky with optional stars, drawn behind everything and following the camera. Use one per scene. */
+export interface SkyboxComponent {
+	type: 'skybox';
+	topColor: string;
+	horizonColor: string;
+	bottomColor: string;
+	/** Star density, 0 (none) to 1 (dense). */
+	stars?: number;
 }
 
 export interface VelocityComponent {
@@ -157,6 +168,55 @@ export interface ScoreboardComponent {
 		/** Shows a leader marker next to the name. */
 		isLeader?: boolean;
 	}[];
+}
+
+/** Root surface for a hierarchy of world-space UI elements. Dimensions are design pixels. */
+export interface UIPanelComponent {
+	type: 'uiPanel';
+	width: number;
+	height: number;
+	background?: string;
+	/** Physical width in world units; height follows the design-pixel aspect ratio. */
+	worldWidth?: number;
+}
+
+/** A renderable UI control attached to a normal Slot in the scene hierarchy. */
+export interface UIElementComponent {
+	type: 'uiElement';
+	kind: 'container' | 'text' | 'button' | 'input' | 'image' | 'video';
+	visible?: boolean;
+	width?: number;
+	height?: number;
+	flexDirection?: 'row' | 'column';
+	gap?: number;
+	margin?: number;
+	padding?: number;
+	background?: string;
+	color?: string;
+	text?: string;
+	fontSize?: number;
+	fontWeight?: 'normal' | 'bold';
+	/** `container`: 'scroll' clips children to `height` and adds a scrollbar. */
+	overflow?: 'visible' | 'scroll';
+	/** `image` / `video`: a browser-loadable URL (video: MP4/WebM). */
+	src?: string;
+	/** `input`: hint shown while the field is empty. */
+	placeholder?: string;
+	/** `video` playback, shared by every peer. Scripts write these with `world.setComponentField`. */
+	playing?: boolean;
+	loop?: boolean;
+	muted?: boolean;
+	volume?: number;
+	/** `video`: writing a new value seeks to it (the running position is read with `ui.getMedia`). */
+	currentTime?: number;
+}
+
+/** A user interaction with a UI element. Delivered to the element's codeBlock and every ancestor's `onUIEvent`, on the host. */
+export interface UIEvent {
+	type: 'press' | 'change' | 'submit';
+	slotId: string;
+	/** `input` only: the field's current text. */
+	text?: string;
 }
 
 export interface ScriptStateComponent {
@@ -205,16 +265,19 @@ export type Component =
 	| ContainerComponent
 	| WorldPortalComponent
 	| MirrorComponent
-	| VideoPlayerComponent
 	| AudioPlayerComponent
 	| CodeBlockComponent
 	| ExpiresComponent
 	| ParticleBurstComponent
+	| StrokeComponent
+	| SkyboxComponent
 	| VelocityComponent
 	| PressableButtonComponent
 	| ImpactSoundComponent
 	| TextDisplayComponent
 	| ScoreboardComponent
+	| UIPanelComponent
+	| UIElementComponent
 	| ScriptStateComponent;
 
 export interface Slot {

@@ -1,4 +1,4 @@
-import type { MediaControlAction, Slot, SlotTree } from '$lib/ecs/types';
+import type { MediaControlAction, Slot, SlotTree, UIEvent } from '$lib/ecs/types';
 import type { TransformPose } from '../avatar/defaultAvatar';
 
 export type SlotTransform = Pick<Slot, 'id' | 'position' | 'rotation' | 'scale'>;
@@ -29,7 +29,8 @@ export type WorldSyncMessage =
 	| { kind: 'use-request'; slotId: string; hand: 'left' | 'right'; phase: 'press' | 'release' | 'value'; value: number }
 	| { kind: 'spawn-request'; requestId: string; slot: Slot }
 	| { kind: 'delete-request'; requestId: string; slotId: string }
-	| { kind: 'media-control-request'; requestId: string; slotId: string; action: MediaControlAction };
+	| { kind: 'media-control-request'; requestId: string; slotId: string; action: MediaControlAction }
+	| { kind: 'ui-event-request'; requestId: string; event: UIEvent };
 
 /** High-frequency state messages sent on the unordered/unreliable channel. */
 export type WorldStateMessage =
