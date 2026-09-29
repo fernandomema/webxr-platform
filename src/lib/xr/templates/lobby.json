@@ -1195,5 +1195,1579 @@
 				}
 			}
 		]
+	},
+{
+	"id": "demo-8ball-pool",
+	"parentId": null,
+	"name": "8-Ball Pool",
+	"position": [
+		3.2,
+		0.05,
+		-0.9
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		1,
+		1,
+		1
+	],
+	"components": [
+		{
+			"type": "container"
+		},
+		{
+			"type": "grabbable",
+			"scalable": true
+		},
+		{
+			"type": "scriptState",
+			"data": {
+				"resetRequestedAt": 0
+			}
+		},
+		{
+			"type": "codeBlock",
+			"code": "let lastResetSeen = 0;\nfunction kids() { return ctx.hierarchy.getChildren(ctx.self.id); }\nfunction board() { return kids().find((s) => s.name === 'Pool Scoreboard'); }\nfunction draw(b, state) {\n  const rows = Object.values(state.players || {}).map((p) => ({ name: p.name, cells: [p.group || 'Open', String(p.pocketed || 0), state.winner === p.id ? 'Winner' : (state.currentPlayerId === p.id ? 'At table' : 'Ready')], highlight: state.currentPlayerId === p.id && !state.winner, isLeader: state.winner === p.id }));\n  ctx.world.setComponentField(b.id, 'scoreboard', 'rows', rows);\n  ctx.world.setComponentField(b.id, 'scoreboard', 'status', state.winner ? state.winnerName + ' wins!' : (state.lastShot || 'Grab the cue stick, aim at the cue ball, and pull it back to shoot.'));\n}\nfunction resetRack() {\n  if (!ctx.world.isHost()) return;\n  const now = Date.now();\n  for (const s of kids()) if (s.name === 'Cue Ball' || s.name.startsWith('Pool Ball ')) ctx.world.setComponentField(s.id, 'scriptState', 'data', { resetRequestedAt: now, pocketed: false });\n  const b = board(); if (!b) return;\n  const c = b.components.find((x) => x.type === 'scriptState'); const old = (c && c.data) || {};\n  const next = { players: old.players || {}, currentPlayerId: null, currentPlayerName: null, winner: null, winnerName: null, lastShot: 'Rack reset — grab the cue stick to break.' };\n  ctx.world.setComponentField(b.id, 'scriptState', 'data', next); draw(b, next);\n  ctx.audio.play({ frequency: 760, pitchDrop: 260, noiseMix: 0.2, durationMs: 110, volume: 0.4 });\n}\nreturn {\n  tick() { const c = ctx.self.getComponent('scriptState'); const at = c && c.data && c.data.resetRequestedAt; if (at && at !== lastResetSeen) { lastResetSeen = at; resetRack(); } },\n  getRadialItems() { return [{ label: 'Reset Rack', isEnabled: () => ctx.world.isHost(), onSelect: resetRack }]; }\n};"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-base",
+	"parentId": "demo-8ball-pool",
+	"name": "Pool Table Base",
+	"position": [
+		0,
+		0.72,
+		0
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		2.6,
+		0.18,
+		4.9
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "box",
+			"color": "#3f2416"
+		},
+		{
+			"type": "collider",
+			"shape": "box"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-cloth",
+	"parentId": "demo-8ball-pool",
+	"name": "Pool Table Cloth",
+	"position": [
+		0,
+		0.84,
+		0
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		2.26,
+		0.06,
+		4.56
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "box",
+			"color": "#14532d"
+		},
+		{
+			"type": "collider",
+			"shape": "box"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-rail-left",
+	"parentId": "demo-8ball-pool",
+	"name": "Left Rail",
+	"position": [
+		-1.18,
+		0.96,
+		0
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.16,
+		0.18,
+		4.75
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "box",
+			"color": "#713f12"
+		},
+		{
+			"type": "collider",
+			"shape": "box"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-rail-right",
+	"parentId": "demo-8ball-pool",
+	"name": "Right Rail",
+	"position": [
+		1.18,
+		0.96,
+		0
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.16,
+		0.18,
+		4.75
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "box",
+			"color": "#713f12"
+		},
+		{
+			"type": "collider",
+			"shape": "box"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-rail-near",
+	"parentId": "demo-8ball-pool",
+	"name": "Near Rail",
+	"position": [
+		0,
+		0.96,
+		2.34
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		2.3,
+		0.18,
+		0.16
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "box",
+			"color": "#713f12"
+		},
+		{
+			"type": "collider",
+			"shape": "box"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-rail-far",
+	"parentId": "demo-8ball-pool",
+	"name": "Far Rail",
+	"position": [
+		0,
+		0.96,
+		-2.34
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		2.3,
+		0.18,
+		0.16
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "box",
+			"color": "#713f12"
+		},
+		{
+			"type": "collider",
+			"shape": "box"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-pocket-1",
+	"parentId": "demo-8ball-pool",
+	"name": "Pocket 1",
+	"position": [
+		-1.12,
+		0.98,
+		-2.18
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.23,
+		0.04,
+		0.23
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#020617"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-pocket-2",
+	"parentId": "demo-8ball-pool",
+	"name": "Pocket 2",
+	"position": [
+		0,
+		0.98,
+		-2.22
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.23,
+		0.04,
+		0.23
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#020617"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-pocket-3",
+	"parentId": "demo-8ball-pool",
+	"name": "Pocket 3",
+	"position": [
+		1.12,
+		0.98,
+		-2.18
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.23,
+		0.04,
+		0.23
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#020617"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-pocket-4",
+	"parentId": "demo-8ball-pool",
+	"name": "Pocket 4",
+	"position": [
+		-1.12,
+		0.98,
+		2.18
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.23,
+		0.04,
+		0.23
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#020617"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-pocket-5",
+	"parentId": "demo-8ball-pool",
+	"name": "Pocket 5",
+	"position": [
+		0,
+		0.98,
+		2.22
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.23,
+		0.04,
+		0.23
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#020617"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-pocket-6",
+	"parentId": "demo-8ball-pool",
+	"name": "Pocket 6",
+	"position": [
+		1.12,
+		0.98,
+		2.18
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.23,
+		0.04,
+		0.23
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#020617"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-pocket-7",
+	"parentId": "demo-8ball-pool",
+	"name": "Pocket 7",
+	"position": [
+		-1.12,
+		0.98,
+		0
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.23,
+		0.04,
+		0.23
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#020617"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-pocket-8",
+	"parentId": "demo-8ball-pool",
+	"name": "Pocket 8",
+	"position": [
+		1.12,
+		0.98,
+		0
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.23,
+		0.04,
+		0.23
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#020617"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-ball-1",
+	"parentId": "demo-8ball-pool",
+	"name": "Pool Ball 1",
+	"position": [
+		0,
+		1.03,
+		-1.02
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.18,
+		0.18,
+		0.18
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#facc15"
+		},
+		{
+			"type": "collider",
+			"shape": "sphere"
+		},
+		{
+			"type": "velocity",
+			"linear": [
+				0,
+				0,
+				0
+			],
+			"drag": 0.22
+		},
+		{
+			"type": "scriptState",
+			"data": {
+				"resetRequestedAt": 0,
+				"pocketed": false
+			}
+		},
+		{
+			"type": "codeBlock",
+			"code": "const START_X = 0;\nconst START_Z = -1.02;\nconst IS_CUE = false;\nconst RADIUS = 0.09;\nconst HALF_X = 1.0;\nconst HALF_Z = 2.02;\nconst POCKET_R = 0.18;\nconst STOP = 0.035;\nlet spawnPos = null;\nlet spawnRot = null;\nlet centerX = 0;\nlet centerZ = 0;\nlet thrower = null;\nlet lastResetSeen = 0;\nlet pocketed = false;\n\nfunction siblings() { const p = ctx.hierarchy.getParent(ctx.self.id); return p ? ctx.hierarchy.getChildren(p.id) : []; }\nfunction scoreboard() { return siblings().find((s) => s.name === 'Pool Scoreboard'); }\nfunction stateOf(b) { const c = b && b.components.find((x) => x.type === 'scriptState'); return (c && c.data) || {}; }\nfunction draw(b, state) {\n  const rows = Object.values(state.players || {}).map((p) => ({ name: p.name, cells: [p.group || 'Open', String(p.pocketed || 0), state.winner === p.id ? 'Winner' : (state.currentPlayerId === p.id ? 'At table' : 'Ready')], highlight: state.currentPlayerId === p.id && !state.winner, isLeader: state.winner === p.id }));\n  ctx.world.setComponentField(b.id, 'scoreboard', 'rows', rows);\n  ctx.world.setComponentField(b.id, 'scoreboard', 'status', state.winner ? state.winnerName + ' wins!' : (state.lastShot || 'Grab the cue stick, aim at the cue ball, and pull it back to shoot.'));\n}\nfunction score(kind, number) {\n  const b = scoreboard(); if (!b || !ctx.world.isHost()) return;\n  const old = stateOf(b); const players = { ...(old.players || {}) };\n  const player = thrower || (old.currentPlayerId ? { id: old.currentPlayerId, name: old.currentPlayerName || 'Player' } : { id: 'solo-player', name: 'Player' });\n  const p = { ...(players[player.id] || { name: player.name, group: null, pocketed: 0 }), name: player.name };\n  let lastShot = old.lastShot || '';\n  if (kind === 'cue') lastShot = 'Foul: cue ball pocketed — use Reset Cue Ball.';\n  else if (number === 8) {\n    if (p.group && p.pocketed >= 7) { old.winner = player.id; old.winnerName = player.name; lastShot = 'Eight ball sunk — ' + player.name + ' wins!'; }\n    else lastShot = 'Foul: eight ball sunk too early.';\n  } else {\n    const group = number <= 7 ? 'Solids' : 'Stripes';\n    if (!p.group) p.group = group;\n    if (p.group === group) p.pocketed = (p.pocketed || 0) + 1;\n    lastShot = player.name + ' pocketed ball ' + number + '.';\n  }\n  players[player.id] = p;\n  const next = { ...old, players, currentPlayerId: player.id, currentPlayerName: player.name, lastShot };\n  ctx.world.setComponentField(b.id, 'scriptState', 'data', next); draw(b, next);\n}\nfunction pocket(pos) {\n  const holes = [[centerX - 1.11, centerZ - 2.12], [centerX, centerZ - 2.18], [centerX + 1.11, centerZ - 2.12], [centerX - 1.11, centerZ + 2.12], [centerX, centerZ + 2.18], [centerX + 1.11, centerZ + 2.12], [centerX - 1.11, centerZ], [centerX + 1.11, centerZ]];\n  return holes.find((h) => Math.hypot(pos[0] - h[0], pos[2] - h[1]) <= POCKET_R);\n}\nfunction resetBall() {\n  pocketed = false; thrower = null;\n  ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n  ctx.self.setWorldPosition(spawnPos); ctx.self.setWorldRotation(spawnRot);\n}\nreturn {\n  onSpawn() { spawnPos = ctx.self.getWorldPosition(); spawnRot = ctx.self.getWorldRotation(); centerX = spawnPos[0] - START_X; centerZ = spawnPos[2] - START_Z; },\n  onGrab() {\n    if (!IS_CUE) return;\n    const holders = ctx.grab.heldBy(); if (holders.length) thrower = ctx.world.getPlayer(holders[0]);\n    pocketed = false; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  },\n  onRelease() { if (IS_CUE && ctx.world.isHost()) ctx.audio.play({ frequency: 260, pitchDrop: 100, noiseMix: 0.35, durationMs: 100, volume: 0.28 }); },\n  tick(dt) {\n    const step = Math.min(Math.max(dt, 1 / 120), 1 / 30);\n    const c = ctx.self.getComponent('scriptState'); const at = c && c.data && c.data.resetRequestedAt;\n    if (at && at !== lastResetSeen) { lastResetSeen = at; resetBall(); return; }\n    if (pocketed || ctx.grab.isHeld() || !ctx.world.isHost()) return;\n    const vc = ctx.self.getComponent('velocity'); let v = vc ? [...vc.linear] : [0, 0, 0];\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP && Math.abs(v[1]) < STOP) { ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); return; }\n    const pos = ctx.self.getWorldPosition(); const next = ctx.math.vecAdd(pos, ctx.math.vecScale(v, step)); const hole = pocket(next);\n    if (hole) {\n      pocketed = true; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: true });\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); ctx.self.setWorldPosition([hole[0], pos[1] - 0.42, hole[1]]);\n      const n = Number((ctx.self.getSlot(ctx.self.id).name.match(/\\d+/) || ['0'])[0]); score(IS_CUE ? 'cue' : 'object', n);\n      ctx.audio.play({ frequency: IS_CUE ? 95 : 145, pitchDrop: 75, noiseMix: 0.82, durationMs: 220, volume: 0.48 }); return;\n    }\n    const speed = ctx.math.vecLength([v[0], 0, v[2]]);\n    if (speed > 0.12) {\n      const dir = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      for (const other of ctx.world.findNear(next, 0.19)) {\n        if (other.id === ctx.self.id || !other.name.startsWith('Pool Ball ')) continue;\n        const st = other.components.find((x) => x.type === 'scriptState'); const ov = other.components.find((x) => x.type === 'velocity');\n        if ((st && st.data && st.data.pocketed) || !ov) continue;\n        ctx.world.setComponentField(other.id, 'velocity', 'linear', ctx.math.vecAdd(ov.linear, ctx.math.vecScale(dir, Math.max(speed * 0.82, 0.45))));\n        v = ctx.math.vecScale(v, 0.42); ctx.audio.play({ frequency: IS_CUE ? 210 : 170, pitchDrop: 75, noiseMix: 0.6, durationMs: 120, volume: 0.3 }); break;\n      }\n    }\n    if (next[0] < centerX - HALF_X || next[0] > centerX + HALF_X) v[0] *= -0.84;\n    if (next[2] < centerZ - HALF_Z || next[2] > centerZ + HALF_Z) v[2] *= -0.84;\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP) v = [0, 0, 0];\n    ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', v);\n    if (v[0] || v[2]) ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle([1, 0, 0], Math.hypot(v[0], v[2]) * step / RADIUS));\n  },\n  getRadialItems() { return IS_CUE ? [{ label: 'Reset Cue Ball', isEnabled: () => ctx.world.isHost(), onSelect: resetBall }] : []; }\n};"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-ball-2",
+	"parentId": "demo-8ball-pool",
+	"name": "Pool Ball 2",
+	"position": [
+		-0.11,
+		1.03,
+		-1.21
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.18,
+		0.18,
+		0.18
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#2563eb"
+		},
+		{
+			"type": "collider",
+			"shape": "sphere"
+		},
+		{
+			"type": "velocity",
+			"linear": [
+				0,
+				0,
+				0
+			],
+			"drag": 0.22
+		},
+		{
+			"type": "scriptState",
+			"data": {
+				"resetRequestedAt": 0,
+				"pocketed": false
+			}
+		},
+		{
+			"type": "codeBlock",
+			"code": "const START_X = -0.11;\nconst START_Z = -1.21;\nconst IS_CUE = false;\nconst RADIUS = 0.09;\nconst HALF_X = 1.0;\nconst HALF_Z = 2.02;\nconst POCKET_R = 0.18;\nconst STOP = 0.035;\nlet spawnPos = null;\nlet spawnRot = null;\nlet centerX = 0;\nlet centerZ = 0;\nlet thrower = null;\nlet lastResetSeen = 0;\nlet pocketed = false;\n\nfunction siblings() { const p = ctx.hierarchy.getParent(ctx.self.id); return p ? ctx.hierarchy.getChildren(p.id) : []; }\nfunction scoreboard() { return siblings().find((s) => s.name === 'Pool Scoreboard'); }\nfunction stateOf(b) { const c = b && b.components.find((x) => x.type === 'scriptState'); return (c && c.data) || {}; }\nfunction draw(b, state) {\n  const rows = Object.values(state.players || {}).map((p) => ({ name: p.name, cells: [p.group || 'Open', String(p.pocketed || 0), state.winner === p.id ? 'Winner' : (state.currentPlayerId === p.id ? 'At table' : 'Ready')], highlight: state.currentPlayerId === p.id && !state.winner, isLeader: state.winner === p.id }));\n  ctx.world.setComponentField(b.id, 'scoreboard', 'rows', rows);\n  ctx.world.setComponentField(b.id, 'scoreboard', 'status', state.winner ? state.winnerName + ' wins!' : (state.lastShot || 'Grab the cue stick, aim at the cue ball, and pull it back to shoot.'));\n}\nfunction score(kind, number) {\n  const b = scoreboard(); if (!b || !ctx.world.isHost()) return;\n  const old = stateOf(b); const players = { ...(old.players || {}) };\n  const player = thrower || (old.currentPlayerId ? { id: old.currentPlayerId, name: old.currentPlayerName || 'Player' } : { id: 'solo-player', name: 'Player' });\n  const p = { ...(players[player.id] || { name: player.name, group: null, pocketed: 0 }), name: player.name };\n  let lastShot = old.lastShot || '';\n  if (kind === 'cue') lastShot = 'Foul: cue ball pocketed — use Reset Cue Ball.';\n  else if (number === 8) {\n    if (p.group && p.pocketed >= 7) { old.winner = player.id; old.winnerName = player.name; lastShot = 'Eight ball sunk — ' + player.name + ' wins!'; }\n    else lastShot = 'Foul: eight ball sunk too early.';\n  } else {\n    const group = number <= 7 ? 'Solids' : 'Stripes';\n    if (!p.group) p.group = group;\n    if (p.group === group) p.pocketed = (p.pocketed || 0) + 1;\n    lastShot = player.name + ' pocketed ball ' + number + '.';\n  }\n  players[player.id] = p;\n  const next = { ...old, players, currentPlayerId: player.id, currentPlayerName: player.name, lastShot };\n  ctx.world.setComponentField(b.id, 'scriptState', 'data', next); draw(b, next);\n}\nfunction pocket(pos) {\n  const holes = [[centerX - 1.11, centerZ - 2.12], [centerX, centerZ - 2.18], [centerX + 1.11, centerZ - 2.12], [centerX - 1.11, centerZ + 2.12], [centerX, centerZ + 2.18], [centerX + 1.11, centerZ + 2.12], [centerX - 1.11, centerZ], [centerX + 1.11, centerZ]];\n  return holes.find((h) => Math.hypot(pos[0] - h[0], pos[2] - h[1]) <= POCKET_R);\n}\nfunction resetBall() {\n  pocketed = false; thrower = null;\n  ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n  ctx.self.setWorldPosition(spawnPos); ctx.self.setWorldRotation(spawnRot);\n}\nreturn {\n  onSpawn() { spawnPos = ctx.self.getWorldPosition(); spawnRot = ctx.self.getWorldRotation(); centerX = spawnPos[0] - START_X; centerZ = spawnPos[2] - START_Z; },\n  onGrab() {\n    if (!IS_CUE) return;\n    const holders = ctx.grab.heldBy(); if (holders.length) thrower = ctx.world.getPlayer(holders[0]);\n    pocketed = false; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  },\n  onRelease() { if (IS_CUE && ctx.world.isHost()) ctx.audio.play({ frequency: 260, pitchDrop: 100, noiseMix: 0.35, durationMs: 100, volume: 0.28 }); },\n  tick(dt) {\n    const step = Math.min(Math.max(dt, 1 / 120), 1 / 30);\n    const c = ctx.self.getComponent('scriptState'); const at = c && c.data && c.data.resetRequestedAt;\n    if (at && at !== lastResetSeen) { lastResetSeen = at; resetBall(); return; }\n    if (pocketed || ctx.grab.isHeld() || !ctx.world.isHost()) return;\n    const vc = ctx.self.getComponent('velocity'); let v = vc ? [...vc.linear] : [0, 0, 0];\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP && Math.abs(v[1]) < STOP) { ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); return; }\n    const pos = ctx.self.getWorldPosition(); const next = ctx.math.vecAdd(pos, ctx.math.vecScale(v, step)); const hole = pocket(next);\n    if (hole) {\n      pocketed = true; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: true });\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); ctx.self.setWorldPosition([hole[0], pos[1] - 0.42, hole[1]]);\n      const n = Number((ctx.self.getSlot(ctx.self.id).name.match(/\\d+/) || ['0'])[0]); score(IS_CUE ? 'cue' : 'object', n);\n      ctx.audio.play({ frequency: IS_CUE ? 95 : 145, pitchDrop: 75, noiseMix: 0.82, durationMs: 220, volume: 0.48 }); return;\n    }\n    const speed = ctx.math.vecLength([v[0], 0, v[2]]);\n    if (speed > 0.12) {\n      const dir = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      for (const other of ctx.world.findNear(next, 0.19)) {\n        if (other.id === ctx.self.id || !other.name.startsWith('Pool Ball ')) continue;\n        const st = other.components.find((x) => x.type === 'scriptState'); const ov = other.components.find((x) => x.type === 'velocity');\n        if ((st && st.data && st.data.pocketed) || !ov) continue;\n        ctx.world.setComponentField(other.id, 'velocity', 'linear', ctx.math.vecAdd(ov.linear, ctx.math.vecScale(dir, Math.max(speed * 0.82, 0.45))));\n        v = ctx.math.vecScale(v, 0.42); ctx.audio.play({ frequency: IS_CUE ? 210 : 170, pitchDrop: 75, noiseMix: 0.6, durationMs: 120, volume: 0.3 }); break;\n      }\n    }\n    if (next[0] < centerX - HALF_X || next[0] > centerX + HALF_X) v[0] *= -0.84;\n    if (next[2] < centerZ - HALF_Z || next[2] > centerZ + HALF_Z) v[2] *= -0.84;\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP) v = [0, 0, 0];\n    ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', v);\n    if (v[0] || v[2]) ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle([1, 0, 0], Math.hypot(v[0], v[2]) * step / RADIUS));\n  },\n  getRadialItems() { return IS_CUE ? [{ label: 'Reset Cue Ball', isEnabled: () => ctx.world.isHost(), onSelect: resetBall }] : []; }\n};"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-ball-3",
+	"parentId": "demo-8ball-pool",
+	"name": "Pool Ball 3",
+	"position": [
+		0.11,
+		1.03,
+		-1.21
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.18,
+		0.18,
+		0.18
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#dc2626"
+		},
+		{
+			"type": "collider",
+			"shape": "sphere"
+		},
+		{
+			"type": "velocity",
+			"linear": [
+				0,
+				0,
+				0
+			],
+			"drag": 0.22
+		},
+		{
+			"type": "scriptState",
+			"data": {
+				"resetRequestedAt": 0,
+				"pocketed": false
+			}
+		},
+		{
+			"type": "codeBlock",
+			"code": "const START_X = 0.11;\nconst START_Z = -1.21;\nconst IS_CUE = false;\nconst RADIUS = 0.09;\nconst HALF_X = 1.0;\nconst HALF_Z = 2.02;\nconst POCKET_R = 0.18;\nconst STOP = 0.035;\nlet spawnPos = null;\nlet spawnRot = null;\nlet centerX = 0;\nlet centerZ = 0;\nlet thrower = null;\nlet lastResetSeen = 0;\nlet pocketed = false;\n\nfunction siblings() { const p = ctx.hierarchy.getParent(ctx.self.id); return p ? ctx.hierarchy.getChildren(p.id) : []; }\nfunction scoreboard() { return siblings().find((s) => s.name === 'Pool Scoreboard'); }\nfunction stateOf(b) { const c = b && b.components.find((x) => x.type === 'scriptState'); return (c && c.data) || {}; }\nfunction draw(b, state) {\n  const rows = Object.values(state.players || {}).map((p) => ({ name: p.name, cells: [p.group || 'Open', String(p.pocketed || 0), state.winner === p.id ? 'Winner' : (state.currentPlayerId === p.id ? 'At table' : 'Ready')], highlight: state.currentPlayerId === p.id && !state.winner, isLeader: state.winner === p.id }));\n  ctx.world.setComponentField(b.id, 'scoreboard', 'rows', rows);\n  ctx.world.setComponentField(b.id, 'scoreboard', 'status', state.winner ? state.winnerName + ' wins!' : (state.lastShot || 'Grab the cue stick, aim at the cue ball, and pull it back to shoot.'));\n}\nfunction score(kind, number) {\n  const b = scoreboard(); if (!b || !ctx.world.isHost()) return;\n  const old = stateOf(b); const players = { ...(old.players || {}) };\n  const player = thrower || (old.currentPlayerId ? { id: old.currentPlayerId, name: old.currentPlayerName || 'Player' } : { id: 'solo-player', name: 'Player' });\n  const p = { ...(players[player.id] || { name: player.name, group: null, pocketed: 0 }), name: player.name };\n  let lastShot = old.lastShot || '';\n  if (kind === 'cue') lastShot = 'Foul: cue ball pocketed — use Reset Cue Ball.';\n  else if (number === 8) {\n    if (p.group && p.pocketed >= 7) { old.winner = player.id; old.winnerName = player.name; lastShot = 'Eight ball sunk — ' + player.name + ' wins!'; }\n    else lastShot = 'Foul: eight ball sunk too early.';\n  } else {\n    const group = number <= 7 ? 'Solids' : 'Stripes';\n    if (!p.group) p.group = group;\n    if (p.group === group) p.pocketed = (p.pocketed || 0) + 1;\n    lastShot = player.name + ' pocketed ball ' + number + '.';\n  }\n  players[player.id] = p;\n  const next = { ...old, players, currentPlayerId: player.id, currentPlayerName: player.name, lastShot };\n  ctx.world.setComponentField(b.id, 'scriptState', 'data', next); draw(b, next);\n}\nfunction pocket(pos) {\n  const holes = [[centerX - 1.11, centerZ - 2.12], [centerX, centerZ - 2.18], [centerX + 1.11, centerZ - 2.12], [centerX - 1.11, centerZ + 2.12], [centerX, centerZ + 2.18], [centerX + 1.11, centerZ + 2.12], [centerX - 1.11, centerZ], [centerX + 1.11, centerZ]];\n  return holes.find((h) => Math.hypot(pos[0] - h[0], pos[2] - h[1]) <= POCKET_R);\n}\nfunction resetBall() {\n  pocketed = false; thrower = null;\n  ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n  ctx.self.setWorldPosition(spawnPos); ctx.self.setWorldRotation(spawnRot);\n}\nreturn {\n  onSpawn() { spawnPos = ctx.self.getWorldPosition(); spawnRot = ctx.self.getWorldRotation(); centerX = spawnPos[0] - START_X; centerZ = spawnPos[2] - START_Z; },\n  onGrab() {\n    if (!IS_CUE) return;\n    const holders = ctx.grab.heldBy(); if (holders.length) thrower = ctx.world.getPlayer(holders[0]);\n    pocketed = false; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  },\n  onRelease() { if (IS_CUE && ctx.world.isHost()) ctx.audio.play({ frequency: 260, pitchDrop: 100, noiseMix: 0.35, durationMs: 100, volume: 0.28 }); },\n  tick(dt) {\n    const step = Math.min(Math.max(dt, 1 / 120), 1 / 30);\n    const c = ctx.self.getComponent('scriptState'); const at = c && c.data && c.data.resetRequestedAt;\n    if (at && at !== lastResetSeen) { lastResetSeen = at; resetBall(); return; }\n    if (pocketed || ctx.grab.isHeld() || !ctx.world.isHost()) return;\n    const vc = ctx.self.getComponent('velocity'); let v = vc ? [...vc.linear] : [0, 0, 0];\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP && Math.abs(v[1]) < STOP) { ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); return; }\n    const pos = ctx.self.getWorldPosition(); const next = ctx.math.vecAdd(pos, ctx.math.vecScale(v, step)); const hole = pocket(next);\n    if (hole) {\n      pocketed = true; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: true });\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); ctx.self.setWorldPosition([hole[0], pos[1] - 0.42, hole[1]]);\n      const n = Number((ctx.self.getSlot(ctx.self.id).name.match(/\\d+/) || ['0'])[0]); score(IS_CUE ? 'cue' : 'object', n);\n      ctx.audio.play({ frequency: IS_CUE ? 95 : 145, pitchDrop: 75, noiseMix: 0.82, durationMs: 220, volume: 0.48 }); return;\n    }\n    const speed = ctx.math.vecLength([v[0], 0, v[2]]);\n    if (speed > 0.12) {\n      const dir = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      for (const other of ctx.world.findNear(next, 0.19)) {\n        if (other.id === ctx.self.id || !other.name.startsWith('Pool Ball ')) continue;\n        const st = other.components.find((x) => x.type === 'scriptState'); const ov = other.components.find((x) => x.type === 'velocity');\n        if ((st && st.data && st.data.pocketed) || !ov) continue;\n        ctx.world.setComponentField(other.id, 'velocity', 'linear', ctx.math.vecAdd(ov.linear, ctx.math.vecScale(dir, Math.max(speed * 0.82, 0.45))));\n        v = ctx.math.vecScale(v, 0.42); ctx.audio.play({ frequency: IS_CUE ? 210 : 170, pitchDrop: 75, noiseMix: 0.6, durationMs: 120, volume: 0.3 }); break;\n      }\n    }\n    if (next[0] < centerX - HALF_X || next[0] > centerX + HALF_X) v[0] *= -0.84;\n    if (next[2] < centerZ - HALF_Z || next[2] > centerZ + HALF_Z) v[2] *= -0.84;\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP) v = [0, 0, 0];\n    ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', v);\n    if (v[0] || v[2]) ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle([1, 0, 0], Math.hypot(v[0], v[2]) * step / RADIUS));\n  },\n  getRadialItems() { return IS_CUE ? [{ label: 'Reset Cue Ball', isEnabled: () => ctx.world.isHost(), onSelect: resetBall }] : []; }\n};"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-ball-4",
+	"parentId": "demo-8ball-pool",
+	"name": "Pool Ball 4",
+	"position": [
+		-0.22,
+		1.03,
+		-1.4
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.18,
+		0.18,
+		0.18
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#7c3aed"
+		},
+		{
+			"type": "collider",
+			"shape": "sphere"
+		},
+		{
+			"type": "velocity",
+			"linear": [
+				0,
+				0,
+				0
+			],
+			"drag": 0.22
+		},
+		{
+			"type": "scriptState",
+			"data": {
+				"resetRequestedAt": 0,
+				"pocketed": false
+			}
+		},
+		{
+			"type": "codeBlock",
+			"code": "const START_X = -0.22;\nconst START_Z = -1.4;\nconst IS_CUE = false;\nconst RADIUS = 0.09;\nconst HALF_X = 1.0;\nconst HALF_Z = 2.02;\nconst POCKET_R = 0.18;\nconst STOP = 0.035;\nlet spawnPos = null;\nlet spawnRot = null;\nlet centerX = 0;\nlet centerZ = 0;\nlet thrower = null;\nlet lastResetSeen = 0;\nlet pocketed = false;\n\nfunction siblings() { const p = ctx.hierarchy.getParent(ctx.self.id); return p ? ctx.hierarchy.getChildren(p.id) : []; }\nfunction scoreboard() { return siblings().find((s) => s.name === 'Pool Scoreboard'); }\nfunction stateOf(b) { const c = b && b.components.find((x) => x.type === 'scriptState'); return (c && c.data) || {}; }\nfunction draw(b, state) {\n  const rows = Object.values(state.players || {}).map((p) => ({ name: p.name, cells: [p.group || 'Open', String(p.pocketed || 0), state.winner === p.id ? 'Winner' : (state.currentPlayerId === p.id ? 'At table' : 'Ready')], highlight: state.currentPlayerId === p.id && !state.winner, isLeader: state.winner === p.id }));\n  ctx.world.setComponentField(b.id, 'scoreboard', 'rows', rows);\n  ctx.world.setComponentField(b.id, 'scoreboard', 'status', state.winner ? state.winnerName + ' wins!' : (state.lastShot || 'Grab the cue stick, aim at the cue ball, and pull it back to shoot.'));\n}\nfunction score(kind, number) {\n  const b = scoreboard(); if (!b || !ctx.world.isHost()) return;\n  const old = stateOf(b); const players = { ...(old.players || {}) };\n  const player = thrower || (old.currentPlayerId ? { id: old.currentPlayerId, name: old.currentPlayerName || 'Player' } : { id: 'solo-player', name: 'Player' });\n  const p = { ...(players[player.id] || { name: player.name, group: null, pocketed: 0 }), name: player.name };\n  let lastShot = old.lastShot || '';\n  if (kind === 'cue') lastShot = 'Foul: cue ball pocketed — use Reset Cue Ball.';\n  else if (number === 8) {\n    if (p.group && p.pocketed >= 7) { old.winner = player.id; old.winnerName = player.name; lastShot = 'Eight ball sunk — ' + player.name + ' wins!'; }\n    else lastShot = 'Foul: eight ball sunk too early.';\n  } else {\n    const group = number <= 7 ? 'Solids' : 'Stripes';\n    if (!p.group) p.group = group;\n    if (p.group === group) p.pocketed = (p.pocketed || 0) + 1;\n    lastShot = player.name + ' pocketed ball ' + number + '.';\n  }\n  players[player.id] = p;\n  const next = { ...old, players, currentPlayerId: player.id, currentPlayerName: player.name, lastShot };\n  ctx.world.setComponentField(b.id, 'scriptState', 'data', next); draw(b, next);\n}\nfunction pocket(pos) {\n  const holes = [[centerX - 1.11, centerZ - 2.12], [centerX, centerZ - 2.18], [centerX + 1.11, centerZ - 2.12], [centerX - 1.11, centerZ + 2.12], [centerX, centerZ + 2.18], [centerX + 1.11, centerZ + 2.12], [centerX - 1.11, centerZ], [centerX + 1.11, centerZ]];\n  return holes.find((h) => Math.hypot(pos[0] - h[0], pos[2] - h[1]) <= POCKET_R);\n}\nfunction resetBall() {\n  pocketed = false; thrower = null;\n  ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n  ctx.self.setWorldPosition(spawnPos); ctx.self.setWorldRotation(spawnRot);\n}\nreturn {\n  onSpawn() { spawnPos = ctx.self.getWorldPosition(); spawnRot = ctx.self.getWorldRotation(); centerX = spawnPos[0] - START_X; centerZ = spawnPos[2] - START_Z; },\n  onGrab() {\n    if (!IS_CUE) return;\n    const holders = ctx.grab.heldBy(); if (holders.length) thrower = ctx.world.getPlayer(holders[0]);\n    pocketed = false; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  },\n  onRelease() { if (IS_CUE && ctx.world.isHost()) ctx.audio.play({ frequency: 260, pitchDrop: 100, noiseMix: 0.35, durationMs: 100, volume: 0.28 }); },\n  tick(dt) {\n    const step = Math.min(Math.max(dt, 1 / 120), 1 / 30);\n    const c = ctx.self.getComponent('scriptState'); const at = c && c.data && c.data.resetRequestedAt;\n    if (at && at !== lastResetSeen) { lastResetSeen = at; resetBall(); return; }\n    if (pocketed || ctx.grab.isHeld() || !ctx.world.isHost()) return;\n    const vc = ctx.self.getComponent('velocity'); let v = vc ? [...vc.linear] : [0, 0, 0];\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP && Math.abs(v[1]) < STOP) { ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); return; }\n    const pos = ctx.self.getWorldPosition(); const next = ctx.math.vecAdd(pos, ctx.math.vecScale(v, step)); const hole = pocket(next);\n    if (hole) {\n      pocketed = true; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: true });\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); ctx.self.setWorldPosition([hole[0], pos[1] - 0.42, hole[1]]);\n      const n = Number((ctx.self.getSlot(ctx.self.id).name.match(/\\d+/) || ['0'])[0]); score(IS_CUE ? 'cue' : 'object', n);\n      ctx.audio.play({ frequency: IS_CUE ? 95 : 145, pitchDrop: 75, noiseMix: 0.82, durationMs: 220, volume: 0.48 }); return;\n    }\n    const speed = ctx.math.vecLength([v[0], 0, v[2]]);\n    if (speed > 0.12) {\n      const dir = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      for (const other of ctx.world.findNear(next, 0.19)) {\n        if (other.id === ctx.self.id || !other.name.startsWith('Pool Ball ')) continue;\n        const st = other.components.find((x) => x.type === 'scriptState'); const ov = other.components.find((x) => x.type === 'velocity');\n        if ((st && st.data && st.data.pocketed) || !ov) continue;\n        ctx.world.setComponentField(other.id, 'velocity', 'linear', ctx.math.vecAdd(ov.linear, ctx.math.vecScale(dir, Math.max(speed * 0.82, 0.45))));\n        v = ctx.math.vecScale(v, 0.42); ctx.audio.play({ frequency: IS_CUE ? 210 : 170, pitchDrop: 75, noiseMix: 0.6, durationMs: 120, volume: 0.3 }); break;\n      }\n    }\n    if (next[0] < centerX - HALF_X || next[0] > centerX + HALF_X) v[0] *= -0.84;\n    if (next[2] < centerZ - HALF_Z || next[2] > centerZ + HALF_Z) v[2] *= -0.84;\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP) v = [0, 0, 0];\n    ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', v);\n    if (v[0] || v[2]) ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle([1, 0, 0], Math.hypot(v[0], v[2]) * step / RADIUS));\n  },\n  getRadialItems() { return IS_CUE ? [{ label: 'Reset Cue Ball', isEnabled: () => ctx.world.isHost(), onSelect: resetBall }] : []; }\n};"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-ball-5",
+	"parentId": "demo-8ball-pool",
+	"name": "Pool Ball 5",
+	"position": [
+		0,
+		1.03,
+		-1.4
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.18,
+		0.18,
+		0.18
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#f97316"
+		},
+		{
+			"type": "collider",
+			"shape": "sphere"
+		},
+		{
+			"type": "velocity",
+			"linear": [
+				0,
+				0,
+				0
+			],
+			"drag": 0.22
+		},
+		{
+			"type": "scriptState",
+			"data": {
+				"resetRequestedAt": 0,
+				"pocketed": false
+			}
+		},
+		{
+			"type": "codeBlock",
+			"code": "const START_X = 0;\nconst START_Z = -1.4;\nconst IS_CUE = false;\nconst RADIUS = 0.09;\nconst HALF_X = 1.0;\nconst HALF_Z = 2.02;\nconst POCKET_R = 0.18;\nconst STOP = 0.035;\nlet spawnPos = null;\nlet spawnRot = null;\nlet centerX = 0;\nlet centerZ = 0;\nlet thrower = null;\nlet lastResetSeen = 0;\nlet pocketed = false;\n\nfunction siblings() { const p = ctx.hierarchy.getParent(ctx.self.id); return p ? ctx.hierarchy.getChildren(p.id) : []; }\nfunction scoreboard() { return siblings().find((s) => s.name === 'Pool Scoreboard'); }\nfunction stateOf(b) { const c = b && b.components.find((x) => x.type === 'scriptState'); return (c && c.data) || {}; }\nfunction draw(b, state) {\n  const rows = Object.values(state.players || {}).map((p) => ({ name: p.name, cells: [p.group || 'Open', String(p.pocketed || 0), state.winner === p.id ? 'Winner' : (state.currentPlayerId === p.id ? 'At table' : 'Ready')], highlight: state.currentPlayerId === p.id && !state.winner, isLeader: state.winner === p.id }));\n  ctx.world.setComponentField(b.id, 'scoreboard', 'rows', rows);\n  ctx.world.setComponentField(b.id, 'scoreboard', 'status', state.winner ? state.winnerName + ' wins!' : (state.lastShot || 'Grab the cue stick, aim at the cue ball, and pull it back to shoot.'));\n}\nfunction score(kind, number) {\n  const b = scoreboard(); if (!b || !ctx.world.isHost()) return;\n  const old = stateOf(b); const players = { ...(old.players || {}) };\n  const player = thrower || (old.currentPlayerId ? { id: old.currentPlayerId, name: old.currentPlayerName || 'Player' } : { id: 'solo-player', name: 'Player' });\n  const p = { ...(players[player.id] || { name: player.name, group: null, pocketed: 0 }), name: player.name };\n  let lastShot = old.lastShot || '';\n  if (kind === 'cue') lastShot = 'Foul: cue ball pocketed — use Reset Cue Ball.';\n  else if (number === 8) {\n    if (p.group && p.pocketed >= 7) { old.winner = player.id; old.winnerName = player.name; lastShot = 'Eight ball sunk — ' + player.name + ' wins!'; }\n    else lastShot = 'Foul: eight ball sunk too early.';\n  } else {\n    const group = number <= 7 ? 'Solids' : 'Stripes';\n    if (!p.group) p.group = group;\n    if (p.group === group) p.pocketed = (p.pocketed || 0) + 1;\n    lastShot = player.name + ' pocketed ball ' + number + '.';\n  }\n  players[player.id] = p;\n  const next = { ...old, players, currentPlayerId: player.id, currentPlayerName: player.name, lastShot };\n  ctx.world.setComponentField(b.id, 'scriptState', 'data', next); draw(b, next);\n}\nfunction pocket(pos) {\n  const holes = [[centerX - 1.11, centerZ - 2.12], [centerX, centerZ - 2.18], [centerX + 1.11, centerZ - 2.12], [centerX - 1.11, centerZ + 2.12], [centerX, centerZ + 2.18], [centerX + 1.11, centerZ + 2.12], [centerX - 1.11, centerZ], [centerX + 1.11, centerZ]];\n  return holes.find((h) => Math.hypot(pos[0] - h[0], pos[2] - h[1]) <= POCKET_R);\n}\nfunction resetBall() {\n  pocketed = false; thrower = null;\n  ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n  ctx.self.setWorldPosition(spawnPos); ctx.self.setWorldRotation(spawnRot);\n}\nreturn {\n  onSpawn() { spawnPos = ctx.self.getWorldPosition(); spawnRot = ctx.self.getWorldRotation(); centerX = spawnPos[0] - START_X; centerZ = spawnPos[2] - START_Z; },\n  onGrab() {\n    if (!IS_CUE) return;\n    const holders = ctx.grab.heldBy(); if (holders.length) thrower = ctx.world.getPlayer(holders[0]);\n    pocketed = false; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  },\n  onRelease() { if (IS_CUE && ctx.world.isHost()) ctx.audio.play({ frequency: 260, pitchDrop: 100, noiseMix: 0.35, durationMs: 100, volume: 0.28 }); },\n  tick(dt) {\n    const step = Math.min(Math.max(dt, 1 / 120), 1 / 30);\n    const c = ctx.self.getComponent('scriptState'); const at = c && c.data && c.data.resetRequestedAt;\n    if (at && at !== lastResetSeen) { lastResetSeen = at; resetBall(); return; }\n    if (pocketed || ctx.grab.isHeld() || !ctx.world.isHost()) return;\n    const vc = ctx.self.getComponent('velocity'); let v = vc ? [...vc.linear] : [0, 0, 0];\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP && Math.abs(v[1]) < STOP) { ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); return; }\n    const pos = ctx.self.getWorldPosition(); const next = ctx.math.vecAdd(pos, ctx.math.vecScale(v, step)); const hole = pocket(next);\n    if (hole) {\n      pocketed = true; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: true });\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); ctx.self.setWorldPosition([hole[0], pos[1] - 0.42, hole[1]]);\n      const n = Number((ctx.self.getSlot(ctx.self.id).name.match(/\\d+/) || ['0'])[0]); score(IS_CUE ? 'cue' : 'object', n);\n      ctx.audio.play({ frequency: IS_CUE ? 95 : 145, pitchDrop: 75, noiseMix: 0.82, durationMs: 220, volume: 0.48 }); return;\n    }\n    const speed = ctx.math.vecLength([v[0], 0, v[2]]);\n    if (speed > 0.12) {\n      const dir = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      for (const other of ctx.world.findNear(next, 0.19)) {\n        if (other.id === ctx.self.id || !other.name.startsWith('Pool Ball ')) continue;\n        const st = other.components.find((x) => x.type === 'scriptState'); const ov = other.components.find((x) => x.type === 'velocity');\n        if ((st && st.data && st.data.pocketed) || !ov) continue;\n        ctx.world.setComponentField(other.id, 'velocity', 'linear', ctx.math.vecAdd(ov.linear, ctx.math.vecScale(dir, Math.max(speed * 0.82, 0.45))));\n        v = ctx.math.vecScale(v, 0.42); ctx.audio.play({ frequency: IS_CUE ? 210 : 170, pitchDrop: 75, noiseMix: 0.6, durationMs: 120, volume: 0.3 }); break;\n      }\n    }\n    if (next[0] < centerX - HALF_X || next[0] > centerX + HALF_X) v[0] *= -0.84;\n    if (next[2] < centerZ - HALF_Z || next[2] > centerZ + HALF_Z) v[2] *= -0.84;\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP) v = [0, 0, 0];\n    ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', v);\n    if (v[0] || v[2]) ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle([1, 0, 0], Math.hypot(v[0], v[2]) * step / RADIUS));\n  },\n  getRadialItems() { return IS_CUE ? [{ label: 'Reset Cue Ball', isEnabled: () => ctx.world.isHost(), onSelect: resetBall }] : []; }\n};"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-ball-6",
+	"parentId": "demo-8ball-pool",
+	"name": "Pool Ball 6",
+	"position": [
+		0.22,
+		1.03,
+		-1.4
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.18,
+		0.18,
+		0.18
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#16a34a"
+		},
+		{
+			"type": "collider",
+			"shape": "sphere"
+		},
+		{
+			"type": "velocity",
+			"linear": [
+				0,
+				0,
+				0
+			],
+			"drag": 0.22
+		},
+		{
+			"type": "scriptState",
+			"data": {
+				"resetRequestedAt": 0,
+				"pocketed": false
+			}
+		},
+		{
+			"type": "codeBlock",
+			"code": "const START_X = 0.22;\nconst START_Z = -1.4;\nconst IS_CUE = false;\nconst RADIUS = 0.09;\nconst HALF_X = 1.0;\nconst HALF_Z = 2.02;\nconst POCKET_R = 0.18;\nconst STOP = 0.035;\nlet spawnPos = null;\nlet spawnRot = null;\nlet centerX = 0;\nlet centerZ = 0;\nlet thrower = null;\nlet lastResetSeen = 0;\nlet pocketed = false;\n\nfunction siblings() { const p = ctx.hierarchy.getParent(ctx.self.id); return p ? ctx.hierarchy.getChildren(p.id) : []; }\nfunction scoreboard() { return siblings().find((s) => s.name === 'Pool Scoreboard'); }\nfunction stateOf(b) { const c = b && b.components.find((x) => x.type === 'scriptState'); return (c && c.data) || {}; }\nfunction draw(b, state) {\n  const rows = Object.values(state.players || {}).map((p) => ({ name: p.name, cells: [p.group || 'Open', String(p.pocketed || 0), state.winner === p.id ? 'Winner' : (state.currentPlayerId === p.id ? 'At table' : 'Ready')], highlight: state.currentPlayerId === p.id && !state.winner, isLeader: state.winner === p.id }));\n  ctx.world.setComponentField(b.id, 'scoreboard', 'rows', rows);\n  ctx.world.setComponentField(b.id, 'scoreboard', 'status', state.winner ? state.winnerName + ' wins!' : (state.lastShot || 'Grab the cue stick, aim at the cue ball, and pull it back to shoot.'));\n}\nfunction score(kind, number) {\n  const b = scoreboard(); if (!b || !ctx.world.isHost()) return;\n  const old = stateOf(b); const players = { ...(old.players || {}) };\n  const player = thrower || (old.currentPlayerId ? { id: old.currentPlayerId, name: old.currentPlayerName || 'Player' } : { id: 'solo-player', name: 'Player' });\n  const p = { ...(players[player.id] || { name: player.name, group: null, pocketed: 0 }), name: player.name };\n  let lastShot = old.lastShot || '';\n  if (kind === 'cue') lastShot = 'Foul: cue ball pocketed — use Reset Cue Ball.';\n  else if (number === 8) {\n    if (p.group && p.pocketed >= 7) { old.winner = player.id; old.winnerName = player.name; lastShot = 'Eight ball sunk — ' + player.name + ' wins!'; }\n    else lastShot = 'Foul: eight ball sunk too early.';\n  } else {\n    const group = number <= 7 ? 'Solids' : 'Stripes';\n    if (!p.group) p.group = group;\n    if (p.group === group) p.pocketed = (p.pocketed || 0) + 1;\n    lastShot = player.name + ' pocketed ball ' + number + '.';\n  }\n  players[player.id] = p;\n  const next = { ...old, players, currentPlayerId: player.id, currentPlayerName: player.name, lastShot };\n  ctx.world.setComponentField(b.id, 'scriptState', 'data', next); draw(b, next);\n}\nfunction pocket(pos) {\n  const holes = [[centerX - 1.11, centerZ - 2.12], [centerX, centerZ - 2.18], [centerX + 1.11, centerZ - 2.12], [centerX - 1.11, centerZ + 2.12], [centerX, centerZ + 2.18], [centerX + 1.11, centerZ + 2.12], [centerX - 1.11, centerZ], [centerX + 1.11, centerZ]];\n  return holes.find((h) => Math.hypot(pos[0] - h[0], pos[2] - h[1]) <= POCKET_R);\n}\nfunction resetBall() {\n  pocketed = false; thrower = null;\n  ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n  ctx.self.setWorldPosition(spawnPos); ctx.self.setWorldRotation(spawnRot);\n}\nreturn {\n  onSpawn() { spawnPos = ctx.self.getWorldPosition(); spawnRot = ctx.self.getWorldRotation(); centerX = spawnPos[0] - START_X; centerZ = spawnPos[2] - START_Z; },\n  onGrab() {\n    if (!IS_CUE) return;\n    const holders = ctx.grab.heldBy(); if (holders.length) thrower = ctx.world.getPlayer(holders[0]);\n    pocketed = false; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  },\n  onRelease() { if (IS_CUE && ctx.world.isHost()) ctx.audio.play({ frequency: 260, pitchDrop: 100, noiseMix: 0.35, durationMs: 100, volume: 0.28 }); },\n  tick(dt) {\n    const step = Math.min(Math.max(dt, 1 / 120), 1 / 30);\n    const c = ctx.self.getComponent('scriptState'); const at = c && c.data && c.data.resetRequestedAt;\n    if (at && at !== lastResetSeen) { lastResetSeen = at; resetBall(); return; }\n    if (pocketed || ctx.grab.isHeld() || !ctx.world.isHost()) return;\n    const vc = ctx.self.getComponent('velocity'); let v = vc ? [...vc.linear] : [0, 0, 0];\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP && Math.abs(v[1]) < STOP) { ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); return; }\n    const pos = ctx.self.getWorldPosition(); const next = ctx.math.vecAdd(pos, ctx.math.vecScale(v, step)); const hole = pocket(next);\n    if (hole) {\n      pocketed = true; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: true });\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); ctx.self.setWorldPosition([hole[0], pos[1] - 0.42, hole[1]]);\n      const n = Number((ctx.self.getSlot(ctx.self.id).name.match(/\\d+/) || ['0'])[0]); score(IS_CUE ? 'cue' : 'object', n);\n      ctx.audio.play({ frequency: IS_CUE ? 95 : 145, pitchDrop: 75, noiseMix: 0.82, durationMs: 220, volume: 0.48 }); return;\n    }\n    const speed = ctx.math.vecLength([v[0], 0, v[2]]);\n    if (speed > 0.12) {\n      const dir = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      for (const other of ctx.world.findNear(next, 0.19)) {\n        if (other.id === ctx.self.id || !other.name.startsWith('Pool Ball ')) continue;\n        const st = other.components.find((x) => x.type === 'scriptState'); const ov = other.components.find((x) => x.type === 'velocity');\n        if ((st && st.data && st.data.pocketed) || !ov) continue;\n        ctx.world.setComponentField(other.id, 'velocity', 'linear', ctx.math.vecAdd(ov.linear, ctx.math.vecScale(dir, Math.max(speed * 0.82, 0.45))));\n        v = ctx.math.vecScale(v, 0.42); ctx.audio.play({ frequency: IS_CUE ? 210 : 170, pitchDrop: 75, noiseMix: 0.6, durationMs: 120, volume: 0.3 }); break;\n      }\n    }\n    if (next[0] < centerX - HALF_X || next[0] > centerX + HALF_X) v[0] *= -0.84;\n    if (next[2] < centerZ - HALF_Z || next[2] > centerZ + HALF_Z) v[2] *= -0.84;\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP) v = [0, 0, 0];\n    ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', v);\n    if (v[0] || v[2]) ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle([1, 0, 0], Math.hypot(v[0], v[2]) * step / RADIUS));\n  },\n  getRadialItems() { return IS_CUE ? [{ label: 'Reset Cue Ball', isEnabled: () => ctx.world.isHost(), onSelect: resetBall }] : []; }\n};"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-ball-7",
+	"parentId": "demo-8ball-pool",
+	"name": "Pool Ball 7",
+	"position": [
+		-0.33,
+		1.03,
+		-1.59
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.18,
+		0.18,
+		0.18
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#7f1d1d"
+		},
+		{
+			"type": "collider",
+			"shape": "sphere"
+		},
+		{
+			"type": "velocity",
+			"linear": [
+				0,
+				0,
+				0
+			],
+			"drag": 0.22
+		},
+		{
+			"type": "scriptState",
+			"data": {
+				"resetRequestedAt": 0,
+				"pocketed": false
+			}
+		},
+		{
+			"type": "codeBlock",
+			"code": "const START_X = -0.33;\nconst START_Z = -1.59;\nconst IS_CUE = false;\nconst RADIUS = 0.09;\nconst HALF_X = 1.0;\nconst HALF_Z = 2.02;\nconst POCKET_R = 0.18;\nconst STOP = 0.035;\nlet spawnPos = null;\nlet spawnRot = null;\nlet centerX = 0;\nlet centerZ = 0;\nlet thrower = null;\nlet lastResetSeen = 0;\nlet pocketed = false;\n\nfunction siblings() { const p = ctx.hierarchy.getParent(ctx.self.id); return p ? ctx.hierarchy.getChildren(p.id) : []; }\nfunction scoreboard() { return siblings().find((s) => s.name === 'Pool Scoreboard'); }\nfunction stateOf(b) { const c = b && b.components.find((x) => x.type === 'scriptState'); return (c && c.data) || {}; }\nfunction draw(b, state) {\n  const rows = Object.values(state.players || {}).map((p) => ({ name: p.name, cells: [p.group || 'Open', String(p.pocketed || 0), state.winner === p.id ? 'Winner' : (state.currentPlayerId === p.id ? 'At table' : 'Ready')], highlight: state.currentPlayerId === p.id && !state.winner, isLeader: state.winner === p.id }));\n  ctx.world.setComponentField(b.id, 'scoreboard', 'rows', rows);\n  ctx.world.setComponentField(b.id, 'scoreboard', 'status', state.winner ? state.winnerName + ' wins!' : (state.lastShot || 'Grab the cue stick, aim at the cue ball, and pull it back to shoot.'));\n}\nfunction score(kind, number) {\n  const b = scoreboard(); if (!b || !ctx.world.isHost()) return;\n  const old = stateOf(b); const players = { ...(old.players || {}) };\n  const player = thrower || (old.currentPlayerId ? { id: old.currentPlayerId, name: old.currentPlayerName || 'Player' } : { id: 'solo-player', name: 'Player' });\n  const p = { ...(players[player.id] || { name: player.name, group: null, pocketed: 0 }), name: player.name };\n  let lastShot = old.lastShot || '';\n  if (kind === 'cue') lastShot = 'Foul: cue ball pocketed — use Reset Cue Ball.';\n  else if (number === 8) {\n    if (p.group && p.pocketed >= 7) { old.winner = player.id; old.winnerName = player.name; lastShot = 'Eight ball sunk — ' + player.name + ' wins!'; }\n    else lastShot = 'Foul: eight ball sunk too early.';\n  } else {\n    const group = number <= 7 ? 'Solids' : 'Stripes';\n    if (!p.group) p.group = group;\n    if (p.group === group) p.pocketed = (p.pocketed || 0) + 1;\n    lastShot = player.name + ' pocketed ball ' + number + '.';\n  }\n  players[player.id] = p;\n  const next = { ...old, players, currentPlayerId: player.id, currentPlayerName: player.name, lastShot };\n  ctx.world.setComponentField(b.id, 'scriptState', 'data', next); draw(b, next);\n}\nfunction pocket(pos) {\n  const holes = [[centerX - 1.11, centerZ - 2.12], [centerX, centerZ - 2.18], [centerX + 1.11, centerZ - 2.12], [centerX - 1.11, centerZ + 2.12], [centerX, centerZ + 2.18], [centerX + 1.11, centerZ + 2.12], [centerX - 1.11, centerZ], [centerX + 1.11, centerZ]];\n  return holes.find((h) => Math.hypot(pos[0] - h[0], pos[2] - h[1]) <= POCKET_R);\n}\nfunction resetBall() {\n  pocketed = false; thrower = null;\n  ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n  ctx.self.setWorldPosition(spawnPos); ctx.self.setWorldRotation(spawnRot);\n}\nreturn {\n  onSpawn() { spawnPos = ctx.self.getWorldPosition(); spawnRot = ctx.self.getWorldRotation(); centerX = spawnPos[0] - START_X; centerZ = spawnPos[2] - START_Z; },\n  onGrab() {\n    if (!IS_CUE) return;\n    const holders = ctx.grab.heldBy(); if (holders.length) thrower = ctx.world.getPlayer(holders[0]);\n    pocketed = false; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  },\n  onRelease() { if (IS_CUE && ctx.world.isHost()) ctx.audio.play({ frequency: 260, pitchDrop: 100, noiseMix: 0.35, durationMs: 100, volume: 0.28 }); },\n  tick(dt) {\n    const step = Math.min(Math.max(dt, 1 / 120), 1 / 30);\n    const c = ctx.self.getComponent('scriptState'); const at = c && c.data && c.data.resetRequestedAt;\n    if (at && at !== lastResetSeen) { lastResetSeen = at; resetBall(); return; }\n    if (pocketed || ctx.grab.isHeld() || !ctx.world.isHost()) return;\n    const vc = ctx.self.getComponent('velocity'); let v = vc ? [...vc.linear] : [0, 0, 0];\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP && Math.abs(v[1]) < STOP) { ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); return; }\n    const pos = ctx.self.getWorldPosition(); const next = ctx.math.vecAdd(pos, ctx.math.vecScale(v, step)); const hole = pocket(next);\n    if (hole) {\n      pocketed = true; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: true });\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); ctx.self.setWorldPosition([hole[0], pos[1] - 0.42, hole[1]]);\n      const n = Number((ctx.self.getSlot(ctx.self.id).name.match(/\\d+/) || ['0'])[0]); score(IS_CUE ? 'cue' : 'object', n);\n      ctx.audio.play({ frequency: IS_CUE ? 95 : 145, pitchDrop: 75, noiseMix: 0.82, durationMs: 220, volume: 0.48 }); return;\n    }\n    const speed = ctx.math.vecLength([v[0], 0, v[2]]);\n    if (speed > 0.12) {\n      const dir = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      for (const other of ctx.world.findNear(next, 0.19)) {\n        if (other.id === ctx.self.id || !other.name.startsWith('Pool Ball ')) continue;\n        const st = other.components.find((x) => x.type === 'scriptState'); const ov = other.components.find((x) => x.type === 'velocity');\n        if ((st && st.data && st.data.pocketed) || !ov) continue;\n        ctx.world.setComponentField(other.id, 'velocity', 'linear', ctx.math.vecAdd(ov.linear, ctx.math.vecScale(dir, Math.max(speed * 0.82, 0.45))));\n        v = ctx.math.vecScale(v, 0.42); ctx.audio.play({ frequency: IS_CUE ? 210 : 170, pitchDrop: 75, noiseMix: 0.6, durationMs: 120, volume: 0.3 }); break;\n      }\n    }\n    if (next[0] < centerX - HALF_X || next[0] > centerX + HALF_X) v[0] *= -0.84;\n    if (next[2] < centerZ - HALF_Z || next[2] > centerZ + HALF_Z) v[2] *= -0.84;\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP) v = [0, 0, 0];\n    ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', v);\n    if (v[0] || v[2]) ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle([1, 0, 0], Math.hypot(v[0], v[2]) * step / RADIUS));\n  },\n  getRadialItems() { return IS_CUE ? [{ label: 'Reset Cue Ball', isEnabled: () => ctx.world.isHost(), onSelect: resetBall }] : []; }\n};"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-ball-8",
+	"parentId": "demo-8ball-pool",
+	"name": "Pool Ball 8",
+	"position": [
+		-0.11,
+		1.03,
+		-1.59
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.18,
+		0.18,
+		0.18
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#020617"
+		},
+		{
+			"type": "collider",
+			"shape": "sphere"
+		},
+		{
+			"type": "velocity",
+			"linear": [
+				0,
+				0,
+				0
+			],
+			"drag": 0.22
+		},
+		{
+			"type": "scriptState",
+			"data": {
+				"resetRequestedAt": 0,
+				"pocketed": false
+			}
+		},
+		{
+			"type": "codeBlock",
+			"code": "const START_X = -0.11;\nconst START_Z = -1.59;\nconst IS_CUE = false;\nconst RADIUS = 0.09;\nconst HALF_X = 1.0;\nconst HALF_Z = 2.02;\nconst POCKET_R = 0.18;\nconst STOP = 0.035;\nlet spawnPos = null;\nlet spawnRot = null;\nlet centerX = 0;\nlet centerZ = 0;\nlet thrower = null;\nlet lastResetSeen = 0;\nlet pocketed = false;\n\nfunction siblings() { const p = ctx.hierarchy.getParent(ctx.self.id); return p ? ctx.hierarchy.getChildren(p.id) : []; }\nfunction scoreboard() { return siblings().find((s) => s.name === 'Pool Scoreboard'); }\nfunction stateOf(b) { const c = b && b.components.find((x) => x.type === 'scriptState'); return (c && c.data) || {}; }\nfunction draw(b, state) {\n  const rows = Object.values(state.players || {}).map((p) => ({ name: p.name, cells: [p.group || 'Open', String(p.pocketed || 0), state.winner === p.id ? 'Winner' : (state.currentPlayerId === p.id ? 'At table' : 'Ready')], highlight: state.currentPlayerId === p.id && !state.winner, isLeader: state.winner === p.id }));\n  ctx.world.setComponentField(b.id, 'scoreboard', 'rows', rows);\n  ctx.world.setComponentField(b.id, 'scoreboard', 'status', state.winner ? state.winnerName + ' wins!' : (state.lastShot || 'Grab the cue stick, aim at the cue ball, and pull it back to shoot.'));\n}\nfunction score(kind, number) {\n  const b = scoreboard(); if (!b || !ctx.world.isHost()) return;\n  const old = stateOf(b); const players = { ...(old.players || {}) };\n  const player = thrower || (old.currentPlayerId ? { id: old.currentPlayerId, name: old.currentPlayerName || 'Player' } : { id: 'solo-player', name: 'Player' });\n  const p = { ...(players[player.id] || { name: player.name, group: null, pocketed: 0 }), name: player.name };\n  let lastShot = old.lastShot || '';\n  if (kind === 'cue') lastShot = 'Foul: cue ball pocketed — use Reset Cue Ball.';\n  else if (number === 8) {\n    if (p.group && p.pocketed >= 7) { old.winner = player.id; old.winnerName = player.name; lastShot = 'Eight ball sunk — ' + player.name + ' wins!'; }\n    else lastShot = 'Foul: eight ball sunk too early.';\n  } else {\n    const group = number <= 7 ? 'Solids' : 'Stripes';\n    if (!p.group) p.group = group;\n    if (p.group === group) p.pocketed = (p.pocketed || 0) + 1;\n    lastShot = player.name + ' pocketed ball ' + number + '.';\n  }\n  players[player.id] = p;\n  const next = { ...old, players, currentPlayerId: player.id, currentPlayerName: player.name, lastShot };\n  ctx.world.setComponentField(b.id, 'scriptState', 'data', next); draw(b, next);\n}\nfunction pocket(pos) {\n  const holes = [[centerX - 1.11, centerZ - 2.12], [centerX, centerZ - 2.18], [centerX + 1.11, centerZ - 2.12], [centerX - 1.11, centerZ + 2.12], [centerX, centerZ + 2.18], [centerX + 1.11, centerZ + 2.12], [centerX - 1.11, centerZ], [centerX + 1.11, centerZ]];\n  return holes.find((h) => Math.hypot(pos[0] - h[0], pos[2] - h[1]) <= POCKET_R);\n}\nfunction resetBall() {\n  pocketed = false; thrower = null;\n  ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n  ctx.self.setWorldPosition(spawnPos); ctx.self.setWorldRotation(spawnRot);\n}\nreturn {\n  onSpawn() { spawnPos = ctx.self.getWorldPosition(); spawnRot = ctx.self.getWorldRotation(); centerX = spawnPos[0] - START_X; centerZ = spawnPos[2] - START_Z; },\n  onGrab() {\n    if (!IS_CUE) return;\n    const holders = ctx.grab.heldBy(); if (holders.length) thrower = ctx.world.getPlayer(holders[0]);\n    pocketed = false; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  },\n  onRelease() { if (IS_CUE && ctx.world.isHost()) ctx.audio.play({ frequency: 260, pitchDrop: 100, noiseMix: 0.35, durationMs: 100, volume: 0.28 }); },\n  tick(dt) {\n    const step = Math.min(Math.max(dt, 1 / 120), 1 / 30);\n    const c = ctx.self.getComponent('scriptState'); const at = c && c.data && c.data.resetRequestedAt;\n    if (at && at !== lastResetSeen) { lastResetSeen = at; resetBall(); return; }\n    if (pocketed || ctx.grab.isHeld() || !ctx.world.isHost()) return;\n    const vc = ctx.self.getComponent('velocity'); let v = vc ? [...vc.linear] : [0, 0, 0];\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP && Math.abs(v[1]) < STOP) { ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); return; }\n    const pos = ctx.self.getWorldPosition(); const next = ctx.math.vecAdd(pos, ctx.math.vecScale(v, step)); const hole = pocket(next);\n    if (hole) {\n      pocketed = true; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: true });\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); ctx.self.setWorldPosition([hole[0], pos[1] - 0.42, hole[1]]);\n      const n = Number((ctx.self.getSlot(ctx.self.id).name.match(/\\d+/) || ['0'])[0]); score(IS_CUE ? 'cue' : 'object', n);\n      ctx.audio.play({ frequency: IS_CUE ? 95 : 145, pitchDrop: 75, noiseMix: 0.82, durationMs: 220, volume: 0.48 }); return;\n    }\n    const speed = ctx.math.vecLength([v[0], 0, v[2]]);\n    if (speed > 0.12) {\n      const dir = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      for (const other of ctx.world.findNear(next, 0.19)) {\n        if (other.id === ctx.self.id || !other.name.startsWith('Pool Ball ')) continue;\n        const st = other.components.find((x) => x.type === 'scriptState'); const ov = other.components.find((x) => x.type === 'velocity');\n        if ((st && st.data && st.data.pocketed) || !ov) continue;\n        ctx.world.setComponentField(other.id, 'velocity', 'linear', ctx.math.vecAdd(ov.linear, ctx.math.vecScale(dir, Math.max(speed * 0.82, 0.45))));\n        v = ctx.math.vecScale(v, 0.42); ctx.audio.play({ frequency: IS_CUE ? 210 : 170, pitchDrop: 75, noiseMix: 0.6, durationMs: 120, volume: 0.3 }); break;\n      }\n    }\n    if (next[0] < centerX - HALF_X || next[0] > centerX + HALF_X) v[0] *= -0.84;\n    if (next[2] < centerZ - HALF_Z || next[2] > centerZ + HALF_Z) v[2] *= -0.84;\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP) v = [0, 0, 0];\n    ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', v);\n    if (v[0] || v[2]) ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle([1, 0, 0], Math.hypot(v[0], v[2]) * step / RADIUS));\n  },\n  getRadialItems() { return IS_CUE ? [{ label: 'Reset Cue Ball', isEnabled: () => ctx.world.isHost(), onSelect: resetBall }] : []; }\n};"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-ball-9",
+	"parentId": "demo-8ball-pool",
+	"name": "Pool Ball 9",
+	"position": [
+		0.11,
+		1.03,
+		-1.59
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.18,
+		0.18,
+		0.18
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#fef08a"
+		},
+		{
+			"type": "collider",
+			"shape": "sphere"
+		},
+		{
+			"type": "velocity",
+			"linear": [
+				0,
+				0,
+				0
+			],
+			"drag": 0.22
+		},
+		{
+			"type": "scriptState",
+			"data": {
+				"resetRequestedAt": 0,
+				"pocketed": false
+			}
+		},
+		{
+			"type": "codeBlock",
+			"code": "const START_X = 0.11;\nconst START_Z = -1.59;\nconst IS_CUE = false;\nconst RADIUS = 0.09;\nconst HALF_X = 1.0;\nconst HALF_Z = 2.02;\nconst POCKET_R = 0.18;\nconst STOP = 0.035;\nlet spawnPos = null;\nlet spawnRot = null;\nlet centerX = 0;\nlet centerZ = 0;\nlet thrower = null;\nlet lastResetSeen = 0;\nlet pocketed = false;\n\nfunction siblings() { const p = ctx.hierarchy.getParent(ctx.self.id); return p ? ctx.hierarchy.getChildren(p.id) : []; }\nfunction scoreboard() { return siblings().find((s) => s.name === 'Pool Scoreboard'); }\nfunction stateOf(b) { const c = b && b.components.find((x) => x.type === 'scriptState'); return (c && c.data) || {}; }\nfunction draw(b, state) {\n  const rows = Object.values(state.players || {}).map((p) => ({ name: p.name, cells: [p.group || 'Open', String(p.pocketed || 0), state.winner === p.id ? 'Winner' : (state.currentPlayerId === p.id ? 'At table' : 'Ready')], highlight: state.currentPlayerId === p.id && !state.winner, isLeader: state.winner === p.id }));\n  ctx.world.setComponentField(b.id, 'scoreboard', 'rows', rows);\n  ctx.world.setComponentField(b.id, 'scoreboard', 'status', state.winner ? state.winnerName + ' wins!' : (state.lastShot || 'Grab the cue stick, aim at the cue ball, and pull it back to shoot.'));\n}\nfunction score(kind, number) {\n  const b = scoreboard(); if (!b || !ctx.world.isHost()) return;\n  const old = stateOf(b); const players = { ...(old.players || {}) };\n  const player = thrower || (old.currentPlayerId ? { id: old.currentPlayerId, name: old.currentPlayerName || 'Player' } : { id: 'solo-player', name: 'Player' });\n  const p = { ...(players[player.id] || { name: player.name, group: null, pocketed: 0 }), name: player.name };\n  let lastShot = old.lastShot || '';\n  if (kind === 'cue') lastShot = 'Foul: cue ball pocketed — use Reset Cue Ball.';\n  else if (number === 8) {\n    if (p.group && p.pocketed >= 7) { old.winner = player.id; old.winnerName = player.name; lastShot = 'Eight ball sunk — ' + player.name + ' wins!'; }\n    else lastShot = 'Foul: eight ball sunk too early.';\n  } else {\n    const group = number <= 7 ? 'Solids' : 'Stripes';\n    if (!p.group) p.group = group;\n    if (p.group === group) p.pocketed = (p.pocketed || 0) + 1;\n    lastShot = player.name + ' pocketed ball ' + number + '.';\n  }\n  players[player.id] = p;\n  const next = { ...old, players, currentPlayerId: player.id, currentPlayerName: player.name, lastShot };\n  ctx.world.setComponentField(b.id, 'scriptState', 'data', next); draw(b, next);\n}\nfunction pocket(pos) {\n  const holes = [[centerX - 1.11, centerZ - 2.12], [centerX, centerZ - 2.18], [centerX + 1.11, centerZ - 2.12], [centerX - 1.11, centerZ + 2.12], [centerX, centerZ + 2.18], [centerX + 1.11, centerZ + 2.12], [centerX - 1.11, centerZ], [centerX + 1.11, centerZ]];\n  return holes.find((h) => Math.hypot(pos[0] - h[0], pos[2] - h[1]) <= POCKET_R);\n}\nfunction resetBall() {\n  pocketed = false; thrower = null;\n  ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n  ctx.self.setWorldPosition(spawnPos); ctx.self.setWorldRotation(spawnRot);\n}\nreturn {\n  onSpawn() { spawnPos = ctx.self.getWorldPosition(); spawnRot = ctx.self.getWorldRotation(); centerX = spawnPos[0] - START_X; centerZ = spawnPos[2] - START_Z; },\n  onGrab() {\n    if (!IS_CUE) return;\n    const holders = ctx.grab.heldBy(); if (holders.length) thrower = ctx.world.getPlayer(holders[0]);\n    pocketed = false; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  },\n  onRelease() { if (IS_CUE && ctx.world.isHost()) ctx.audio.play({ frequency: 260, pitchDrop: 100, noiseMix: 0.35, durationMs: 100, volume: 0.28 }); },\n  tick(dt) {\n    const step = Math.min(Math.max(dt, 1 / 120), 1 / 30);\n    const c = ctx.self.getComponent('scriptState'); const at = c && c.data && c.data.resetRequestedAt;\n    if (at && at !== lastResetSeen) { lastResetSeen = at; resetBall(); return; }\n    if (pocketed || ctx.grab.isHeld() || !ctx.world.isHost()) return;\n    const vc = ctx.self.getComponent('velocity'); let v = vc ? [...vc.linear] : [0, 0, 0];\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP && Math.abs(v[1]) < STOP) { ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); return; }\n    const pos = ctx.self.getWorldPosition(); const next = ctx.math.vecAdd(pos, ctx.math.vecScale(v, step)); const hole = pocket(next);\n    if (hole) {\n      pocketed = true; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: true });\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); ctx.self.setWorldPosition([hole[0], pos[1] - 0.42, hole[1]]);\n      const n = Number((ctx.self.getSlot(ctx.self.id).name.match(/\\d+/) || ['0'])[0]); score(IS_CUE ? 'cue' : 'object', n);\n      ctx.audio.play({ frequency: IS_CUE ? 95 : 145, pitchDrop: 75, noiseMix: 0.82, durationMs: 220, volume: 0.48 }); return;\n    }\n    const speed = ctx.math.vecLength([v[0], 0, v[2]]);\n    if (speed > 0.12) {\n      const dir = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      for (const other of ctx.world.findNear(next, 0.19)) {\n        if (other.id === ctx.self.id || !other.name.startsWith('Pool Ball ')) continue;\n        const st = other.components.find((x) => x.type === 'scriptState'); const ov = other.components.find((x) => x.type === 'velocity');\n        if ((st && st.data && st.data.pocketed) || !ov) continue;\n        ctx.world.setComponentField(other.id, 'velocity', 'linear', ctx.math.vecAdd(ov.linear, ctx.math.vecScale(dir, Math.max(speed * 0.82, 0.45))));\n        v = ctx.math.vecScale(v, 0.42); ctx.audio.play({ frequency: IS_CUE ? 210 : 170, pitchDrop: 75, noiseMix: 0.6, durationMs: 120, volume: 0.3 }); break;\n      }\n    }\n    if (next[0] < centerX - HALF_X || next[0] > centerX + HALF_X) v[0] *= -0.84;\n    if (next[2] < centerZ - HALF_Z || next[2] > centerZ + HALF_Z) v[2] *= -0.84;\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP) v = [0, 0, 0];\n    ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', v);\n    if (v[0] || v[2]) ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle([1, 0, 0], Math.hypot(v[0], v[2]) * step / RADIUS));\n  },\n  getRadialItems() { return IS_CUE ? [{ label: 'Reset Cue Ball', isEnabled: () => ctx.world.isHost(), onSelect: resetBall }] : []; }\n};"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-ball-10",
+	"parentId": "demo-8ball-pool",
+	"name": "Pool Ball 10",
+	"position": [
+		0.33,
+		1.03,
+		-1.59
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.18,
+		0.18,
+		0.18
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#93c5fd"
+		},
+		{
+			"type": "collider",
+			"shape": "sphere"
+		},
+		{
+			"type": "velocity",
+			"linear": [
+				0,
+				0,
+				0
+			],
+			"drag": 0.22
+		},
+		{
+			"type": "scriptState",
+			"data": {
+				"resetRequestedAt": 0,
+				"pocketed": false
+			}
+		},
+		{
+			"type": "codeBlock",
+			"code": "const START_X = 0.33;\nconst START_Z = -1.59;\nconst IS_CUE = false;\nconst RADIUS = 0.09;\nconst HALF_X = 1.0;\nconst HALF_Z = 2.02;\nconst POCKET_R = 0.18;\nconst STOP = 0.035;\nlet spawnPos = null;\nlet spawnRot = null;\nlet centerX = 0;\nlet centerZ = 0;\nlet thrower = null;\nlet lastResetSeen = 0;\nlet pocketed = false;\n\nfunction siblings() { const p = ctx.hierarchy.getParent(ctx.self.id); return p ? ctx.hierarchy.getChildren(p.id) : []; }\nfunction scoreboard() { return siblings().find((s) => s.name === 'Pool Scoreboard'); }\nfunction stateOf(b) { const c = b && b.components.find((x) => x.type === 'scriptState'); return (c && c.data) || {}; }\nfunction draw(b, state) {\n  const rows = Object.values(state.players || {}).map((p) => ({ name: p.name, cells: [p.group || 'Open', String(p.pocketed || 0), state.winner === p.id ? 'Winner' : (state.currentPlayerId === p.id ? 'At table' : 'Ready')], highlight: state.currentPlayerId === p.id && !state.winner, isLeader: state.winner === p.id }));\n  ctx.world.setComponentField(b.id, 'scoreboard', 'rows', rows);\n  ctx.world.setComponentField(b.id, 'scoreboard', 'status', state.winner ? state.winnerName + ' wins!' : (state.lastShot || 'Grab the cue stick, aim at the cue ball, and pull it back to shoot.'));\n}\nfunction score(kind, number) {\n  const b = scoreboard(); if (!b || !ctx.world.isHost()) return;\n  const old = stateOf(b); const players = { ...(old.players || {}) };\n  const player = thrower || (old.currentPlayerId ? { id: old.currentPlayerId, name: old.currentPlayerName || 'Player' } : { id: 'solo-player', name: 'Player' });\n  const p = { ...(players[player.id] || { name: player.name, group: null, pocketed: 0 }), name: player.name };\n  let lastShot = old.lastShot || '';\n  if (kind === 'cue') lastShot = 'Foul: cue ball pocketed — use Reset Cue Ball.';\n  else if (number === 8) {\n    if (p.group && p.pocketed >= 7) { old.winner = player.id; old.winnerName = player.name; lastShot = 'Eight ball sunk — ' + player.name + ' wins!'; }\n    else lastShot = 'Foul: eight ball sunk too early.';\n  } else {\n    const group = number <= 7 ? 'Solids' : 'Stripes';\n    if (!p.group) p.group = group;\n    if (p.group === group) p.pocketed = (p.pocketed || 0) + 1;\n    lastShot = player.name + ' pocketed ball ' + number + '.';\n  }\n  players[player.id] = p;\n  const next = { ...old, players, currentPlayerId: player.id, currentPlayerName: player.name, lastShot };\n  ctx.world.setComponentField(b.id, 'scriptState', 'data', next); draw(b, next);\n}\nfunction pocket(pos) {\n  const holes = [[centerX - 1.11, centerZ - 2.12], [centerX, centerZ - 2.18], [centerX + 1.11, centerZ - 2.12], [centerX - 1.11, centerZ + 2.12], [centerX, centerZ + 2.18], [centerX + 1.11, centerZ + 2.12], [centerX - 1.11, centerZ], [centerX + 1.11, centerZ]];\n  return holes.find((h) => Math.hypot(pos[0] - h[0], pos[2] - h[1]) <= POCKET_R);\n}\nfunction resetBall() {\n  pocketed = false; thrower = null;\n  ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n  ctx.self.setWorldPosition(spawnPos); ctx.self.setWorldRotation(spawnRot);\n}\nreturn {\n  onSpawn() { spawnPos = ctx.self.getWorldPosition(); spawnRot = ctx.self.getWorldRotation(); centerX = spawnPos[0] - START_X; centerZ = spawnPos[2] - START_Z; },\n  onGrab() {\n    if (!IS_CUE) return;\n    const holders = ctx.grab.heldBy(); if (holders.length) thrower = ctx.world.getPlayer(holders[0]);\n    pocketed = false; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  },\n  onRelease() { if (IS_CUE && ctx.world.isHost()) ctx.audio.play({ frequency: 260, pitchDrop: 100, noiseMix: 0.35, durationMs: 100, volume: 0.28 }); },\n  tick(dt) {\n    const step = Math.min(Math.max(dt, 1 / 120), 1 / 30);\n    const c = ctx.self.getComponent('scriptState'); const at = c && c.data && c.data.resetRequestedAt;\n    if (at && at !== lastResetSeen) { lastResetSeen = at; resetBall(); return; }\n    if (pocketed || ctx.grab.isHeld() || !ctx.world.isHost()) return;\n    const vc = ctx.self.getComponent('velocity'); let v = vc ? [...vc.linear] : [0, 0, 0];\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP && Math.abs(v[1]) < STOP) { ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); return; }\n    const pos = ctx.self.getWorldPosition(); const next = ctx.math.vecAdd(pos, ctx.math.vecScale(v, step)); const hole = pocket(next);\n    if (hole) {\n      pocketed = true; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: true });\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); ctx.self.setWorldPosition([hole[0], pos[1] - 0.42, hole[1]]);\n      const n = Number((ctx.self.getSlot(ctx.self.id).name.match(/\\d+/) || ['0'])[0]); score(IS_CUE ? 'cue' : 'object', n);\n      ctx.audio.play({ frequency: IS_CUE ? 95 : 145, pitchDrop: 75, noiseMix: 0.82, durationMs: 220, volume: 0.48 }); return;\n    }\n    const speed = ctx.math.vecLength([v[0], 0, v[2]]);\n    if (speed > 0.12) {\n      const dir = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      for (const other of ctx.world.findNear(next, 0.19)) {\n        if (other.id === ctx.self.id || !other.name.startsWith('Pool Ball ')) continue;\n        const st = other.components.find((x) => x.type === 'scriptState'); const ov = other.components.find((x) => x.type === 'velocity');\n        if ((st && st.data && st.data.pocketed) || !ov) continue;\n        ctx.world.setComponentField(other.id, 'velocity', 'linear', ctx.math.vecAdd(ov.linear, ctx.math.vecScale(dir, Math.max(speed * 0.82, 0.45))));\n        v = ctx.math.vecScale(v, 0.42); ctx.audio.play({ frequency: IS_CUE ? 210 : 170, pitchDrop: 75, noiseMix: 0.6, durationMs: 120, volume: 0.3 }); break;\n      }\n    }\n    if (next[0] < centerX - HALF_X || next[0] > centerX + HALF_X) v[0] *= -0.84;\n    if (next[2] < centerZ - HALF_Z || next[2] > centerZ + HALF_Z) v[2] *= -0.84;\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP) v = [0, 0, 0];\n    ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', v);\n    if (v[0] || v[2]) ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle([1, 0, 0], Math.hypot(v[0], v[2]) * step / RADIUS));\n  },\n  getRadialItems() { return IS_CUE ? [{ label: 'Reset Cue Ball', isEnabled: () => ctx.world.isHost(), onSelect: resetBall }] : []; }\n};"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-ball-11",
+	"parentId": "demo-8ball-pool",
+	"name": "Pool Ball 11",
+	"position": [
+		-0.44,
+		1.03,
+		-1.78
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.18,
+		0.18,
+		0.18
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#fca5a5"
+		},
+		{
+			"type": "collider",
+			"shape": "sphere"
+		},
+		{
+			"type": "velocity",
+			"linear": [
+				0,
+				0,
+				0
+			],
+			"drag": 0.22
+		},
+		{
+			"type": "scriptState",
+			"data": {
+				"resetRequestedAt": 0,
+				"pocketed": false
+			}
+		},
+		{
+			"type": "codeBlock",
+			"code": "const START_X = -0.44;\nconst START_Z = -1.78;\nconst IS_CUE = false;\nconst RADIUS = 0.09;\nconst HALF_X = 1.0;\nconst HALF_Z = 2.02;\nconst POCKET_R = 0.18;\nconst STOP = 0.035;\nlet spawnPos = null;\nlet spawnRot = null;\nlet centerX = 0;\nlet centerZ = 0;\nlet thrower = null;\nlet lastResetSeen = 0;\nlet pocketed = false;\n\nfunction siblings() { const p = ctx.hierarchy.getParent(ctx.self.id); return p ? ctx.hierarchy.getChildren(p.id) : []; }\nfunction scoreboard() { return siblings().find((s) => s.name === 'Pool Scoreboard'); }\nfunction stateOf(b) { const c = b && b.components.find((x) => x.type === 'scriptState'); return (c && c.data) || {}; }\nfunction draw(b, state) {\n  const rows = Object.values(state.players || {}).map((p) => ({ name: p.name, cells: [p.group || 'Open', String(p.pocketed || 0), state.winner === p.id ? 'Winner' : (state.currentPlayerId === p.id ? 'At table' : 'Ready')], highlight: state.currentPlayerId === p.id && !state.winner, isLeader: state.winner === p.id }));\n  ctx.world.setComponentField(b.id, 'scoreboard', 'rows', rows);\n  ctx.world.setComponentField(b.id, 'scoreboard', 'status', state.winner ? state.winnerName + ' wins!' : (state.lastShot || 'Grab the cue stick, aim at the cue ball, and pull it back to shoot.'));\n}\nfunction score(kind, number) {\n  const b = scoreboard(); if (!b || !ctx.world.isHost()) return;\n  const old = stateOf(b); const players = { ...(old.players || {}) };\n  const player = thrower || (old.currentPlayerId ? { id: old.currentPlayerId, name: old.currentPlayerName || 'Player' } : { id: 'solo-player', name: 'Player' });\n  const p = { ...(players[player.id] || { name: player.name, group: null, pocketed: 0 }), name: player.name };\n  let lastShot = old.lastShot || '';\n  if (kind === 'cue') lastShot = 'Foul: cue ball pocketed — use Reset Cue Ball.';\n  else if (number === 8) {\n    if (p.group && p.pocketed >= 7) { old.winner = player.id; old.winnerName = player.name; lastShot = 'Eight ball sunk — ' + player.name + ' wins!'; }\n    else lastShot = 'Foul: eight ball sunk too early.';\n  } else {\n    const group = number <= 7 ? 'Solids' : 'Stripes';\n    if (!p.group) p.group = group;\n    if (p.group === group) p.pocketed = (p.pocketed || 0) + 1;\n    lastShot = player.name + ' pocketed ball ' + number + '.';\n  }\n  players[player.id] = p;\n  const next = { ...old, players, currentPlayerId: player.id, currentPlayerName: player.name, lastShot };\n  ctx.world.setComponentField(b.id, 'scriptState', 'data', next); draw(b, next);\n}\nfunction pocket(pos) {\n  const holes = [[centerX - 1.11, centerZ - 2.12], [centerX, centerZ - 2.18], [centerX + 1.11, centerZ - 2.12], [centerX - 1.11, centerZ + 2.12], [centerX, centerZ + 2.18], [centerX + 1.11, centerZ + 2.12], [centerX - 1.11, centerZ], [centerX + 1.11, centerZ]];\n  return holes.find((h) => Math.hypot(pos[0] - h[0], pos[2] - h[1]) <= POCKET_R);\n}\nfunction resetBall() {\n  pocketed = false; thrower = null;\n  ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n  ctx.self.setWorldPosition(spawnPos); ctx.self.setWorldRotation(spawnRot);\n}\nreturn {\n  onSpawn() { spawnPos = ctx.self.getWorldPosition(); spawnRot = ctx.self.getWorldRotation(); centerX = spawnPos[0] - START_X; centerZ = spawnPos[2] - START_Z; },\n  onGrab() {\n    if (!IS_CUE) return;\n    const holders = ctx.grab.heldBy(); if (holders.length) thrower = ctx.world.getPlayer(holders[0]);\n    pocketed = false; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  },\n  onRelease() { if (IS_CUE && ctx.world.isHost()) ctx.audio.play({ frequency: 260, pitchDrop: 100, noiseMix: 0.35, durationMs: 100, volume: 0.28 }); },\n  tick(dt) {\n    const step = Math.min(Math.max(dt, 1 / 120), 1 / 30);\n    const c = ctx.self.getComponent('scriptState'); const at = c && c.data && c.data.resetRequestedAt;\n    if (at && at !== lastResetSeen) { lastResetSeen = at; resetBall(); return; }\n    if (pocketed || ctx.grab.isHeld() || !ctx.world.isHost()) return;\n    const vc = ctx.self.getComponent('velocity'); let v = vc ? [...vc.linear] : [0, 0, 0];\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP && Math.abs(v[1]) < STOP) { ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); return; }\n    const pos = ctx.self.getWorldPosition(); const next = ctx.math.vecAdd(pos, ctx.math.vecScale(v, step)); const hole = pocket(next);\n    if (hole) {\n      pocketed = true; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: true });\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); ctx.self.setWorldPosition([hole[0], pos[1] - 0.42, hole[1]]);\n      const n = Number((ctx.self.getSlot(ctx.self.id).name.match(/\\d+/) || ['0'])[0]); score(IS_CUE ? 'cue' : 'object', n);\n      ctx.audio.play({ frequency: IS_CUE ? 95 : 145, pitchDrop: 75, noiseMix: 0.82, durationMs: 220, volume: 0.48 }); return;\n    }\n    const speed = ctx.math.vecLength([v[0], 0, v[2]]);\n    if (speed > 0.12) {\n      const dir = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      for (const other of ctx.world.findNear(next, 0.19)) {\n        if (other.id === ctx.self.id || !other.name.startsWith('Pool Ball ')) continue;\n        const st = other.components.find((x) => x.type === 'scriptState'); const ov = other.components.find((x) => x.type === 'velocity');\n        if ((st && st.data && st.data.pocketed) || !ov) continue;\n        ctx.world.setComponentField(other.id, 'velocity', 'linear', ctx.math.vecAdd(ov.linear, ctx.math.vecScale(dir, Math.max(speed * 0.82, 0.45))));\n        v = ctx.math.vecScale(v, 0.42); ctx.audio.play({ frequency: IS_CUE ? 210 : 170, pitchDrop: 75, noiseMix: 0.6, durationMs: 120, volume: 0.3 }); break;\n      }\n    }\n    if (next[0] < centerX - HALF_X || next[0] > centerX + HALF_X) v[0] *= -0.84;\n    if (next[2] < centerZ - HALF_Z || next[2] > centerZ + HALF_Z) v[2] *= -0.84;\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP) v = [0, 0, 0];\n    ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', v);\n    if (v[0] || v[2]) ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle([1, 0, 0], Math.hypot(v[0], v[2]) * step / RADIUS));\n  },\n  getRadialItems() { return IS_CUE ? [{ label: 'Reset Cue Ball', isEnabled: () => ctx.world.isHost(), onSelect: resetBall }] : []; }\n};"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-ball-12",
+	"parentId": "demo-8ball-pool",
+	"name": "Pool Ball 12",
+	"position": [
+		-0.22,
+		1.03,
+		-1.78
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.18,
+		0.18,
+		0.18
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#c4b5fd"
+		},
+		{
+			"type": "collider",
+			"shape": "sphere"
+		},
+		{
+			"type": "velocity",
+			"linear": [
+				0,
+				0,
+				0
+			],
+			"drag": 0.22
+		},
+		{
+			"type": "scriptState",
+			"data": {
+				"resetRequestedAt": 0,
+				"pocketed": false
+			}
+		},
+		{
+			"type": "codeBlock",
+			"code": "const START_X = -0.22;\nconst START_Z = -1.78;\nconst IS_CUE = false;\nconst RADIUS = 0.09;\nconst HALF_X = 1.0;\nconst HALF_Z = 2.02;\nconst POCKET_R = 0.18;\nconst STOP = 0.035;\nlet spawnPos = null;\nlet spawnRot = null;\nlet centerX = 0;\nlet centerZ = 0;\nlet thrower = null;\nlet lastResetSeen = 0;\nlet pocketed = false;\n\nfunction siblings() { const p = ctx.hierarchy.getParent(ctx.self.id); return p ? ctx.hierarchy.getChildren(p.id) : []; }\nfunction scoreboard() { return siblings().find((s) => s.name === 'Pool Scoreboard'); }\nfunction stateOf(b) { const c = b && b.components.find((x) => x.type === 'scriptState'); return (c && c.data) || {}; }\nfunction draw(b, state) {\n  const rows = Object.values(state.players || {}).map((p) => ({ name: p.name, cells: [p.group || 'Open', String(p.pocketed || 0), state.winner === p.id ? 'Winner' : (state.currentPlayerId === p.id ? 'At table' : 'Ready')], highlight: state.currentPlayerId === p.id && !state.winner, isLeader: state.winner === p.id }));\n  ctx.world.setComponentField(b.id, 'scoreboard', 'rows', rows);\n  ctx.world.setComponentField(b.id, 'scoreboard', 'status', state.winner ? state.winnerName + ' wins!' : (state.lastShot || 'Grab the cue stick, aim at the cue ball, and pull it back to shoot.'));\n}\nfunction score(kind, number) {\n  const b = scoreboard(); if (!b || !ctx.world.isHost()) return;\n  const old = stateOf(b); const players = { ...(old.players || {}) };\n  const player = thrower || (old.currentPlayerId ? { id: old.currentPlayerId, name: old.currentPlayerName || 'Player' } : { id: 'solo-player', name: 'Player' });\n  const p = { ...(players[player.id] || { name: player.name, group: null, pocketed: 0 }), name: player.name };\n  let lastShot = old.lastShot || '';\n  if (kind === 'cue') lastShot = 'Foul: cue ball pocketed — use Reset Cue Ball.';\n  else if (number === 8) {\n    if (p.group && p.pocketed >= 7) { old.winner = player.id; old.winnerName = player.name; lastShot = 'Eight ball sunk — ' + player.name + ' wins!'; }\n    else lastShot = 'Foul: eight ball sunk too early.';\n  } else {\n    const group = number <= 7 ? 'Solids' : 'Stripes';\n    if (!p.group) p.group = group;\n    if (p.group === group) p.pocketed = (p.pocketed || 0) + 1;\n    lastShot = player.name + ' pocketed ball ' + number + '.';\n  }\n  players[player.id] = p;\n  const next = { ...old, players, currentPlayerId: player.id, currentPlayerName: player.name, lastShot };\n  ctx.world.setComponentField(b.id, 'scriptState', 'data', next); draw(b, next);\n}\nfunction pocket(pos) {\n  const holes = [[centerX - 1.11, centerZ - 2.12], [centerX, centerZ - 2.18], [centerX + 1.11, centerZ - 2.12], [centerX - 1.11, centerZ + 2.12], [centerX, centerZ + 2.18], [centerX + 1.11, centerZ + 2.12], [centerX - 1.11, centerZ], [centerX + 1.11, centerZ]];\n  return holes.find((h) => Math.hypot(pos[0] - h[0], pos[2] - h[1]) <= POCKET_R);\n}\nfunction resetBall() {\n  pocketed = false; thrower = null;\n  ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n  ctx.self.setWorldPosition(spawnPos); ctx.self.setWorldRotation(spawnRot);\n}\nreturn {\n  onSpawn() { spawnPos = ctx.self.getWorldPosition(); spawnRot = ctx.self.getWorldRotation(); centerX = spawnPos[0] - START_X; centerZ = spawnPos[2] - START_Z; },\n  onGrab() {\n    if (!IS_CUE) return;\n    const holders = ctx.grab.heldBy(); if (holders.length) thrower = ctx.world.getPlayer(holders[0]);\n    pocketed = false; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  },\n  onRelease() { if (IS_CUE && ctx.world.isHost()) ctx.audio.play({ frequency: 260, pitchDrop: 100, noiseMix: 0.35, durationMs: 100, volume: 0.28 }); },\n  tick(dt) {\n    const step = Math.min(Math.max(dt, 1 / 120), 1 / 30);\n    const c = ctx.self.getComponent('scriptState'); const at = c && c.data && c.data.resetRequestedAt;\n    if (at && at !== lastResetSeen) { lastResetSeen = at; resetBall(); return; }\n    if (pocketed || ctx.grab.isHeld() || !ctx.world.isHost()) return;\n    const vc = ctx.self.getComponent('velocity'); let v = vc ? [...vc.linear] : [0, 0, 0];\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP && Math.abs(v[1]) < STOP) { ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); return; }\n    const pos = ctx.self.getWorldPosition(); const next = ctx.math.vecAdd(pos, ctx.math.vecScale(v, step)); const hole = pocket(next);\n    if (hole) {\n      pocketed = true; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: true });\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); ctx.self.setWorldPosition([hole[0], pos[1] - 0.42, hole[1]]);\n      const n = Number((ctx.self.getSlot(ctx.self.id).name.match(/\\d+/) || ['0'])[0]); score(IS_CUE ? 'cue' : 'object', n);\n      ctx.audio.play({ frequency: IS_CUE ? 95 : 145, pitchDrop: 75, noiseMix: 0.82, durationMs: 220, volume: 0.48 }); return;\n    }\n    const speed = ctx.math.vecLength([v[0], 0, v[2]]);\n    if (speed > 0.12) {\n      const dir = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      for (const other of ctx.world.findNear(next, 0.19)) {\n        if (other.id === ctx.self.id || !other.name.startsWith('Pool Ball ')) continue;\n        const st = other.components.find((x) => x.type === 'scriptState'); const ov = other.components.find((x) => x.type === 'velocity');\n        if ((st && st.data && st.data.pocketed) || !ov) continue;\n        ctx.world.setComponentField(other.id, 'velocity', 'linear', ctx.math.vecAdd(ov.linear, ctx.math.vecScale(dir, Math.max(speed * 0.82, 0.45))));\n        v = ctx.math.vecScale(v, 0.42); ctx.audio.play({ frequency: IS_CUE ? 210 : 170, pitchDrop: 75, noiseMix: 0.6, durationMs: 120, volume: 0.3 }); break;\n      }\n    }\n    if (next[0] < centerX - HALF_X || next[0] > centerX + HALF_X) v[0] *= -0.84;\n    if (next[2] < centerZ - HALF_Z || next[2] > centerZ + HALF_Z) v[2] *= -0.84;\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP) v = [0, 0, 0];\n    ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', v);\n    if (v[0] || v[2]) ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle([1, 0, 0], Math.hypot(v[0], v[2]) * step / RADIUS));\n  },\n  getRadialItems() { return IS_CUE ? [{ label: 'Reset Cue Ball', isEnabled: () => ctx.world.isHost(), onSelect: resetBall }] : []; }\n};"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-ball-13",
+	"parentId": "demo-8ball-pool",
+	"name": "Pool Ball 13",
+	"position": [
+		0,
+		1.03,
+		-1.78
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.18,
+		0.18,
+		0.18
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#fdba74"
+		},
+		{
+			"type": "collider",
+			"shape": "sphere"
+		},
+		{
+			"type": "velocity",
+			"linear": [
+				0,
+				0,
+				0
+			],
+			"drag": 0.22
+		},
+		{
+			"type": "scriptState",
+			"data": {
+				"resetRequestedAt": 0,
+				"pocketed": false
+			}
+		},
+		{
+			"type": "codeBlock",
+			"code": "const START_X = 0;\nconst START_Z = -1.78;\nconst IS_CUE = false;\nconst RADIUS = 0.09;\nconst HALF_X = 1.0;\nconst HALF_Z = 2.02;\nconst POCKET_R = 0.18;\nconst STOP = 0.035;\nlet spawnPos = null;\nlet spawnRot = null;\nlet centerX = 0;\nlet centerZ = 0;\nlet thrower = null;\nlet lastResetSeen = 0;\nlet pocketed = false;\n\nfunction siblings() { const p = ctx.hierarchy.getParent(ctx.self.id); return p ? ctx.hierarchy.getChildren(p.id) : []; }\nfunction scoreboard() { return siblings().find((s) => s.name === 'Pool Scoreboard'); }\nfunction stateOf(b) { const c = b && b.components.find((x) => x.type === 'scriptState'); return (c && c.data) || {}; }\nfunction draw(b, state) {\n  const rows = Object.values(state.players || {}).map((p) => ({ name: p.name, cells: [p.group || 'Open', String(p.pocketed || 0), state.winner === p.id ? 'Winner' : (state.currentPlayerId === p.id ? 'At table' : 'Ready')], highlight: state.currentPlayerId === p.id && !state.winner, isLeader: state.winner === p.id }));\n  ctx.world.setComponentField(b.id, 'scoreboard', 'rows', rows);\n  ctx.world.setComponentField(b.id, 'scoreboard', 'status', state.winner ? state.winnerName + ' wins!' : (state.lastShot || 'Grab the cue stick, aim at the cue ball, and pull it back to shoot.'));\n}\nfunction score(kind, number) {\n  const b = scoreboard(); if (!b || !ctx.world.isHost()) return;\n  const old = stateOf(b); const players = { ...(old.players || {}) };\n  const player = thrower || (old.currentPlayerId ? { id: old.currentPlayerId, name: old.currentPlayerName || 'Player' } : { id: 'solo-player', name: 'Player' });\n  const p = { ...(players[player.id] || { name: player.name, group: null, pocketed: 0 }), name: player.name };\n  let lastShot = old.lastShot || '';\n  if (kind === 'cue') lastShot = 'Foul: cue ball pocketed — use Reset Cue Ball.';\n  else if (number === 8) {\n    if (p.group && p.pocketed >= 7) { old.winner = player.id; old.winnerName = player.name; lastShot = 'Eight ball sunk — ' + player.name + ' wins!'; }\n    else lastShot = 'Foul: eight ball sunk too early.';\n  } else {\n    const group = number <= 7 ? 'Solids' : 'Stripes';\n    if (!p.group) p.group = group;\n    if (p.group === group) p.pocketed = (p.pocketed || 0) + 1;\n    lastShot = player.name + ' pocketed ball ' + number + '.';\n  }\n  players[player.id] = p;\n  const next = { ...old, players, currentPlayerId: player.id, currentPlayerName: player.name, lastShot };\n  ctx.world.setComponentField(b.id, 'scriptState', 'data', next); draw(b, next);\n}\nfunction pocket(pos) {\n  const holes = [[centerX - 1.11, centerZ - 2.12], [centerX, centerZ - 2.18], [centerX + 1.11, centerZ - 2.12], [centerX - 1.11, centerZ + 2.12], [centerX, centerZ + 2.18], [centerX + 1.11, centerZ + 2.12], [centerX - 1.11, centerZ], [centerX + 1.11, centerZ]];\n  return holes.find((h) => Math.hypot(pos[0] - h[0], pos[2] - h[1]) <= POCKET_R);\n}\nfunction resetBall() {\n  pocketed = false; thrower = null;\n  ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n  ctx.self.setWorldPosition(spawnPos); ctx.self.setWorldRotation(spawnRot);\n}\nreturn {\n  onSpawn() { spawnPos = ctx.self.getWorldPosition(); spawnRot = ctx.self.getWorldRotation(); centerX = spawnPos[0] - START_X; centerZ = spawnPos[2] - START_Z; },\n  onGrab() {\n    if (!IS_CUE) return;\n    const holders = ctx.grab.heldBy(); if (holders.length) thrower = ctx.world.getPlayer(holders[0]);\n    pocketed = false; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  },\n  onRelease() { if (IS_CUE && ctx.world.isHost()) ctx.audio.play({ frequency: 260, pitchDrop: 100, noiseMix: 0.35, durationMs: 100, volume: 0.28 }); },\n  tick(dt) {\n    const step = Math.min(Math.max(dt, 1 / 120), 1 / 30);\n    const c = ctx.self.getComponent('scriptState'); const at = c && c.data && c.data.resetRequestedAt;\n    if (at && at !== lastResetSeen) { lastResetSeen = at; resetBall(); return; }\n    if (pocketed || ctx.grab.isHeld() || !ctx.world.isHost()) return;\n    const vc = ctx.self.getComponent('velocity'); let v = vc ? [...vc.linear] : [0, 0, 0];\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP && Math.abs(v[1]) < STOP) { ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); return; }\n    const pos = ctx.self.getWorldPosition(); const next = ctx.math.vecAdd(pos, ctx.math.vecScale(v, step)); const hole = pocket(next);\n    if (hole) {\n      pocketed = true; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: true });\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); ctx.self.setWorldPosition([hole[0], pos[1] - 0.42, hole[1]]);\n      const n = Number((ctx.self.getSlot(ctx.self.id).name.match(/\\d+/) || ['0'])[0]); score(IS_CUE ? 'cue' : 'object', n);\n      ctx.audio.play({ frequency: IS_CUE ? 95 : 145, pitchDrop: 75, noiseMix: 0.82, durationMs: 220, volume: 0.48 }); return;\n    }\n    const speed = ctx.math.vecLength([v[0], 0, v[2]]);\n    if (speed > 0.12) {\n      const dir = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      for (const other of ctx.world.findNear(next, 0.19)) {\n        if (other.id === ctx.self.id || !other.name.startsWith('Pool Ball ')) continue;\n        const st = other.components.find((x) => x.type === 'scriptState'); const ov = other.components.find((x) => x.type === 'velocity');\n        if ((st && st.data && st.data.pocketed) || !ov) continue;\n        ctx.world.setComponentField(other.id, 'velocity', 'linear', ctx.math.vecAdd(ov.linear, ctx.math.vecScale(dir, Math.max(speed * 0.82, 0.45))));\n        v = ctx.math.vecScale(v, 0.42); ctx.audio.play({ frequency: IS_CUE ? 210 : 170, pitchDrop: 75, noiseMix: 0.6, durationMs: 120, volume: 0.3 }); break;\n      }\n    }\n    if (next[0] < centerX - HALF_X || next[0] > centerX + HALF_X) v[0] *= -0.84;\n    if (next[2] < centerZ - HALF_Z || next[2] > centerZ + HALF_Z) v[2] *= -0.84;\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP) v = [0, 0, 0];\n    ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', v);\n    if (v[0] || v[2]) ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle([1, 0, 0], Math.hypot(v[0], v[2]) * step / RADIUS));\n  },\n  getRadialItems() { return IS_CUE ? [{ label: 'Reset Cue Ball', isEnabled: () => ctx.world.isHost(), onSelect: resetBall }] : []; }\n};"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-ball-14",
+	"parentId": "demo-8ball-pool",
+	"name": "Pool Ball 14",
+	"position": [
+		0.22,
+		1.03,
+		-1.78
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.18,
+		0.18,
+		0.18
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#86efac"
+		},
+		{
+			"type": "collider",
+			"shape": "sphere"
+		},
+		{
+			"type": "velocity",
+			"linear": [
+				0,
+				0,
+				0
+			],
+			"drag": 0.22
+		},
+		{
+			"type": "scriptState",
+			"data": {
+				"resetRequestedAt": 0,
+				"pocketed": false
+			}
+		},
+		{
+			"type": "codeBlock",
+			"code": "const START_X = 0.22;\nconst START_Z = -1.78;\nconst IS_CUE = false;\nconst RADIUS = 0.09;\nconst HALF_X = 1.0;\nconst HALF_Z = 2.02;\nconst POCKET_R = 0.18;\nconst STOP = 0.035;\nlet spawnPos = null;\nlet spawnRot = null;\nlet centerX = 0;\nlet centerZ = 0;\nlet thrower = null;\nlet lastResetSeen = 0;\nlet pocketed = false;\n\nfunction siblings() { const p = ctx.hierarchy.getParent(ctx.self.id); return p ? ctx.hierarchy.getChildren(p.id) : []; }\nfunction scoreboard() { return siblings().find((s) => s.name === 'Pool Scoreboard'); }\nfunction stateOf(b) { const c = b && b.components.find((x) => x.type === 'scriptState'); return (c && c.data) || {}; }\nfunction draw(b, state) {\n  const rows = Object.values(state.players || {}).map((p) => ({ name: p.name, cells: [p.group || 'Open', String(p.pocketed || 0), state.winner === p.id ? 'Winner' : (state.currentPlayerId === p.id ? 'At table' : 'Ready')], highlight: state.currentPlayerId === p.id && !state.winner, isLeader: state.winner === p.id }));\n  ctx.world.setComponentField(b.id, 'scoreboard', 'rows', rows);\n  ctx.world.setComponentField(b.id, 'scoreboard', 'status', state.winner ? state.winnerName + ' wins!' : (state.lastShot || 'Grab the cue stick, aim at the cue ball, and pull it back to shoot.'));\n}\nfunction score(kind, number) {\n  const b = scoreboard(); if (!b || !ctx.world.isHost()) return;\n  const old = stateOf(b); const players = { ...(old.players || {}) };\n  const player = thrower || (old.currentPlayerId ? { id: old.currentPlayerId, name: old.currentPlayerName || 'Player' } : { id: 'solo-player', name: 'Player' });\n  const p = { ...(players[player.id] || { name: player.name, group: null, pocketed: 0 }), name: player.name };\n  let lastShot = old.lastShot || '';\n  if (kind === 'cue') lastShot = 'Foul: cue ball pocketed — use Reset Cue Ball.';\n  else if (number === 8) {\n    if (p.group && p.pocketed >= 7) { old.winner = player.id; old.winnerName = player.name; lastShot = 'Eight ball sunk — ' + player.name + ' wins!'; }\n    else lastShot = 'Foul: eight ball sunk too early.';\n  } else {\n    const group = number <= 7 ? 'Solids' : 'Stripes';\n    if (!p.group) p.group = group;\n    if (p.group === group) p.pocketed = (p.pocketed || 0) + 1;\n    lastShot = player.name + ' pocketed ball ' + number + '.';\n  }\n  players[player.id] = p;\n  const next = { ...old, players, currentPlayerId: player.id, currentPlayerName: player.name, lastShot };\n  ctx.world.setComponentField(b.id, 'scriptState', 'data', next); draw(b, next);\n}\nfunction pocket(pos) {\n  const holes = [[centerX - 1.11, centerZ - 2.12], [centerX, centerZ - 2.18], [centerX + 1.11, centerZ - 2.12], [centerX - 1.11, centerZ + 2.12], [centerX, centerZ + 2.18], [centerX + 1.11, centerZ + 2.12], [centerX - 1.11, centerZ], [centerX + 1.11, centerZ]];\n  return holes.find((h) => Math.hypot(pos[0] - h[0], pos[2] - h[1]) <= POCKET_R);\n}\nfunction resetBall() {\n  pocketed = false; thrower = null;\n  ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n  ctx.self.setWorldPosition(spawnPos); ctx.self.setWorldRotation(spawnRot);\n}\nreturn {\n  onSpawn() { spawnPos = ctx.self.getWorldPosition(); spawnRot = ctx.self.getWorldRotation(); centerX = spawnPos[0] - START_X; centerZ = spawnPos[2] - START_Z; },\n  onGrab() {\n    if (!IS_CUE) return;\n    const holders = ctx.grab.heldBy(); if (holders.length) thrower = ctx.world.getPlayer(holders[0]);\n    pocketed = false; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  },\n  onRelease() { if (IS_CUE && ctx.world.isHost()) ctx.audio.play({ frequency: 260, pitchDrop: 100, noiseMix: 0.35, durationMs: 100, volume: 0.28 }); },\n  tick(dt) {\n    const step = Math.min(Math.max(dt, 1 / 120), 1 / 30);\n    const c = ctx.self.getComponent('scriptState'); const at = c && c.data && c.data.resetRequestedAt;\n    if (at && at !== lastResetSeen) { lastResetSeen = at; resetBall(); return; }\n    if (pocketed || ctx.grab.isHeld() || !ctx.world.isHost()) return;\n    const vc = ctx.self.getComponent('velocity'); let v = vc ? [...vc.linear] : [0, 0, 0];\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP && Math.abs(v[1]) < STOP) { ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); return; }\n    const pos = ctx.self.getWorldPosition(); const next = ctx.math.vecAdd(pos, ctx.math.vecScale(v, step)); const hole = pocket(next);\n    if (hole) {\n      pocketed = true; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: true });\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); ctx.self.setWorldPosition([hole[0], pos[1] - 0.42, hole[1]]);\n      const n = Number((ctx.self.getSlot(ctx.self.id).name.match(/\\d+/) || ['0'])[0]); score(IS_CUE ? 'cue' : 'object', n);\n      ctx.audio.play({ frequency: IS_CUE ? 95 : 145, pitchDrop: 75, noiseMix: 0.82, durationMs: 220, volume: 0.48 }); return;\n    }\n    const speed = ctx.math.vecLength([v[0], 0, v[2]]);\n    if (speed > 0.12) {\n      const dir = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      for (const other of ctx.world.findNear(next, 0.19)) {\n        if (other.id === ctx.self.id || !other.name.startsWith('Pool Ball ')) continue;\n        const st = other.components.find((x) => x.type === 'scriptState'); const ov = other.components.find((x) => x.type === 'velocity');\n        if ((st && st.data && st.data.pocketed) || !ov) continue;\n        ctx.world.setComponentField(other.id, 'velocity', 'linear', ctx.math.vecAdd(ov.linear, ctx.math.vecScale(dir, Math.max(speed * 0.82, 0.45))));\n        v = ctx.math.vecScale(v, 0.42); ctx.audio.play({ frequency: IS_CUE ? 210 : 170, pitchDrop: 75, noiseMix: 0.6, durationMs: 120, volume: 0.3 }); break;\n      }\n    }\n    if (next[0] < centerX - HALF_X || next[0] > centerX + HALF_X) v[0] *= -0.84;\n    if (next[2] < centerZ - HALF_Z || next[2] > centerZ + HALF_Z) v[2] *= -0.84;\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP) v = [0, 0, 0];\n    ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', v);\n    if (v[0] || v[2]) ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle([1, 0, 0], Math.hypot(v[0], v[2]) * step / RADIUS));\n  },\n  getRadialItems() { return IS_CUE ? [{ label: 'Reset Cue Ball', isEnabled: () => ctx.world.isHost(), onSelect: resetBall }] : []; }\n};"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-ball-15",
+	"parentId": "demo-8ball-pool",
+	"name": "Pool Ball 15",
+	"position": [
+		0.44,
+		1.03,
+		-1.78
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.18,
+		0.18,
+		0.18
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#fecaca"
+		},
+		{
+			"type": "collider",
+			"shape": "sphere"
+		},
+		{
+			"type": "velocity",
+			"linear": [
+				0,
+				0,
+				0
+			],
+			"drag": 0.22
+		},
+		{
+			"type": "scriptState",
+			"data": {
+				"resetRequestedAt": 0,
+				"pocketed": false
+			}
+		},
+		{
+			"type": "codeBlock",
+			"code": "const START_X = 0.44;\nconst START_Z = -1.78;\nconst IS_CUE = false;\nconst RADIUS = 0.09;\nconst HALF_X = 1.0;\nconst HALF_Z = 2.02;\nconst POCKET_R = 0.18;\nconst STOP = 0.035;\nlet spawnPos = null;\nlet spawnRot = null;\nlet centerX = 0;\nlet centerZ = 0;\nlet thrower = null;\nlet lastResetSeen = 0;\nlet pocketed = false;\n\nfunction siblings() { const p = ctx.hierarchy.getParent(ctx.self.id); return p ? ctx.hierarchy.getChildren(p.id) : []; }\nfunction scoreboard() { return siblings().find((s) => s.name === 'Pool Scoreboard'); }\nfunction stateOf(b) { const c = b && b.components.find((x) => x.type === 'scriptState'); return (c && c.data) || {}; }\nfunction draw(b, state) {\n  const rows = Object.values(state.players || {}).map((p) => ({ name: p.name, cells: [p.group || 'Open', String(p.pocketed || 0), state.winner === p.id ? 'Winner' : (state.currentPlayerId === p.id ? 'At table' : 'Ready')], highlight: state.currentPlayerId === p.id && !state.winner, isLeader: state.winner === p.id }));\n  ctx.world.setComponentField(b.id, 'scoreboard', 'rows', rows);\n  ctx.world.setComponentField(b.id, 'scoreboard', 'status', state.winner ? state.winnerName + ' wins!' : (state.lastShot || 'Grab the cue stick, aim at the cue ball, and pull it back to shoot.'));\n}\nfunction score(kind, number) {\n  const b = scoreboard(); if (!b || !ctx.world.isHost()) return;\n  const old = stateOf(b); const players = { ...(old.players || {}) };\n  const player = thrower || (old.currentPlayerId ? { id: old.currentPlayerId, name: old.currentPlayerName || 'Player' } : { id: 'solo-player', name: 'Player' });\n  const p = { ...(players[player.id] || { name: player.name, group: null, pocketed: 0 }), name: player.name };\n  let lastShot = old.lastShot || '';\n  if (kind === 'cue') lastShot = 'Foul: cue ball pocketed — use Reset Cue Ball.';\n  else if (number === 8) {\n    if (p.group && p.pocketed >= 7) { old.winner = player.id; old.winnerName = player.name; lastShot = 'Eight ball sunk — ' + player.name + ' wins!'; }\n    else lastShot = 'Foul: eight ball sunk too early.';\n  } else {\n    const group = number <= 7 ? 'Solids' : 'Stripes';\n    if (!p.group) p.group = group;\n    if (p.group === group) p.pocketed = (p.pocketed || 0) + 1;\n    lastShot = player.name + ' pocketed ball ' + number + '.';\n  }\n  players[player.id] = p;\n  const next = { ...old, players, currentPlayerId: player.id, currentPlayerName: player.name, lastShot };\n  ctx.world.setComponentField(b.id, 'scriptState', 'data', next); draw(b, next);\n}\nfunction pocket(pos) {\n  const holes = [[centerX - 1.11, centerZ - 2.12], [centerX, centerZ - 2.18], [centerX + 1.11, centerZ - 2.12], [centerX - 1.11, centerZ + 2.12], [centerX, centerZ + 2.18], [centerX + 1.11, centerZ + 2.12], [centerX - 1.11, centerZ], [centerX + 1.11, centerZ]];\n  return holes.find((h) => Math.hypot(pos[0] - h[0], pos[2] - h[1]) <= POCKET_R);\n}\nfunction resetBall() {\n  pocketed = false; thrower = null;\n  ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n  ctx.self.setWorldPosition(spawnPos); ctx.self.setWorldRotation(spawnRot);\n}\nreturn {\n  onSpawn() { spawnPos = ctx.self.getWorldPosition(); spawnRot = ctx.self.getWorldRotation(); centerX = spawnPos[0] - START_X; centerZ = spawnPos[2] - START_Z; },\n  onGrab() {\n    if (!IS_CUE) return;\n    const holders = ctx.grab.heldBy(); if (holders.length) thrower = ctx.world.getPlayer(holders[0]);\n    pocketed = false; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  },\n  onRelease() { if (IS_CUE && ctx.world.isHost()) ctx.audio.play({ frequency: 260, pitchDrop: 100, noiseMix: 0.35, durationMs: 100, volume: 0.28 }); },\n  tick(dt) {\n    const step = Math.min(Math.max(dt, 1 / 120), 1 / 30);\n    const c = ctx.self.getComponent('scriptState'); const at = c && c.data && c.data.resetRequestedAt;\n    if (at && at !== lastResetSeen) { lastResetSeen = at; resetBall(); return; }\n    if (pocketed || ctx.grab.isHeld() || !ctx.world.isHost()) return;\n    const vc = ctx.self.getComponent('velocity'); let v = vc ? [...vc.linear] : [0, 0, 0];\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP && Math.abs(v[1]) < STOP) { ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); return; }\n    const pos = ctx.self.getWorldPosition(); const next = ctx.math.vecAdd(pos, ctx.math.vecScale(v, step)); const hole = pocket(next);\n    if (hole) {\n      pocketed = true; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: true });\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); ctx.self.setWorldPosition([hole[0], pos[1] - 0.42, hole[1]]);\n      const n = Number((ctx.self.getSlot(ctx.self.id).name.match(/\\d+/) || ['0'])[0]); score(IS_CUE ? 'cue' : 'object', n);\n      ctx.audio.play({ frequency: IS_CUE ? 95 : 145, pitchDrop: 75, noiseMix: 0.82, durationMs: 220, volume: 0.48 }); return;\n    }\n    const speed = ctx.math.vecLength([v[0], 0, v[2]]);\n    if (speed > 0.12) {\n      const dir = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      for (const other of ctx.world.findNear(next, 0.19)) {\n        if (other.id === ctx.self.id || !other.name.startsWith('Pool Ball ')) continue;\n        const st = other.components.find((x) => x.type === 'scriptState'); const ov = other.components.find((x) => x.type === 'velocity');\n        if ((st && st.data && st.data.pocketed) || !ov) continue;\n        ctx.world.setComponentField(other.id, 'velocity', 'linear', ctx.math.vecAdd(ov.linear, ctx.math.vecScale(dir, Math.max(speed * 0.82, 0.45))));\n        v = ctx.math.vecScale(v, 0.42); ctx.audio.play({ frequency: IS_CUE ? 210 : 170, pitchDrop: 75, noiseMix: 0.6, durationMs: 120, volume: 0.3 }); break;\n      }\n    }\n    if (next[0] < centerX - HALF_X || next[0] > centerX + HALF_X) v[0] *= -0.84;\n    if (next[2] < centerZ - HALF_Z || next[2] > centerZ + HALF_Z) v[2] *= -0.84;\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP) v = [0, 0, 0];\n    ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', v);\n    if (v[0] || v[2]) ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle([1, 0, 0], Math.hypot(v[0], v[2]) * step / RADIUS));\n  },\n  getRadialItems() { return IS_CUE ? [{ label: 'Reset Cue Ball', isEnabled: () => ctx.world.isHost(), onSelect: resetBall }] : []; }\n};"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-cue-ball",
+	"parentId": "demo-8ball-pool",
+	"name": "Cue Ball",
+	"position": [
+		0,
+		1.03,
+		1.32
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.18,
+		0.18,
+		0.18
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "sphere",
+			"color": "#f8fafc"
+		},
+		{
+			"type": "collider",
+			"shape": "sphere"
+		},
+		{
+			"type": "grabbable",
+			"scalable": false
+		},
+		{
+			"type": "velocity",
+			"linear": [
+				0,
+				0,
+				0
+			],
+			"drag": 0.22
+		},
+		{
+			"type": "scriptState",
+			"data": {
+				"resetRequestedAt": 0,
+				"pocketed": false
+			}
+		},
+		{
+			"type": "codeBlock",
+			"code": "const START_X = 0;\nconst START_Z = 1.32;\nconst IS_CUE = true;\nconst RADIUS = 0.09;\nconst HALF_X = 1.0;\nconst HALF_Z = 2.02;\nconst POCKET_R = 0.18;\nconst STOP = 0.035;\nlet spawnPos = null;\nlet spawnRot = null;\nlet centerX = 0;\nlet centerZ = 0;\nlet thrower = null;\nlet lastResetSeen = 0;\nlet pocketed = false;\n\nfunction siblings() { const p = ctx.hierarchy.getParent(ctx.self.id); return p ? ctx.hierarchy.getChildren(p.id) : []; }\nfunction scoreboard() { return siblings().find((s) => s.name === 'Pool Scoreboard'); }\nfunction stateOf(b) { const c = b && b.components.find((x) => x.type === 'scriptState'); return (c && c.data) || {}; }\nfunction draw(b, state) {\n  const rows = Object.values(state.players || {}).map((p) => ({ name: p.name, cells: [p.group || 'Open', String(p.pocketed || 0), state.winner === p.id ? 'Winner' : (state.currentPlayerId === p.id ? 'At table' : 'Ready')], highlight: state.currentPlayerId === p.id && !state.winner, isLeader: state.winner === p.id }));\n  ctx.world.setComponentField(b.id, 'scoreboard', 'rows', rows);\n  ctx.world.setComponentField(b.id, 'scoreboard', 'status', state.winner ? state.winnerName + ' wins!' : (state.lastShot || 'Grab the cue stick, aim at the cue ball, and pull it back to shoot.'));\n}\nfunction score(kind, number) {\n  const b = scoreboard(); if (!b || !ctx.world.isHost()) return;\n  const old = stateOf(b); const players = { ...(old.players || {}) };\n  const player = thrower || (old.currentPlayerId ? { id: old.currentPlayerId, name: old.currentPlayerName || 'Player' } : { id: 'solo-player', name: 'Player' });\n  const p = { ...(players[player.id] || { name: player.name, group: null, pocketed: 0 }), name: player.name };\n  let lastShot = old.lastShot || '';\n  if (kind === 'cue') lastShot = 'Foul: cue ball pocketed — use Reset Cue Ball.';\n  else if (number === 8) {\n    if (p.group && p.pocketed >= 7) { old.winner = player.id; old.winnerName = player.name; lastShot = 'Eight ball sunk — ' + player.name + ' wins!'; }\n    else lastShot = 'Foul: eight ball sunk too early.';\n  } else {\n    const group = number <= 7 ? 'Solids' : 'Stripes';\n    if (!p.group) p.group = group;\n    if (p.group === group) p.pocketed = (p.pocketed || 0) + 1;\n    lastShot = player.name + ' pocketed ball ' + number + '.';\n  }\n  players[player.id] = p;\n  const next = { ...old, players, currentPlayerId: player.id, currentPlayerName: player.name, lastShot };\n  ctx.world.setComponentField(b.id, 'scriptState', 'data', next); draw(b, next);\n}\nfunction pocket(pos) {\n  const holes = [[centerX - 1.11, centerZ - 2.12], [centerX, centerZ - 2.18], [centerX + 1.11, centerZ - 2.12], [centerX - 1.11, centerZ + 2.12], [centerX, centerZ + 2.18], [centerX + 1.11, centerZ + 2.12], [centerX - 1.11, centerZ], [centerX + 1.11, centerZ]];\n  return holes.find((h) => Math.hypot(pos[0] - h[0], pos[2] - h[1]) <= POCKET_R);\n}\nfunction resetBall() {\n  pocketed = false; thrower = null;\n  ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]);\n  ctx.self.setWorldPosition(spawnPos); ctx.self.setWorldRotation(spawnRot);\n}\nreturn {\n  onSpawn() { spawnPos = ctx.self.getWorldPosition(); spawnRot = ctx.self.getWorldRotation(); centerX = spawnPos[0] - START_X; centerZ = spawnPos[2] - START_Z; },\n  onGrab() {\n    if (!IS_CUE) return;\n    const holders = ctx.grab.heldBy(); if (holders.length) thrower = ctx.world.getPlayer(holders[0]);\n    pocketed = false; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: false });\n  },\n  onRelease() { if (IS_CUE && ctx.world.isHost()) ctx.audio.play({ frequency: 260, pitchDrop: 100, noiseMix: 0.35, durationMs: 100, volume: 0.28 }); },\n  tick(dt) {\n    const step = Math.min(Math.max(dt, 1 / 120), 1 / 30);\n    const c = ctx.self.getComponent('scriptState'); const at = c && c.data && c.data.resetRequestedAt;\n    if (at && at !== lastResetSeen) { lastResetSeen = at; resetBall(); return; }\n    if (pocketed || ctx.grab.isHeld() || !ctx.world.isHost()) return;\n    const vc = ctx.self.getComponent('velocity'); let v = vc ? [...vc.linear] : [0, 0, 0];\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP && Math.abs(v[1]) < STOP) { ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); return; }\n    const pos = ctx.self.getWorldPosition(); const next = ctx.math.vecAdd(pos, ctx.math.vecScale(v, step)); const hole = pocket(next);\n    if (hole) {\n      pocketed = true; ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', { resetRequestedAt: lastResetSeen, pocketed: true });\n      ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', [0, 0, 0]); ctx.self.setWorldPosition([hole[0], pos[1] - 0.42, hole[1]]);\n      const n = Number((ctx.self.getSlot(ctx.self.id).name.match(/\\d+/) || ['0'])[0]); score(IS_CUE ? 'cue' : 'object', n);\n      ctx.audio.play({ frequency: IS_CUE ? 95 : 145, pitchDrop: 75, noiseMix: 0.82, durationMs: 220, volume: 0.48 }); return;\n    }\n    const speed = ctx.math.vecLength([v[0], 0, v[2]]);\n    if (speed > 0.12) {\n      const dir = ctx.math.vecNormalize([v[0], 0, v[2]]);\n      for (const other of ctx.world.findNear(next, 0.19)) {\n        if (other.id === ctx.self.id || !other.name.startsWith('Pool Ball ')) continue;\n        const st = other.components.find((x) => x.type === 'scriptState'); const ov = other.components.find((x) => x.type === 'velocity');\n        if ((st && st.data && st.data.pocketed) || !ov) continue;\n        ctx.world.setComponentField(other.id, 'velocity', 'linear', ctx.math.vecAdd(ov.linear, ctx.math.vecScale(dir, Math.max(speed * 0.82, 0.45))));\n        v = ctx.math.vecScale(v, 0.42); ctx.audio.play({ frequency: IS_CUE ? 210 : 170, pitchDrop: 75, noiseMix: 0.6, durationMs: 120, volume: 0.3 }); break;\n      }\n    }\n    if (next[0] < centerX - HALF_X || next[0] > centerX + HALF_X) v[0] *= -0.84;\n    if (next[2] < centerZ - HALF_Z || next[2] > centerZ + HALF_Z) v[2] *= -0.84;\n    if (ctx.math.vecLength([v[0], 0, v[2]]) < STOP) v = [0, 0, 0];\n    ctx.world.setComponentField(ctx.self.id, 'velocity', 'linear', v);\n    if (v[0] || v[2]) ctx.self.setWorldRotation(ctx.math.quatFromAxisAngle([1, 0, 0], Math.hypot(v[0], v[2]) * step / RADIUS));\n  },\n  getRadialItems() { return IS_CUE ? [{ label: 'Reset Cue Ball', isEnabled: () => ctx.world.isHost(), onSelect: resetBall }] : []; }\n};"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-scoreboard",
+	"parentId": "demo-8ball-pool",
+	"name": "Pool Scoreboard",
+	"position": [
+		0,
+		2.08,
+		-2.7
+	],
+	"rotation": [
+		0,
+		1,
+		0,
+		0
+	],
+	"scale": [
+		1.25,
+		0.82,
+		1
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "plane",
+			"color": "#081029"
+		},
+		{
+			"type": "scoreboard",
+			"title": "8-Ball Pool",
+			"status": "Grab the cue stick, aim at the cue ball, and pull it back to shoot.",
+			"columns": [
+				"Player",
+				"Group",
+				"Pocketed",
+				"Status"
+			],
+			"rows": []
+		},
+		{
+			"type": "scriptState",
+			"data": {
+				"players": {},
+				"currentPlayerId": null,
+				"currentPlayerName": null,
+				"winner": null,
+				"winnerName": null,
+				"lastShot": ""
+			}
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-reset-button",
+	"parentId": "demo-8ball-pool",
+	"name": "Reset Rack Button",
+	"position": [
+		1.52,
+		1.16,
+		0.25
+	],
+	"rotation": [
+		0,
+		0,
+		0,
+		1
+	],
+	"scale": [
+		0.14,
+		0.14,
+		0.14
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "box",
+			"color": "#ef4444"
+		},
+		{
+			"type": "collider",
+			"shape": "box"
+		},
+		{
+			"type": "pressableButton",
+			"axis": [
+				0,
+				-1,
+				0
+			],
+			"travel": 0.06,
+			"radius": 0.15,
+			"threshold": 0.8
+		},
+		{
+			"type": "codeBlock",
+			"code": "return {\n  onPress() {\n    const parent = ctx.hierarchy.getParent(ctx.self.id);\n    if (!parent) return;\n    const c = parent.components.find((x) => x.type === 'scriptState');\n    const previous = (c && c.data) || {};\n    ctx.world.setComponentField(parent.id, 'scriptState', 'data', { ...previous, resetRequestedAt: Date.now() });\n    ctx.audio.play({ frequency: 880, pitchDrop: 240, noiseMix: 0.18, durationMs: 100, volume: 0.38 });\n  }\n};"
+		}
+	]
+},
+{
+	"id": "demo-8ball-pool-cue-stick",
+	"parentId": "demo-8ball-pool",
+	"name": "Cue Stick",
+	"position": [
+		1.48,
+		1.08,
+		0.55
+	],
+	"rotation": [
+		0,
+		0.7071,
+		0,
+		0.7071
+	],
+	"scale": [
+		0.045,
+		0.045,
+		2.25
+	],
+	"components": [
+		{
+			"type": "meshRenderer",
+			"meshRef": "box",
+			"color": "#8b5a2b"
+		},
+		{
+			"type": "collider",
+			"shape": "box"
+		},
+		{
+			"type": "grabbable",
+			"scalable": false
+		},
+		{
+			"type": "codeBlock",
+			"code": "const MAX_POWER = 6;\nconst MIN_POWER = 0.45;\nconst RETURN_TIME = 0.32;\nconst ARM_DISTANCE = 0.85;\nconst MIN_STROKE_SPEED = 0.1;\nlet spawnPos = null;\nlet spawnRot = null;\nlet previousPosition = null;\nlet maxStrokeSpeed = 0;\nlet strokeArmed = false;\nlet returning = false;\nlet returnFrom = null;\nlet returnT = 0;\n\nfunction siblings() {\n  const parent = ctx.hierarchy.getParent(ctx.self.id);\n  return parent ? ctx.hierarchy.getChildren(parent.id) : [];\n}\n\nfunction parentSlot() {\n  const parent = ctx.hierarchy.getParent(ctx.self.id);\n  return parent || null;\n}\n\nfunction siblingWorldPosition(slot) {\n  const parent = parentSlot();\n  const scale = parent ? parent.scale : [1, 1, 1];\n  const offset = parent ? parent.position : [0, 0, 0];\n  return [\n    offset[0] + slot.position[0] * scale[0],\n    offset[1] + slot.position[1] * scale[1],\n    offset[2] + slot.position[2] * scale[2]\n  ];\n}\n\nfunction cueBall() {\n  return siblings().find((slot) => slot.name === 'Cue Ball');\n}\n\nfunction scoreboard() {\n  return siblings().find((slot) => slot.name === 'Pool Scoreboard');\n}\n\nfunction setStatus(message, player) {\n  const board = scoreboard();\n  if (!board) return;\n  const component = board.components.find((candidate) => candidate.type === 'scriptState');\n  const previous = (component && component.data) || {};\n  const next = {\n    ...previous,\n    currentPlayerId: player ? player.id : previous.currentPlayerId,\n    currentPlayerName: player ? player.name : previous.currentPlayerName,\n    lastShot: message\n  };\n  ctx.world.setComponentField(board.id, 'scriptState', 'data', next);\n  ctx.world.setComponentField(board.id, 'scoreboard', 'status', message);\n}\n\nfunction aimAtCue(stickPosition, cuePosition) {\n  const direction = ctx.math.vecNormalize([cuePosition[0] - stickPosition[0], 0, cuePosition[2] - stickPosition[2]]);\n  const yaw = Math.atan2(direction[0], direction[2]);\n  return {\n    direction,\n    rotation: [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)]\n  };\n}\n\nfunction lerp(a, b, t) {\n  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];\n}\n\nfunction returnToRack() {\n  returning = true;\n  returnFrom = ctx.self.getWorldPosition();\n  returnT = 0;\n}\n\nreturn {\n  onSpawn() {\n    spawnPos = ctx.self.getWorldPosition();\n    spawnRot = ctx.self.getWorldRotation();\n  },\n  onGrab() {\n    returning = false;\n    maxStrokeSpeed = 0;\n    strokeArmed = false;\n    previousPosition = ctx.self.getWorldPosition();\n    const holders = ctx.grab.heldBy();\n    if (holders.length) {\n      const player = ctx.world.getPlayer(holders[0]);\n      setStatus(player.name + ' is aiming — place the cue, pull back, then release to shoot.', player);\n    }\n  },\n  onRelease() {\n    if (!ctx.world.isHost()) {\n      returnToRack();\n      return;\n    }\n    const cue = cueBall();\n    const stickPosition = ctx.self.getWorldPosition();\n    const cuePosition = cue ? siblingWorldPosition(cue) : null;\n    if (!cue || !cuePosition) {\n      returnToRack();\n      return;\n    }\n    const cueState = cue.components.find((candidate) => candidate.type === 'scriptState');\n    const cueVelocity = cue.components.find((candidate) => candidate.type === 'velocity');\n    if (cueState && cueState.data && cueState.data.pocketed) {\n      setStatus('Cue ball is pocketed — reset it before shooting again.');\n      returnToRack();\n      return;\n    }\n    if (cueVelocity && ctx.math.vecLength([cueVelocity.linear[0], 0, cueVelocity.linear[2]]) > MIN_STROKE_SPEED) {\n      setStatus('Wait for the balls to stop before taking another shot.');\n      returnToRack();\n      return;\n    }\n    if (!strokeArmed || maxStrokeSpeed < MIN_STROKE_SPEED) {\n      setStatus('Place the cue near the white ball, pull back, and release to set power.');\n      returnToRack();\n      return;\n    }\n    const aim = aimAtCue(stickPosition, cuePosition);\n    const power = Math.min(Math.max(maxStrokeSpeed * 1.7, MIN_POWER), MAX_POWER);\n    ctx.world.setComponentField(cue.id, 'velocity', 'linear', [aim.direction[0] * power, 0, aim.direction[2] * power]);\n    setStatus('Shot power: ' + power.toFixed(1), null);\n    ctx.audio.play({ frequency: 285, pitchDrop: 110, noiseMix: 0.42, durationMs: 115, volume: 0.34 });\n    returnToRack();\n  },\n  tick(dt) {\n    const safeDt = Math.min(Math.max(dt, 1 / 120), 1 / 30);\n    if (ctx.grab.isHeld()) {\n      returning = false;\n      const current = ctx.self.getWorldPosition();\n      const cue = cueBall();\n      if (cue) {\n        const cuePosition = siblingWorldPosition(cue);\n        const distanceToCue = Math.hypot(current[0] - cuePosition[0], current[2] - cuePosition[2]);\n        if (!strokeArmed && distanceToCue <= ARM_DISTANCE) {\n          strokeArmed = true;\n          maxStrokeSpeed = 0;\n          previousPosition = current;\n        } else if (strokeArmed && previousPosition) {\n          const movement = ctx.math.vecScale(ctx.math.vecSub(current, previousPosition), 1 / safeDt);\n          maxStrokeSpeed = Math.max(maxStrokeSpeed, ctx.math.vecLength([movement[0], 0, movement[2]]));\n        }\n        previousPosition = current;\n        ctx.self.setWorldRotation(aimAtCue(current, cuePosition).rotation);\n      } else {\n        previousPosition = current;\n      }\n      return;\n    }\n    if (!returning) return;\n    returnT += safeDt;\n    const t = Math.min(returnT / RETURN_TIME, 1);\n    ctx.self.setWorldPosition(lerp(returnFrom, spawnPos, t));\n    ctx.self.setWorldRotation(spawnRot);\n    if (t >= 1) returning = false;\n  },\n  getRadialItems() {\n    return [{\n      label: 'Return Cue',\n      isEnabled: () => !ctx.grab.isHeld(),\n      onSelect: () => {\n        ctx.self.setWorldPosition(spawnPos);\n        ctx.self.setWorldRotation(spawnRot);\n        returning = false;\n      }\n    }];\n  }\n};"
+		}
+	]
+},
+	{
+		"id": "demo-pistol",
+		"parentId": null,
+		"name": "Pistol",
+		"position": [
+			-1.6,
+			1.1,
+			0.3
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "equippable",
+				"right": {
+					"position": [
+						0,
+						-0.02,
+						0.06
+					],
+					"rotation": [
+						0,
+						0,
+						0
+					]
+				},
+				"left": {
+					"position": [
+						0,
+						-0.02,
+						0.06
+					],
+					"rotation": [
+						0,
+						0,
+						0
+					]
+				}
+			},
+			{
+				"type": "codeBlock",
+				"code": "const BULLET_SPEED = 25;\nconst BULLET_LIFETIME_MS = 2500;\nconst COOLDOWN_MS = 180;\nlet lastShotAt = 0;\n\nreturn {\n  onEquip(e) {\n    ctx.log('Equipped in the', e.hand, 'hand by', e.playerName);\n  },\n  onUnequip() {\n    ctx.log('Unequipped');\n  },\n  // Runs once, on the host, with the trigger of the hand holding the pistol.\n  // Returning true consumes the press so it does not also act as a laser click.\n  onTrigger(e) {\n    if (e.phase !== 'press') return true;\n    const now = Date.now();\n    if (now - lastShotAt < COOLDOWN_MS) return true;\n    const muzzle = ctx.hierarchy.getChildren(ctx.self.id).find((slot) => slot.name === 'Muzzle');\n    const pose = muzzle && ctx.hierarchy.getWorldPose(muzzle.id);\n    if (!pose) return false;\n    lastShotAt = now;\n    ctx.world.spawn({\n      name: 'Bullet',\n      position: pose.position,\n      rotation: pose.rotation,\n      scale: [0.03, 0.03, 0.12],\n      components: [\n        { type: 'meshRenderer', meshRef: 'box', color: '#fde047' },\n        { type: 'velocity', linear: ctx.math.vecScale(pose.forward, BULLET_SPEED) },\n        { type: 'expires', expiresAt: now + BULLET_LIFETIME_MS }\n      ]\n    });\n    ctx.audio.play({ frequency: 180, pitchDrop: 140, noiseMix: 0.6, durationMs: 120, volume: 0.8 });\n    ctx.particles.burst({ color: '#fbbf24', count: 8, durationMs: 200 });\n    return true;\n  }\n};"
+			}
+		]
+	},
+	{
+		"id": "demo-pistol-body",
+		"parentId": "demo-pistol",
+		"name": "Pistol Body",
+		"position": [
+			0,
+			0,
+			0.06
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.035,
+			0.055,
+			0.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "box",
+				"color": "#374151"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "demo-pistol-grip",
+		"parentId": "demo-pistol",
+		"name": "Pistol Grip",
+		"position": [
+			0,
+			-0.07,
+			0.0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.032,
+			0.1,
+			0.045
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": "box",
+				"color": "#1f2937"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "demo-pistol-muzzle",
+		"parentId": "demo-pistol",
+		"name": "Muzzle",
+		"position": [
+			0,
+			0.008,
+			0.175
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": []
 	}
 ]

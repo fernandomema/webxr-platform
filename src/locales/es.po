@@ -46,6 +46,8 @@ msgstr "Email"
 msgid "Sign-up failed"
 msgstr "Error al registrarse"
 
+#: src/lib/studio/components/Inspector.svelte
+#: src/lib/studio/components/SaveDialog.svelte
 #: src/routes/register/+page.svelte
 msgid "Name"
 msgstr "Nombre"
@@ -80,262 +82,203 @@ msgstr "Error al entrar"
 msgid "Email or username"
 msgstr "Email o usuario"
 
+#: src/lib/studio/components/PublishDialog.svelte
 #: src/routes/login/+page.svelte
 #: src/routes/login/+page.svelte
+#: src/routes/studio/+page.svelte
 msgid "Sign in"
 msgstr "Entrar"
 
-#: src/routes/studio/+page.svelte
-msgid "Untitled asset"
-msgstr ""
+#~ msgid "Untitled asset"
+#~ msgstr ""
 
 #~ msgid "Local workspace"
 #~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-#: src/routes/studio/+page.svelte
-msgid "Guest workspace"
-msgstr ""
+#~ msgid "Guest workspace"
+#~ msgstr ""
 
-#. 0: session.data.user.name
-#: src/routes/studio/+page.svelte
-msgid "{0}'s workspace"
-msgstr ""
+#~ msgid "{0}'s workspace"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Cloud workspace"
-msgstr ""
+#~ msgid "Cloud workspace"
+#~ msgstr ""
 
-#. 0: adapter.label
-#: src/routes/studio/+page.svelte
-msgid "{0} library synced"
-msgstr ""
+#~ msgid "{0} library synced"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Could not load library"
-msgstr ""
+#~ msgid "Could not load library"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Folder name"
-msgstr ""
+#~ msgid "Folder name"
+#~ msgstr ""
 
 #: src/routes/studio/+page.svelte
 #: src/routes/studio/+page.svelte
 msgid "New folder"
 msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Could not create folder"
-msgstr ""
+#~ msgid "Could not create folder"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "New asset ready"
-msgstr ""
+#~ msgid "New asset ready"
+#~ msgstr ""
+
+#~ msgid "{0} loaded"
+#~ msgstr ""
+
+#~ msgid "{0} saved"
+#~ msgstr ""
+
+#~ msgid "Could not save asset"
+#~ msgstr ""
 
 #. 0: item.name
-#: src/routes/studio/+page.svelte
-msgid "{0} loaded"
-msgstr ""
-
-#. 0: saved.name
-#: src/routes/studio/+page.svelte
-msgid "{0} saved"
-msgstr ""
-
-#: src/routes/studio/+page.svelte
-msgid "Could not save asset"
-msgstr ""
-
-#. 0: selectedItem.name
 #: src/routes/studio/+page.svelte
 msgid "Delete “{0}”?"
 msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Asset deleted"
-msgstr ""
+#~ msgid "Asset deleted"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Could not delete asset"
-msgstr ""
+#~ msgid "Could not delete asset"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "New object"
-msgstr ""
+#~ msgid "New object"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
+#: src/lib/studio/components/AddObjectMenu.svelte
+#: src/lib/studio/components/AddObjectMenu.svelte
 msgid "Logic node"
 msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Desktop authoring studio for WebXR assets, scene graphs and code blocks."
-msgstr ""
+#~ msgid "Desktop authoring studio for WebXR assets, scene graphs and code blocks."
+#~ msgstr ""
 
 #: src/routes/studio/+page.svelte
 msgid "Studio · WebXR Platform"
 msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "WebXR <0>Studio</0>"
-msgstr ""
+#~ msgid "WebXR <0>Studio</0>"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "⌘ K"
-msgstr ""
+#~ msgid "⌘ K"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
+#: src/lib/studio/components/TopBar.svelte
 msgid "Saving…"
 msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Save asset"
-msgstr ""
+#~ msgid "Save asset"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "⌘ S"
-msgstr ""
+#~ msgid "⌘ S"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
+#: src/lib/studio/components/AssetsPanel.svelte
 msgid "Library"
 msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Preview"
-msgstr ""
+#~ msgid "Preview"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-#: src/routes/studio/+page.svelte
-#: src/routes/studio/+page.svelte
-msgid "Assets"
-msgstr ""
+#~ msgid "Assets"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-#: src/routes/studio/+page.svelte
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/edit/+page.svelte
 msgid "Scene"
 msgstr ""
 
-#: src/routes/studio/+page.svelte
-#: src/routes/studio/+page.svelte
-msgid "Code"
-msgstr ""
+#~ msgid "Code"
+#~ msgstr ""
+
+#~ msgid "Open runtime"
+#~ msgstr ""
+
+#~ msgid "Runtime"
+#~ msgstr ""
+
+#~ msgid "Project library"
+#~ msgstr ""
+
+#~ msgid "Inventory"
+#~ msgstr ""
+
+#~ msgid "Create asset"
+#~ msgstr ""
+
+#~ msgid "Search assets"
+#~ msgstr ""
+
+#~ msgid "Folders"
+#~ msgstr ""
+
+#~ msgid "All assets"
+#~ msgstr ""
+
+#~ msgid "<0/>Loading library"
+#~ msgstr ""
+
+#~ msgid "No assets here yet"
+#~ msgstr ""
+
+#~ msgid "Create a reusable object to start building."
+#~ msgstr ""
+
+#~ msgid "Code <0/>"
+#~ msgstr ""
+
+#~ msgid "New"
+#~ msgstr ""
 
 #: src/routes/studio/+page.svelte
-msgid "Open runtime"
-msgstr ""
-
 #: src/routes/studio/+page.svelte
-msgid "Runtime"
-msgstr ""
-
-#: src/routes/studio/+page.svelte
-msgid "Project library"
-msgstr ""
-
-#: src/routes/studio/+page.svelte
-#: src/routes/studio/+page.svelte
-msgid "Inventory"
-msgstr ""
-
-#: src/routes/studio/+page.svelte
-#: src/routes/studio/+page.svelte
-msgid "Create asset"
-msgstr ""
-
-#: src/routes/studio/+page.svelte
-msgid "Search assets"
-msgstr ""
-
-#: src/routes/studio/+page.svelte
-msgid "Folders"
-msgstr ""
-
-#: src/routes/studio/+page.svelte
-#: src/routes/studio/+page.svelte
-msgid "All assets"
-msgstr ""
-
-#: src/routes/studio/+page.svelte
-msgid "<0/>Loading library"
-msgstr ""
-
-#: src/routes/studio/+page.svelte
-msgid "No assets here yet"
-msgstr ""
-
-#: src/routes/studio/+page.svelte
-msgid "Create a reusable object to start building."
-msgstr ""
-
-#: src/routes/studio/+page.svelte
-msgid "Code <0/>"
-msgstr ""
-
-#: src/routes/studio/+page.svelte
-msgid "New"
-msgstr ""
-
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/edit/+page.svelte
 msgid "Delete"
 msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Select a slot"
-msgstr ""
+#~ msgid "Select a slot"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Code block editor"
-msgstr ""
+#~ msgid "Code block editor"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "No issues"
-msgstr ""
+#~ msgid "No issues"
+#~ msgstr ""
 
-#. 0: diagnostics.length; 1: diagnostics.length === 1 ? '' \\: 's'
-#: src/routes/studio/+page.svelte
-msgid "{0} issue{1}"
-msgstr ""
+#~ msgid "{0} issue{1}"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "JavaScript"
-msgstr ""
+#~ msgid "JavaScript"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Runs in the bounded <0/> runtime"
-msgstr ""
+#~ msgid "Runs in the bounded <0/> runtime"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Tab size 2 · UTF-8"
-msgstr ""
+#~ msgid "Tab size 2 · UTF-8"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
+#: src/lib/studio/views/CodeView.svelte
 msgid "Diagnostics"
 msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Everything looks good."
-msgstr ""
+#~ msgid "Everything looks good."
+#~ msgstr ""
 
-#. 0: diagnostic.line
-#: src/routes/studio/+page.svelte
-msgid "Line {0}"
-msgstr ""
+#~ msgid "Line {0}"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Select a code block"
-msgstr ""
+#~ msgid "Select a code block"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Select a slot with a Code Block component, or add one from the inspector."
-msgstr ""
+#~ msgid "Select a slot with a Code Block component, or add one from the inspector."
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Add code block"
-msgstr ""
+#~ msgid "Add code block"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Asset canvas"
-msgstr ""
+#~ msgid "Asset canvas"
+#~ msgstr ""
 
 #~ msgid "Select"
 #~ msgstr ""
@@ -343,13 +286,12 @@ msgstr ""
 #~ msgid "Move"
 #~ msgstr ""
 
-#: src/routes/studio/+page.svelte
+#: src/lib/studio/components/Inspector.svelte
 msgid "Scale"
 msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Add a slot to begin."
-msgstr ""
+#~ msgid "Add a slot to begin."
+#~ msgstr ""
 
 #~ msgid "X"
 #~ msgstr ""
@@ -360,111 +302,91 @@ msgstr ""
 #~ msgid "Z"
 #~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Scene graph"
-msgstr ""
+#~ msgid "Scene graph"
+#~ msgstr ""
 
-#. 0: stats.slots; 1: stats.components
-#: src/routes/studio/+page.svelte
-msgid "{0} slots · {1} components"
-msgstr ""
+#~ msgid "{0} slots · {1} components"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "◇ Mesh object"
-msgstr ""
+#~ msgid "◇ Mesh object"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "{} Logic node"
-msgstr ""
+#~ msgid "{} Logic node"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "＋ Add slot"
-msgstr ""
+#~ msgid "＋ Add slot"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Nothing selected"
-msgstr ""
+#~ msgid "Nothing selected"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
+#: src/lib/studio/components/Inspector.svelte
 msgid "Inspector"
 msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Delete selected slot"
-msgstr ""
+#~ msgid "Delete selected slot"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
+#: src/lib/studio/components/Inspector.svelte
 msgid "Transform"
 msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Local"
-msgstr ""
+#~ msgid "Local"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
+#: src/lib/studio/components/Inspector.svelte
 msgid "Position"
 msgstr ""
 
-#: src/routes/studio/+page.svelte
+#: src/lib/studio/components/Inspector.svelte
 msgid "Rotation"
 msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Render"
-msgstr ""
+#~ msgid "Render"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Interaction"
-msgstr ""
+#~ msgid "Interaction"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Logic"
-msgstr ""
+#~ msgid "Logic"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Media"
-msgstr ""
+#~ msgid "Media"
+#~ msgstr ""
 
+#: src/lib/studio/components/TopBar.svelte
+#: src/routes/studio/+page.svelte
 #: src/routes/studio/+page.svelte
 msgid "World"
 msgstr ""
 
-#: src/routes/studio/+page.svelte
+#: src/lib/studio/components/Inspector.svelte
 msgid "Components"
 msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "This slot is empty. Add a component to give it behaviour."
-msgstr ""
+#~ msgid "This slot is empty. Add a component to give it behaviour."
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Open in code editor <0/>"
-msgstr ""
+#~ msgid "Open in code editor <0/>"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Remove component"
-msgstr ""
+#~ msgid "Remove component"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Name<0/>"
-msgstr ""
+#~ msgid "Name<0/>"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Select an object"
-msgstr ""
+#~ msgid "Select an object"
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Choose a slot in the scene graph to inspect its transform and components."
-msgstr ""
+#~ msgid "Choose a slot in the scene graph to inspect its transform and components."
+#~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Folder"
-msgstr ""
+#~ msgid "Folder"
+#~ msgstr ""
 
-#. 0: field
-#: src/routes/studio/+page.svelte
-msgid "Toggle {0}"
-msgstr ""
+#~ msgid "Toggle {0}"
+#~ msgstr ""
 
 #: src/lib/studio/CodeEditor.svelte
 msgid "CodeBlockContext"
@@ -574,45 +496,979 @@ msgstr ""
 msgid "<0/>Starting Monaco language services…"
 msgstr ""
 
-#: src/routes/studio/+page.svelte
+#: src/lib/studio/views/CodeView.svelte
 msgid "Format"
 msgstr ""
 
-#. 0: tree.length; 1: tree.length === 1 ? '' \\: 's'
-#: src/routes/studio/+page.svelte
-msgid "Raw JSON applied — {0} slot{1}"
+#~ msgid "Raw JSON applied — {0} slot{1}"
+#~ msgstr ""
+
+#~ msgid "Raw JSON"
+#~ msgstr ""
+
+#~ msgid "Raw"
+#~ msgstr ""
+
+#~ msgid "Raw asset JSON"
+#~ msgstr ""
+
+#~ msgid "Reload from asset"
+#~ msgstr ""
+
+#~ msgid "JSON"
+#~ msgstr ""
+
+#~ msgid "Paste a single slot or a whole exported subtree (an array) — a root plus its descendants, linked by parentId — then Apply."
+#~ msgstr ""
+
+#~ msgid "Apply JSON"
+#~ msgstr ""
+
+#~ msgid "Drag to rotate · scroll to zoom · right-drag to pan"
+#~ msgstr ""
+
+#~ msgid "Untitled world"
+#~ msgstr ""
+
+#~ msgid "New world ready"
+#~ msgstr ""
+
+#~ msgid "World published as revision 1"
+#~ msgstr ""
+
+#~ msgid "Could not publish world"
+#~ msgstr ""
+
+#~ msgid "Publish new"
+#~ msgstr ""
+
+#~ msgid "Save world"
+#~ msgstr ""
+
+#~ msgid "New world"
+#~ msgstr ""
+
+#~ msgid "World · "
+#~ msgstr ""
+
+#~ msgid "Object · "
+#~ msgstr ""
+
+#~ msgid "World v{0} · "
+#~ msgstr ""
+
+#: src/lib/studio/components/AddComponentMenu.svelte
+#: src/lib/studio/components/AddObjectMenu.svelte
+#: src/lib/studio/components/CommandPalette.svelte
+#: src/lib/studio/components/PublishDialog.svelte
+#: src/lib/studio/components/SaveDialog.svelte
+#: src/lib/studio/ui/DialogHost.svelte
+msgid "Escape"
+msgstr ""
+
+#: src/lib/studio/components/PublishDialog.svelte
+#: src/lib/studio/components/SaveDialog.svelte
+#: src/lib/studio/ui/DialogHost.svelte
+#: src/lib/studio/ui/DialogHost.svelte
+#: src/lib/studio/ui/DialogHost.svelte
+msgid "Cancel"
+msgstr ""
+
+#: src/lib/studio/state/dialogs.svelte.ts
+msgid "Confirm"
+msgstr ""
+
+#: src/lib/studio/ui/ToastHost.svelte
+msgid "Dismiss"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M15 18l-6-6 6-6"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M12 5v14M5 12h14"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M9 14L4 9l5-5M4 9h10a6 6 0 010 12h-3"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M15 14l5-5-5-5M20 9H10a6 6 0 000 12h3"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M5 3h11l3 3v15H5zM8 3v6h7V3M8 21v-7h8v7"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M7 4l13 8-13 8z"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M12 16V4M7 9l5-5 5 5M4 20h16"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M9 9h11v11H9zM5 15V4h11"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M3 6h6l2 2h10v11H3z"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M3 6h6l2 2h10v11H3zM12 11v6M9 14h6"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M12 3a9 9 0 100 18 9 9 0 000-18zM3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M11 4a7 7 0 100 14 7 7 0 000-14zM21 21l-5-5"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M9 6l6 6-6 6"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M6 9l6 6 6-6"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M8 8l-5 4 5 4M16 8l5 4-5 4M14 5l-4 14"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M9 4C6 4 7 8 5 9c2 1 1 5 4 5M15 4c3 0 2 4 4 5-2 1-1 5-4 5"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M6 6l12 12M18 6L6 18"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M5 12l5 5 9-10"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M7 18a4 4 0 010-8 5 5 0 019.6-1A4.5 4.5 0 0117 18z"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M4 5h16v11H4zM9 20h6M12 16v4"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M12 4l9 16H3zM12 10v4M12 17v.5"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M12 12a4 4 0 100-8 4 4 0 000 8zM4 21c0-4 4-6 8-6s8 2 8 6"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6"
+msgstr ""
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M9 9h6v6H9zM9 9V6a3 3 0 10-3 3h3M15 9h3a3 3 0 10-3-3M9 15H6a3 3 0 103 3M15 15v3a3 3 0 103-3"
 msgstr ""
 
 #: src/routes/studio/+page.svelte
-msgid "Raw JSON"
+msgid "Create"
 msgstr ""
 
 #: src/routes/studio/+page.svelte
-#: src/routes/studio/+page.svelte
-msgid "Raw"
+msgid "Could not create the folder"
 msgstr ""
 
 #: src/routes/studio/+page.svelte
-msgid "Raw asset JSON"
+msgid "This cannot be undone."
 msgstr ""
 
 #: src/routes/studio/+page.svelte
-msgid "Reload from asset"
+msgid "Deleted"
 msgstr ""
 
 #: src/routes/studio/+page.svelte
+msgid "Could not delete"
+msgstr ""
+
+#. 0: folder.name
 #: src/routes/studio/+page.svelte
-msgid "JSON"
+msgid "Delete folder “{0}”?"
 msgstr ""
 
 #: src/routes/studio/+page.svelte
-msgid "Paste a single slot or a whole exported subtree (an array) — a root plus its descendants, linked by parentId — then Apply."
+msgid "Everything inside it is deleted too."
 msgstr ""
 
 #: src/routes/studio/+page.svelte
-msgid "Apply JSON"
+msgid "Could not delete the folder"
 msgstr ""
 
 #: src/routes/studio/+page.svelte
-msgid "Drag to rotate · scroll to zoom · right-drag to pan"
+msgid "Create and edit worlds and objects for the WebXR platform."
+msgstr ""
+
+#: src/routes/studio/+page.svelte
+msgid "Studio"
+msgstr ""
+
+#: src/routes/studio/+page.svelte
+msgid "Signed in"
+msgstr ""
+
+#: src/routes/studio/+page.svelte
+msgid "Open game"
+msgstr ""
+
+#: src/lib/studio/components/TopBar.svelte
+#: src/routes/studio/+page.svelte
+#: src/routes/studio/+page.svelte
+msgid "Object"
+msgstr ""
+
+#: src/routes/studio/+page.svelte
+msgid "Start something new"
+msgstr ""
+
+#: src/routes/studio/+page.svelte
+msgid "Storage"
+msgstr ""
+
+#: src/lib/studio/components/AssetsPanel.svelte
+#: src/lib/studio/components/SaveDialog.svelte
+#: src/routes/studio/+page.svelte
+msgid "Cloud"
+msgstr ""
+
+#: src/lib/studio/components/AssetsPanel.svelte
+#: src/lib/studio/components/SaveDialog.svelte
+#: src/routes/studio/+page.svelte
+msgid "This device"
+msgstr ""
+
+#: src/routes/studio/+page.svelte
+msgid "Search"
+msgstr ""
+
+#: src/routes/studio/+page.svelte
+msgid "Search projects"
+msgstr ""
+
+#: src/routes/studio/+page.svelte
+msgid "<0/>New folder"
+msgstr ""
+
+#: src/routes/studio/+page.svelte
+msgid "Your projects"
+msgstr ""
+
+#: src/routes/studio/+page.svelte
+msgid "Folder path"
+msgstr ""
+
+#: src/routes/studio/+page.svelte
+msgid "All projects"
+msgstr ""
+
+#: src/routes/studio/+page.svelte
+msgid "Could not load projects"
+msgstr ""
+
+#: src/routes/studio/+page.svelte
+msgid "Try again"
+msgstr ""
+
+#: src/lib/studio/components/PublishDialog.svelte
+#: src/routes/studio/+page.svelte
+msgid "Loading…"
+msgstr ""
+
+#: src/routes/studio/+page.svelte
+msgid "No matches"
+msgstr ""
+
+#: src/routes/studio/+page.svelte
+msgid "Nothing here yet"
+msgstr ""
+
+#: src/routes/studio/+page.svelte
+msgid "Try a different search."
+msgstr ""
+
+#: src/routes/studio/+page.svelte
+msgid "Pick a template above to create your first project."
+msgstr ""
+
+#. 0: folder.name
+#: src/routes/studio/+page.svelte
+msgid "Delete folder {0}"
+msgstr ""
+
+#. 0: item.name
+#: src/routes/studio/+page.svelte
+msgid "Delete {0}"
+msgstr ""
+
+#: src/lib/studio/state/library.svelte.ts
+msgid "Could not load the library"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Leave with unsaved changes?"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Your edits are kept as a draft on this device, so you can pick up where you left off."
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Leave"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Save and leave"
+msgstr ""
+
+#. 0: saved.name
+#: src/routes/studio/edit/+page.svelte
+msgid "Saved “{0}”"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Could not save"
+msgstr ""
+
+#. 0: name
+#: src/routes/studio/edit/+page.svelte
+msgid "Deleted “{0}”. Press Ctrl+Z to undo."
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "A project needs at least one object."
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "This scene cannot be played yet"
+msgstr ""
+
+#. 0: result.name; 1: result.revision
+#: src/routes/studio/edit/+page.svelte
+msgid "Published “{0}” as revision {1}"
+msgstr ""
+
+#: src/lib/studio/components/SaveDialog.svelte
+#: src/lib/studio/components/TopBar.svelte
+#: src/routes/studio/edit/+page.svelte
+msgid "Save"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Ctrl+S"
+msgstr ""
+
+#: src/lib/studio/components/TopBar.svelte
+#: src/routes/studio/edit/+page.svelte
+msgid "Undo"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Ctrl+Z"
+msgstr ""
+
+#: src/lib/studio/components/TopBar.svelte
+#: src/routes/studio/edit/+page.svelte
+msgid "Redo"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Ctrl+Shift+Z"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Add object…"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Duplicate selected object"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Ctrl+D"
+msgstr ""
+
+#: src/lib/studio/components/Hierarchy.svelte
+#: src/routes/studio/edit/+page.svelte
+msgid "Delete selected object"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Del"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Focus camera on selection"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Play in the game"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Publish world…"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Switch to Simple mode"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Switch to Advanced mode"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Show asset library"
+msgstr ""
+
+#: src/lib/studio/components/TopBar.svelte
+#: src/lib/studio/components/TopBar.svelte
+#: src/routes/studio/edit/+page.svelte
+#: src/routes/studio/edit/+page.svelte
+msgid "Back to projects"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Backspace"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Untitled"
+msgstr ""
+
+#. 0: doc.name || 'Untitled'
+#: src/routes/studio/edit/+page.svelte
+msgid "{0} · Studio"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Opening project…"
+msgstr ""
+
+#: src/lib/studio/state/project.svelte.ts
+#: src/routes/studio/edit/+page.svelte
+msgid "Could not open this project"
+msgstr ""
+
+#. 0: timeLabel(project.pendingDraft.savedAt)
+#: src/routes/studio/edit/+page.svelte
+msgid "There are unsaved changes from {0} on this device."
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Restore"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Discard"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Objects and assets"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+#: src/routes/studio/edit/+page.svelte
+msgid "<0/>Objects"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "<0/>Library"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "<0/>Scene"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "<0/>Code"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "<0/>JSON"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Drag to orbit · Scroll to zoom · Right-drag to pan · <0>F</0> to focus"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Properties"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Panels"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "<0/>View"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "<0/>Properties"
+msgstr ""
+
+#: src/lib/studio/state/project.svelte.ts
+msgid "Sign in to publish worlds."
+msgstr ""
+
+#: src/lib/studio/components/TopBar.svelte
+msgid "Project name"
+msgstr ""
+
+#: src/lib/studio/components/TopBar.svelte
+msgid "Not saved yet"
+msgstr ""
+
+#: src/lib/studio/components/TopBar.svelte
+msgid "Unsaved changes"
+msgstr ""
+
+#: src/lib/studio/components/TopBar.svelte
+msgid "Saved"
+msgstr ""
+
+#: src/lib/studio/components/TopBar.svelte
+msgid "Undo (Ctrl+Z)"
+msgstr ""
+
+#: src/lib/studio/components/TopBar.svelte
+msgid "Redo (Ctrl+Shift+Z)"
+msgstr ""
+
+#: src/lib/studio/components/TopBar.svelte
+msgid "Editing mode"
+msgstr ""
+
+#: src/lib/studio/components/TopBar.svelte
+msgid "Simple"
+msgstr ""
+
+#: src/lib/studio/components/TopBar.svelte
+msgid "Advanced"
+msgstr ""
+
+#: src/lib/studio/components/CommandPalette.svelte
+#: src/lib/studio/components/TopBar.svelte
+msgid "Command palette"
+msgstr ""
+
+#: src/lib/studio/components/TopBar.svelte
+msgid "Commands (Ctrl+K)"
+msgstr ""
+
+#: src/lib/studio/components/TopBar.svelte
+msgid "Try it in the game"
+msgstr ""
+
+#: src/lib/studio/components/TopBar.svelte
+msgid "Play"
+msgstr ""
+
+#: src/lib/studio/components/TopBar.svelte
+msgid "Save (Ctrl+S)"
+msgstr ""
+
+#: src/lib/studio/components/PublishDialog.svelte
+#: src/lib/studio/components/TopBar.svelte
+msgid "Publish"
+msgstr ""
+
+#: src/lib/studio/components/CommandPalette.svelte
+#: src/lib/studio/components/Hierarchy.svelte
+msgid "ArrowDown"
+msgstr ""
+
+#: src/lib/studio/components/CommandPalette.svelte
+#: src/lib/studio/components/Hierarchy.svelte
+msgid "ArrowUp"
+msgstr ""
+
+#: src/lib/studio/components/Hierarchy.svelte
+msgid "ArrowRight"
+msgstr ""
+
+#: src/lib/studio/components/Hierarchy.svelte
+msgid "ArrowLeft"
+msgstr ""
+
+#: src/lib/studio/components/Hierarchy.svelte
+msgid "Filter"
+msgstr ""
+
+#: src/lib/studio/components/Hierarchy.svelte
+msgid "Filter objects"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+#: src/lib/studio/components/Hierarchy.svelte
+#: src/lib/studio/components/Hierarchy.svelte
+msgid "Add object"
+msgstr ""
+
+#: src/lib/studio/components/Hierarchy.svelte
+msgid "Delete (Del)"
+msgstr ""
+
+#: src/lib/studio/components/Hierarchy.svelte
+msgid "Scene hierarchy"
+msgstr ""
+
+#: src/lib/studio/components/Hierarchy.svelte
+msgid "Expand"
+msgstr ""
+
+#: src/lib/studio/components/Hierarchy.svelte
+msgid "Collapse"
+msgstr ""
+
+#: src/lib/studio/components/Hierarchy.svelte
+msgid "Unnamed"
+msgstr ""
+
+#: src/lib/studio/components/Hierarchy.svelte
+msgid "No objects match."
+msgstr ""
+
+#: src/lib/studio/components/Hierarchy.svelte
+msgid "Drop here to move to the top level"
+msgstr ""
+
+#: src/lib/studio/components/Inspector.svelte
+msgid "<0/> <1>Nothing selected</1> Pick an object in the hierarchy or click it in the 3D view."
+msgstr ""
+
+#: src/lib/studio/components/Inspector.svelte
+msgid "Object name"
+msgstr ""
+
+#: src/lib/studio/components/Inspector.svelte
+msgid "<0/>Add"
+msgstr ""
+
+#: src/lib/studio/components/Inspector.svelte
+msgid "No components yet. This object is just a group and a position."
+msgstr ""
+
+#. 0: item.name
+#: src/lib/studio/components/AssetsPanel.svelte
+msgid "Added “{0}”"
+msgstr ""
+
+#: src/lib/studio/components/AssetsPanel.svelte
+#: src/lib/studio/components/AssetsPanel.svelte
+msgid "Search objects"
+msgstr ""
+
+#: src/lib/studio/components/AssetsPanel.svelte
+msgid "<0/>Back to top"
+msgstr ""
+
+#: src/lib/studio/components/AssetsPanel.svelte
+msgid "Add to the scene"
+msgstr ""
+
+#: src/lib/studio/components/AssetsPanel.svelte
+msgid "<0>No saved objects</0>Save an object from the Studio and it shows up here to reuse in any world."
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "Cube"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "Sphere"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "Text label"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "Text"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "Hello"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "Edit this text"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "Empty group"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "Group"
+msgstr ""
+
+#: src/lib/studio/components/SaveDialog.svelte
+msgid "Stored in this browser only."
+msgstr ""
+
+#: src/lib/studio/components/SaveDialog.svelte
+msgid "Available on all your devices."
+msgstr ""
+
+#: src/lib/studio/components/SaveDialog.svelte
+msgid "Sign in to save to the cloud."
+msgstr ""
+
+#: src/lib/studio/components/SaveDialog.svelte
+msgid "Save project"
+msgstr ""
+
+#: src/lib/studio/components/SaveDialog.svelte
+msgid "Location"
+msgstr ""
+
+#. 0: kind === 'world' ? 'world' \\: 'object'
+#: src/lib/studio/components/SaveDialog.svelte
+msgid "Save {0}"
+msgstr ""
+
+#: src/lib/studio/components/SaveDialog.svelte
+msgid "Choose a name and where to keep it."
+msgstr ""
+
+#: src/lib/studio/components/PublishDialog.svelte
+msgid "Could not load your published worlds"
+msgstr ""
+
+#: src/lib/studio/components/PublishDialog.svelte
+msgid "Could not publish this world"
+msgstr ""
+
+#: src/lib/studio/components/PublishDialog.svelte
+msgid "Publish world"
+msgstr ""
+
+#: src/lib/studio/components/PublishDialog.svelte
+msgid "Close"
+msgstr ""
+
+#: src/lib/studio/components/PublishDialog.svelte
+msgid "You need to sign in to publish worlds."
+msgstr ""
+
+#: src/lib/studio/components/PublishDialog.svelte
+msgid "Publish as a new world"
+msgstr ""
+
+#: src/lib/studio/components/PublishDialog.svelte
+msgid "Starts at revision 1."
+msgstr ""
+
+#: src/lib/studio/components/PublishDialog.svelte
+msgid "World to update"
+msgstr ""
+
+#. 0: publication.name; 1: publication.latestRevision
+#: src/lib/studio/components/PublishDialog.svelte
+msgid "{0} (revision {1})"
+msgstr ""
+
+#: src/lib/studio/components/PublishDialog.svelte
+msgid "You haven’t published a world yet."
+msgstr ""
+
+#: src/lib/studio/components/PublishDialog.svelte
+msgid "Add a revision to an existing world"
+msgstr ""
+
+#. 0: chosen.latestRevision + 1
+#: src/lib/studio/components/PublishDialog.svelte
+msgid "This will create revision {0}."
+msgstr ""
+
+#: src/lib/studio/components/PublishDialog.svelte
+msgid "Publishing…"
+msgstr ""
+
+#: src/lib/studio/components/PublishDialog.svelte
+msgid "Publishing snapshots the world as it is right now. Each publish is an immutable revision."
+msgstr ""
+
+#. 0: project.doc.name
+#: src/lib/studio/components/PublishDialog.svelte
+msgid "Publish “{0}”"
+msgstr ""
+
+#: src/lib/studio/components/CommandPalette.svelte
+msgid "Enter"
+msgstr ""
+
+#: src/lib/studio/components/CommandPalette.svelte
+msgid "Type a command…"
+msgstr ""
+
+#: src/lib/studio/components/CommandPalette.svelte
+msgid "Command"
+msgstr ""
+
+#: src/lib/studio/components/CommandPalette.svelte
+msgid "No matching command."
+msgstr ""
+
+#: src/lib/studio/views/CodeView.svelte
+msgid "<0/><1>No object selected</1>Select an object to edit its code."
+msgstr ""
+
+#. 1.0: slot.name
+#: src/lib/studio/views/CodeView.svelte
+msgid "<0/> <1>“{0}” has no code block</1> A code block gives an object behaviour, like reacting when it is grabbed. <2><0/>Add code block</2>"
+msgstr ""
+
+#: src/lib/studio/views/CodeView.svelte
+msgid "Code block"
+msgstr ""
+
+#. 0: position + 1
+#: src/lib/studio/views/CodeView.svelte
+msgid "Code block {0}"
+msgstr ""
+
+#: src/lib/studio/views/CodeView.svelte
+msgid "Editing code on <0/>"
+msgstr ""
+
+#. 0: diagnostic.line; 1: diagnostic.message
+#: src/lib/studio/views/CodeView.svelte
+msgid "<0/> Line {0}: {1}"
+msgstr ""
+
+#: src/lib/studio/views/CodeView.svelte
+msgid "<0/> No problems found"
+msgstr ""
+
+#. 0: result.tree.length; 1: result.tree.length === 1 ? '' \\: 's'
+#: src/lib/studio/views/JsonView.svelte
+msgid "Applied {0} object{1}"
+msgstr ""
+
+#: src/lib/studio/views/JsonView.svelte
+msgid "The whole scene as JSON. Paste an exported object to replace it."
+msgstr ""
+
+#: src/lib/studio/views/JsonView.svelte
+msgid "Reset"
+msgstr ""
+
+#: src/lib/studio/views/JsonView.svelte
+msgid "Apply"
+msgstr ""
+
+#: src/lib/studio/views/JsonView.svelte
+msgid "Scene JSON"
+msgstr ""
+
+#: src/lib/studio/components/AddComponentMenu.svelte
+msgid "Add component"
+msgstr ""
+
+#: src/lib/studio/components/AddComponentMenu.svelte
+#: src/lib/studio/components/AddComponentMenu.svelte
+msgid "Search components"
+msgstr ""
+
+#: src/lib/studio/components/AddComponentMenu.svelte
+msgid "No components match."
+msgstr ""
+
+#. 0: schema.label
+#: src/lib/studio/components/ComponentCard.svelte
+msgid "Remove {0}"
+msgstr ""
+
+#: src/lib/studio/components/FieldEditor.svelte
+msgid "Invalid JSON"
+msgstr ""
+
+#: src/lib/studio/components/FieldEditor.svelte
+msgid "<0/>Set"
+msgstr ""
+
+#: src/lib/studio/components/FieldEditor.svelte
+msgid "<0/>Edit code"
+msgstr ""
+
+#. 0: String(value ?? '').split('\\\\n').length
+#: src/lib/studio/components/FieldEditor.svelte
+msgid "{0} lines"
+msgstr ""
+
+#. 0: field.label
+#: src/lib/studio/components/FieldEditor.svelte
+msgid "Clear {0}"
+msgstr ""
+
+#: src/lib/studio/components/FieldEditor.svelte
+msgid "Clear"
+msgstr ""
+
+#: src/lib/studio/components/FieldEditor.svelte
+msgid "Pos"
+msgstr ""
+
+#: src/lib/studio/components/FieldEditor.svelte
+msgid "Rot °"
+msgstr ""
+
+#: src/lib/studio/components/FieldEditor.svelte
+msgid "Stop previewing"
+msgstr ""
+
+#: src/lib/studio/components/FieldEditor.svelte
+msgid "Preview in hand"
+msgstr ""
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "True world pose of any slot, e.g. a gun Muzzle child. Correct under nested rotation and scale."
+msgstr ""
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Whether this object (or the one it belongs to) is equipped in a hand."
+msgstr ""
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Which player and hand have this object equipped."
+msgstr ""
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Rotate a vector by a quaternion."
+msgstr ""
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "Combine two rotations."
 msgstr ""

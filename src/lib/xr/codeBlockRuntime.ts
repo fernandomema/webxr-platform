@@ -17,6 +17,25 @@ export interface CodeBlockHost {
 	findNear(worldPos: Vec3, radius: number): Slot[];
 	/** Resolves a grabberId (from `getGrabbers`/`ctx.grab.heldBy()`) to a stable player id + display name — generic attribution for scripts that need to know "who did this" (scoreboards, ownership tags, logs), not tied to any one demo. */
 	resolvePlayer(grabberId: string): { id: string; name: string };
+	/** Which player/hand has this slot — or one of its ancestors — equipped, if any. */
+	getEquipHolder(slotId: string): { playerId: string; hand: 'left' | 'right' } | null;
+}
+
+/** Who and which hand an equip/unequip/trigger event is about. */
+export interface HandEvent {
+	hand: 'left' | 'right';
+	playerId: string;
+	playerName: string;
+}
+
+/**
+ * The trigger of the hand holding this object. `press`/`release` fire on the
+ * button edges; `value` carries the analog pull (0-1) when the controller
+ * reports one.
+ */
+export interface TriggerEvent extends HandEvent {
+	phase: 'press' | 'release' | 'value';
+	value: number;
 }
 
 export interface RadialItemDef {
@@ -31,6 +50,16 @@ export interface CodeBlockHandlers {
 	onRelease?(): void;
 	/** Fired by PressableButtonSystem once a `pressableButton` component's depression crosses its threshold — see interaction/pressableButtonSystem.ts. Unrelated to grabbing. */
 	onPress?(): void;
+	/** Fired when this object (or the object this one is a child of) is equipped in a hand. */
+	onEquip?(event: HandEvent): void;
+	onUnequip?(event: HandEvent): void;
+	/**
+	 * Fired for the trigger of the hand holding the equipped object, on this
+	 * slot and every descendant. Returning `false` lets the press fall through
+	 * to the normal laser/UI behaviour; anything else consumes it. Runs once,
+	 * on the host (or solo player), so effects such as `ctx.world.spawn` are not duplicated.
+	 */
+	onTrigger?(event: TriggerEvent): boolean | void;
 	tick?(dt: number): void;
 	getRadialItems?(): RadialItemDef[];
 }
@@ -104,8 +133,38 @@ const math = {
 	vecNormalize: (a: Vec3): Vec3 => {
 		const len = Math.hypot(a[0], a[1], a[2]) || 1;
 		return [a[0] / len, a[1] / len, a[2] / len];
-	}
+	},
+	quatMultiply: (a: Quat, b: Quat): Quat =>
+		Quaternion.FromArray(a).multiply(Quaternion.FromArray(b)).asArray() as Quat,
+	/** Rotates a vector by a quaternion — e.g. `rotateVec(pose.rotation, [0, 0, 1])` is the forward direction. */
+	rotateVec: (q: Quat, v: Vec3): Vec3 =>
+		Vector3.FromArray(v).applyRotationQuaternion(Quaternion.FromArray(q)).asArray() as Vec3
 };
+
+export interface WorldPose {
+	position: Vec3;
+	rotation: Quat;
+	/** Unit vectors in world space (local +Z, +Y, +X). Unaffected by the node's scale. */
+	forward: Vec3;
+	up: Vec3;
+	right: Vec3;
+}
+
+/** The true world pose of a node, computed from its full world matrix so nested rotation and scale are handled correctly. */
+function getWorldPose(node: TransformNode): WorldPose {
+	node.computeWorldMatrix(true);
+	const rotation = new Quaternion();
+	node.getWorldMatrix().decompose(new Vector3(), rotation, new Vector3());
+	const position = node.absolutePosition.asArray() as Vec3;
+	const axis = (v: Vector3) => v.applyRotationQuaternion(rotation).asArray() as Vec3;
+	return {
+		position,
+		rotation: rotation.asArray() as Quat,
+		forward: axis(new Vector3(0, 0, 1)),
+		up: axis(new Vector3(0, 1, 0)),
+		right: axis(new Vector3(1, 0, 0))
+	};
+}
 
 function formatLogArgs(args: unknown[]): string {
 	return args
@@ -138,7 +197,17 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 				const parentId = host.getSlot(id)?.parentId;
 				return parentId ? host.getSlot(parentId) : undefined;
 			},
-			findByName: (name: string) => host.allSlots().find((s) => s.name === name)
+			findByName: (name: string) => host.allSlots().find((s) => s.name === name),
+			/** World position, rotation and direction vectors of any slot — use this (not summed local positions) to spawn from a child such as a gun's muzzle. */
+			getWorldPose: (id: string): WorldPose | undefined => {
+				const target = host.getNode(id);
+				return target ? getWorldPose(target) : undefined;
+			}
+		},
+		equip: {
+			/** Whether this object (or the one it belongs to) is equipped in a hand right now. */
+			isEquipped: () => host.getEquipHolder(slotId) !== null,
+			holder: () => host.getEquipHolder(slotId)
 		},
 		grab: {
 			isHeld: () => host.getGrabbers(slotId).length > 0,
@@ -276,6 +345,9 @@ export function createCodeBlockHandlers(slotId: string, node: TransformNode, cod
 		onGrab: safe('onGrab'),
 		onRelease: safe('onRelease'),
 		onPress: safe('onPress'),
+		onEquip: safe('onEquip'),
+		onUnequip: safe('onUnequip'),
+		onTrigger: safe('onTrigger'),
 		tick: safe('tick'),
 		getRadialItems: () => {
 			try {

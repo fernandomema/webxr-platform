@@ -34,7 +34,7 @@ export default function signalingHandler(ws: WebSocket, _req: IncomingMessage) {
 
 		switch (msg.type) {
 			case 'host': {
-				registerHost(msg.roomCode, ws);
+				if (!registerHost(msg.roomCode, ws)) ws.send(JSON.stringify({ type: 'error', message: 'room-already-hosted' }));
 				break;
 			}
 			case 'join': {
@@ -58,7 +58,7 @@ export default function signalingHandler(ws: WebSocket, _req: IncomingMessage) {
 					// host -> a specific guest
 					const target = msg.targetId ? room.guests.get(msg.targetId) : undefined;
 					target?.send(JSON.stringify(msg));
-				} else {
+				} else if (room.guests.has(connectionIdFor(ws))) {
 					// guest -> host, tagged with this guest's id so the host can route its reply back
 					room.host.send(JSON.stringify({ ...msg, fromId: connectionIdFor(ws) }));
 				}

@@ -27,12 +27,37 @@ export interface GrabbableComponent {
 	scalable: boolean;
 }
 
+/** Where an equipped object sits relative to the controller grip, in the grip's local space. */
+export interface EquipPose {
+	position: Vec3;
+	/** Euler angles in degrees (pitch, yaw, roll — Babylon's yaw-pitch-roll order). The object's own scale is never changed by equipping. */
+	rotation: Vec3;
+}
+
+/**
+ * Lets a `grabbable` object be equipped in a hand from the radial menu. While
+ * equipped it stays in that hand after the grip is released, and its (and its
+ * children's) codeBlocks receive the hand's trigger through `onTrigger`.
+ * Which hand holds it is session state; the serialized `parentId` never changes.
+ */
+export interface EquippableComponent {
+	type: 'equippable';
+	left: EquipPose;
+	right: EquipPose;
+}
+
 export interface AudioSourceComponent {
 	type: 'audioSource';
 }
 
 export interface ContainerComponent {
 	type: 'container';
+}
+
+export interface WorldPortalComponent {
+	type: 'worldPortal';
+	/** A portable snapshot plus provenance. Other peers never read its owner's inventory. */
+	world: import('$lib/worlds/types').WorldPackage;
 }
 
 export interface MirrorComponent {
@@ -70,7 +95,7 @@ export interface CodeBlockComponent {
 	/**
 	 * The body of a function receiving a bounded `ctx` API object and
 	 * returning an optional handlers object: `{ onSpawn?, onGrab?, onRelease?,
-	 * tick?, getRadialItems? }`. Compiled once per live instantiation via
+	 * onEquip?, onUnequip?, onTrigger?, tick?, getRadialItems? }`. Compiled once per live instantiation via
 	 * `new Function('ctx', code)` — NOT a real sandbox (see sceneGraph.ts):
 	 * this data travels over the network like any other Slot field, so it
 	 * runs inside the page of anyone who joins a world using it.
@@ -173,8 +198,10 @@ export type Component =
 	| MeshRendererComponent
 	| ColliderComponent
 	| GrabbableComponent
+	| EquippableComponent
 	| AudioSourceComponent
 	| ContainerComponent
+	| WorldPortalComponent
 	| MirrorComponent
 	| VideoPlayerComponent
 	| AudioPlayerComponent
@@ -218,6 +245,10 @@ export function findComponent<T extends Component['type']>(
 	type: T
 ): Extract<Component, { type: T }> | undefined {
 	return slot.components.find((c) => c.type === type) as Extract<Component, { type: T }> | undefined;
+}
+
+export function isEquippable(slot: Slot): EquippableComponent | undefined {
+	return findComponent(slot, 'equippable');
 }
 
 export function isGrabbable(slot: Slot): GrabbableComponent | undefined {

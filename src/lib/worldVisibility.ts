@@ -1,4 +1,4 @@
-export const WORLD_VISIBILITIES = ['solo', 'friends', 'friends-plus', 'public'] as const;
+export const WORLD_VISIBILITIES = ['solo', 'private', 'friends', 'friends-plus', 'public'] as const;
 export type WorldVisibility = (typeof WORLD_VISIBILITIES)[number];
 export type HostedWorldVisibility = Exclude<WorldVisibility, 'solo'>;
 
@@ -7,13 +7,17 @@ export const WORLD_VISIBILITY_INFO: Record<WorldVisibility, { label: string; des
 		label: 'Only me',
 		description: 'Local world. Nobody can join.'
 	},
+	private: {
+		label: 'Private',
+		description: 'Join with a room code.'
+	},
 	friends: {
 		label: 'Friends only',
-		description: 'Hosted session. Only your friends can join.'
+		description: 'Unavailable until friend relationships and access checks exist.'
 	},
 	'friends-plus': {
 		label: 'Friends+',
-		description: 'Hosted session. Friends of your friends can also join.'
+		description: 'Unavailable until friend relationships and access checks exist.'
 	},
 	public: {
 		label: 'Public',
@@ -22,5 +26,5 @@ export const WORLD_VISIBILITY_INFO: Record<WorldVisibility, { label: string; des
 };
 
 export function isHostedWorldVisibility(value: unknown): value is HostedWorldVisibility {
-	return value === 'friends' || value === 'friends-plus' || value === 'public';
+	return value === 'private' || value === 'friends' || value === 'friends-plus' || value === 'public';
 }

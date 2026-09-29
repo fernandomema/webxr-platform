@@ -37,11 +37,11 @@ export const cloudInventoryAdapter: InventoryAdapter = {
 		return (await res.json()) as InventoryItem[];
 	},
 
-	async saveItem(_ctx, folderId, name, slotData) {
+	async saveItem(_ctx, folderId, name, slotData, kind = 'object', worldLineageId) {
 		const res = await fetch('/api/inventory', {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify({ folderId, name, slotData })
+			body: JSON.stringify({ folderId, name, slotData, kind, worldLineageId })
 		});
 		if (!res.ok) throw new Error(`Failed to save cloud item (${res.status})`);
 		return (await res.json()) as InventoryItem;

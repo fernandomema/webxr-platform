@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { prisma } from '../db';
-import { UnauthorizedError, ForbiddenError, NotFoundError } from '../errors';
+import { UnauthorizedError, ForbiddenError, NotFoundError, BadRequestError } from '../errors';
+import { validateWorldScene } from '$lib/worlds/package';
 import type { SlotTree } from '$lib/ecs/types';
 import type { HostedWorldVisibility } from '$lib/worldVisibility';
 import { getActiveRoomCodes } from '../rooms';
@@ -63,6 +64,8 @@ export async function startHostingSession(
 	params: { worldId?: string; name?: string; visibility: HostedWorldVisibility; sceneSnapshot: SlotTree }
 ) {
 	if (!user) throw new UnauthorizedError();
+	if (params.visibility !== 'private' && params.visibility !== 'public') throw new BadRequestError('This visibility is not available yet');
+	try { validateWorldScene(params.sceneSnapshot); } catch (err) { throw new BadRequestError(err instanceof Error ? err.message : 'Invalid world scene'); }
 
 	let world = params.worldId ? await prisma.world.findUnique({ where: { id: params.worldId } }) : null;
 	if (world && world.hostUserId !== user.id) throw new ForbiddenError();

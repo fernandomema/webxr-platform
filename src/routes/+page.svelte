@@ -8,7 +8,7 @@
 	onMount(async () => {
 		try {
 			const { mountGame } = await import('$lib/xr/engine');
-			game = await mountGame(canvas);
+			game = await mountGame(canvas, new URLSearchParams(window.location.search).get('room') ?? undefined);
 		} catch (err) {
 			// devConsoleRelay (see +layout.svelte) forwards this to the dev server terminal.
 			console.error('mountGame failed', err);

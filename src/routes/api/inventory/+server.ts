@@ -14,7 +14,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 export const POST: RequestHandler = async ({ locals, request }) => {
 	try {
 		const body = await request.json();
-		return json(await saveCloudItem(locals.user, body.folderId ?? null, body.name, body.slotData));
+		return json(await saveCloudItem(locals.user, body.folderId ?? null, body.name, body.slotData, body.kind === 'world' ? 'world' : 'object', body.worldLineageId));
 	} catch (err) {
 		toHttpError(err);
 	}

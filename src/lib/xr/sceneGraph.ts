@@ -16,7 +16,7 @@ import { setupParticleBurst } from './particleEffects';
 import { setupImpactSound } from './impactSoundEffects';
 import { setupTextDisplay } from './textDisplaySurface';
 import { setupScoreboard } from './scoreboardSurface';
-import { createCodeBlockHandlers, type CodeBlockHost, type RadialItemDef, type CodeBlockLogEntry } from './codeBlockRuntime';
+import { createCodeBlockHandlers, type CodeBlockHost, type RadialItemDef, type CodeBlockLogEntry, type HandEvent, type TriggerEvent } from './codeBlockRuntime';
 
 interface LiveSlot {
 	slot: Slot;
@@ -31,6 +31,9 @@ interface LiveSlot {
 		onGrab?: () => void;
 		onRelease?: () => void;
 		onPress?: () => void;
+		onEquip?: (event: HandEvent) => void;
+		onUnequip?: (event: HandEvent) => void;
+		onTrigger?: (event: TriggerEvent) => boolean | void;
 		getRadialItems?: () => RadialItemDef[];
 		getDebugLog?: () => CodeBlockLogEntry[];
 	};
@@ -54,6 +57,11 @@ export interface GrabQuery {
 	getGrabbersForSlot(slotId: string): string[];
 }
 
+/** Same idea for EquipmentSystem: which player/hand has a slot (or an ancestor of it) equipped. */
+export interface EquipQuery {
+	getHolderOfSlotOrAncestor(slotId: string): { playerId: string; hand: 'left' | 'right' } | null;
+}
+
 /**
  * Runtime instantiation of a SlotTree into real Babylon nodes/meshes, kept in
  * sync via Slot.id <-> node.metadata.slotId. Can serialize its current live
@@ -63,12 +71,17 @@ export interface GrabQuery {
 export class SceneGraph {
 	private live = new Map<string, LiveSlot>();
 	private grabQuery: GrabQuery | null = null;
+	private equipQuery: EquipQuery | null = null;
 
 	constructor(private scene: Scene, private options: SceneGraphOptions = {}) {}
 
 	/** Called once from engine.ts right after `new GrabSystem(scene, sceneGraph)` — see GrabQuery's doc comment. */
 	setGrabQuery(grabQuery: GrabQuery): void {
 		this.grabQuery = grabQuery;
+	}
+
+	setEquipQuery(equipQuery: EquipQuery): void {
+		this.equipQuery = equipQuery;
 	}
 
 	load(tree: SlotTree): void {
@@ -106,7 +119,7 @@ export class SceneGraph {
 		for (const id of idsToRemove) {
 			const entry = this.live.get(id);
 			if (!entry) continue;
-			entry.runtime?.dispose();
+			this.disposeRuntime(entry);
 			entry.node.dispose();
 			this.live.delete(id);
 		}
@@ -114,10 +127,19 @@ export class SceneGraph {
 
 	dispose(): void {
 		for (const entry of this.live.values()) {
-			entry.runtime?.dispose();
+			this.disposeRuntime(entry);
 			entry.node.dispose();
 		}
 		this.live.clear();
+	}
+
+	/** One runtime failing to clean up (e.g. a media player with no audio engine) must not stop the rest of the scene from being torn down. */
+	private disposeRuntime(entry: LiveSlot): void {
+		try {
+			entry.runtime?.dispose();
+		} catch (err) {
+			console.warn(`[sceneGraph] runtime dispose failed for ${entry.slot.id}`, err);
+		}
 	}
 
 	getLive(slotId: string): LiveSlot | undefined {
@@ -137,6 +159,19 @@ export class SceneGraph {
 					? entry.slot.parentId === null || !this.live.has(entry.slot.parentId ?? '')
 					: entry.slot.parentId === parentId)
 		);
+	}
+
+	/** `rootId` and every descendant, root first then depth-first in creation order — the order equipped-object scripts are dispatched in. */
+	getSubtree(rootId: string): LiveSlot[] {
+		const root = this.live.get(rootId);
+		if (!root) return [];
+		const result: LiveSlot[] = [];
+		const visit = (entry: LiveSlot) => {
+			result.push(entry);
+			for (const child of this.getChildren(entry.slot.id)) visit(child);
+		};
+		visit(root);
+		return result;
 	}
 
 	/** Finds the nearest grabbable slot, preferring the directly hit child. */
@@ -215,6 +250,7 @@ export class SceneGraph {
 				this.addSlot(slot);
 				continue;
 			}
+			if (existing.system) continue;
 			existing.slot = slot;
 			existing.runtime?.sync?.(slot);
 			existing.node.position = Vector3.FromArray(slot.position);
@@ -226,9 +262,25 @@ export class SceneGraph {
 		// interpreted against the correct parent.
 		for (const slot of tree) {
 			if (ignoreSlotIds.has(slot.id)) continue;
-			const node = this.live.get(slot.id)?.node;
-			if (!node) continue;
+			const entry = this.live.get(slot.id);
+			if (!entry || entry.system) continue;
+			const node = entry.node;
 			node.parent = slot.parentId ? this.live.get(slot.parentId)?.node ?? null : null;
+		}
+	}
+
+	/** Applies frequent pose updates without re-sending component payloads such as world packages. */
+	applyTransforms(transforms: Array<Pick<Slot, 'id' | 'position' | 'rotation' | 'scale'>>, ignoreSlotIds: Set<string> = new Set()): void {
+		for (const transform of transforms) {
+			if (ignoreSlotIds.has(transform.id)) continue;
+			const entry = this.live.get(transform.id);
+			if (!entry || entry.system) continue;
+			entry.node.position = Vector3.FromArray(transform.position);
+			entry.node.rotationQuaternion = Quaternion.FromArray(transform.rotation);
+			entry.node.scaling = Vector3.FromArray(transform.scale);
+			entry.slot.position = transform.position;
+			entry.slot.rotation = transform.rotation;
+			entry.slot.scale = transform.scale;
 		}
 	}
 
@@ -324,7 +376,8 @@ export class SceneGraph {
 				}
 			},
 			findNear: (worldPos, radius) => this.findSlotsNear(worldPos, radius),
-			resolvePlayer: (grabberId) => this.options.resolvePlayer?.(grabberId) ?? { id: grabberId, name: 'Player' }
+			resolvePlayer: (grabberId) => this.options.resolvePlayer?.(grabberId) ?? { id: grabberId, name: 'Player' },
+			getEquipHolder: (slotId) => this.equipQuery?.getHolderOfSlotOrAncestor(slotId) ?? null
 		};
 	}
 
@@ -419,6 +472,11 @@ export class SceneGraph {
 			console.error(`[sceneGraph] getRadialExtras(${slotId}) threw`, err);
 			return [];
 		}
+	}
+
+	/** Radial items contributed by the slot and all of its descendants (a gun's scripts may live on child slots). */
+	getRadialExtrasForSubtree(rootId: string): RadialItemDef[] {
+		return this.getSubtree(rootId).flatMap((entry) => this.getRadialExtras(entry.slot.id));
 	}
 
 	/** Recent errors/log lines from a slot's codeBlock (compile + every hook) — surfaced in the Inspector for in-game debugging. Empty for a slot with no codeBlock. */

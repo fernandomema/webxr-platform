@@ -1,4 +1,5 @@
 import {
+	AbstractEngine,
 	ActionManager,
 	Color3,
 	ExecuteCodeAction,
@@ -182,7 +183,8 @@ export function setupAudioPlayerSurface(
 	mesh.metadata = { ...(mesh.metadata ?? {}), specialSurface: 'audio-player' };
 
 	const createSound = () => {
-		if (!sourceUrl) return null;
+		// Without an audio engine (e.g. the Studio preview) a Sound has no backend and throws when used.
+		if (!sourceUrl || !AbstractEngine.audioEngine) return null;
 		const next = new Sound(
 			`${mesh.name}-audio`,
 			sourceUrl,

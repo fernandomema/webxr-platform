@@ -11,6 +11,9 @@ export interface InventoryItem {
 	folderId: string | null;
 	name: string;
 	slotData: SlotTree;
+	kind?: 'object' | 'world';
+	worldLineageId?: string | null;
+	revisionNumber?: number | null;
 	thumbnailUrl?: string | null;
 	createdAt: string;
 }
@@ -30,7 +33,7 @@ export interface InventoryAdapter {
 	createFolder(ctx: InventoryContext, parentId: string | null, name: string): Promise<InventoryFolder>;
 	deleteFolder(ctx: InventoryContext, folderId: string): Promise<void>;
 	listItems(ctx: InventoryContext, folderId: string | null): Promise<InventoryItem[]>;
-	saveItem(ctx: InventoryContext, folderId: string | null, name: string, slotData: SlotTree): Promise<InventoryItem>;
+	saveItem(ctx: InventoryContext, folderId: string | null, name: string, slotData: SlotTree, kind?: 'object' | 'world', worldLineageId?: string): Promise<InventoryItem>;
 	updateItem?(ctx: InventoryContext, itemId: string, folderId: string | null, name: string, slotData: SlotTree): Promise<InventoryItem>;
 	deleteItem(ctx: InventoryContext, itemId: string): Promise<void>;
 }

@@ -12,6 +12,8 @@ import {
 } from '@babylonjs/core';
 import type { SceneGraph } from '../sceneGraph';
 import type { GrabSystem } from './grabSystem';
+import type { EquipmentSystem } from './equipmentSystem';
+import type { EquipHand } from './equipmentRegistry';
 
 const HAND_GRAB_RADIUS = 0.15;
 const LASER_MAX_LENGTH = 5;
@@ -19,7 +21,14 @@ const LASER_MAX_LENGTH = 5;
 export interface PointerControllerNetworkHooks {
 	onGrab?(grabberId: string, slotId: string): void;
 	onRelease?(grabberId: string, slotId?: string): void;
+	onWorldPortal?(slotId: string): void;
+	/** The trigger of a hand holding an equipped object with `onTrigger` actions. Solo/host run it locally; a guest asks the host. */
+	onUse?(slotId: string, hand: EquipHand, phase: 'press' | 'release' | 'value', value: number): void;
+	/** A controller went away while holding an equipped object. */
+	onUnequip?(hand: EquipHand, slotId: string): void;
 }
+
+const TRIGGER_VALUE_INTERVAL_MS = 50;
 
 /** Stable per-hand id ('left' | 'right'), used both locally and sent to the host when networked. */
 function grabberIdFor(controller: WebXRInputSource): string {
@@ -31,6 +40,26 @@ interface LaserVisual {
 	beam: Mesh; // height=1, stretched/positioned each frame to reach the hit point (or LASER_MAX_LENGTH)
 	dot: Mesh; // small sphere shown at the hit point, hidden otherwise
 	ray: Ray;
+}
+
+/**
+ * Babylon's pointer-selection feature delivers the trigger to any GUI under
+ * the ray on its own, so the only way to keep a gun's trigger from also
+ * clicking a panel is to take that controller out of the feature while an
+ * equipped object listens to it. These are Babylon's own attach/detach
+ * methods for exactly this; they are not in the public typings.
+ */
+function setControllerPointerEnabled(pointerSelection: WebXRDefaultExperience['pointerSelection'], controller: WebXRInputSource, enabled: boolean): void {
+	const feature = pointerSelection as unknown as {
+		_attachController?: (controller: WebXRInputSource) => void;
+		_detachController?: (uniqueId: string) => void;
+	};
+	try {
+		if (enabled) feature._attachController?.(controller);
+		else feature._detachController?.(controller.uniqueId);
+	} catch (err) {
+		console.warn('[pointerController] could not toggle pointer selection for a controller', err);
+	}
 }
 
 function createLaserVisual(scene: Scene, parent: WebXRInputSource['pointer']): LaserVisual {
@@ -80,6 +109,8 @@ export function setupPointerAndGrabControllers(
 	xr: WebXRDefaultExperience,
 	sceneGraph: SceneGraph,
 	grabSystem: GrabSystem,
+	equipment: EquipmentSystem,
+	localPlayerId: () => string,
 	network?: PointerControllerNetworkHooks
 ): void {
 	const pointerSelection = xr.pointerSelection;
@@ -88,10 +119,80 @@ export function setupPointerAndGrabControllers(
 
 	const laserActive = new Map<string, boolean>();
 	const visuals = new Map<string, LaserVisual>();
+	const controllers = new Map<string, WebXRInputSource>();
+	const pointerDetached = new Set<string>();
+	/** The laser's on/off state before a usable object suppressed it, restored when the suppression ends. */
+	const laserBeforeSuppress = new Map<string, boolean>();
+	const lastValueAt = new Map<string, number>();
+	/** How each hand's current grab began: only an object held by the HAND (not the laser) gets the trigger. */
+	const grabMode = new Map<string, 'hand' | 'laser'>();
+
+	const handOf = (grabberId: string): EquipHand | null => (grabberId === 'left' || grabberId === 'right' ? grabberId : null);
+
+	function dispatchUse(hand: EquipHand, slotId: string, phase: 'press' | 'release' | 'value', value: number): void {
+		if (network?.onUse) network.onUse(slotId, hand, phase, value);
+		else equipment.dispatchTrigger(localPlayerId(), hand, phase, value, slotId);
+	}
+
+	/**
+	 * The object this hand's trigger drives: what is equipped in it, else what
+	 * it is holding with the hand itself. An object held with the laser keeps
+	 * the normal laser trigger behaviour.
+	 */
+	function usableSlot(grabberId: string): string | null {
+		const hand = handOf(grabberId);
+		if (!hand) return null;
+		const equipped = equipment.getEquippedSlot(localPlayerId(), hand);
+		if (equipped) return equipped;
+		return grabMode.get(grabberId) === 'hand' ? grabSystem.getHeldSlot(grabberId) : null;
+	}
+
+	/**
+	 * Highest priority for the trigger: the usable object in this hand. It
+	 * only takes the trigger when it (or a child) declares an `onTrigger`
+	 * action; otherwise the normal laser/UI behaviour below applies.
+	 */
+	function forwardToUsable(grabberId: string, component: { pressed: boolean; value: number; changes: { pressed?: unknown; value?: unknown } }): boolean {
+		const hand = handOf(grabberId);
+		const slotId = usableSlot(grabberId);
+		if (!hand || !slotId || !equipment.hasTriggerAction(localPlayerId(), hand, slotId)) return false;
+		if (component.changes.pressed) dispatchUse(hand, slotId, component.pressed ? 'press' : 'release', component.pressed ? 1 : 0);
+		else if (component.changes.value) {
+			const now = performance.now();
+			if (now - (lastValueAt.get(grabberId) ?? 0) >= TRIGGER_VALUE_INTERVAL_MS) {
+				lastValueAt.set(grabberId, now);
+				dispatchUse(hand, slotId, 'value', component.value);
+			}
+		}
+		return true;
+	}
+
+	/** While a usable object listens to a hand's trigger, that hand's laser and UI clicking are off. */
+	function refreshEquipInput(hand: EquipHand): void {
+		const controller = controllers.get(hand);
+		if (!controller) return;
+		const slotId = usableSlot(hand);
+		const suppress = Boolean(slotId && equipment.hasTriggerAction(localPlayerId(), hand, slotId));
+		if (suppress && !pointerDetached.has(hand)) {
+			setControllerPointerEnabled(pointerSelection, controller, false);
+			pointerDetached.add(hand);
+			laserBeforeSuppress.set(hand, laserActive.get(hand) ?? true);
+			laserActive.set(hand, false);
+		} else if (!suppress && pointerDetached.has(hand)) {
+			setControllerPointerEnabled(pointerSelection, controller, true);
+			pointerDetached.delete(hand);
+			laserActive.set(hand, laserBeforeSuppress.get(hand) ?? true);
+			laserBeforeSuppress.delete(hand);
+		}
+	}
+	equipment.onChanged.add((change) => {
+		if (change.playerId === localPlayerId()) refreshEquipInput(change.hand);
+	});
 
 	xr.input.onControllerAddedObservable.add((controller: WebXRInputSource) => {
 		const grabberId = grabberIdFor(controller);
 		laserActive.set(grabberId, true);
+		controllers.set(grabberId, controller);
 
 		controller.onMotionControllerInitObservable.add((motionController) => {
 			const visual = createLaserVisual(scene, controller.pointer);
@@ -101,11 +202,17 @@ export function setupPointerAndGrabControllers(
 			const squeeze = motionController.getComponentOfType(WebXRControllerComponent.SQUEEZE_TYPE);
 
 			trigger?.onButtonStateChangedObservable.add((component) => {
+				if (forwardToUsable(grabberId, component)) return;
 				if (!component.changes.pressed || !component.pressed) return; // fire on press-down only
 
 				const wasActive = laserActive.get(grabberId) ?? true;
 				if (wasActive) {
 					const hovered = pointerSelection.getMeshUnderPointer(controller.uniqueId);
+					const hoveredSlotId = sceneGraph.getSlotIdForNode(hovered);
+					if (hoveredSlotId && sceneGraph.getLive(hoveredSlotId)?.slot.components.some((item) => item.type === 'worldPortal')) {
+						network?.onWorldPortal?.(hoveredSlotId);
+						return;
+					}
 					const isInteractive = Boolean(hovered?.metadata?.interactive);
 					if (isInteractive) return; // let the built-in feature's click reach the GUI panel
 					laserActive.set(grabberId, false);
@@ -119,27 +226,46 @@ export function setupPointerAndGrabControllers(
 				const grabberNode = controller.grip ?? controller.pointer;
 
 				if (component.pressed) {
+					const laserOn = laserActive.get(grabberId) ?? true;
+					const viaLaser = laserOn && Boolean(sceneGraph.getSlotIdForNode(pointerSelection.getMeshUnderPointer(controller.uniqueId)));
 					const targetSlotId = resolveGrabTarget(
 						controller,
 						sceneGraph,
 						pointerSelection,
-						laserActive.get(grabberId) ?? true
+						laserOn
 					);
 					if (targetSlotId) {
 						grabSystem.grab(grabberId, grabberNode, targetSlotId);
 						if (grabSystem.getHeldSlot(grabberId) === targetSlotId) {
+							grabMode.set(grabberId, viaLaser ? 'laser' : 'hand');
+							const hand = handOf(grabberId);
+							if (hand) refreshEquipInput(hand);
 							network?.onGrab?.(grabberId, targetSlotId);
 						}
 					}
 				} else {
 					const releasedSlotId = grabSystem.getHeldSlot(grabberId) ?? undefined;
 					grabSystem.release(grabberId);
+					grabMode.delete(grabberId);
+					const hand = handOf(grabberId);
+					if (hand) refreshEquipInput(hand);
 					network?.onRelease?.(grabberId, releasedSlotId);
 				}
 			});
 		});
 
 		controller.onDisposeObservable.add(() => {
+			// Take an equipped object off BEFORE the grip node is disposed, or it would be disposed with it.
+			const hand = handOf(grabberId);
+			const equippedSlot = hand ? equipment.getEquippedSlot(localPlayerId(), hand) : null;
+			if (hand && equippedSlot) {
+				equipment.unequip(localPlayerId(), hand);
+				network?.onUnequip?.(hand, equippedSlot);
+			}
+			controllers.delete(grabberId);
+			pointerDetached.delete(grabberId);
+			laserBeforeSuppress.delete(grabberId);
+			grabMode.delete(grabberId);
 			const releasedSlotId = grabSystem.getHeldSlot(grabberId) ?? undefined;
 			grabSystem.release(grabberId);
 			network?.onRelease?.(grabberId, releasedSlotId);

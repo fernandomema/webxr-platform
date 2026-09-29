@@ -1,6 +1,7 @@
 import { TransformNode, type Scene, type WebXRDefaultExperience } from '@babylonjs/core';
 import type { SceneGraph } from '../sceneGraph';
 import type { GrabSystem } from '../interaction/grabSystem';
+import type { EquipmentSystem } from '../interaction/equipmentSystem';
 import type { MediaControlAction, Slot } from '$lib/ecs/types';
 import { SignalingClient, type SignalingMessage } from './signalingClient';
 import { PeerLink } from './peerConnection';
@@ -20,7 +21,9 @@ export class GuestSync {
 	private players = new Map<string, PlayerInfo>();
 	private lastPresenceSequences = new Map<string, number>();
 	private presenceSequence = 0;
-	private worldRevision = 0;
+	private snapshotRevision = -1;
+	private transformRevision = -1;
+	private latestTransforms: Extract<WorldStateMessage, { kind: 'scene-state' }> | null = null;
 	private disposed = false;
 	readonly hostProxy: TransformNode;
 
@@ -29,6 +32,7 @@ export class GuestSync {
 		private xr: WebXRDefaultExperience,
 		private sceneGraph: SceneGraph,
 		private grabSystem: GrabSystem,
+		private equipment: EquipmentSystem,
 		private roomCode: string,
 		private iceServers: RTCIceServer[],
 		private localPlayer: PlayerInfo,
@@ -36,7 +40,8 @@ export class GuestSync {
 			localTrack?: { track: MediaStreamTrack; stream: MediaStream };
 			onRemoteStream?(stream: MediaStream, targetNode: TransformNode): void;
 		},
-		private onSessionEnded?: () => void
+		private onSessionEnded?: () => void,
+		private onSceneChanged?: () => void
 	) {
 		this.hostProxy = new TransformNode('host-proxy', scene);
 		this.signaling = new SignalingClient(roomCode, 'join');
@@ -49,6 +54,8 @@ export class GuestSync {
 		else if (msg.type === 'ice-candidate') {
 			if (this.link) void this.link.addIceCandidate(msg.payload as RTCIceCandidateInit);
 			else this.pendingIceCandidates.push(msg.payload as RTCIceCandidateInit);
+		} else if (msg.type === 'error') {
+			this.endSession();
 		} else if (msg.type === 'host-left') {
 			this.endSession();
 		}
@@ -136,12 +143,10 @@ export class GuestSync {
 			const msg = data as WorldStateMessage;
 			if (msg.kind === 'presence') this.applyPresence(msg);
 			else if (msg.kind === 'scene-state') {
-				if (msg.revision <= this.worldRevision) return;
-				if (msg.revision > this.worldRevision + 1) {
-					this.link?.send({ kind: 'resync-request', haveRevision: this.worldRevision });
-				}
-				this.worldRevision = msg.revision;
-				this.sceneGraph.reconcile(msg.tree, this.locallyGrabbed);
+				if (msg.revision <= this.transformRevision) return;
+				this.transformRevision = msg.revision;
+				this.latestTransforms = msg;
+				if (this.snapshotRevision >= 0 && msg.revision >= this.snapshotRevision) this.sceneGraph.applyTransforms(msg.transforms, this.locallyGrabbed);
 			}
 			return;
 		}
@@ -149,17 +154,31 @@ export class GuestSync {
 		const msg = data as WorldSyncMessage;
 		switch (msg.kind) {
 			case 'scene-snapshot':
-				if (msg.revision < this.worldRevision) break;
-				this.worldRevision = msg.revision;
+				if (msg.revision < this.snapshotRevision) break;
+				this.snapshotRevision = msg.revision;
 				this.sceneGraph.reconcile(msg.tree, this.locallyGrabbed);
+				if (msg.equipped) this.equipment.applyRemote(msg.equipped, this.localPlayer.playerId);
+				this.onSceneChanged?.();
+				if (this.latestTransforms && this.latestTransforms.revision > msg.revision) this.sceneGraph.applyTransforms(this.latestTransforms.transforms, this.locallyGrabbed);
 				this.syncPlayers(msg.players);
 				this.link?.send({ kind: 'snapshot-ack', revision: msg.revision });
+				break;
+			case 'transform-correction':
+				if (msg.revision >= this.snapshotRevision) {
+					this.sceneGraph.applyTransforms(msg.transforms, this.locallyGrabbed);
+					this.latestTransforms = { kind: 'scene-state', revision: msg.revision, transforms: msg.transforms };
+				}
 				break;
 			case 'player-left':
 				this.removeAvatar(msg.playerId);
 				break;
 			case 'interaction-result':
-				if (!msg.accepted && msg.slotId) this.locallyGrabbed.delete(msg.slotId);
+				if (!msg.accepted && msg.slotId) {
+					this.locallyGrabbed.delete(msg.slotId);
+					// The host refused an equip we applied optimistically: take it back off.
+					const holder = this.equipment.registry.getHolder(msg.slotId);
+					if (holder?.playerId === this.localPlayer.playerId) this.equipment.unequip(holder.playerId, holder.hand);
+				}
 				break;
 		}
 	}
@@ -200,6 +219,21 @@ export class GuestSync {
 		this.link?.send({ kind: 'release-request', requestId: crypto.randomUUID(), grabberId });
 	}
 
+	requestEquip(hand: 'left' | 'right', slotId: string): void {
+		this.locallyGrabbed.add(slotId);
+		this.link?.send({ kind: 'equip-request', requestId: crypto.randomUUID(), slotId, hand });
+	}
+
+	requestUnequip(hand: 'left' | 'right', slotId?: string): void {
+		if (slotId) this.locallyGrabbed.delete(slotId);
+		this.link?.send({ kind: 'unequip-request', requestId: crypto.randomUUID(), hand });
+	}
+
+	/** Sends this hand's trigger to the host, which runs the equipped object's actions. */
+	requestUse(slotId: string, hand: 'left' | 'right', phase: 'press' | 'release' | 'value', value: number): void {
+		this.link?.send({ kind: 'use-request', slotId, hand, phase, value });
+	}
+
 	requestSpawn(slot: Slot): void {
 		this.link?.send({ kind: 'spawn-request', requestId: crypto.randomUUID(), slot });
 	}
@@ -216,6 +250,7 @@ export class GuestSync {
 		if (this.disposed) return;
 		this.disposed = true;
 		if (this.presenceTimer) clearInterval(this.presenceTimer);
+		this.equipment.releaseAll(); // nothing stays equipped once the session is gone
 		this.link?.close();
 		this.signaling.close();
 		for (const avatar of this.remoteAvatars.values()) avatar.dispose();

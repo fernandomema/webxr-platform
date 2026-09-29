@@ -23,6 +23,7 @@ model user {
   sessions        session[]
   accounts        account[]
   worlds          world[]
+  publications    publishedWorld[]
   cloudItems      cloudInventoryItem[]
   cloudFolders    cloudInventoryFolder[]
 
@@ -80,7 +81,7 @@ model verification {
 model world {
   id         String   @id @default(cuid())
   name       String
-  visibility String   @default("public") // public | unlisted | private
+  visibility String   @default("private") // private | public (friend scopes require access-control infrastructure)
   hostUserId String
   hostUser   user     @relation(fields: [hostUserId], references: [id], onDelete: Cascade)
   sceneData  Json // serialized Slot tree template (see src/lib/ecs)
@@ -133,11 +134,15 @@ model cloudInventoryItem {
   folder       cloudInventoryFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
   name         String
   slotData     Json
+  kind         String                @default("object")
+  worldLineageId String?
+  revisionNumber Int?
   thumbnailUrl String?
   createdAt    DateTime              @default(now())
 
   @@index([ownerId])
   @@index([folderId])
+  @@unique([ownerId, worldLineageId, revisionNumber])
 }
 
 model worldInventoryFolder {
@@ -163,9 +168,39 @@ model worldInventoryItem {
   folder       worldInventoryFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
   name         String
   slotData     Json
+  kind         String                @default("object")
+  worldLineageId String?
+  revisionNumber Int?
   thumbnailUrl String?
   createdAt    DateTime              @default(now())
 
   @@index([worldId])
   @@index([folderId])
+  @@unique([worldId, worldLineageId, revisionNumber])
+}
+
+// Published worlds are independent from live sessions and from inventory drafts.
+// Each revision is immutable; a portal can pin a precise revision.
+model publishedWorld {
+  id               String @id @default(cuid())
+  ownerId          String
+  owner            user @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name             String
+  latestRevision   Int @default(1)
+  revisions        publishedWorldRevision[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([ownerId])
+}
+
+model publishedWorldRevision {
+  id               String @id @default(cuid())
+  publicationId    String
+  publication      publishedWorld @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+  number           Int
+  sceneData        Json
+  createdAt        DateTime @default(now())
+
+  @@unique([publicationId, number])
 }

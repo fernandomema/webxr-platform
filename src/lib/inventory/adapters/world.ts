@@ -41,12 +41,12 @@ export const worldInventoryAdapter: InventoryAdapter = {
 		return (await res.json()) as InventoryItem[];
 	},
 
-	async saveItem(ctx, folderId, name, slotData) {
+	async saveItem(ctx, folderId, name, slotData, kind = 'object', worldLineageId) {
 		if (!ctx.worldId) throw new Error('No active world to save into');
 		const res = await fetch(`/api/worlds/${ctx.worldId}/inventory`, {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify({ folderId, name, slotData })
+			body: JSON.stringify({ folderId, name, slotData, kind, worldLineageId })
 		});
 		if (!res.ok) throw new Error(`Failed to save world item (${res.status})`);
 		return (await res.json()) as InventoryItem;

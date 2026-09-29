@@ -11,6 +11,7 @@
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"test": "node --experimental-transform-types --test tests/*.test.mjs",
 		"db:generate": "prisma generate",
 		"db:push": "prisma db push",
 		"db:migrate": "prisma migrate dev",
@@ -35,6 +36,7 @@
 	"dependencies": {
 		"@babylonjs/core": "^9.28.0",
 		"@babylonjs/gui": "^9.28.0",
+		"@babylonjs/loaders": "^9.28.0",
 		"@prisma/adapter-pg": "^7.10.0",
 		"@prisma/client": "^7.10.0",
 		"@wuchale/svelte": "^0.21.4",

@@ -75,12 +75,18 @@ export const localInventoryAdapter: InventoryAdapter = {
 		return items.filter((i) => i.folderId === folderId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 	},
 
-	async saveItem(_ctx, folderId, name, slotData) {
+	async saveItem(_ctx, folderId, name, slotData, kind = 'object', lineageId) {
+		const worldLineageId = kind === 'world' ? lineageId ?? crypto.randomUUID() : null;
+		const existing = kind === 'world' ? await withStore<InventoryItem[]>(ITEMS_STORE, 'readonly', (store) => store.getAll()) : [];
+		const revisionNumber = kind === 'world' ? 1 + Math.max(0, ...existing.filter((item) => item.worldLineageId === worldLineageId).map((item) => item.revisionNumber ?? 0)) : null;
 		const item: InventoryItem = {
 			id: crypto.randomUUID(),
 			folderId,
 			name,
 			slotData,
+			kind,
+			worldLineageId,
+			revisionNumber,
 			createdAt: new Date().toISOString()
 		};
 		await withStore(ITEMS_STORE, 'readwrite', (store) => store.put(item));
@@ -91,6 +97,7 @@ export const localInventoryAdapter: InventoryAdapter = {
 		const items = await withStore<InventoryItem[]>(ITEMS_STORE, 'readonly', (store) => store.getAll());
 		const existing = items.find((item) => item.id === itemId);
 		if (!existing) throw new Error('Inventory item not found');
+		if (existing.kind === 'world') throw new Error('World revisions are immutable; save a new revision instead');
 		const updated: InventoryItem = { ...existing, folderId, name, slotData };
 		await withStore(ITEMS_STORE, 'readwrite', (store) => store.put(updated));
 		return updated;

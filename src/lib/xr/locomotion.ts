@@ -3,6 +3,7 @@ import { xrSettings } from './settings';
 
 export interface LocomotionController {
 	applySettings(): void;
+	updateFloorMeshes(meshes: AbstractMesh[]): void;
 }
 
 /**
@@ -13,7 +14,8 @@ export interface LocomotionController {
  * Rotation for both modes lives in rotationController.ts, independent of
  * movement mode.
  */
-export function setupLocomotion(xr: WebXRDefaultExperience, floorMeshes: AbstractMesh[]): LocomotionController {
+export function setupLocomotion(xr: WebXRDefaultExperience, initialFloorMeshes: AbstractMesh[]): LocomotionController {
+	let floorMeshes = [...initialFloorMeshes];
 	const featuresManager = xr.baseExperience.featuresManager;
 
 	function applySettings(): void {
@@ -30,6 +32,15 @@ export function setupLocomotion(xr: WebXRDefaultExperience, floorMeshes: Abstrac
 		xr.teleportation = teleportation;
 	}
 
+	function updateFloorMeshes(meshes: AbstractMesh[]): void {
+		const teleportation = xr.teleportation;
+		if (teleportation) {
+			for (const mesh of floorMeshes) teleportation.removeFloorMesh(mesh);
+			for (const mesh of meshes) teleportation.addFloorMesh(mesh);
+		}
+		floorMeshes = [...meshes];
+	}
+
 	applySettings();
-	return { applySettings };
+	return { applySettings, updateFloorMeshes };
 }

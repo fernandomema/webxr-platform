@@ -7,13 +7,16 @@ import {
 	Button,
 	InputText,
 	VirtualKeyboard,
-	Control
+	Control,
+	ScrollViewer
 } from '@babylonjs/gui';
 import { createSlot, type SlotTree } from '$lib/ecs/types';
 import type { SceneGraph } from '../sceneGraph';
 import { authClient } from '$lib/auth-client';
 import { availableInventoryFolders, getInventoryAdapter } from '$lib/inventory/registry';
-import type { InventoryAdapter, InventoryFolder, InventoryItem } from '$lib/inventory/types';
+import type { InventoryAdapter, InventoryAdapterId, InventoryFolder, InventoryItem } from '$lib/inventory/types';
+import { validateWorldScene } from '$lib/worlds/package';
+import type { WorldPackage } from '$lib/worlds/types';
 import { gameState, getInventoryContext } from '../gameState';
 import { xrSettings, saveSettings, type MovementMode, type RotationMode } from '../settings';
 import { WORLD_VISIBILITY_INFO, type HostedWorldVisibility } from '$lib/worldVisibility';
@@ -26,6 +29,9 @@ export interface DashPanelCallbacks {
 	onStopHosting(): Promise<void>;
 	onJoinWorld(roomCode: string): Promise<void>;
 	onSpawnItem(slotData: SlotTree): void;
+	onSpawnWorldOrb(item: InventoryItem, adapterId: InventoryAdapterId): void;
+	onSpawnPublishedWorld(world: WorldPackage): void;
+	onLaunchWorldItem(item: InventoryItem, adapterId: InventoryAdapterId): Promise<void>;
 	onLocomotionSettingsChanged(): void;
 	onExitVr(): Promise<void>;
 	onToggleInspector(): void;
@@ -131,10 +137,16 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	}
 
 	// --- Worlds tab ---
+	const worldsScroll = new ScrollViewer('worlds-scroll');
+	worldsScroll.width = 0.94;
+	worldsScroll.height = '490px';
+	worldsScroll.top = '10px';
+	worldsScroll.barColor = '#7c3aed';
+	worldsScroll.thickness = 0;
+	contentByTab.Worlds.addControl(worldsScroll);
 	const worldsList = new StackPanel('worlds-list');
-	worldsList.width = 0.9;
-	worldsList.top = '10px';
-	contentByTab.Worlds.addControl(worldsList);
+	worldsList.width = 0.94;
+	worldsScroll.addControl(worldsList);
 
 	const worldsTitle = new TextBlock('worlds-title', '¿Cómo quieres compartir este mundo?');
 	worldsTitle.color = 'white';
@@ -147,6 +159,28 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	worldsHint.fontSize = 16;
 	worldsHint.height = '36px';
 	worldsList.addControl(worldsHint);
+	const joinCodeRow = new StackPanel('join-code-row');
+	joinCodeRow.isVertical = false;
+	joinCodeRow.height = '56px';
+	const joinCodeInput = new InputText('join-code-input');
+	joinCodeInput.width = '320px'; joinCodeInput.height = '48px';
+	joinCodeInput.color = 'white'; joinCodeInput.background = '#1f2937';
+	joinCodeInput.placeholderText = 'Private room code';
+	joinCodeRow.addControl(joinCodeInput);
+	const joinCodeButton = Button.CreateSimpleButton('join-code-button', 'Join room');
+	joinCodeButton.width = '180px'; joinCodeButton.height = '48px';
+	joinCodeButton.color = 'white'; joinCodeButton.background = '#2563eb'; joinCodeButton.cornerRadius = 8;
+	joinCodeButton.onPointerClickObservable.add(async () => {
+		const code = joinCodeInput.text.trim();
+		if (!code) return;
+		joinCodeButton.isEnabled = false;
+		try { await callbacks.onJoinWorld(code); refreshWorldsTab(); }
+		catch (error) { worldActionStatus.text = error instanceof Error ? error.message : 'Could not join room'; }
+		finally { joinCodeButton.isEnabled = true; }
+	});
+	joinCodeRow.addControl(joinCodeButton);
+	worldsList.addControl(joinCodeRow);
+
 
 	const visibilityOptions = new StackPanel('world-visibility-options');
 	const visibilityButtons: Button[] = [];
@@ -200,13 +234,14 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		btn.background = visibility === 'solo' ? '#2563eb' : '#16a34a';
 		btn.cornerRadius = 8;
 		btn.paddingTop = '5px';
+		if (visibility === 'friends' || visibility === 'friends-plus') btn.isEnabled = false;
 		btn.onPointerClickObservable.add(async () => {
 			if (visibility === 'solo') {
 				worldActionStatus.text = 'Mundo local activo. Nadie puede entrar.';
 				return;
 			}
-			if (!gameState.userId) {
-				worldActionStatus.text = 'Inicia sesión en la pestaña Cuenta para alojar un mundo.';
+			if (!gameState.userId && visibility !== 'private') {
+				worldActionStatus.text = 'Sign in to host a friends or public session.';
 				return;
 			}
 			btn.isEnabled = false;
@@ -225,6 +260,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	}
 
 	addVisibilityOption('solo');
+	addVisibilityOption('private');
 	addVisibilityOption('friends');
 	addVisibilityOption('friends-plus');
 	addVisibilityOption('public');
@@ -235,14 +271,24 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	publicWorldsTitle.height = '38px';
 	publicWorldsTitle.top = '10px';
 	worldsList.addControl(publicWorldsTitle);
+	const publishedWorldsTitle = new TextBlock('published-worlds-title', 'Published worlds');
+	publishedWorldsTitle.color = '#d1d5db';
+	publishedWorldsTitle.fontSize = 18;
+	publishedWorldsTitle.height = '38px';
+	const publishedWorldsList = new StackPanel('published-worlds-list');
+	publishedWorldsList.width = 1;
+	worldsList.addControl(publishedWorldsTitle);
+	worldsList.addControl(publishedWorldsList);
 
 	async function refreshWorldsTab() {
 		const isConnected = gameState.role === 'host' || gameState.role === 'guest';
 		visibilityOptions.isVisible = !isConnected;
+		joinCodeRow.isVisible = !isConnected;
 		sessionPanel.isVisible = isConnected;
 		publicWorldsTitle.isVisible = gameState.role !== 'guest';
+		publishedWorldsTitle.isVisible = true;
 		stopHostingBtn.isVisible = gameState.role === 'host';
-		if (!isConnected) for (const btn of visibilityButtons) btn.isEnabled = true;
+		if (!isConnected) for (const btn of visibilityButtons) btn.isEnabled = !(btn.name ?? '').endsWith('-friends') && !(btn.name ?? '').endsWith('-friends-plus');
 		if (gameState.role === 'host') {
 			const visibility = gameState.worldVisibility ? WORLD_VISIBILITY_INFO[gameState.worldVisibility].label : 'Alojada';
 			const startedAt = gameState.sessionStartedAt
@@ -254,8 +300,10 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		}
 
 		for (const child of [...worldsList.children]) {
-			if (child !== worldsTitle && child !== worldsHint && child !== visibilityOptions && child !== worldActionStatus && child !== sessionPanel && child !== publicWorldsTitle) worldsList.removeControl(child);
+			if (child !== worldsTitle && child !== worldsHint && child !== joinCodeRow && child !== visibilityOptions && child !== worldActionStatus && child !== sessionPanel && child !== publicWorldsTitle && child !== publishedWorldsTitle && child !== publishedWorldsList) worldsList.removeControl(child);
 		}
+		for (const child of [...publishedWorldsList.children]) publishedWorldsList.removeControl(child);
+		void refreshPublishedWorlds();
 		if (gameState.role === 'guest') return;
 		try {
 			const res = await fetch('/api/worlds');
@@ -285,6 +333,50 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		}
 	}
 
+	async function refreshPublishedWorlds() {
+		try {
+			const response = await fetch('/api/published-worlds');
+			if (!response.ok) return;
+			const publications = await response.json() as Array<{ id: string; name: string; ownerId: string; latestRevision: number }>;
+			if (publications.length === 0) {
+				const empty = new TextBlock('published-worlds-empty', 'No worlds published yet.');
+				empty.height = '36px'; empty.color = '#9ca3af'; publishedWorldsList.addControl(empty);
+			}
+			for (const publication of publications) {
+				const row = new StackPanel(`published-row-${publication.id}`);
+				row.isVertical = false; row.height = '56px';
+				const place = Button.CreateSimpleButton(`published-place-${publication.id}`, `${publication.name} · v${publication.latestRevision} — Place orb`);
+				place.width = '440px'; place.height = '52px'; place.color = 'white'; place.background = '#1f2937'; place.cornerRadius = 8;
+				place.onPointerClickObservable.add(async () => {
+					try {
+						const res = await fetch(`/api/published-worlds/${publication.id}`);
+						if (!res.ok) throw new Error('Could not load published world');
+						callbacks.onSpawnPublishedWorld(await res.json() as WorldPackage);
+						worldActionStatus.text = 'World orb placed.';
+					} catch (error) { worldActionStatus.text = error instanceof Error ? error.message : 'Could not place orb'; }
+				});
+				row.addControl(place);
+				if (publication.ownerId === gameState.userId) {
+					const update = Button.CreateSimpleButton(`published-update-${publication.id}`, 'Publish current revision');
+					update.width = '250px'; update.height = '52px'; update.color = 'white'; update.background = '#7c3aed'; update.cornerRadius = 8;
+					update.onPointerClickObservable.add(async () => {
+						try {
+							const snapshot = sceneGraph.serialize(); validateWorldScene(snapshot);
+							const res = await fetch(`/api/published-worlds/${publication.id}/revisions`, {
+								method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ scene: snapshot })
+							});
+							if (!res.ok) throw new Error('Could not publish revision');
+							worldActionStatus.text = 'Revision published.';
+							refreshWorldsTab();
+						} catch (error) { worldActionStatus.text = error instanceof Error ? error.message : 'Could not publish revision'; }
+					});
+					row.addControl(update);
+				}
+				publishedWorldsList.addControl(row);
+			}
+		} catch { /* offline */ }
+	}
+
 	// --- Inventory tab: root picker, then folder browsing (breadcrumb + new
 	// folder) within that root, then items (with delete) ---
 	const inventoryRoots = new StackPanel('inventory-roots');
@@ -304,6 +396,35 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	inventoryActions.height = '48px';
 	inventoryActions.top = '116px';
 	contentByTab.Inventory.addControl(inventoryActions);
+
+	const worldNameInput = new InputText('world-name-input');
+	worldNameInput.width = '280px';
+	worldNameInput.height = '44px';
+	worldNameInput.color = 'white';
+	worldNameInput.background = '#1f2937';
+	worldNameInput.placeholderText = 'World name';
+	worldNameInput.text = 'My World';
+	inventoryActions.addControl(worldNameInput);
+
+	const saveWorldBtn = Button.CreateSimpleButton('save-world-btn', 'Save world');
+	saveWorldBtn.width = '170px';
+	saveWorldBtn.height = '44px';
+	saveWorldBtn.color = 'white';
+	saveWorldBtn.background = '#7c3aed';
+	saveWorldBtn.cornerRadius = 8;
+	saveWorldBtn.onPointerClickObservable.add(async () => {
+		if (!activeAdapter) return;
+		saveWorldBtn.isEnabled = false;
+		try {
+			const snapshot = sceneGraph.serialize();
+			validateWorldScene(snapshot);
+			await activeAdapter.saveItem(getInventoryContext(), currentFolderId(), worldNameInput.text.trim() || 'My World', snapshot, 'world');
+			await refreshList();
+		} catch (error) {
+			setStatus(inventoryList, error instanceof Error ? error.message : 'Could not save world', '#f87171');
+		} finally { saveWorldBtn.isEnabled = true; }
+	});
+	inventoryActions.addControl(saveWorldBtn);
 
 	const inventoryList = new StackPanel('inventory-list');
 	inventoryList.width = 0.9;
@@ -410,14 +531,45 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			row.height = '52px';
 			row.paddingTop = '4px';
 
-			const spawnBtn = Button.CreateSimpleButton(`item-spawn-${item.id}`, `${item.name} — Generar`);
-			spawnBtn.width = '340px';
+			const isWorld = item.kind === 'world';
+			const spawnBtn = Button.CreateSimpleButton(`item-spawn-${item.id}`, isWorld ? `${item.name} · v${item.revisionNumber ?? 1} — Place orb` : `${item.name} — Spawn`);
+			spawnBtn.width = isWorld ? '260px' : '340px';
 			spawnBtn.height = '52px';
 			spawnBtn.color = 'white';
 			spawnBtn.background = '#1f2937';
 			spawnBtn.cornerRadius = 8;
-			spawnBtn.onPointerClickObservable.add(() => callbacks.onSpawnItem(item.slotData));
+			spawnBtn.onPointerClickObservable.add(() => {
+				if (isWorld) callbacks.onSpawnWorldOrb(item, adapter.id);
+				else callbacks.onSpawnItem(item.slotData);
+			});
 			row.addControl(spawnBtn);
+			if (isWorld) {
+				const loadBtn = Button.CreateSimpleButton(`item-load-${item.id}`, 'Load');
+				loadBtn.width = '80px'; loadBtn.height = '52px'; loadBtn.color = 'white';
+				loadBtn.background = '#2563eb'; loadBtn.cornerRadius = 8;
+				loadBtn.onPointerClickObservable.add(async () => {
+					try { await callbacks.onLaunchWorldItem(item, adapter.id); }
+					catch (error) { setStatus(inventoryList, error instanceof Error ? error.message : 'Could not load world', '#f87171'); }
+				});
+				row.addControl(loadBtn);
+				if (gameState.userId) {
+					const publish = Button.CreateSimpleButton(`item-publish-${item.id}`, 'Publish');
+					publish.width = '100px'; publish.height = '52px'; publish.color = 'white';
+					publish.background = '#7c3aed'; publish.cornerRadius = 8;
+					publish.onPointerClickObservable.add(async () => {
+						try {
+							validateWorldScene(item.slotData);
+							const res = await fetch('/api/published-worlds', {
+								method: 'POST', headers: { 'content-type': 'application/json' },
+								body: JSON.stringify({ name: item.name, scene: item.slotData })
+							});
+							if (!res.ok) throw new Error('Could not publish world');
+							setStatus(inventoryList, 'World published. Find it in the Worlds tab.', '#86efac');
+						} catch (error) { setStatus(inventoryList, error instanceof Error ? error.message : 'Could not publish world', '#f87171'); }
+					});
+					row.addControl(publish);
+				}
+			}
 
 			const deleteBtn = Button.CreateSimpleButton(`item-del-${item.id}`, '✕');
 			deleteBtn.width = '52px';
@@ -447,7 +599,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 
 	function refreshRoots() {
 		for (const child of [...inventoryRoots.children]) inventoryRoots.removeControl(child);
-		for (const child of [...inventoryActions.children]) inventoryActions.removeControl(child);
+		for (const child of [...inventoryActions.children]) if (child !== worldNameInput && child !== saveWorldBtn) inventoryActions.removeControl(child);
 
 		const folders = availableInventoryFolders(getInventoryContext());
 		for (const folder of folders) {
@@ -611,6 +763,10 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 
 	const virtualKeyboard = VirtualKeyboard.CreateDefaultLayout('dash-keyboard');
 	virtualKeyboard.top = '260px';
+	joinCodeInput.onFocusObservable.add(() => { virtualKeyboard.isVisible = true; virtualKeyboard.connect(joinCodeInput); });
+	joinCodeInput.onBlurObservable.add(() => { virtualKeyboard.isVisible = false; virtualKeyboard.disconnect(joinCodeInput); });
+	worldNameInput.onFocusObservable.add(() => { virtualKeyboard.isVisible = true; virtualKeyboard.connect(worldNameInput); });
+	worldNameInput.onBlurObservable.add(() => { virtualKeyboard.isVisible = false; virtualKeyboard.disconnect(worldNameInput); });
 	virtualKeyboard.isVisible = false;
 	background.addControl(virtualKeyboard);
 	emailInput.onFocusObservable.add(() => {

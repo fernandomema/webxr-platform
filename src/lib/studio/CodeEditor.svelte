@@ -2,7 +2,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import EditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 	import TsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
-	import { lintCode } from '$lib/studio/model';
+	import { lintCode } from './lint/code';
 	import 'monaco-editor/min/vs/editor/editor.main.css';
 
 	interface CodeEditorProps {
@@ -42,10 +42,18 @@
 		{ label: 'ctx.world.isHost()', detail: '() => boolean', documentation: 'Check whether this peer is authoritative.' },
 		{ label: 'ctx.hierarchy.getChildren(id)', detail: '(id: string | null) => Slot[]', documentation: 'Return direct children of a slot.' },
 		{ label: 'ctx.math.vecAdd(a, b)', detail: '(a: Vec3, b: Vec3) => Vec3', documentation: 'Add two vectors.' },
+		{ label: 'ctx.hierarchy.getWorldPose(id)', detail: '(id: string) => { position, rotation, forward, up, right } | undefined', documentation: 'True world pose of any slot, e.g. a gun Muzzle child. Correct under nested rotation and scale.' },
+		{ label: 'ctx.equip.isEquipped()', detail: '() => boolean', documentation: 'Whether this object (or the one it belongs to) is equipped in a hand.' },
+		{ label: 'ctx.equip.holder()', detail: '() => { playerId, hand } | null', documentation: 'Which player and hand have this object equipped.' },
+		{ label: 'ctx.math.rotateVec(q, v)', detail: '(q: Quat, v: Vec3) => Vec3', documentation: 'Rotate a vector by a quaternion.' },
+		{ label: 'ctx.math.quatMultiply(a, b)', detail: '(a: Quat, b: Quat) => Quat', documentation: 'Combine two rotations.' },
 		{ label: 'ctx.math.vecScale(value, scalar)', detail: '(value: Vec3, scalar: number) => Vec3', documentation: 'Scale a vector.' }
 	];
 
 	const handlerSnippets = [
+		{ label: 'onEquip', detail: '(event) => void', insertText: 'onEquip(e) {\n\t$0\n}' },
+		{ label: 'onUnequip', detail: '(event) => void', insertText: 'onUnequip(e) {\n\t$0\n}' },
+		{ label: 'onTrigger', detail: '(event) => boolean | void — return false to not consume the press', insertText: 'onTrigger(e) {\n\tif (e.phase !== \'press\') return true;\n\t$0\n\treturn true;\n}' },
 		{ label: 'onSpawn', detail: 'lifecycle handler', insertText: 'onSpawn() {\n\t$0\n}' },
 		{ label: 'onGrab', detail: 'lifecycle handler', insertText: 'onGrab() {\n\t$0\n}' },
 		{ label: 'onRelease', detail: 'lifecycle handler', insertText: 'onRelease() {\n\t$0\n}' },

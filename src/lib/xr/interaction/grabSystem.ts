@@ -11,6 +11,11 @@ interface TwoPointState {
 	initialPosition: Vector3;
 }
 
+/** Lets another system veto a grab (e.g. an object equipped in someone's hand, or a hand that is already occupied). */
+export interface GrabGuard {
+	canGrab(slotId: string, grabberId: string): boolean;
+}
+
 /**
  * Generic grab behaviour shared by every `grabbable` Slot, including UI
  * panels: a single grabber (hand or laser) rigidly follows the grabber node
@@ -24,12 +29,33 @@ export class GrabSystem {
 	private grabbersOfSlot = new Map<string, Map<string, TransformNode>>(); // slotId -> grabberId -> node
 	private twoPoint = new Map<string, TwoPointState>();
 	private originalParent = new Map<string, TransformNode | null>();
+	private guard: GrabGuard | null = null;
 
 	constructor(
 		scene: Scene,
 		private sceneGraph: SceneGraph
 	) {
 		scene.onBeforeRenderObservable.add(() => this.update());
+	}
+
+	setGuard(guard: GrabGuard): void {
+		this.guard = guard;
+	}
+
+	/**
+	 * Forgets a single-handed grab WITHOUT re-parenting the object or firing
+	 * `onRelease`, so another system (equipment) can take the object over
+	 * seamlessly. Returns the slot that was held, or null if there was nothing
+	 * to hand over (nothing held, or a two-handed hold).
+	 */
+	detach(grabberId: string): string | null {
+		const slotId = this.grabberOf.get(grabberId);
+		if (!slotId || (this.grabbersOfSlot.get(slotId)?.size ?? 0) !== 1) return null;
+		this.grabberOf.delete(grabberId);
+		this.grabbersOfSlot.delete(slotId);
+		this.originalParent.delete(slotId);
+		this.twoPoint.delete(slotId);
+		return slotId;
 	}
 
 	getGrabbersForSlot(slotId: string): string[] {
@@ -53,6 +79,7 @@ export class GrabSystem {
 		const live = this.sceneGraph.getLive(effectiveTargetId);
 		const grabbable = live && isGrabbable(live.slot);
 		if (!live || !grabbable) return;
+		if (this.guard && !this.guard.canGrab(effectiveTargetId, grabberId)) return;
 
 		let grabbers = this.grabbersOfSlot.get(effectiveTargetId);
 		if (grabbers && (grabbers.size >= 2 || !grabbable.scalable)) return;

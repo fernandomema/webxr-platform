@@ -1,3 +1,6 @@
+// Registers the glTF/GLB loader. Babylon loads each controller's model as a .glb and only
+// initialises the motion controller (trigger, thumbstick, laser) once that load succeeds.
+import '@babylonjs/loaders/glTF';
 import {
 	Engine,
 	Scene,
@@ -5,6 +8,8 @@ import {
 	Vector3,
 	UniversalCamera,
 	WebXRState,
+	WebXRMotionControllerManager,
+	PointerEventTypes,
 	WebXREnterExitUIButton,
 	type AbstractMesh
 } from '@babylonjs/core';
@@ -13,6 +18,7 @@ import type { SlotTree } from '$lib/ecs/types';
 import { instantiate } from '$lib/ecs/serialize';
 import { SceneGraph } from './sceneGraph';
 import { GrabSystem } from './interaction/grabSystem';
+import { EquipmentSystem } from './interaction/equipmentSystem';
 import { PressableButtonSystem } from './interaction/pressableButtonSystem';
 import { setupPointerAndGrabControllers } from './interaction/pointerController';
 import { setupPanelToggle } from './interaction/panelToggle';
@@ -33,6 +39,12 @@ import { gameState } from './gameState';
 import type { HostedWorldVisibility } from '$lib/worldVisibility';
 import type { PlayerInfo } from './net/protocol';
 import { PUBLIC_STUN_URLS } from '$env/static/public';
+import { createWorldOrb, copyScene, validateWorldPackage, validateWorldScene, worldFromInventory, MAX_SHARED_SCENE_BYTES } from '$lib/worlds/package';
+import type { WorldPackage } from '$lib/worlds/types';
+import type { InventoryAdapterId, InventoryItem } from '$lib/inventory/types';
+import { createWorldPortalMenu } from './ui/worldPortalMenu';
+import { getInventoryAdapter } from '$lib/inventory/registry';
+import { getInventoryContext } from './gameState';
 
 export interface MountedGame {
 	dispose(): void;
@@ -40,7 +52,9 @@ export interface MountedGame {
 
 /** Boots the whole game (the "juego base" — works with zero login, zero network). */
 export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: string): Promise<MountedGame> {
-	const engine = new Engine(canvas, true);
+	// Babylon 9 no longer creates its audio engine by default; without it every Sound (audio players,
+	// generated impact sounds) has no backend and throws on use.
+	const engine = new Engine(canvas, true, { audioEngine: true });
 	const scene = new Scene(engine);
 
 	new HemisphericLight('light', new Vector3(0, 1, 0), scene);
@@ -116,6 +130,11 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 	const xrButtons = [createXRButton('Enter VR', 'immersive-vr', 'local-floor')];
 
 	const floorMesh = sceneGraph.getLive('floor')?.node as AbstractMesh | undefined;
+	// Controller profiles + models (Meta/Oculus Touch) are served from /static/xr-input-profiles instead of
+	// Babylon's default of immersive-web.github.io: a headset on a LAN without a route to GitHub Pages
+	// never gets an answer (the request hangs rather than fails), and no motion controller would ever
+	// initialise. A controller not in the local set falls back to Babylon's built-in profiles.
+	WebXRMotionControllerManager.BaseRepositoryUrl = '/xr-input-profiles';
 	const xr = await scene.createDefaultXRExperienceAsync({
 		floorMeshes: floorMesh ? [floorMesh] : [],
 		// Babylon's pointer-selection feature defaults to ONE "attached"
@@ -129,11 +148,27 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 	loadSettings();
 	const grabSystem = new GrabSystem(scene, sceneGraph);
 	sceneGraph.setGrabQuery(grabSystem);
+	// Objects held in a hand until unequipped. Registered right after GrabSystem so a
+	// guest hand's proxy follows presence before equipped scripts read their pose.
+	const equipment = new EquipmentSystem(
+		scene,
+		sceneGraph,
+		grabSystem,
+		() => localPlayerId,
+		(playerId) =>
+			hostAuthority?.getPlayerDisplayName(playerId) ??
+			(playerId === localPlayerId ? (gameState.userName ?? 'Player') : 'Player')
+	);
 	// Same "grip if present, else pointer" node pointerController.ts already
 	// uses as each hand/controller's interaction point — reused here so a
 	// pressable button reacts identically to hand-tracking and controllers.
 	new PressableButtonSystem(scene, sceneGraph, () => xr.input.controllers.map((c) => c.grip ?? c.pointer));
 	const locomotion = setupLocomotion(xr, floorMesh ? [floorMesh] : []);
+	function refreshTeleportFloors(): void {
+		locomotion.updateFloorMeshes(sceneGraph.allSlots()
+			.filter((entry) => !entry.system && entry.slot.components.some((component) => component.type === 'meshRenderer' && component.meshRef === 'ground'))
+			.map((entry) => entry.node as AbstractMesh));
+	}
 	setupRotationController(scene, xr);
 	setupMovementController(scene, xr);
 	setupHandControllerSwitch(xr);
@@ -174,50 +209,7 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 		return localAudio ?? undefined;
 	}
 
-	async function hostCurrentWorld(visibility: HostedWorldVisibility): Promise<void> {
-		if (!gameState.userId) throw new Error('Inicia sesión para alojar un mundo');
-		const track = await ensureLocalAudio();
-
-		const res = await fetch('/api/worlds', {
-			method: 'POST',
-			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify({ name: 'My Lobby', visibility, sceneSnapshot: sceneGraph.serialize() })
-		});
-		if (!res.ok) throw new Error('No se pudo alojar el mundo');
-		const { world, session } = (await res.json()) as {
-			world: { id: string; name: string; visibility: HostedWorldVisibility };
-			session: { roomCode: string; startedAt: string }
-		};
-
-		gameState.worldId = world.id;
-		gameState.worldName = world.name;
-		gameState.worldVisibility = world.visibility;
-		gameState.sessionStartedAt = session.startedAt;
-		gameState.roomCode = session.roomCode;
-		gameState.role = 'host';
-
-		hostAuthority = new HostAuthority(
-			scene,
-			xr,
-			sceneGraph,
-			grabSystem,
-			session.roomCode,
-			iceServers,
-			{ playerId: localPlayerId, displayName: gameState.userName ?? 'Host', role: 'host' } satisfies PlayerInfo,
-			{
-				localTrack: track,
-				onRemoteStream: (_guestId, stream, targetNode) => voice.addPeer(_guestId, stream, targetNode)
-			}
-		);
-	}
-
-	async function stopHostingWorld(): Promise<void> {
-		if (!gameState.worldId) return;
-		const worldId = gameState.worldId;
-		const res = await fetch(`/api/worlds/${worldId}/host`, { method: 'DELETE' });
-		if (!res.ok) throw new Error('No se pudo cerrar la sesión');
-		hostAuthority?.dispose();
-		hostAuthority = null;
+	function resetSessionState(): void {
 		gameState.worldId = null;
 		gameState.worldName = null;
 		gameState.roomCode = null;
@@ -226,7 +218,102 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 		gameState.role = 'solo';
 	}
 
+	async function leaveCurrentSession(): Promise<void> {
+		equipment.releaseAll(); // nothing stays equipped across worlds
+		if (hostAuthority && gameState.worldId) {
+			const res = await fetch(`/api/worlds/${gameState.worldId}/host`, { method: 'DELETE' });
+			if (!res.ok) throw new Error('Could not close the hosted session');
+		}
+		hostAuthority?.dispose();
+		hostAuthority = null;
+		guestSync?.dispose();
+		guestSync = null;
+		resetSessionState();
+	}
+
+	async function launchScene(name: string, snapshot: SlotTree, visibility: HostedWorldVisibility | 'solo'): Promise<void> {
+		validateWorldScene(snapshot);
+		if (visibility === 'friends' || visibility === 'friends-plus') throw new Error('Friend-only access is not available yet');
+		if (visibility !== 'solo' && visibility !== 'private' && !gameState.userId) {
+			throw new Error('Sign in to host a public session');
+		}
+		const previousScene = sceneGraph.serialize();
+		const track = visibility === 'solo' ? undefined : await ensureLocalAudio();
+		let roomCode = crypto.randomUUID().replaceAll('-', '').slice(0, 12);
+		let worldId: string | null = null;
+		let startedAt = new Date().toISOString();
+		if (visibility !== 'solo' && gameState.userId) {
+			const res = await fetch('/api/worlds', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ name, visibility, sceneSnapshot: snapshot })
+			});
+			if (!res.ok) throw new Error('Could not host the world');
+			const result = await res.json() as { world: { id: string }; session: { roomCode: string; startedAt: string } };
+			worldId = result.world.id;
+			roomCode = result.session.roomCode;
+			startedAt = result.session.startedAt;
+		}
+		let didLeave = false;
+		try {
+			await leaveCurrentSession();
+			didLeave = true;
+			sceneGraph.reconcile(copyScene(snapshot));
+			refreshTeleportFloors();
+			if (visibility === 'solo') { refreshWorldsTab(); return; }
+			gameState.worldId = worldId;
+			gameState.worldName = name;
+			gameState.worldVisibility = visibility;
+			gameState.sessionStartedAt = startedAt;
+			gameState.roomCode = roomCode;
+			gameState.role = 'host';
+			hostAuthority = new HostAuthority(
+				scene, xr, sceneGraph, grabSystem, equipment, roomCode, iceServers,
+				{ playerId: localPlayerId, displayName: gameState.userName ?? 'Host', role: 'host' } satisfies PlayerInfo,
+				{ localTrack: track, onRemoteStream: (guestId, stream, targetNode) => voice.addPeer(guestId, stream, targetNode) }
+			);
+			refreshWorldsTab();
+		} catch (error) {
+			if (didLeave) {
+				hostAuthority?.dispose();
+				hostAuthority = null;
+				sceneGraph.reconcile(previousScene);
+				refreshTeleportFloors();
+				resetSessionState();
+			}
+			if (worldId) void fetch(`/api/worlds/${worldId}/host`, { method: 'DELETE' });
+			throw error;
+		}
+	}
+
+	async function hostCurrentWorld(visibility: HostedWorldVisibility): Promise<void> {
+		await launchScene(gameState.worldName ?? 'My Lobby', sceneGraph.serialize(), visibility);
+	}
+
+	async function stopHostingWorld(): Promise<void> {
+		if (!hostAuthority) return;
+		await leaveCurrentSession();
+		refreshWorldsTab();
+	}
+
+	async function launchWorldPackage(world: WorldPackage, visibility: HostedWorldVisibility | 'solo'): Promise<void> {
+		validateWorldPackage(world);
+		await launchScene(world.name, world.scene, visibility);
+	}
+
+	function spawnWorldOrbPackage(world: WorldPackage): void {
+		validateWorldPackage(world);
+		const camera = getActiveCamera();
+		const position = camera.globalPosition.add(camera.getForwardRay().direction.scale(0.7));
+		const orb = createWorldOrb(world, [position.x, position.y, position.z]);
+		if (JSON.stringify([...sceneGraph.serialize(), orb]).length > MAX_SHARED_SCENE_BYTES) throw new Error('This scene is too large to share another world orb');
+		sceneGraph.addSlot(orb);
+		if (gameState.role === 'guest') guestSync?.requestSpawn(orb);
+		else hostAuthority?.broadcastSnapshot();
+	}
+
 	async function joinWorld(roomCode: string): Promise<void> {
+		await leaveCurrentSession();
 		const track = await ensureLocalAudio();
 		gameState.worldId = null;
 		gameState.worldName = null;
@@ -240,6 +327,7 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 			xr,
 			sceneGraph,
 			grabSystem,
+			equipment,
 			roomCode,
 			iceServers,
 			{ playerId: localPlayerId, displayName: gameState.userName ?? 'Guest', role: 'guest' } satisfies PlayerInfo,
@@ -249,14 +337,10 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 			},
 			() => {
 				guestSync = null;
-				gameState.worldId = null;
-				gameState.worldName = null;
-				gameState.roomCode = null;
-				gameState.worldVisibility = null;
-				gameState.sessionStartedAt = null;
-				gameState.role = 'solo';
+				resetSessionState();
 				refreshWorldsTab();
-			}
+			},
+			refreshTeleportFloors
 		);
 	}
 
@@ -282,6 +366,10 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 		if (gameState.role !== 'guest') hostAuthority?.broadcastSnapshot();
 	}
 
+	function spawnWorldOrb(item: InventoryItem, adapterId: InventoryAdapterId): void {
+		spawnWorldOrbPackage(worldFromInventory(item, adapterId, gameState.userId));
+	}
+
 	const inspector = createInspectorPanel(scene, sceneGraph, {
 		onSceneChanged: () => {
 			if (gameState.role !== 'guest') hostAuthority?.broadcastSnapshot();
@@ -293,13 +381,42 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 		onStopHosting: stopHostingWorld,
 		onJoinWorld: joinWorld,
 		onSpawnItem: spawnFromInventory,
+		onSpawnWorldOrb: spawnWorldOrb,
+		onSpawnPublishedWorld: spawnWorldOrbPackage,
+		onLaunchWorldItem: async (item, adapterId) => {
+			const world = worldFromInventory(item, adapterId, gameState.userId);
+			await launchWorldPackage(world, world.defaultVisibility);
+		},
 		onLocomotionSettingsChanged: () => locomotion.applySettings(),
 		onExitVr: () => xr.baseExperience.exitXRAsync(),
 		onToggleInspector: () => inspector.root.setEnabled(!inspector.root.isEnabled())
 	});
 	refreshWorldsTab = dash.refreshWorldsTab;
 
-	setupPointerAndGrabControllers(scene, xr, sceneGraph, grabSystem, {
+	const worldPortalMenu = createWorldPortalMenu(scene, sceneGraph, getActiveCamera, launchWorldPackage, async (world) => {
+		validateWorldPackage(world);
+		const selected = getInventoryAdapter(gameState.currentInventoryAdapterId ?? 'local');
+		const adapter = selected?.isAvailable(getInventoryContext()) ? selected : getInventoryAdapter('local');
+		if (!adapter) throw new Error('No inventory is available');
+		const folderId = adapter.id === gameState.currentInventoryAdapterId ? gameState.currentInventoryFolderId : null;
+		await adapter.saveItem(getInventoryContext(), folderId, world.name, copyScene(world.scene), 'world');
+	});
+	scene.onPointerObservable.add((event) => {
+		if (event.type !== PointerEventTypes.POINTERPICK || xr.baseExperience.state === WebXRState.IN_XR) return;
+		const slotId = sceneGraph.getSlotIdForNode(event.pickInfo?.pickedMesh);
+		if (slotId && sceneGraph.getLive(slotId)?.slot.components.some((component) => component.type === 'worldPortal')) worldPortalMenu.open(slotId);
+	});
+	setupPointerAndGrabControllers(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, {
+		onWorldPortal: (slotId) => worldPortalMenu.open(slotId),
+		onUse: (slotId, hand, phase, value) => {
+			// A guest asks the host, which runs the object's actions once; solo/host run them here.
+			if (gameState.role === 'guest') guestSync?.requestUse(slotId, hand, phase, value);
+			else equipment.dispatchTrigger(localPlayerId, hand, phase, value, slotId);
+		},
+		onUnequip: (hand, slotId) => {
+			if (gameState.role === 'guest') guestSync?.requestUnequip(hand, slotId);
+			else hostAuthority?.broadcastSnapshot();
+		},
 		onGrab: (grabberId, slotId) => {
 			if (gameState.role === 'host') hostAuthority?.broadcastSnapshot();
 			else guestSync?.requestGrab(grabberId, slotId);
@@ -312,6 +429,14 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 	setupPanelToggle(scene, xr, dash.root, getActiveCamera, { keyboardKey: 'm', buttonIdPattern: /x-button|menu/i });
 	setupPanelToggle(scene, xr, inspector.root, getActiveCamera, { keyboardKey: 'i', buttonIdPattern: /a-button/i });
 	const radialNetwork = {
+		onEquip: (hand: 'left' | 'right', slotId: string) => {
+			if (gameState.role === 'guest') guestSync?.requestEquip(hand, slotId);
+			else hostAuthority?.broadcastSnapshot();
+		},
+		onUnequip: (hand: 'left' | 'right', slotId: string) => {
+			if (gameState.role === 'guest') guestSync?.requestUnequip(hand, slotId);
+			else hostAuthority?.broadcastSnapshot();
+		},
 		onDelete: (slotId: string) => {
 			if (gameState.role === 'guest') guestSync?.requestDelete(slotId);
 			else {
@@ -320,8 +445,8 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 			}
 		}
 	};
-	setupRadialMenuForHand(scene, xr, sceneGraph, grabSystem, 'left', /y-button/i, radialNetwork);
-	setupRadialMenuForHand(scene, xr, sceneGraph, grabSystem, 'right', /b-button/i, radialNetwork);
+	setupRadialMenuForHand(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, 'left', /y-button/i, radialNetwork);
+	setupRadialMenuForHand(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, 'right', /b-button/i, radialNetwork);
 
 	scene.onBeforeRenderObservable.add(() => {
 		const camera = getActiveCamera();
@@ -333,6 +458,23 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 
 	if (initialRoomCode) void joinWorld(initialRoomCode);
 
+	// "Play" in the Studio hands its scene over through localStorage and opens `/?studioPlay=<key>`.
+	const studioPlayKey = new URLSearchParams(window.location.search).get('studioPlay');
+	if (studioPlayKey && !initialRoomCode) {
+		void (async () => {
+			const storageKey = `studio:play:${studioPlayKey}`;
+			try {
+				const raw = localStorage.getItem(storageKey);
+				localStorage.removeItem(storageKey);
+				if (!raw) return;
+				const { name, scene: studioScene } = JSON.parse(raw) as { name: string; scene: SlotTree };
+				await launchScene(name, studioScene, 'solo');
+			} catch (error) {
+				console.error('Could not play the Studio scene', error);
+			}
+		})();
+	}
+
 	engine.runRenderLoop(() => scene.render());
 	const onResize = () => engine.resize();
 	window.addEventListener('resize', onResize);
@@ -342,6 +484,7 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 			window.removeEventListener('resize', onResize);
 			hostAuthority?.dispose();
 			guestSync?.dispose();
+			worldPortalMenu.dispose();
 			voice.dispose();
 			sceneGraph.dispose();
 			engine.dispose();

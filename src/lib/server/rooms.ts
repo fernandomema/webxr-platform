@@ -23,9 +23,8 @@ export function connectionIdFor(socket: WebSocket): string {
 	return id;
 }
 
-export function registerHost(roomCode: string, socket: WebSocket): Room {
-	const existing = rooms.get(roomCode);
-	if (existing) removeSocket(existing.host);
+export function registerHost(roomCode: string, socket: WebSocket): Room | null {
+	if (rooms.has(roomCode)) return null;
 
 	const room: Room = { roomCode, host: socket, guests: new Map() };
 	rooms.set(roomCode, room);
