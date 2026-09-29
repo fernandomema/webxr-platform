@@ -148,7 +148,7 @@
 			validateWorldScene(scene);
 			const key = crypto.randomUUID();
 			localStorage.setItem(`studio:play:${key}`, JSON.stringify({ name: doc.name, scene }));
-			window.open(`${resolve('/')}?studioPlay=${key}`, '_blank');
+			window.open(`${resolve('/play')}?studioPlay=${key}`, '_blank');
 		} catch (error) {
 			toasts.error(error, 'This scene cannot be played yet');
 		}

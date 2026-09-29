@@ -1,6 +1,6 @@
 # webxr-platform
 
-Plataforma WebXR inspirada en NeosVR/Resonite: cada usuario aloja su propio mundo desde su navegador; el servidor solo actúa de señalización (rendezvous WebRTC) para que host y visitantes se conecten por P2P. El "juego" (`/`) carga sin login y funciona en local hasta que decides alojar o unirte a un mundo.
+Plataforma WebXR inspirada en NeosVR/Resonite: cada usuario aloja su propio mundo desde su navegador; el servidor solo actúa de señalización (rendezvous WebRTC) para que host y visitantes se conecten por P2P. `/` es la landing; el "juego" vive en `/play`, carga sin login y funciona en local hasta que decides alojar o unirte a un mundo.
 
 Ver `/home/fernando/.claude/plans/crea-un-nuevo-proyecto-precious-breeze.md` para el plan/arquitectura completos.
 
@@ -22,7 +22,7 @@ npx prisma db push
 npm run dev
 ```
 
-Abre `http://localhost:5173`. Sin login ya carga el lobby local; el panel Dash (tecla `M` en escritorio, botón de menú en el mando) da acceso a login, mundos e inventario.
+Abre `http://localhost:5173/play`. Sin login ya carga el lobby local; el panel Dash (tecla `M` en escritorio, botón de menú en el mando) da acceso a login, mundos e inventario. `http://localhost:5173` es la landing.
 
 ## Producción
 

@@ -513,7 +513,7 @@ export async function mountGame(
 
 	if (initialRoomCode) void joinWorld(initialRoomCode);
 
-	// "Play" in the Studio hands its scene over through localStorage and opens `/?studioPlay=<key>`.
+	// "Play" in the Studio hands its scene over through localStorage and opens `/play?studioPlay=<key>`.
 	const studioPlayKey = new URLSearchParams(window.location.search).get('studioPlay');
 	if (studioPlayKey && !initialRoomCode) {
 		void (async () => {

@@ -61,6 +61,7 @@ msgstr "Usuario"
 msgid "Password"
 msgstr "Contraseña"
 
+#: src/routes/+page.svelte
 #: src/routes/login/+page.svelte
 #: src/routes/register/+page.svelte
 msgid "Create an account"
@@ -82,7 +83,10 @@ msgstr "Error al entrar"
 msgid "Email or username"
 msgstr "Email o usuario"
 
+#: src/lib/studio/components/MarketplacePanel.svelte
 #: src/lib/studio/components/PublishDialog.svelte
+#: src/routes/+page.svelte
+#: src/routes/+page.svelte
 #: src/routes/login/+page.svelte
 #: src/routes/login/+page.svelte
 #: src/routes/studio/+page.svelte
@@ -374,8 +378,9 @@ msgstr ""
 #~ msgid "Remove component"
 #~ msgstr ""
 
-#~ msgid "Name<0/>"
-#~ msgstr ""
+#: src/lib/studio/components/MarketplacePanel.svelte
+msgid "Name<0/>"
+msgstr ""
 
 #~ msgid "Select an object"
 #~ msgstr ""
@@ -728,10 +733,13 @@ msgstr ""
 msgid "Create and edit worlds and objects for the WebXR platform."
 msgstr ""
 
+#: src/routes/+page.svelte
+#: src/routes/+page.svelte
 #: src/routes/studio/+page.svelte
 msgid "Studio"
 msgstr ""
 
+#: src/routes/+page.svelte
 #: src/routes/studio/+page.svelte
 msgid "Signed in"
 msgstr ""
@@ -798,6 +806,7 @@ msgstr ""
 msgid "Try again"
 msgstr ""
 
+#: src/lib/studio/components/MarketplacePanel.svelte
 #: src/lib/studio/components/PublishDialog.svelte
 #: src/routes/studio/+page.svelte
 msgid "Loading…"
@@ -1091,6 +1100,7 @@ msgid "Try it in the game"
 msgstr ""
 
 #: src/lib/studio/components/TopBar.svelte
+#: src/routes/+page.svelte
 msgid "Play"
 msgstr ""
 
@@ -1317,6 +1327,7 @@ msgstr ""
 msgid "This will create revision {0}."
 msgstr ""
 
+#: src/lib/studio/components/MarketplacePanel.svelte
 #: src/lib/studio/components/PublishDialog.svelte
 msgid "Publishing…"
 msgstr ""
@@ -1478,7 +1489,7 @@ msgstr ""
 msgid "Combine two rotations."
 msgstr ""
 
-#: src/routes/+page.svelte
+#: src/routes/play/+page.svelte
 #: src/routes/w/[code]/+page.svelte
 msgid "Could not enter VR"
 msgstr ""
@@ -1489,6 +1500,8 @@ msgstr ""
 
 #: src/lib/xr/XRLaunchOverlay.svelte
 #: src/lib/xr/XRLaunchOverlay.svelte
+#: src/routes/+page.svelte
+#: src/routes/+page.svelte
 msgid "WebXR Platform"
 msgstr ""
 
@@ -1640,6 +1653,7 @@ msgid "Ask AI to inspect, create, or change objects. Review its proposal before 
 msgstr ""
 
 #: src/lib/studio/components/AiPanel.svelte
+#: src/lib/studio/components/MarketplacePanel.svelte
 msgid "Working…"
 msgstr ""
 
@@ -1938,4 +1952,192 @@ msgstr ""
 
 #: src/lib/studio/components/AddObjectMenu.svelte
 msgid "UI Video"
+msgstr ""
+
+#~ msgid "Publish object to marketplace…"
+#~ msgstr ""
+
+#~ msgid "Marketplace revision {0} published"
+#~ msgstr ""
+
+#~ msgid "This inventory is read-only."
+#~ msgstr ""
+
+#~ msgid "Update listing"
+#~ msgstr ""
+
+#~ msgid "Publish item"
+#~ msgstr ""
+
+#~ msgid "Could not publish marketplace item"
+#~ msgstr ""
+
+#~ msgid "Publish to marketplace"
+#~ msgstr ""
+
+#~ msgid "Update Marketplace Item"
+#~ msgstr ""
+
+#: src/lib/studio/components/MarketplacePanel.svelte
+msgid "Publish to Marketplace"
+msgstr ""
+
+#~ msgid "You need to sign in to publish objects."
+#~ msgstr ""
+
+#: src/lib/studio/components/MarketplacePanel.svelte
+msgid "Publish update"
+msgstr ""
+
+#~ msgid "Marketplace acquisitions are free and include future revisions."
+#~ msgstr ""
+
+#: src/lib/studio/components/MarketplacePanel.svelte
+msgid "Description<0/>"
+msgstr ""
+
+#: src/lib/studio/components/MarketplacePanel.svelte
+msgid "Thumbnail URL <0>(optional)</0><1/>"
+msgstr ""
+
+#: src/lib/studio/components/MarketplacePanel.svelte
+msgid "Save this object to a writable inventory before publishing it."
+msgstr ""
+
+#~ msgid "Marketplace…"
+#~ msgstr ""
+
+#~ msgid "<0/>Marketplace"
+#~ msgstr ""
+
+#: src/lib/studio/components/MarketplacePanel.svelte
+msgid "Could not load this listing."
+msgstr ""
+
+#. 0: result.revision
+#: src/lib/studio/components/MarketplacePanel.svelte
+msgid "Published revision {0}"
+msgstr ""
+
+#. 0: name
+#: src/lib/studio/components/MarketplacePanel.svelte
+msgid "Published “{0}” to the marketplace"
+msgstr ""
+
+#: src/lib/studio/components/MarketplacePanel.svelte
+msgid "Could not publish this item."
+msgstr ""
+
+#: src/lib/studio/components/MarketplacePanel.svelte
+msgid "Listing hidden from the marketplace."
+msgstr ""
+
+#: src/lib/studio/components/MarketplacePanel.svelte
+msgid "Listing is visible again."
+msgstr ""
+
+#: src/lib/studio/components/MarketplacePanel.svelte
+msgid "Could not change visibility."
+msgstr ""
+
+#: src/lib/studio/components/MarketplacePanel.svelte
+msgid "Sign in to publish objects to the marketplace."
+msgstr ""
+
+#: src/lib/studio/components/MarketplacePanel.svelte
+msgid "Hidden"
+msgstr ""
+
+#: src/lib/studio/components/MarketplacePanel.svelte
+msgid "Published"
+msgstr ""
+
+#. 0: listing.latestRevision; 1: timeLabel(listing.updatedAt)
+#: src/lib/studio/components/MarketplacePanel.svelte
+msgid "Revision {0} · updated {1}"
+msgstr ""
+
+#: src/lib/studio/components/MarketplacePanel.svelte
+msgid "Contains a code block — anyone who acquires this runs it as unsandboxed JavaScript."
+msgstr ""
+
+#: src/lib/studio/components/MarketplacePanel.svelte
+msgid "Publishing shares this object on the marketplace. Acquisitions are free and automatically include revisions you publish later."
+msgstr ""
+
+#: src/lib/studio/components/MarketplacePanel.svelte
+msgid "Unhide listing"
+msgstr ""
+
+#: src/lib/studio/components/MarketplacePanel.svelte
+msgid "Hide listing"
+msgstr ""
+
+#: src/lib/studio/components/MarketplacePanel.svelte
+msgid "Publishing an update also pushes your current scene as a new revision."
+msgstr ""
+
+#: src/routes/+page.svelte
+msgid "Peer-to-peer worlds"
+msgstr ""
+
+#: src/routes/+page.svelte
+msgid "Every visitor connects straight to the host over WebRTC. The server only handles rendezvous — no world ever lives on our machines."
+msgstr ""
+
+#: src/routes/+page.svelte
+msgid "Build in VR or on the web"
+msgstr ""
+
+#: src/routes/+page.svelte
+msgid "The Studio editor runs right in the browser: templates, a scene tree and an inspector to shape objects and worlds without leaving the tab."
+msgstr ""
+
+#: src/routes/+page.svelte
+msgid "Grab, equip, play"
+msgstr ""
+
+#: src/routes/+page.svelte
+msgid "Pick objects up by hand or with the laser, equip them from the radial menu, and jump into a session with friends in one click."
+msgstr ""
+
+#: src/routes/+page.svelte
+msgid "A peer-to-peer WebXR platform: host your own world from the browser and build what's in it with the Studio editor."
+msgstr ""
+
+#: src/routes/+page.svelte
+msgid "Play now"
+msgstr ""
+
+#: src/routes/+page.svelte
+msgid "<0/>Play now"
+msgstr ""
+
+#: src/routes/+page.svelte
+msgid "<0/>Open Studio"
+msgstr ""
+
+#: src/routes/+page.svelte
+msgid "Your own WebXR world, hosted from your browser"
+msgstr ""
+
+#: src/routes/+page.svelte
+msgid "No install, no central world server. Open a room, build what's inside it with the Studio editor, and invite people to connect straight to you — on desktop or in a headset."
+msgstr ""
+
+#: src/routes/+page.svelte
+msgid "No account needed to try it — sign in later to save your worlds."
+msgstr ""
+
+#: src/routes/+page.svelte
+msgid "Features"
+msgstr ""
+
+#: src/routes/play/+page.svelte
+msgid "Play · WebXR Platform"
+msgstr ""
+
+#: src/routes/+page.svelte
+#: src/routes/+page.svelte
+msgid "Sign out"
 msgstr ""

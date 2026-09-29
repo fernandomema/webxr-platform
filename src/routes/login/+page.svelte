@@ -16,7 +16,7 @@
 			error = err.message ?? 'Sign-in failed';
 			return;
 		}
-		goto('/');
+		goto('/play');
 	}
 </script>
 

@@ -81,7 +81,7 @@
 	<header class="top">
 		<div class="brand"><Icon name="cube" size={20} /><strong>Studio</strong></div>
 		<nav>
-			<a class="btn ghost" href={resolve('/')}>Open game</a>
+			<a class="btn ghost" href={resolve('/play')}>Open game</a>
 			{#if studioSession.userId}
 				<span class="badge"><Icon name="user" size={12} />{studioSession.userName ?? 'Signed in'}</span>
 			{:else if studioSession.ready}
