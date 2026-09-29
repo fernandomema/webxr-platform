@@ -1,4 +1,5 @@
 import type { Slot, SlotTree, Vec3 } from '$lib/ecs/types';
+import { migrateSlotTree } from '$lib/assets/ref';
 
 export function serializeSlotTree(tree: SlotTree): string {
 	return JSON.stringify(tree, null, 2);
@@ -49,7 +50,7 @@ export function parseSlotTreeJSON(text: string): { tree: SlotTree } | { error: s
 	const ids = new Set(tree.map((slot) => slot.id));
 	if (ids.size !== tree.length) return { error: 'Duplicate slot ids — every slot needs a unique id.' };
 
-	return { tree };
+	return { tree: migrateSlotTree(tree) };
 }
 
 function isVec3(value: unknown): value is Vec3 {

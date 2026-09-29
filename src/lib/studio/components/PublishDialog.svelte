@@ -90,7 +90,9 @@
 			{#if error}<p class="error" role="alert">{error}</p>{/if}
 			<div class="actions">
 				<button class="btn" onclick={onclose}>Cancel</button>
-				<button class="btn primary" disabled={publishing || loading || (mode === 'revision' && !target)} onclick={publish}>{publishing ? 'Publishing…' : 'Publish'}</button>
+				<button class="btn primary" disabled={publishing || loading || (mode === 'revision' && !target)} onclick={publish}>
+					{project.assetProgress ? `Uploading models ${project.assetProgress.done + 1}/${project.assetProgress.total}…` : publishing ? 'Publishing…' : 'Publish'}
+				</button>
 			</div>
 		{/if}
 	</div>

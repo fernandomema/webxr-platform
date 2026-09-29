@@ -2,6 +2,8 @@ import { createSlot, type Slot, type SlotTree } from '$lib/ecs/types';
 import type { InventoryAdapterId, InventoryItem } from '$lib/inventory/types';
 import type { HostedWorldVisibility } from '$lib/worldVisibility';
 import type { WorldPackage, WorldSource } from './types';
+import { ASSET_LIMITS } from '$lib/assets/manifest';
+import { collectAssetIds, isAssetId, isBuiltinMeshId } from '$lib/assets/ref';
 
 export const MAX_WORLD_BYTES = 1_500_000;
 export const MAX_SHARED_SCENE_BYTES = 7_000_000;
@@ -23,6 +25,7 @@ export function validateWorldScene(value: unknown): asserts value is SlotTree {
 			!Array.isArray(slot.scale) || slot.scale.length !== 3) throw new Error('Invalid world slot');
 		ids.add(slot.id);
 	}
+	validateMeshRefs(value as SlotTree);
 	for (const slot of value as SlotTree) {
 		if (slot.parentId !== null && !ids.has(slot.parentId)) throw new Error('World has a missing parent slot');
 		let parentId = slot.parentId;
@@ -35,6 +38,24 @@ export function validateWorldScene(value: unknown): asserts value is SlotTree {
 	}
 }
 
+/**
+ * A meshRef may still be a legacy string (it is upgraded on read), but never an
+ * arbitrary URL for an asset, and a world may only reference a bounded number of models.
+ */
+function validateMeshRefs(scene: SlotTree): void {
+	for (const slot of scene) {
+		for (const component of slot.components as unknown as Array<{ type?: string; meshRef?: unknown }>) {
+			if (component?.type !== 'meshRenderer') continue;
+			const ref = component.meshRef;
+			if (typeof ref === 'string') continue; // legacy form; unknown strings render as a box
+			const object = ref as { kind?: unknown; id?: unknown; assetId?: unknown } | null;
+			const valid = object && ((object.kind === 'builtin' && isBuiltinMeshId(object.id)) || (object.kind === 'asset' && isAssetId(object.assetId)));
+			if (!valid) throw new Error('Invalid mesh reference');
+		}
+	}
+	if (collectAssetIds(scene).size > ASSET_LIMITS.maxAssetsPerWorld) throw new Error('World uses too many models');
+}
+
 export function worldFromInventory(item: InventoryItem, adapterId: InventoryAdapterId, ownerId: string | null): WorldPackage {
 	if (item.kind !== 'world') throw new Error('This inventory item is not a world');
 	validateWorldScene(item.slotData);
@@ -43,7 +64,7 @@ export function worldFromInventory(item: InventoryItem, adapterId: InventoryAdap
 		name: item.name,
 		scene: copyScene(item.slotData),
 		defaultVisibility: 'private',
-		source: { kind: 'inventory', adapterId, itemId: item.id, ownerId, worldLineageId: item.worldLineageId, revisionNumber: item.revisionNumber }
+		source: { kind: 'inventory', adapterId, itemId: item.id, ownerId, worldLineageId: item.worldLineageId, folderId: item.folderId, revisionNumber: item.revisionNumber }
 	};
 }
 
@@ -54,7 +75,7 @@ export function createWorldOrb(world: WorldPackage, position: Slot['position']):
 		position,
 		scale: [0.24, 0.24, 0.24],
 		components: [
-			{ type: 'meshRenderer', meshRef: 'sphere', color: '#7c3aed' },
+			{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'sphere' }, color: '#7c3aed' },
 			{ type: 'collider', shape: 'sphere' },
 			{ type: 'worldPortal', world: JSON.parse(JSON.stringify(world)) as WorldPackage }
 		]

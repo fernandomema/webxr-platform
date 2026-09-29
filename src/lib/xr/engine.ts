@@ -10,12 +10,17 @@ import {
 	WebXRState,
 	WebXRMotionControllerManager,
 	PointerEventTypes,
-	WebXREnterExitUIButton,
-	type AbstractMesh
+	type AbstractMesh,
+	type WebXRDefaultExperience
 } from '@babylonjs/core';
 import lobbyTemplate from './templates/lobby.json';
 import type { SlotTree } from '$lib/ecs/types';
 import { instantiate } from '$lib/ecs/serialize';
+import { isBuiltinMesh, migrateSlotTree } from '$lib/assets/ref';
+import type { AssetResolver } from '$lib/assets/resolve';
+import { CloudResolver } from '$lib/assets/cloud';
+import { getLocalAssetStore } from '$lib/assets/store';
+import { ModelLibrary } from './modelLibrary';
 import { SceneGraph } from './sceneGraph';
 import { GrabSystem } from './interaction/grabSystem';
 import { EquipmentSystem } from './interaction/equipmentSystem';
@@ -35,7 +40,7 @@ import { GuestSync } from './net/guestSync';
 import { ProximityVoice } from './net/voice';
 import { parseIceServers } from './net/peerConnection';
 import { authClient } from '$lib/auth-client';
-import { gameState } from './gameState';
+import { gameState, type LoadedWorld } from './gameState';
 import type { HostedWorldVisibility } from '$lib/worldVisibility';
 import type { PlayerInfo } from './net/protocol';
 import { PUBLIC_STUN_URLS } from '$env/static/public';
@@ -47,11 +52,21 @@ import { getInventoryAdapter } from '$lib/inventory/registry';
 import { getInventoryContext } from './gameState';
 
 export interface MountedGame {
+	xrSupported: boolean;
+	enterVR(): Promise<void>;
 	dispose(): void;
 }
 
+export interface MountGameOptions {
+	onXRStateChange?: (state: 'in-xr' | 'not-in-xr') => void;
+}
+
 /** Boots the whole game (the "juego base" — works with zero login, zero network). */
-export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: string): Promise<MountedGame> {
+export async function mountGame(
+	canvas: HTMLCanvasElement,
+	initialRoomCode?: string,
+	options: MountGameOptions = {}
+): Promise<MountedGame> {
 	// Babylon 9 no longer creates its audio engine by default; without it every Sound (audio players,
 	// generated impact sounds) has no backend and throws on use.
 	const engine = new Engine(canvas, true, { audioEngine: true });
@@ -70,7 +85,13 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 
 	let hostAuthority: HostAuthority | null = null;
 	let guestSync: GuestSync | null = null;
+	// Models are found on this device first; the cloud and the session host are added to this list as they become available.
+	const assetResolvers: AssetResolver[] = [new CloudResolver()];
+	const models = new ModelLibrary(scene, { store: getLocalAssetStore(), getResolvers: () => assetResolvers });
+	let viewerCamera: () => { globalPosition: Vector3 } = () => desktopCamera;
 	const sceneGraph = new SceneGraph(scene, {
+		models,
+		getViewerPosition: () => viewerCamera().globalPosition,
 		onMediaControl: (slotId, action) => {
 			// Apply immediately on the local client so a click also unlocks
 			// browser audio/video policies; the host remains authoritative.
@@ -115,35 +136,46 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 	});
 	sceneGraph.load(lobbyTemplate as SlotTree);
 
-	const createXRButton = (label: string, sessionMode: XRSessionMode, referenceSpaceType: XRReferenceSpaceType) => {
-		const button = document.createElement('button');
-		button.textContent = label;
-		button.style.margin = '6px';
-		button.style.padding = '10px 14px';
-		button.style.border = '0';
-		button.style.borderRadius = '8px';
-		button.style.background = '#2563eb';
-		button.style.color = 'white';
-		button.style.font = '600 14px system-ui, sans-serif';
-		return new WebXREnterExitUIButton(button, sessionMode, referenceSpaceType);
-	};
-	const xrButtons = [createXRButton('Enter VR', 'immersive-vr', 'local-floor')];
-
 	const floorMesh = sceneGraph.getLive('floor')?.node as AbstractMesh | undefined;
 	// Controller profiles + models (Meta/Oculus Touch) are served from /static/xr-input-profiles instead of
 	// Babylon's default of immersive-web.github.io: a headset on a LAN without a route to GitHub Pages
 	// never gets an answer (the request hangs rather than fails), and no motion controller would ever
 	// initialise. A controller not in the local set falls back to Babylon's built-in profiles.
 	WebXRMotionControllerManager.BaseRepositoryUrl = '/xr-input-profiles';
-	const xr = await scene.createDefaultXRExperienceAsync({
-		floorMeshes: floorMesh ? [floorMesh] : [],
-		// Babylon's pointer-selection feature defaults to ONE "attached"
-		// controller at a time (switching between them), which made only one
-		// laser actually pick/grab at once — enable both simultaneously.
-		pointerSelectionOptions: { enablePointerSelectionOnAllControllers: true },
-		uiOptions: { customButtons: xrButtons }
+	const xrSystem = (navigator as Navigator & { xr?: XRSystem }).xr;
+	let xr: WebXRDefaultExperience | null = null;
+	let xrSupported = false;
+	if (xrSystem) {
+		try {
+			xrSupported = await xrSystem.isSessionSupported('immersive-vr');
+		} catch (error) {
+			console.warn('[engine] WebXR support check failed; using desktop mode', error);
+		}
+	}
+	if (xrSupported) {
+		try {
+			xr = await scene.createDefaultXRExperienceAsync({
+				floorMeshes: floorMesh ? [floorMesh] : [],
+				// Babylon's pointer-selection feature defaults to ONE "attached"
+				// controller at a time (switching between them), which made only one
+				// laser actually pick/grab at once — enable both simultaneously.
+				pointerSelectionOptions: { enablePointerSelectionOnAllControllers: true },
+				// The launch button is rendered by the page overlay, not Babylon's UI.
+				disableDefaultUI: true
+			});
+			if (!xr.baseExperience || !xr.input || !xr.renderTarget) xr = null;
+		} catch (error) {
+			console.warn('[engine] WebXR initialization failed; using desktop mode', error);
+			xr = null;
+		}
+		xrSupported = xr !== null;
+	}
+	if (xr) xr.baseExperience.onStateChangedObservable.add((state) => {
+		if (state === WebXRState.IN_XR) options.onXRStateChange?.('in-xr');
+		else if (state === WebXRState.NOT_IN_XR) options.onXRStateChange?.('not-in-xr');
 	});
-	const getActiveCamera = () => (xr.baseExperience.state === WebXRState.IN_XR ? xr.baseExperience.camera : desktopCamera);
+	const getActiveCamera = () => (xr?.baseExperience.state === WebXRState.IN_XR ? xr.baseExperience.camera : desktopCamera);
+	viewerCamera = getActiveCamera;
 
 	loadSettings();
 	const grabSystem = new GrabSystem(scene, sceneGraph);
@@ -162,16 +194,20 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 	// Same "grip if present, else pointer" node pointerController.ts already
 	// uses as each hand/controller's interaction point — reused here so a
 	// pressable button reacts identically to hand-tracking and controllers.
-	new PressableButtonSystem(scene, sceneGraph, () => xr.input.controllers.map((c) => c.grip ?? c.pointer));
-	const locomotion = setupLocomotion(xr, floorMesh ? [floorMesh] : []);
-	function refreshTeleportFloors(): void {
-		locomotion.updateFloorMeshes(sceneGraph.allSlots()
-			.filter((entry) => !entry.system && entry.slot.components.some((component) => component.type === 'meshRenderer' && component.meshRef === 'ground'))
-			.map((entry) => entry.node as AbstractMesh));
+	let locomotion: ReturnType<typeof setupLocomotion> | null = null;
+	let refreshTeleportFloors = () => {};
+	if (xr) {
+		new PressableButtonSystem(scene, sceneGraph, () => xr.input.controllers.map((c) => c.grip ?? c.pointer));
+		locomotion = setupLocomotion(xr, floorMesh ? [floorMesh] : []);
+		refreshTeleportFloors = () => {
+			locomotion?.updateFloorMeshes(sceneGraph.allSlots()
+				.filter((entry) => !entry.system && entry.slot.components.some((component) => component.type === 'meshRenderer' && isBuiltinMesh(component.meshRef, 'ground')))
+				.map((entry) => entry.node as AbstractMesh));
+		};
+		setupRotationController(scene, xr);
+		setupMovementController(scene, xr);
+		setupHandControllerSwitch(xr);
 	}
-	setupRotationController(scene, xr);
-	setupMovementController(scene, xr);
-	setupHandControllerSwitch(xr);
 	// Registered after GrabSystem (so any two-point grab's per-frame transform
 	// write, GrabSystem.update() — also on this observable — has already run
 	// before a codeBlock's tick() reads/corrects the transform) but AFTER
@@ -215,6 +251,7 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 		gameState.roomCode = null;
 		gameState.worldVisibility = null;
 		gameState.sessionStartedAt = null;
+		gameState.loadedWorld = null;
 		gameState.role = 'solo';
 	}
 
@@ -231,8 +268,9 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 		resetSessionState();
 	}
 
-	async function launchScene(name: string, snapshot: SlotTree, visibility: HostedWorldVisibility | 'solo'): Promise<void> {
+	async function launchScene(name: string, snapshot: SlotTree, visibility: HostedWorldVisibility | 'solo', loaded: LoadedWorld | null = null): Promise<void> {
 		validateWorldScene(snapshot);
+		snapshot = migrateSlotTree(snapshot);
 		if (visibility === 'friends' || visibility === 'friends-plus') throw new Error('Friend-only access is not available yet');
 		if (visibility !== 'solo' && visibility !== 'private' && !gameState.userId) {
 			throw new Error('Sign in to host a public session');
@@ -258,6 +296,7 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 		try {
 			await leaveCurrentSession();
 			didLeave = true;
+			gameState.loadedWorld = loaded;
 			sceneGraph.reconcile(copyScene(snapshot));
 			refreshTeleportFloors();
 			if (visibility === 'solo') { refreshWorldsTab(); return; }
@@ -268,7 +307,7 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 			gameState.roomCode = roomCode;
 			gameState.role = 'host';
 			hostAuthority = new HostAuthority(
-				scene, xr, sceneGraph, grabSystem, equipment, roomCode, iceServers,
+				scene, xr, desktopCamera, sceneGraph, grabSystem, equipment, roomCode, iceServers,
 				{ playerId: localPlayerId, displayName: gameState.userName ?? 'Host', role: 'host' } satisfies PlayerInfo,
 				{ localTrack: track, onRemoteStream: (guestId, stream, targetNode) => voice.addPeer(guestId, stream, targetNode) }
 			);
@@ -287,7 +326,7 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 	}
 
 	async function hostCurrentWorld(visibility: HostedWorldVisibility): Promise<void> {
-		await launchScene(gameState.worldName ?? 'My Lobby', sceneGraph.serialize(), visibility);
+		await launchScene(gameState.worldName ?? 'My Lobby', sceneGraph.serialize(), visibility, gameState.loadedWorld);
 	}
 
 	async function stopHostingWorld(): Promise<void> {
@@ -298,7 +337,12 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 
 	async function launchWorldPackage(world: WorldPackage, visibility: HostedWorldVisibility | 'solo'): Promise<void> {
 		validateWorldPackage(world);
-		await launchScene(world.name, world.scene, visibility);
+		for (const asset of world.assets ?? []) models.provideBounds(asset.assetId, asset.bounds);
+		const source = world.source;
+		const loaded: LoadedWorld | null = source?.kind === 'inventory' && source.worldLineageId
+			? { adapterId: source.adapterId, worldLineageId: source.worldLineageId, folderId: source.folderId ?? null, name: world.name, revisionNumber: source.revisionNumber ?? null }
+			: null;
+		await launchScene(world.name, world.scene, visibility, loaded);
 	}
 
 	function spawnWorldOrbPackage(world: WorldPackage): void {
@@ -320,11 +364,13 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 		gameState.roomCode = roomCode;
 		gameState.worldVisibility = null;
 		gameState.sessionStartedAt = null;
+		gameState.loadedWorld = null;
 		gameState.role = 'guest';
 
 		guestSync = new GuestSync(
 			scene,
 			xr,
+			desktopCamera,
 			sceneGraph,
 			grabSystem,
 			equipment,
@@ -387,8 +433,8 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 			const world = worldFromInventory(item, adapterId, gameState.userId);
 			await launchWorldPackage(world, world.defaultVisibility);
 		},
-		onLocomotionSettingsChanged: () => locomotion.applySettings(),
-		onExitVr: () => xr.baseExperience.exitXRAsync(),
+		onLocomotionSettingsChanged: async () => { await locomotion?.applySettings(); },
+		onExitVr: async () => { await xr?.baseExperience.exitXRAsync(); },
 		onToggleInspector: () => inspector.root.setEnabled(!inspector.root.isEnabled())
 	});
 	refreshWorldsTab = dash.refreshWorldsTab;
@@ -402,11 +448,11 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 		await adapter.saveItem(getInventoryContext(), folderId, world.name, copyScene(world.scene), 'world');
 	});
 	scene.onPointerObservable.add((event) => {
-		if (event.type !== PointerEventTypes.POINTERPICK || xr.baseExperience.state === WebXRState.IN_XR) return;
+		if (event.type !== PointerEventTypes.POINTERPICK || xr?.baseExperience.state === WebXRState.IN_XR) return;
 		const slotId = sceneGraph.getSlotIdForNode(event.pickInfo?.pickedMesh);
 		if (slotId && sceneGraph.getLive(slotId)?.slot.components.some((component) => component.type === 'worldPortal')) worldPortalMenu.open(slotId);
 	});
-	setupPointerAndGrabControllers(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, {
+	if (xr) setupPointerAndGrabControllers(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, {
 		onWorldPortal: (slotId) => worldPortalMenu.open(slotId),
 		onUse: (slotId, hand, phase, value) => {
 			// A guest asks the host, which runs the object's actions once; solo/host run them here.
@@ -426,8 +472,8 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 			else guestSync?.requestRelease(grabberId, slotId);
 		}
 	});
-	setupPanelToggle(scene, xr, dash.root, getActiveCamera, { keyboardKey: 'm', buttonIdPattern: /x-button|menu/i });
-	setupPanelToggle(scene, xr, inspector.root, getActiveCamera, { keyboardKey: 'i', buttonIdPattern: /a-button/i });
+	if (xr) setupPanelToggle(scene, xr, dash.root, getActiveCamera, { keyboardKey: 'm', buttonIdPattern: /x-button|menu/i });
+	if (xr) setupPanelToggle(scene, xr, inspector.root, getActiveCamera, { keyboardKey: 'i', buttonIdPattern: /a-button/i });
 	const radialNetwork = {
 		onEquip: (hand: 'left' | 'right', slotId: string) => {
 			if (gameState.role === 'guest') guestSync?.requestEquip(hand, slotId);
@@ -445,8 +491,10 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 			}
 		}
 	};
-	setupRadialMenuForHand(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, 'left', /y-button/i, radialNetwork);
-	setupRadialMenuForHand(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, 'right', /b-button/i, radialNetwork);
+	if (xr) {
+		setupRadialMenuForHand(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, 'left', /y-button/i, radialNetwork);
+		setupRadialMenuForHand(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, 'right', /b-button/i, radialNetwork);
+	}
 
 	scene.onBeforeRenderObservable.add(() => {
 		const camera = getActiveCamera();
@@ -480,6 +528,11 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 	window.addEventListener('resize', onResize);
 
 	return {
+		xrSupported,
+		enterVR: async () => {
+			if (!xr) return;
+			await xr.baseExperience.enterXRAsync('immersive-vr', 'local-floor', xr.renderTarget);
+		},
 		dispose() {
 			window.removeEventListener('resize', onResize);
 			hostAuthority?.dispose();
@@ -487,6 +540,7 @@ export async function mountGame(canvas: HTMLCanvasElement, initialRoomCode?: str
 			worldPortalMenu.dispose();
 			voice.dispose();
 			sceneGraph.dispose();
+			models.dispose();
 			engine.dispose();
 		}
 	};

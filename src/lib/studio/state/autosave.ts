@@ -1,4 +1,5 @@
 import type { SlotTree } from '$lib/ecs/types';
+import { migrateSlotTree } from '$lib/assets/ref';
 
 export interface Draft {
 	key: string;
@@ -34,6 +35,10 @@ async function run<T>(mode: IDBTransactionMode, action: (store: IDBObjectStore) 
 	}
 }
 
-export const loadDraft = (key: string) => run<Draft | undefined>('readonly', (store) => store.get(key));
+export const loadDraft = async (key: string): Promise<Draft | undefined> => {
+	const draft = await run<Draft | undefined>('readonly', (store) => store.get(key));
+	// Drafts written before meshRef became a `{ kind }` reference are upgraded on read.
+	return draft ? { ...draft, tree: migrateSlotTree(draft.tree) } : draft;
+};
 export const saveDraft = (draft: Draft) => run('readwrite', (store) => store.put(draft));
 export const deleteDraft = (key: string) => run('readwrite', (store) => store.delete(key));

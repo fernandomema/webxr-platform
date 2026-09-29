@@ -78,11 +78,11 @@ test('operations never mutate their input', () => {
 
 test('setComponentField sets and clears optional keys', () => {
   const { tree, a } = sampleTree();
-  let next = ops.addComponent(tree, a, { type: 'meshRenderer', meshRef: 'box', color: '#fff' });
+  let next = ops.addComponent(tree, a, { type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'box' }, color: '#fff' });
   next = ops.setComponentField(next, a, 0, 'color', undefined);
   assert.equal('color' in ops.getSlot(next, a).components[0], false);
-  next = ops.setComponentField(next, a, 0, 'meshRef', 'sphere');
-  assert.equal(ops.getSlot(next, a).components[0].meshRef, 'sphere');
+  next = ops.setComponentField(next, a, 0, 'meshRef', { kind: 'builtin', id: 'sphere' });
+  assert.deepEqual(ops.getSlot(next, a).components[0].meshRef, { kind: 'builtin', id: 'sphere' });
 });
 
 test('euler <-> quaternion round trips', () => {

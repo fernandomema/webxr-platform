@@ -2,16 +2,18 @@
 	import { onDestroy, onMount } from 'svelte';
 	import EditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 	import TsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
+	import JsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
 	import { lintCode } from './lint/code';
 	import 'monaco-editor/min/vs/editor/editor.main.css';
 
 	interface CodeEditorProps {
 		value: string;
+		language?: 'javascript' | 'json';
 		onChange?: (value: string) => void;
 		onFormatReady?: (format: () => void) => void;
 	}
 
-	let { value = '', onChange = () => {}, onFormatReady = () => {} }: CodeEditorProps = $props();
+	let { value = '', language = 'javascript', onChange = () => {}, onFormatReady = () => {} }: CodeEditorProps = $props();
 	let host: HTMLDivElement;
 	let editor: import('monaco-editor').editor.IStandaloneCodeEditor | undefined;
 	let isReady = $state(false);
@@ -70,23 +72,25 @@
 		const monaco = await import('monaco-editor');
 		(globalThis as typeof globalThis & { MonacoEnvironment?: unknown }).MonacoEnvironment = {
 			getWorker(_workerId: string, label: string) {
+				if (label === 'json') return new JsonWorker();
 				return label === 'typescript' || label === 'javascript' ? new TsWorker() : new EditorWorker();
 			}
 		};
 
-		monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
+		const isJs = language === 'javascript';
+		if (isJs) monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
 			target: monaco.languages.typescript.ScriptTarget.ES2020,
 			allowNonTsExtensions: true,
 			checkJs: false
 		});
 		// CodeBlocks contain a function body, not a complete JS module. Monaco still
 		// supplies tokenization/completions; custom Slot-aware markers provide lint.
-		monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+		if (isJs) monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
 			noSemanticValidation: true,
 			noSyntaxValidation: true
 		});
 
-		const completionDisposable = monaco.languages.registerCompletionItemProvider('javascript', {
+		const completionDisposable = isJs ? monaco.languages.registerCompletionItemProvider('javascript', {
 			triggerCharacters: ['.', '('],
 			provideCompletionItems(model, position) {
 				const word = model.getWordUntilPosition(position);
@@ -117,20 +121,20 @@
 				];
 				return { suggestions };
 			}
-		});
+		}) : undefined;
 
-		const hoverDisposable = monaco.languages.registerHoverProvider('javascript', {
+		const hoverDisposable = isJs ? monaco.languages.registerHoverProvider('javascript', {
 			provideHover(model, position) {
 				const token = model.getWordAtPosition(position);
 				if (!token) return null;
 				const match = completionEntries.find((entry) => entry.label.endsWith(token.word) || entry.label === token.word);
 				return match ? { contents: [{ value: `**${match.label}**` }, { value: match.documentation }] } : null;
 			}
-		});
+		}) : undefined;
 
 		editor = monaco.editor.create(host, {
 			value,
-			language: 'javascript',
+			language,
 			theme: 'vs-dark',
 			automaticLayout: true,
 			minimap: { enabled: true, scale: 1 },
@@ -156,7 +160,7 @@
 
 		const model = editor.getModel();
 		const updateMarkers = () => {
-			if (!model) return;
+			if (!model || !isJs) return;
 			const markers = lintCode(model.getValue()).map((diagnostic) => ({
 				severity: diagnostic.severity === 'error' ? monaco.MarkerSeverity.Error : diagnostic.severity === 'warning' ? monaco.MarkerSeverity.Warning : monaco.MarkerSeverity.Info,
 				message: diagnostic.message,
@@ -183,8 +187,8 @@
 
 		disposeEditor = () => {
 			changeDisposable?.dispose();
-			completionDisposable.dispose();
-			hoverDisposable.dispose();
+			completionDisposable?.dispose();
+			hoverDisposable?.dispose();
 			if (model) {
 				monaco.editor.setModelMarkers(model, 'studio-codeblock', []);
 				model.dispose();
@@ -196,6 +200,9 @@
 	onDestroy(() => disposeEditor?.());
 
 	function formatCode(source: string): string {
+		if (language === 'json') {
+			try { return JSON.stringify(JSON.parse(source), null, 2); } catch { return source; }
+		}
 		let depth = 0;
 		return source.split('\n').map((line) => {
 			const trimmed = line.trim();
@@ -222,7 +229,7 @@
 	}
 </script>
 
-<div class="monaco-editor-root" class:ready={isReady} bind:this={host} aria-label="Monaco JavaScript editor">
+<div class="monaco-editor-root" class:ready={isReady} bind:this={host} aria-label={language === 'json' ? 'Monaco JSON editor' : 'Monaco JavaScript editor'}>
 	{#if !isReady}<div class="editor-loading"><span class="spinner"></span>Starting Monaco language services…</div>{/if}
 </div>
 

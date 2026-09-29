@@ -24,8 +24,8 @@
 	let { advanced, onpick, onclose }: Props = $props();
 
 	const PRESETS: ObjectPreset[] = [
-		{ id: 'cube', label: 'Cube', icon: 'cube', name: 'Cube', position: [0, 0.5, 0], components: [{ type: 'meshRenderer', meshRef: 'box', color: '#8b7cf6' }, { type: 'collider', shape: 'box' }, { type: 'grabbable', scalable: true }] },
-		{ id: 'sphere', label: 'Sphere', icon: 'cube', name: 'Sphere', position: [0, 0.5, 0], components: [{ type: 'meshRenderer', meshRef: 'sphere', color: '#4fd1c5' }, { type: 'collider', shape: 'sphere' }, { type: 'grabbable', scalable: true }] },
+		{ id: 'cube', label: 'Cube', icon: 'cube', name: 'Cube', position: [0, 0.5, 0], components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'box' }, color: '#8b7cf6' }, { type: 'collider', shape: 'box' }, { type: 'grabbable', scalable: true }] },
+		{ id: 'sphere', label: 'Sphere', icon: 'cube', name: 'Sphere', position: [0, 0.5, 0], components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'sphere' }, color: '#4fd1c5' }, { type: 'collider', shape: 'sphere' }, { type: 'grabbable', scalable: true }] },
 		{ id: 'text', label: 'Text label', icon: 'layers', name: 'Text', position: [0, 1.5, 0], components: [{ type: 'textDisplay', title: 'Hello', lines: ['Edit this text'] }] },
 		{ id: 'group', label: 'Empty group', icon: 'folder', name: 'Group', position: [0, 0, 0], components: [] },
 		{ id: 'logic', label: 'Logic node', icon: 'code', name: 'Logic node', position: [0, 0, 0], components: [], advanced: true }

@@ -1,4 +1,4 @@
-import { TransformNode, Vector3, Quaternion, type Scene, type WebXRDefaultExperience } from '@babylonjs/core';
+import { TransformNode, Vector3, Quaternion, type Scene, type UniversalCamera, type WebXRDefaultExperience } from '@babylonjs/core';
 import type { SceneGraph } from '../sceneGraph';
 import type { GrabSystem } from '../interaction/grabSystem';
 import type { EquipmentSystem } from '../interaction/equipmentSystem';
@@ -8,6 +8,7 @@ import { PeerLink } from './peerConnection';
 import type { PlayerInfo, SlotTransform, WorldStateMessage, WorldSyncMessage } from './protocol';
 import { createGhostRig, type GhostRig, type TransformPose } from '../avatar/defaultAvatar';
 import { validateWorldPackage, MAX_SHARED_SCENE_BYTES } from '$lib/worlds/package';
+import { migrateSlotTree } from '$lib/assets/ref';
 
 const PRESENCE_INTERVAL_MS = 50;
 const STATE_INTERVAL_MS = 50;
@@ -40,7 +41,8 @@ export class HostAuthority {
 
 	constructor(
 		private scene: Scene,
-		private xr: WebXRDefaultExperience,
+		private xr: WebXRDefaultExperience | null,
+		private desktopCamera: UniversalCamera,
 		private sceneGraph: SceneGraph,
 		private grabSystem: GrabSystem,
 		private equipment: EquipmentSystem,
@@ -70,13 +72,13 @@ export class HostAuthority {
 	}
 
 	private getLocalPresence(): Extract<WorldStateMessage, { kind: 'presence' }> {
-		const camera = this.xr.baseExperience.camera;
+		const camera = this.xr?.baseExperience.camera ?? this.desktopCamera;
 		const head: TransformPose = {
 			position: camera.globalPosition.asArray() as TransformPose['position'],
 			rotation: (camera.rotationQuaternion?.asArray() ?? [0, 0, 0, 1]) as TransformPose['rotation']
 		};
 		const hands: Partial<Record<'left' | 'right', TransformPose>> = {};
-		for (const controller of this.xr.input.controllers) {
+		for (const controller of this.xr?.input.controllers ?? []) {
 			if (controller.inputSource.handedness === 'none') continue;
 			const node = controller.grip ?? controller.pointer;
 			hands[controller.inputSource.handedness] = {
@@ -256,14 +258,16 @@ export class HostAuthority {
 				this.grabSystem.release(`${guestId}:${msg.grabberId}`);
 				this.broadcastSnapshot();
 				break;
-			case 'spawn-request':
+			case 'spawn-request': {
+				const spawned = migrateSlotTree([msg.slot])[0];
 				try {
-					for (const portal of msg.slot.components.filter((component) => component.type === 'worldPortal')) validateWorldPackage(portal.world);
-					if (JSON.stringify([...this.sceneGraph.serialize(), msg.slot]).length > MAX_SHARED_SCENE_BYTES) throw new Error('Shared scene is too large');
+					for (const portal of spawned.components.filter((component) => component.type === 'worldPortal')) validateWorldPackage(portal.world);
+					if (JSON.stringify([...this.sceneGraph.serialize(), spawned]).length > MAX_SHARED_SCENE_BYTES) throw new Error('Shared scene is too large');
 				} catch { this.sendSnapshotToGuest(guestId); break; }
-				if (!this.sceneGraph.getLive(msg.slot.id)) this.sceneGraph.addSlot(msg.slot);
+				if (!this.sceneGraph.getLive(spawned.id)) this.sceneGraph.addSlot(spawned);
 				this.broadcastSnapshot();
 				break;
+			}
 			case 'delete-request':
 				if (this.sceneGraph.getLive(msg.slotId)) this.sceneGraph.removeSlot(msg.slotId);
 				this.broadcastSnapshot();

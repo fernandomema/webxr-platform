@@ -1,4 +1,5 @@
 import {
+	Mesh,
 	MeshBuilder,
 	StandardMaterial,
 	Color3,
@@ -10,6 +11,8 @@ import {
 } from '@babylonjs/core';
 import type { MediaControlAction, Slot, SlotTree, Vec3 } from '$lib/ecs/types';
 import { findComponent, isGrabbable } from '$lib/ecs/types';
+import { meshRefKey, normalizeMeshRef, type AssetId, type MeshRef } from '$lib/assets/ref';
+import type { ModelInstance, ModelLease, ModelLibrary, ModelState } from './modelLibrary';
 import { setupMirrorSurface } from './specialSurfaces';
 import { setupAudioPlayerSurface, setupVideoPlayerSurface, type MediaRuntimeBinding } from './mediaSurfaces';
 import { setupParticleBurst } from './particleEffects';
@@ -23,6 +26,16 @@ interface LiveSlot {
 	node: TransformNode;
 	/** System nodes (e.g. the Dash/Inspector panels) are grabbable like any Slot but excluded from serialize(). */
 	system?: boolean;
+	/** Present for a `meshRenderer` that points at a model asset: the node is an empty Mesh with an invisible pickable proxy, a placeholder, and (once loaded) the model. */
+	model?: {
+		assetId: AssetId;
+		lease: ModelLease;
+		proxy: Mesh;
+		placeholder: Mesh;
+		instance?: ModelInstance;
+	};
+	/** Load state of this slot's model, for the inspector and the network layer. */
+	assetState?: ModelState;
 	runtime?: {
 		dispose: () => void;
 		sync?: (slot: Slot) => void;
@@ -50,6 +63,12 @@ export interface SceneGraphOptions {
 	isHost?: () => boolean;
 	/** codeBlock's `world.getPlayer(grabberId)` — resolves a GrabSystem grabberId to a stable player id + display name. */
 	resolvePlayer?: (grabberId: string) => { id: string; name: string };
+	/** Where model bytes come from. Without it, a slot that points at a model stays a placeholder. */
+	models?: ModelLibrary;
+	/** The viewer's position, to load nearby models first. */
+	getViewerPosition?: () => Vector3 | null;
+	/** A slot's model changed state (queued, loading, ready, missing, error). */
+	onAssetStateChanged?: (slotId: string, state: ModelState) => void;
 }
 
 /** Minimal surface SceneGraph needs from GrabSystem — set post-construction (GrabSystem is built AFTER SceneGraph and itself depends on it), never imported directly to avoid a circular dependency. */
@@ -131,6 +150,8 @@ export class SceneGraph {
 			entry.node.dispose();
 		}
 		this.live.clear();
+		for (const material of Object.values(this.placeholderMaterials)) material?.dispose();
+		this.placeholderMaterials = {};
 	}
 
 	/** One runtime failing to clean up (e.g. a media player with no audio engine) must not stop the rest of the scene from being torn down. */
@@ -140,6 +161,15 @@ export class SceneGraph {
 		} catch (err) {
 			console.warn(`[sceneGraph] runtime dispose failed for ${entry.slot.id}`, err);
 		}
+		if (entry.model) {
+			try {
+				entry.model.instance?.dispose();
+				entry.model.lease.release();
+			} catch (err) {
+				console.warn(`[sceneGraph] model release failed for ${entry.slot.id}`, err);
+			}
+			entry.model = undefined;
+		}
 	}
 
 	getLive(slotId: string): LiveSlot | undefined {
@@ -147,8 +177,12 @@ export class SceneGraph {
 	}
 
 	getSlotIdForNode(node: AbstractMesh | TransformNode | null | undefined): string | null {
-		if (!node) return null;
-		return (node.metadata?.slotId as string | undefined) ?? null;
+		// Walk up: a model's real meshes are children of the slot's node.
+		for (let current: { metadata?: { slotId?: string } | null; parent?: unknown } | null | undefined = node; current; current = current.parent as typeof current) {
+			const slotId = current.metadata?.slotId;
+			if (slotId) return slotId;
+		}
+		return null;
 	}
 
 	getChildren(parentId: string | null): LiveSlot[] {
@@ -251,6 +285,10 @@ export class SceneGraph {
 				continue;
 			}
 			if (existing.system) continue;
+			if (this.visualKey(existing.slot) !== this.visualKey(slot)) {
+				this.rebuildSubtree(slot, tree);
+				continue;
+			}
 			existing.slot = slot;
 			existing.runtime?.sync?.(slot);
 			existing.node.position = Vector3.FromArray(slot.position);
@@ -295,8 +333,12 @@ export class SceneGraph {
 
 	private spawnNode(slot: Slot): TransformNode {
 		const mesh = findComponent(slot, 'meshRenderer');
+		const ref = mesh ? normalizeMeshRef(mesh.meshRef) : null;
+		const modelAssetId = ref?.kind === 'asset' ? ref.assetId : null;
 		const node: TransformNode = mesh
-			? this.createMesh(slot.id, mesh.meshRef, mesh.color)
+			? modelAssetId
+				? new Mesh(slot.id, this.scene) // empty: the visible parts are its children (see bindModel)
+				: this.createMesh(slot.id, ref!, mesh.color)
 			: new TransformNode(slot.id, this.scene);
 
 		node.position = Vector3.FromArray(slot.position);
@@ -306,7 +348,9 @@ export class SceneGraph {
 
 		const entry: LiveSlot = { slot, node };
 		this.live.set(slot.id, entry);
-		if (mesh) {
+		if (modelAssetId) this.bindModel(entry, modelAssetId);
+		// Surfaces that draw onto the mesh itself do not apply to a model.
+		if (mesh && !modelAssetId) {
 			const mirror = findComponent(slot, 'mirror');
 			if (mirror) entry.runtime = { dispose: setupMirrorSurface(this.scene, node as AbstractMesh, mirror.resolution) };
 			const video = findComponent(slot, 'videoPlayer');
@@ -401,6 +445,7 @@ export class SceneGraph {
 	/** Applies each codeBlock's tick() (own try/catch inside), integrates generic `velocity` components, and sweeps expired slots — call every frame, on every peer, solo included. Returns how many slots were removed by expiry. */
 	tick(dt: number): number {
 		for (const entry of this.live.values()) entry.runtime?.tick?.(dt);
+		this.updateModelPriorities(dt);
 
 		// Everything below is engine code, not user script, but it now runs
 		// every frame ahead of movement/rotation/grab controllers in the
@@ -527,9 +572,129 @@ export class SceneGraph {
 		entry.slot.scale = entry.node.scaling.asArray() as Slot['scale'];
 	}
 
-	private createMesh(id: string, ref: string, color?: string): AbstractMesh {
+	// --- models ------------------------------------------------------------
+
+	private placeholderMaterials: Partial<Record<'pending' | 'missing' | 'error', StandardMaterial>> = {};
+	private priorityClock = 0;
+
+	private placeholderMaterial(kind: 'pending' | 'missing' | 'error'): StandardMaterial {
+		let material = this.placeholderMaterials[kind];
+		if (!material) {
+			material = new StandardMaterial(`model-placeholder-${kind}`, this.scene);
+			material.emissiveColor = Color3.FromHexString(kind === 'error' ? '#ef4444' : kind === 'missing' ? '#f59e0b' : '#7c6cf6');
+			material.disableLighting = true;
+			material.alpha = 0.35;
+			material.wireframe = false;
+			this.placeholderMaterials[kind] = material;
+		}
+		return material;
+	}
+
+	/**
+	 * A model slot exists, with its transform and logic, from the first frame.
+	 * Until the model arrives it is a translucent box sized from the model's
+	 * bounds; an invisible box of the same size stays in place afterwards so the
+	 * laser, hand grabs and selection always have something simple to hit.
+	 */
+	private bindModel(entry: LiveSlot, assetId: AssetId): void {
+		const root = entry.node as Mesh;
+		const slotId = entry.slot.id;
+		const proxy = MeshBuilder.CreateBox(`${slotId}-hit`, { size: 1 }, this.scene);
+		proxy.parent = root;
+		proxy.visibility = 0; // not drawn, but still visible/pickable to rays
+		proxy.isPickable = true;
+		proxy.metadata = { slotId };
+		const placeholder = MeshBuilder.CreateBox(`${slotId}-placeholder`, { size: 1 }, this.scene);
+		placeholder.parent = root;
+		placeholder.isPickable = false;
+		placeholder.material = this.placeholderMaterial('pending');
+		root.metadata = { ...(root.metadata ?? {}), selectionMesh: proxy };
+
+		const models = this.options.models;
+		if (!models) {
+			entry.assetState = 'missing';
+			placeholder.material = this.placeholderMaterial('missing');
+			return;
+		}
+		const lease = models.acquire(assetId, () => this.syncModel(slotId));
+		entry.model = { assetId, lease, proxy, placeholder };
+		entry.assetState = lease.state;
+		this.updateModelPriority(entry);
+		this.syncModel(slotId);
+	}
+
+	private syncModel(slotId: string): void {
+		const entry = this.live.get(slotId);
+		const model = entry?.model;
+		if (!entry || !model) return;
+		const state = model.lease.state;
+		const extents = model.instance?.extents ?? model.lease.extents;
+		model.proxy.scaling.set(...extents);
+		model.placeholder.scaling.set(...extents);
+
+		if (state === 'ready' && !model.instance) {
+			const instance = model.lease.instantiate(`${slotId}-model`);
+			if (instance) {
+				instance.root.parent = entry.node;
+				for (const mesh of instance.root.getChildMeshes(false)) mesh.metadata = { ...(mesh.metadata ?? {}), slotId };
+				model.instance = instance;
+				model.placeholder.setEnabled(false);
+				model.proxy.scaling.set(...instance.extents);
+			} else {
+				model.placeholder.material = this.placeholderMaterial('error');
+				entry.assetState = 'error';
+				this.options.onAssetStateChanged?.(slotId, 'error');
+				return;
+			}
+		} else if (!model.instance) {
+			model.placeholder.material = this.placeholderMaterial(state === 'error' ? 'error' : state === 'missing' ? 'missing' : 'pending');
+		}
+		if (entry.assetState !== state) {
+			entry.assetState = state;
+			this.options.onAssetStateChanged?.(slotId, state);
+		}
+	}
+
+	/** Models the player is holding or standing near load first. */
+	private updateModelPriority(entry: LiveSlot): void {
+		const model = entry.model;
+		if (!model) return;
+		const viewer = this.options.getViewerPosition?.();
+		let priority = viewer ? -Vector3.Distance(viewer, entry.node.getAbsolutePosition()) : 0;
+		if ((this.grabQuery?.getGrabbersForSlot(entry.slot.id).length ?? 0) > 0 || this.equipQuery?.getHolderOfSlotOrAncestor(entry.slot.id)) priority += 1_000_000;
+		model.lease.setPriority(priority);
+	}
+
+	private updateModelPriorities(dt: number): void {
+		this.priorityClock += dt;
+		if (this.priorityClock < 0.5) return;
+		this.priorityClock = 0;
+		for (const entry of this.live.values()) if (entry.model && entry.model.lease.state !== 'ready') this.updateModelPriority(entry);
+	}
+
+	/** A slot whose mesh changed is rebuilt together with its descendants (their nodes hang off it). */
+	private rebuildSubtree(slot: Slot, tree: SlotTree): void {
+		const byParent = new Map<string | null, Slot[]>();
+		for (const candidate of tree) byParent.set(candidate.parentId, [...(byParent.get(candidate.parentId) ?? []), candidate]);
+		const order: Slot[] = [];
+		const visit = (current: Slot) => {
+			order.push(current);
+			for (const child of byParent.get(current.id) ?? []) visit(child);
+		};
+		visit(slot);
+		this.removeSlot(slot.id);
+		for (const item of order) this.addSlot(item);
+	}
+
+	private visualKey(slot: Slot): string {
+		const mesh = findComponent(slot, 'meshRenderer');
+		return mesh ? meshRefKey(normalizeMeshRef(mesh.meshRef)) : 'none';
+	}
+
+	// Model slots are built by bindModel(); an unknown builtin id still falls back to a box.
+	private createMesh(id: string, ref: MeshRef, color?: string): AbstractMesh {
 		let mesh: AbstractMesh;
-		switch (ref) {
+		switch (ref.kind === 'builtin' ? ref.id : 'box') {
 			case 'ground':
 				mesh = MeshBuilder.CreateGround(id, { width: 20, height: 20 }, this.scene);
 				break;

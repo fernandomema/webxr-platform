@@ -22,7 +22,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "ground",
+				"meshRef": { "kind": "builtin", "id": "ground" },
 				"color": "#4b5563"
 			},
 			{
@@ -84,7 +84,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "box",
+				"meshRef": { "kind": "builtin", "id": "box" },
 				"color": "#f97316"
 			},
 			{
@@ -116,7 +116,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "sphere",
+				"meshRef": { "kind": "builtin", "id": "sphere" },
 				"color": "#22c55e"
 			},
 			{
@@ -148,7 +148,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "plane",
+				"meshRef": { "kind": "builtin", "id": "plane" },
 				"color": "#dbeafe"
 			},
 			{
@@ -184,7 +184,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "plane",
+				"meshRef": { "kind": "builtin", "id": "plane" },
 				"color": "#111827"
 			},
 			{
@@ -224,7 +224,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "box",
+				"meshRef": { "kind": "builtin", "id": "box" },
 				"color": "#7c3aed"
 			},
 			{
@@ -263,7 +263,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "box",
+				"meshRef": { "kind": "builtin", "id": "box" },
 				"color": "#dc2626"
 			},
 			{
@@ -303,7 +303,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "box",
+				"meshRef": { "kind": "builtin", "id": "box" },
 				"color": "#44403c"
 			}
 		]
@@ -331,7 +331,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "box",
+				"meshRef": { "kind": "builtin", "id": "box" },
 				"color": "#92400e"
 			},
 			{
@@ -371,7 +371,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "sphere",
+				"meshRef": { "kind": "builtin", "id": "sphere" },
 				"color": "#374151"
 			}
 		]
@@ -399,7 +399,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "box",
+				"meshRef": { "kind": "builtin", "id": "box" },
 				"color": "#d4d4d8"
 			},
 			{
@@ -439,7 +439,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "sphere",
+				"meshRef": { "kind": "builtin", "id": "sphere" },
 				"color": "#38bdf8"
 			},
 			{
@@ -509,7 +509,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "box",
+				"meshRef": { "kind": "builtin", "id": "box" },
 				"color": "#a16207"
 			},
 			{
@@ -541,7 +541,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "sphere",
+				"meshRef": { "kind": "builtin", "id": "sphere" },
 				"color": "#2563eb"
 			},
 			{
@@ -585,7 +585,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "cylinder",
+				"meshRef": { "kind": "builtin", "id": "cylinder" },
 				"color": "#fefce8"
 			},
 			{
@@ -638,7 +638,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "cylinder",
+				"meshRef": { "kind": "builtin", "id": "cylinder" },
 				"color": "#fefce8"
 			},
 			{
@@ -691,7 +691,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "cylinder",
+				"meshRef": { "kind": "builtin", "id": "cylinder" },
 				"color": "#fefce8"
 			},
 			{
@@ -744,7 +744,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "cylinder",
+				"meshRef": { "kind": "builtin", "id": "cylinder" },
 				"color": "#fefce8"
 			},
 			{
@@ -797,7 +797,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "cylinder",
+				"meshRef": { "kind": "builtin", "id": "cylinder" },
 				"color": "#fefce8"
 			},
 			{
@@ -850,7 +850,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "cylinder",
+				"meshRef": { "kind": "builtin", "id": "cylinder" },
 				"color": "#fefce8"
 			},
 			{
@@ -903,7 +903,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "cylinder",
+				"meshRef": { "kind": "builtin", "id": "cylinder" },
 				"color": "#fefce8"
 			},
 			{
@@ -956,7 +956,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "cylinder",
+				"meshRef": { "kind": "builtin", "id": "cylinder" },
 				"color": "#fefce8"
 			},
 			{
@@ -1009,7 +1009,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "cylinder",
+				"meshRef": { "kind": "builtin", "id": "cylinder" },
 				"color": "#fefce8"
 			},
 			{
@@ -1062,7 +1062,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "cylinder",
+				"meshRef": { "kind": "builtin", "id": "cylinder" },
 				"color": "#fefce8"
 			},
 			{
@@ -1115,7 +1115,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "box",
+				"meshRef": { "kind": "builtin", "id": "box" },
 				"color": "#ef4444"
 			},
 			{
@@ -1162,7 +1162,7 @@
 		"components": [
 			{
 				"type": "meshRenderer",
-				"meshRef": "plane",
+				"meshRef": { "kind": "builtin", "id": "plane" },
 				"color": "#081029"
 			},
 			{
@@ -1259,7 +1259,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "box",
+			"meshRef": { "kind": "builtin", "id": "box" },
 			"color": "#3f2416"
 		},
 		{
@@ -1291,7 +1291,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "box",
+			"meshRef": { "kind": "builtin", "id": "box" },
 			"color": "#14532d"
 		},
 		{
@@ -1323,7 +1323,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "box",
+			"meshRef": { "kind": "builtin", "id": "box" },
 			"color": "#713f12"
 		},
 		{
@@ -1355,7 +1355,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "box",
+			"meshRef": { "kind": "builtin", "id": "box" },
 			"color": "#713f12"
 		},
 		{
@@ -1387,7 +1387,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "box",
+			"meshRef": { "kind": "builtin", "id": "box" },
 			"color": "#713f12"
 		},
 		{
@@ -1419,7 +1419,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "box",
+			"meshRef": { "kind": "builtin", "id": "box" },
 			"color": "#713f12"
 		},
 		{
@@ -1451,7 +1451,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#020617"
 		}
 	]
@@ -1479,7 +1479,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#020617"
 		}
 	]
@@ -1507,7 +1507,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#020617"
 		}
 	]
@@ -1535,7 +1535,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#020617"
 		}
 	]
@@ -1563,7 +1563,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#020617"
 		}
 	]
@@ -1591,7 +1591,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#020617"
 		}
 	]
@@ -1619,7 +1619,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#020617"
 		}
 	]
@@ -1647,7 +1647,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#020617"
 		}
 	]
@@ -1675,7 +1675,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#facc15"
 		},
 		{
@@ -1727,7 +1727,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#2563eb"
 		},
 		{
@@ -1779,7 +1779,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#dc2626"
 		},
 		{
@@ -1831,7 +1831,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#7c3aed"
 		},
 		{
@@ -1883,7 +1883,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#f97316"
 		},
 		{
@@ -1935,7 +1935,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#16a34a"
 		},
 		{
@@ -1987,7 +1987,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#7f1d1d"
 		},
 		{
@@ -2039,7 +2039,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#020617"
 		},
 		{
@@ -2091,7 +2091,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#fef08a"
 		},
 		{
@@ -2143,7 +2143,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#93c5fd"
 		},
 		{
@@ -2195,7 +2195,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#fca5a5"
 		},
 		{
@@ -2247,7 +2247,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#c4b5fd"
 		},
 		{
@@ -2299,7 +2299,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#fdba74"
 		},
 		{
@@ -2351,7 +2351,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#86efac"
 		},
 		{
@@ -2403,7 +2403,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#fecaca"
 		},
 		{
@@ -2455,7 +2455,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "sphere",
+			"meshRef": { "kind": "builtin", "id": "sphere" },
 			"color": "#f8fafc"
 		},
 		{
@@ -2511,7 +2511,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "plane",
+			"meshRef": { "kind": "builtin", "id": "plane" },
 			"color": "#081029"
 		},
 		{
@@ -2562,7 +2562,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "box",
+			"meshRef": { "kind": "builtin", "id": "box" },
 			"color": "#ef4444"
 		},
 		{
@@ -2609,7 +2609,7 @@
 	"components": [
 		{
 			"type": "meshRenderer",
-			"meshRef": "box",
+			"meshRef": { "kind": "builtin", "id": "box" },
 			"color": "#8b5a2b"
 		},
 		{
@@ -2625,149 +2625,6 @@
 			"code": "const MAX_POWER = 6;\nconst MIN_POWER = 0.45;\nconst RETURN_TIME = 0.32;\nconst ARM_DISTANCE = 0.85;\nconst MIN_STROKE_SPEED = 0.1;\nlet spawnPos = null;\nlet spawnRot = null;\nlet previousPosition = null;\nlet maxStrokeSpeed = 0;\nlet strokeArmed = false;\nlet returning = false;\nlet returnFrom = null;\nlet returnT = 0;\n\nfunction siblings() {\n  const parent = ctx.hierarchy.getParent(ctx.self.id);\n  return parent ? ctx.hierarchy.getChildren(parent.id) : [];\n}\n\nfunction parentSlot() {\n  const parent = ctx.hierarchy.getParent(ctx.self.id);\n  return parent || null;\n}\n\nfunction siblingWorldPosition(slot) {\n  const parent = parentSlot();\n  const scale = parent ? parent.scale : [1, 1, 1];\n  const offset = parent ? parent.position : [0, 0, 0];\n  return [\n    offset[0] + slot.position[0] * scale[0],\n    offset[1] + slot.position[1] * scale[1],\n    offset[2] + slot.position[2] * scale[2]\n  ];\n}\n\nfunction cueBall() {\n  return siblings().find((slot) => slot.name === 'Cue Ball');\n}\n\nfunction scoreboard() {\n  return siblings().find((slot) => slot.name === 'Pool Scoreboard');\n}\n\nfunction setStatus(message, player) {\n  const board = scoreboard();\n  if (!board) return;\n  const component = board.components.find((candidate) => candidate.type === 'scriptState');\n  const previous = (component && component.data) || {};\n  const next = {\n    ...previous,\n    currentPlayerId: player ? player.id : previous.currentPlayerId,\n    currentPlayerName: player ? player.name : previous.currentPlayerName,\n    lastShot: message\n  };\n  ctx.world.setComponentField(board.id, 'scriptState', 'data', next);\n  ctx.world.setComponentField(board.id, 'scoreboard', 'status', message);\n}\n\nfunction aimAtCue(stickPosition, cuePosition) {\n  const direction = ctx.math.vecNormalize([cuePosition[0] - stickPosition[0], 0, cuePosition[2] - stickPosition[2]]);\n  const yaw = Math.atan2(direction[0], direction[2]);\n  return {\n    direction,\n    rotation: [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)]\n  };\n}\n\nfunction lerp(a, b, t) {\n  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];\n}\n\nfunction returnToRack() {\n  returning = true;\n  returnFrom = ctx.self.getWorldPosition();\n  returnT = 0;\n}\n\nreturn {\n  onSpawn() {\n    spawnPos = ctx.self.getWorldPosition();\n    spawnRot = ctx.self.getWorldRotation();\n  },\n  onGrab() {\n    returning = false;\n    maxStrokeSpeed = 0;\n    strokeArmed = false;\n    previousPosition = ctx.self.getWorldPosition();\n    const holders = ctx.grab.heldBy();\n    if (holders.length) {\n      const player = ctx.world.getPlayer(holders[0]);\n      setStatus(player.name + ' is aiming — place the cue, pull back, then release to shoot.', player);\n    }\n  },\n  onRelease() {\n    if (!ctx.world.isHost()) {\n      returnToRack();\n      return;\n    }\n    const cue = cueBall();\n    const stickPosition = ctx.self.getWorldPosition();\n    const cuePosition = cue ? siblingWorldPosition(cue) : null;\n    if (!cue || !cuePosition) {\n      returnToRack();\n      return;\n    }\n    const cueState = cue.components.find((candidate) => candidate.type === 'scriptState');\n    const cueVelocity = cue.components.find((candidate) => candidate.type === 'velocity');\n    if (cueState && cueState.data && cueState.data.pocketed) {\n      setStatus('Cue ball is pocketed — reset it before shooting again.');\n      returnToRack();\n      return;\n    }\n    if (cueVelocity && ctx.math.vecLength([cueVelocity.linear[0], 0, cueVelocity.linear[2]]) > MIN_STROKE_SPEED) {\n      setStatus('Wait for the balls to stop before taking another shot.');\n      returnToRack();\n      return;\n    }\n    if (!strokeArmed || maxStrokeSpeed < MIN_STROKE_SPEED) {\n      setStatus('Place the cue near the white ball, pull back, and release to set power.');\n      returnToRack();\n      return;\n    }\n    const aim = aimAtCue(stickPosition, cuePosition);\n    const power = Math.min(Math.max(maxStrokeSpeed * 1.7, MIN_POWER), MAX_POWER);\n    ctx.world.setComponentField(cue.id, 'velocity', 'linear', [aim.direction[0] * power, 0, aim.direction[2] * power]);\n    setStatus('Shot power: ' + power.toFixed(1), null);\n    ctx.audio.play({ frequency: 285, pitchDrop: 110, noiseMix: 0.42, durationMs: 115, volume: 0.34 });\n    returnToRack();\n  },\n  tick(dt) {\n    const safeDt = Math.min(Math.max(dt, 1 / 120), 1 / 30);\n    if (ctx.grab.isHeld()) {\n      returning = false;\n      const current = ctx.self.getWorldPosition();\n      const cue = cueBall();\n      if (cue) {\n        const cuePosition = siblingWorldPosition(cue);\n        const distanceToCue = Math.hypot(current[0] - cuePosition[0], current[2] - cuePosition[2]);\n        if (!strokeArmed && distanceToCue <= ARM_DISTANCE) {\n          strokeArmed = true;\n          maxStrokeSpeed = 0;\n          previousPosition = current;\n        } else if (strokeArmed && previousPosition) {\n          const movement = ctx.math.vecScale(ctx.math.vecSub(current, previousPosition), 1 / safeDt);\n          maxStrokeSpeed = Math.max(maxStrokeSpeed, ctx.math.vecLength([movement[0], 0, movement[2]]));\n        }\n        previousPosition = current;\n        ctx.self.setWorldRotation(aimAtCue(current, cuePosition).rotation);\n      } else {\n        previousPosition = current;\n      }\n      return;\n    }\n    if (!returning) return;\n    returnT += safeDt;\n    const t = Math.min(returnT / RETURN_TIME, 1);\n    ctx.self.setWorldPosition(lerp(returnFrom, spawnPos, t));\n    ctx.self.setWorldRotation(spawnRot);\n    if (t >= 1) returning = false;\n  },\n  getRadialItems() {\n    return [{\n      label: 'Return Cue',\n      isEnabled: () => !ctx.grab.isHeld(),\n      onSelect: () => {\n        ctx.self.setWorldPosition(spawnPos);\n        ctx.self.setWorldRotation(spawnRot);\n        returning = false;\n      }\n    }];\n  }\n};"
 		}
 	]
-},
-	{
-		"id": "demo-pistol",
-		"parentId": null,
-		"name": "Pistol",
-		"position": [
-			-1.6,
-			1.1,
-			0.3
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "grabbable",
-				"scalable": false
-			},
-			{
-				"type": "equippable",
-				"right": {
-					"position": [
-						0,
-						-0.02,
-						0.06
-					],
-					"rotation": [
-						0,
-						0,
-						0
-					]
-				},
-				"left": {
-					"position": [
-						0,
-						-0.02,
-						0.06
-					],
-					"rotation": [
-						0,
-						0,
-						0
-					]
-				}
-			},
-			{
-				"type": "codeBlock",
-				"code": "const BULLET_SPEED = 25;\nconst BULLET_LIFETIME_MS = 2500;\nconst COOLDOWN_MS = 180;\nlet lastShotAt = 0;\n\nreturn {\n  onEquip(e) {\n    ctx.log('Equipped in the', e.hand, 'hand by', e.playerName);\n  },\n  onUnequip() {\n    ctx.log('Unequipped');\n  },\n  // Runs once, on the host, with the trigger of the hand holding the pistol.\n  // Returning true consumes the press so it does not also act as a laser click.\n  onTrigger(e) {\n    if (e.phase !== 'press') return true;\n    const now = Date.now();\n    if (now - lastShotAt < COOLDOWN_MS) return true;\n    const muzzle = ctx.hierarchy.getChildren(ctx.self.id).find((slot) => slot.name === 'Muzzle');\n    const pose = muzzle && ctx.hierarchy.getWorldPose(muzzle.id);\n    if (!pose) return false;\n    lastShotAt = now;\n    ctx.world.spawn({\n      name: 'Bullet',\n      position: pose.position,\n      rotation: pose.rotation,\n      scale: [0.03, 0.03, 0.12],\n      components: [\n        { type: 'meshRenderer', meshRef: 'box', color: '#fde047' },\n        { type: 'velocity', linear: ctx.math.vecScale(pose.forward, BULLET_SPEED) },\n        { type: 'expires', expiresAt: now + BULLET_LIFETIME_MS }\n      ]\n    });\n    ctx.audio.play({ frequency: 180, pitchDrop: 140, noiseMix: 0.6, durationMs: 120, volume: 0.8 });\n    ctx.particles.burst({ color: '#fbbf24', count: 8, durationMs: 200 });\n    return true;\n  }\n};"
-			}
-		]
-	},
-	{
-		"id": "demo-pistol-body",
-		"parentId": "demo-pistol",
-		"name": "Pistol Body",
-		"position": [
-			0,
-			0,
-			0.06
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			0.035,
-			0.055,
-			0.2
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": "box",
-				"color": "#374151"
-			},
-			{
-				"type": "collider",
-				"shape": "box"
-			}
-		]
-	},
-	{
-		"id": "demo-pistol-grip",
-		"parentId": "demo-pistol",
-		"name": "Pistol Grip",
-		"position": [
-			0,
-			-0.07,
-			0.0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			0.032,
-			0.1,
-			0.045
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": "box",
-				"color": "#1f2937"
-			},
-			{
-				"type": "collider",
-				"shape": "box"
-			}
-		]
-	},
-	{
-		"id": "demo-pistol-muzzle",
-		"parentId": "demo-pistol",
-		"name": "Muzzle",
-		"position": [
-			0,
-			0.008,
-			0.175
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": []
-	}
+}
+	
 ]

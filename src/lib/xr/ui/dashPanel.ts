@@ -21,7 +21,7 @@ import { gameState, getInventoryContext } from '../gameState';
 import { xrSettings, saveSettings, type MovementMode, type RotationMode } from '../settings';
 import { WORLD_VISIBILITY_INFO, type HostedWorldVisibility } from '$lib/worldVisibility';
 
-const TABS = ['Worlds', 'Inventory', 'Settings', 'Account'] as const;
+const TABS = ['Session', 'Worlds', 'Inventory', 'Settings', 'Account'] as const;
 type Tab = (typeof TABS)[number];
 
 export interface DashPanelCallbacks {
@@ -48,7 +48,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		name: 'Dash',
 		position: [0, 1.4, -1],
 		components: [
-			{ type: 'meshRenderer', meshRef: 'plane' },
+			{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'plane' } },
 			{ type: 'grabbable', scalable: true }
 		]
 	});
@@ -103,12 +103,12 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	background.addControl(inspectorBtn);
 
 	const contentByTab: Record<Tab, Rectangle> = {} as Record<Tab, Rectangle>;
-	let activeTab: Tab = 'Worlds';
+	let activeTab: Tab = 'Session';
 
 	function showTab(tab: Tab) {
 		activeTab = tab;
 		for (const t of TABS) contentByTab[t].isVisible = t === tab;
-		if (tab === 'Worlds') refreshWorldsTab();
+		if (tab === 'Session' || tab === 'Worlds') refreshWorldsTab();
 		if (tab === 'Inventory') refreshInventoryTab();
 	}
 
@@ -136,7 +136,19 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		contentByTab[tab] = panel;
 	}
 
-	// --- Worlds tab ---
+	// --- Session tab (current session / hosting) ---
+	const sessionScroll = new ScrollViewer('session-scroll');
+	sessionScroll.width = 0.94;
+	sessionScroll.height = '490px';
+	sessionScroll.top = '10px';
+	sessionScroll.barColor = '#7c3aed';
+	sessionScroll.thickness = 0;
+	contentByTab.Session.addControl(sessionScroll);
+	const sessionList = new StackPanel('session-list');
+	sessionList.width = 0.94;
+	sessionScroll.addControl(sessionList);
+
+	// --- Worlds tab (sessions and worlds to join) ---
 	const worldsScroll = new ScrollViewer('worlds-scroll');
 	worldsScroll.width = 0.94;
 	worldsScroll.height = '490px';
@@ -152,13 +164,32 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	worldsTitle.color = 'white';
 	worldsTitle.fontSize = 22;
 	worldsTitle.height = '42px';
-	worldsList.addControl(worldsTitle);
+	sessionList.addControl(worldsTitle);
 
 	const worldsHint = new TextBlock('worlds-hint', 'Solo necesitas alojarlo si quieres que entren otras personas.');
 	worldsHint.color = '#9ca3af';
 	worldsHint.fontSize = 16;
 	worldsHint.height = '36px';
-	worldsList.addControl(worldsHint);
+	sessionList.addControl(worldsHint);
+	const browseHeader = new StackPanel('browse-header');
+	browseHeader.isVertical = false;
+	browseHeader.height = '56px';
+	const browseTitle = new TextBlock('browse-title', 'Sessions and worlds to join');
+	browseTitle.width = '600px'; browseTitle.height = '48px'; browseTitle.color = 'white'; browseTitle.fontSize = 22;
+	browseTitle.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+	browseHeader.addControl(browseTitle);
+	const refreshListBtn = Button.CreateSimpleButton('refresh-sessions-btn', 'Refresh');
+	refreshListBtn.width = '180px'; refreshListBtn.height = '48px';
+	refreshListBtn.color = 'white'; refreshListBtn.background = '#374151'; refreshListBtn.cornerRadius = 8;
+	refreshListBtn.onPointerClickObservable.add(async () => {
+		refreshListBtn.isEnabled = false;
+		try { await refreshWorldsTab(); } finally { refreshListBtn.isEnabled = true; }
+	});
+	browseHeader.addControl(refreshListBtn);
+	worldsList.addControl(browseHeader);
+	const browseStatus = new TextBlock('browse-status', '');
+	browseStatus.color = '#fbbf24'; browseStatus.fontSize = 16; browseStatus.height = '34px';
+	worldsList.addControl(browseStatus);
 	const joinCodeRow = new StackPanel('join-code-row');
 	joinCodeRow.isVertical = false;
 	joinCodeRow.height = '56px';
@@ -175,7 +206,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		if (!code) return;
 		joinCodeButton.isEnabled = false;
 		try { await callbacks.onJoinWorld(code); refreshWorldsTab(); }
-		catch (error) { worldActionStatus.text = error instanceof Error ? error.message : 'Could not join room'; }
+		catch (error) { browseStatus.text = error instanceof Error ? error.message : 'Could not join room'; }
 		finally { joinCodeButton.isEnabled = true; }
 	});
 	joinCodeRow.addControl(joinCodeButton);
@@ -185,18 +216,18 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	const visibilityOptions = new StackPanel('world-visibility-options');
 	const visibilityButtons: Button[] = [];
 	visibilityOptions.width = 1;
-	worldsList.addControl(visibilityOptions);
+	sessionList.addControl(visibilityOptions);
 
 	const worldActionStatus = new TextBlock('world-action-status', '');
 	worldActionStatus.color = '#fbbf24';
 	worldActionStatus.fontSize = 16;
 	worldActionStatus.height = '34px';
-	worldsList.addControl(worldActionStatus);
+	sessionList.addControl(worldActionStatus);
 
 	const sessionPanel = new StackPanel('active-session-panel');
 	sessionPanel.width = 1;
 	sessionPanel.isVisible = false;
-	worldsList.addControl(sessionPanel);
+	sessionList.addControl(sessionPanel);
 
 	const sessionInfo = new TextBlock('active-session-info', '');
 	sessionInfo.color = '#86efac';
@@ -222,6 +253,78 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		}
 	});
 	sessionPanel.addControl(stopHostingBtn);
+
+	// Save the running scene as a world. A world loaded from the inventory gets a
+	// new revision in its own lineage (revisions are immutable), not a new world.
+	const saveWorldTitle = new TextBlock('save-world-title', 'Save this world');
+	saveWorldTitle.color = '#d1d5db'; saveWorldTitle.fontSize = 18; saveWorldTitle.height = '38px'; saveWorldTitle.top = '10px';
+	sessionList.addControl(saveWorldTitle);
+	const saveWorldRow = new StackPanel('save-world-row');
+	saveWorldRow.isVertical = false; saveWorldRow.height = '56px';
+	const worldNameInput = new InputText('world-name-input');
+	worldNameInput.width = '300px'; worldNameInput.height = '48px';
+	worldNameInput.color = 'white'; worldNameInput.background = '#1f2937';
+	worldNameInput.placeholderText = 'World name'; worldNameInput.text = 'My World';
+	worldNameInput.paddingRight = '6px';
+	saveWorldRow.addControl(worldNameInput);
+	const saveWorldBtn = Button.CreateSimpleButton('save-world-btn', 'Save world');
+	saveWorldBtn.width = '330px'; saveWorldBtn.height = '48px'; saveWorldBtn.fontSize = 18;
+	saveWorldBtn.color = 'white'; saveWorldBtn.background = '#7c3aed'; saveWorldBtn.cornerRadius = 8;
+	saveWorldBtn.paddingRight = '6px';
+	saveWorldRow.addControl(saveWorldBtn);
+	const saveAsNewBtn = Button.CreateSimpleButton('save-world-new-btn', 'Save as new world');
+	saveAsNewBtn.width = '230px'; saveAsNewBtn.height = '48px'; saveAsNewBtn.fontSize = 18;
+	saveAsNewBtn.color = 'white'; saveAsNewBtn.background = '#374151'; saveAsNewBtn.cornerRadius = 8;
+	saveWorldRow.addControl(saveAsNewBtn);
+	sessionList.addControl(saveWorldRow);
+	const saveWorldStatus = new TextBlock('save-world-status', '');
+	saveWorldStatus.color = '#86efac'; saveWorldStatus.fontSize = 16; saveWorldStatus.height = '34px';
+	sessionList.addControl(saveWorldStatus);
+	let shownLoadedKey: string | null = null;
+
+	function refreshSaveWorld() {
+		const loaded = gameState.loadedWorld;
+		saveWorldTitle.isVisible = saveWorldRow.isVisible = saveWorldStatus.isVisible = gameState.role !== 'guest';
+		saveAsNewBtn.isVisible = loaded !== null;
+		const key = loaded ? `${loaded.adapterId}:${loaded.worldLineageId}` : null;
+		if (key !== shownLoadedKey) {
+			shownLoadedKey = key;
+			worldNameInput.text = loaded?.name ?? gameState.worldName ?? 'My World';
+		}
+		const button = saveWorldBtn.textBlock;
+		if (button) button.text = loaded ? `Save as v${(loaded.revisionNumber ?? 0) + 1} of “${loaded.name}”`.slice(0, 40) : 'Save world';
+	}
+
+	async function saveWorld(asNew: boolean) {
+		const loaded = asNew ? null : gameState.loadedWorld;
+		const selected = getInventoryAdapter(loaded?.adapterId ?? gameState.currentInventoryAdapterId ?? 'local');
+		const adapter = selected?.isAvailable(getInventoryContext()) ? selected : getInventoryAdapter('local');
+		if (!adapter) { saveWorldStatus.color = '#f87171'; saveWorldStatus.text = 'No inventory is available'; return; }
+		const folderId = loaded && loaded.adapterId === adapter.id ? loaded.folderId
+			: adapter.id === gameState.currentInventoryAdapterId ? gameState.currentInventoryFolderId : null;
+		const name = worldNameInput.text.trim() || 'My World';
+		saveWorldBtn.isEnabled = saveAsNewBtn.isEnabled = false;
+		try {
+			const snapshot = sceneGraph.serialize();
+			validateWorldScene(snapshot);
+			const lineage = loaded && loaded.adapterId === adapter.id ? loaded.worldLineageId : undefined;
+			const saved = await adapter.saveItem(getInventoryContext(), folderId, name, snapshot, 'world', lineage);
+			if (saved.worldLineageId) {
+				gameState.loadedWorld = { adapterId: adapter.id, worldLineageId: saved.worldLineageId, folderId: saved.folderId, name: saved.name, revisionNumber: saved.revisionNumber ?? null };
+			}
+			saveWorldStatus.color = '#86efac';
+			saveWorldStatus.text = lineage ? `Saved revision v${saved.revisionNumber ?? '?'} in ${adapter.label}.` : `Saved to ${adapter.label}.`;
+		} catch (error) {
+			saveWorldStatus.color = '#f87171';
+			saveWorldStatus.text = error instanceof Error ? error.message : 'Could not save world';
+		} finally {
+			saveWorldBtn.isEnabled = saveAsNewBtn.isEnabled = true;
+			refreshSaveWorld();
+			if (activeTab === 'Inventory') refreshInventoryTab();
+		}
+	}
+	saveWorldBtn.onPointerClickObservable.add(() => void saveWorld(false));
+	saveAsNewBtn.onPointerClickObservable.add(() => void saveWorld(true));
 
 	function addVisibilityOption(visibility: HostedWorldVisibility | 'solo') {
 		const info = WORLD_VISIBILITY_INFO[visibility];
@@ -271,6 +374,9 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	publicWorldsTitle.height = '38px';
 	publicWorldsTitle.top = '10px';
 	worldsList.addControl(publicWorldsTitle);
+	const publicSessionsList = new StackPanel('public-sessions-list');
+	publicSessionsList.width = 1;
+	worldsList.addControl(publicSessionsList);
 	const publishedWorldsTitle = new TextBlock('published-worlds-title', 'Published worlds');
 	publishedWorldsTitle.color = '#d1d5db';
 	publishedWorldsTitle.fontSize = 18;
@@ -281,6 +387,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	worldsList.addControl(publishedWorldsList);
 
 	async function refreshWorldsTab() {
+		refreshSaveWorld();
 		const isConnected = gameState.role === 'host' || gameState.role === 'guest';
 		visibilityOptions.isVisible = !isConnected;
 		joinCodeRow.isVisible = !isConnected;
@@ -299,9 +406,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			sessionInfo.text = `Conectado a una sesión\nCódigo de sala: ${gameState.roomCode ?? '—'}`;
 		}
 
-		for (const child of [...worldsList.children]) {
-			if (child !== worldsTitle && child !== worldsHint && child !== joinCodeRow && child !== visibilityOptions && child !== worldActionStatus && child !== sessionPanel && child !== publicWorldsTitle && child !== publishedWorldsTitle && child !== publishedWorldsList) worldsList.removeControl(child);
-		}
+		for (const child of [...publicSessionsList.children]) publicSessionsList.removeControl(child);
 		for (const child of [...publishedWorldsList.children]) publishedWorldsList.removeControl(child);
 		void refreshPublishedWorlds();
 		if (gameState.role === 'guest') return;
@@ -313,7 +418,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 				const empty = new TextBlock('public-worlds-empty', 'No hay sesiones públicas activas ahora.');
 				empty.color = '#9ca3af';
 				empty.height = '34px';
-				worldsList.addControl(empty);
+				publicSessionsList.addControl(empty);
 			}
 			for (const session of sessions) {
 				const row = Button.CreateSimpleButton(`world-${session.roomCode}`, `${session.world.name} · Pública — Unirse`);
@@ -326,7 +431,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 					await callbacks.onJoinWorld(session.roomCode);
 					refreshWorldsTab();
 				});
-				worldsList.addControl(row);
+				publicSessionsList.addControl(row);
 			}
 		} catch {
 			// offline / not reachable — list just stays empty
@@ -352,8 +457,8 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 						const res = await fetch(`/api/published-worlds/${publication.id}`);
 						if (!res.ok) throw new Error('Could not load published world');
 						callbacks.onSpawnPublishedWorld(await res.json() as WorldPackage);
-						worldActionStatus.text = 'World orb placed.';
-					} catch (error) { worldActionStatus.text = error instanceof Error ? error.message : 'Could not place orb'; }
+						browseStatus.text = 'World orb placed.';
+					} catch (error) { browseStatus.text = error instanceof Error ? error.message : 'Could not place orb'; }
 				});
 				row.addControl(place);
 				if (publication.ownerId === gameState.userId) {
@@ -366,9 +471,9 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 								method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ scene: snapshot })
 							});
 							if (!res.ok) throw new Error('Could not publish revision');
-							worldActionStatus.text = 'Revision published.';
+							browseStatus.text = 'Revision published.';
 							refreshWorldsTab();
-						} catch (error) { worldActionStatus.text = error instanceof Error ? error.message : 'Could not publish revision'; }
+						} catch (error) { browseStatus.text = error instanceof Error ? error.message : 'Could not publish revision'; }
 					});
 					row.addControl(update);
 				}
@@ -377,63 +482,108 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		} catch { /* offline */ }
 	}
 
-	// --- Inventory tab: root picker, then folder browsing (breadcrumb + new
-	// folder) within that root, then items (with delete) ---
-	const inventoryRoots = new StackPanel('inventory-roots');
+	// --- Inventory tab: root picker + quota bar, breadcrumb, a toolbar that
+	// swaps to selection actions, and a scrollable grid of folders/items.
+	// Single click selects, double click opens a folder or spawns an item. ---
+	const CELL_W = 148;
+	const CELL_H = 100;
+	const GRID_COLUMNS = 6;
+	const DOUBLE_CLICK_MS = 400;
+
+	function topAligned<T extends Control>(control: T, top: number): T {
+		control.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+		control.top = `${top}px`;
+		return control;
+	}
+
+	const inventoryRoots = topAligned(new StackPanel('inventory-roots'), 6);
 	inventoryRoots.isVertical = false;
-	inventoryRoots.height = '52px';
-	inventoryRoots.top = '10px';
+	inventoryRoots.height = '44px';
+	inventoryRoots.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+	inventoryRoots.left = '20px';
+	inventoryRoots.adaptWidthToChildren = true;
 	contentByTab.Inventory.addControl(inventoryRoots);
 
-	const inventoryPath = new StackPanel('inventory-path');
+	// Usage bar (only for adapters that report it, e.g. cloud storage).
+	const quotaTrack = topAligned(new Rectangle('inventory-quota'), 14);
+	quotaTrack.width = '300px';
+	quotaTrack.height = '28px';
+	quotaTrack.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+	quotaTrack.left = '-20px';
+	quotaTrack.background = '#1f2937';
+	quotaTrack.color = '#374151';
+	quotaTrack.thickness = 1;
+	quotaTrack.cornerRadius = 6;
+	quotaTrack.isVisible = false;
+	contentByTab.Inventory.addControl(quotaTrack);
+	const quotaFill = new Rectangle('inventory-quota-fill');
+	quotaFill.height = 1;
+	quotaFill.width = 0;
+	quotaFill.thickness = 0;
+	quotaFill.cornerRadius = 6;
+	quotaFill.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+	quotaTrack.addControl(quotaFill);
+	const quotaLabel = new TextBlock('inventory-quota-label', '');
+	quotaLabel.color = 'white';
+	quotaLabel.fontSize = 15;
+	quotaTrack.addControl(quotaLabel);
+
+	const inventoryPath = topAligned(new StackPanel('inventory-path'), 56);
 	inventoryPath.isVertical = false;
-	inventoryPath.height = '44px';
-	inventoryPath.top = '68px';
+	inventoryPath.height = '36px';
+	inventoryPath.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+	inventoryPath.left = '20px';
+	inventoryPath.adaptWidthToChildren = true;
 	contentByTab.Inventory.addControl(inventoryPath);
 
-	const inventoryActions = new StackPanel('inventory-actions');
-	inventoryActions.isVertical = false;
-	inventoryActions.height = '48px';
-	inventoryActions.top = '116px';
-	contentByTab.Inventory.addControl(inventoryActions);
+	const inventoryToolbar = topAligned(new StackPanel('inventory-toolbar'), 98);
+	inventoryToolbar.isVertical = false;
+	inventoryToolbar.height = '48px';
+	inventoryToolbar.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+	inventoryToolbar.left = '20px';
+	inventoryToolbar.adaptWidthToChildren = true;
+	contentByTab.Inventory.addControl(inventoryToolbar);
 
-	const worldNameInput = new InputText('world-name-input');
-	worldNameInput.width = '280px';
-	worldNameInput.height = '44px';
-	worldNameInput.color = 'white';
-	worldNameInput.background = '#1f2937';
-	worldNameInput.placeholderText = 'World name';
-	worldNameInput.text = 'My World';
-	inventoryActions.addControl(worldNameInput);
+	function toolbarButton(name: string, text: string, background: string, width: number, onClick: () => void): Button {
+		const btn = Button.CreateSimpleButton(name, text);
+		btn.width = `${width}px`;
+		btn.height = '44px';
+		btn.color = 'white';
+		btn.background = background;
+		btn.cornerRadius = 8;
+		btn.paddingRight = '6px';
+		btn.fontSize = 18;
+		btn.onPointerClickObservable.add(onClick);
+		return btn;
+	}
 
-	const saveWorldBtn = Button.CreateSimpleButton('save-world-btn', 'Save world');
-	saveWorldBtn.width = '170px';
-	saveWorldBtn.height = '44px';
-	saveWorldBtn.color = 'white';
-	saveWorldBtn.background = '#7c3aed';
-	saveWorldBtn.cornerRadius = 8;
-	saveWorldBtn.onPointerClickObservable.add(async () => {
+	const newFolderBtn = toolbarButton('new-folder-btn', '+ Folder', '#16a34a', 130, async () => {
 		if (!activeAdapter) return;
-		saveWorldBtn.isEnabled = false;
-		try {
-			const snapshot = sceneGraph.serialize();
-			validateWorldScene(snapshot);
-			await activeAdapter.saveItem(getInventoryContext(), currentFolderId(), worldNameInput.text.trim() || 'My World', snapshot, 'world');
-			await refreshList();
-		} catch (error) {
-			setStatus(inventoryList, error instanceof Error ? error.message : 'Could not save world', '#f87171');
-		} finally { saveWorldBtn.isEnabled = true; }
+		await activeAdapter.createFolder(getInventoryContext(), currentFolderId(), `Folder ${new Date().toLocaleTimeString()}`);
+		refreshList();
 	});
-	inventoryActions.addControl(saveWorldBtn);
 
+	const inventoryScroll = topAligned(new ScrollViewer('inventory-scroll'), 152);
+	inventoryScroll.width = 0.96;
+	inventoryScroll.height = '360px';
+	inventoryScroll.barColor = '#7c3aed';
+	inventoryScroll.thickness = 0;
+	contentByTab.Inventory.addControl(inventoryScroll);
 	const inventoryList = new StackPanel('inventory-list');
-	inventoryList.width = 0.9;
-	inventoryList.top = '172px';
-	contentByTab.Inventory.addControl(inventoryList);
+	inventoryList.width = 1;
+	inventoryScroll.addControl(inventoryList);
 
 	let activeAdapter: InventoryAdapter | null = null;
 	// breadcrumb: [{id: null, name: adapter.label}, ...subfolders]
 	let path: { id: string | null; name: string }[] = [];
+
+	type Entry =
+		| { type: 'folder'; id: string; name: string; folder: InventoryFolder }
+		| { type: 'item'; id: string; name: string; item: InventoryItem };
+	let selected: Entry | null = null;
+	const cellByKey = new Map<string, Rectangle>();
+	let lastClick = { key: '', at: 0 };
+	let message: { text: string; color: string } | null = null;
 
 	function currentFolderId(): string | null {
 		return path.length > 0 ? path[path.length - 1].id : null;
@@ -447,11 +597,148 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		container.addControl(t);
 	}
 
+	function showMessage(text: string, color: string) {
+		message = { text, color };
+		refreshToolbar();
+	}
+
+	function entryKey(entry: Entry): string {
+		return `${entry.type}:${entry.id}`;
+	}
+
+	function select(entry: Entry | null) {
+		selected = entry;
+		message = null;
+		for (const [key, cell] of cellByKey) {
+			const isSelected = entry !== null && key === entryKey(entry);
+			cell.background = isSelected ? '#2563eb' : '#1f2937';
+			cell.color = isSelected ? '#93c5fd' : '#374151';
+		}
+		refreshToolbar();
+	}
+
+	function activate(entry: Entry) {
+		const adapter = activeAdapter;
+		if (!adapter) return;
+		if (entry.type === 'folder') {
+			path = [...path, { id: entry.id, name: entry.name }];
+			gameState.currentInventoryFolderId = entry.id;
+			selected = null;
+			refreshPath();
+			refreshList();
+		} else if (entry.item.kind === 'world') {
+			callbacks.onSpawnWorldOrb(entry.item, adapter.id);
+		} else {
+			callbacks.onSpawnItem(entry.item.slotData);
+		}
+	}
+
+	function refreshToolbar() {
+		for (const child of [...inventoryToolbar.children]) inventoryToolbar.removeControl(child);
+		const adapter = activeAdapter;
+		const entry = selected;
+		if (!adapter) return;
+		if (!entry) {
+			if (message) {
+				const text = new TextBlock('inventory-message', message.text);
+				text.width = '900px'; text.height = '44px'; text.color = message.color; text.fontSize = 17;
+				text.textWrapping = true;
+				inventoryToolbar.addControl(text);
+				return;
+			}
+			inventoryToolbar.addControl(newFolderBtn);
+			return;
+		}
+
+		const label = new TextBlock('inventory-selected', entry.name);
+		label.width = '240px'; label.height = '44px'; label.color = '#e5e7eb'; label.fontSize = 18;
+		label.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+		inventoryToolbar.addControl(label);
+
+		if (entry.type === 'folder') {
+			inventoryToolbar.addControl(toolbarButton('tb-open', 'Open', '#2563eb', 100, () => activate(entry)));
+			inventoryToolbar.addControl(toolbarButton('tb-delete', 'Delete', '#991b1b', 110, async () => {
+				await adapter.deleteFolder(getInventoryContext(), entry.id);
+				select(null);
+				refreshList();
+			}));
+		} else {
+			const item = entry.item;
+			const isWorld = item.kind === 'world';
+			inventoryToolbar.addControl(toolbarButton('tb-spawn', isWorld ? 'Place orb' : 'Spawn', '#2563eb', isWorld ? 130 : 100, () => activate(entry)));
+			if (isWorld) {
+				inventoryToolbar.addControl(toolbarButton('tb-load', 'Load', '#0f766e', 90, async () => {
+					try { await callbacks.onLaunchWorldItem(item, adapter.id); }
+					catch (error) { showMessage(error instanceof Error ? error.message : 'Could not load world', '#f87171'); }
+				}));
+				if (gameState.userId) {
+					inventoryToolbar.addControl(toolbarButton('tb-publish', 'Publish', '#7c3aed', 110, async () => {
+						try {
+							validateWorldScene(item.slotData);
+							const res = await fetch('/api/published-worlds', {
+								method: 'POST', headers: { 'content-type': 'application/json' },
+								body: JSON.stringify({ name: item.name, scene: item.slotData })
+							});
+							if (!res.ok) throw new Error('Could not publish world');
+							showMessage('World published. Find it in the Worlds tab.', '#86efac');
+						} catch (error) { showMessage(error instanceof Error ? error.message : 'Could not publish world', '#f87171'); }
+					}));
+				}
+			}
+			if (adapter.updateItem && path.length > 1) {
+				const parentId = path[path.length - 2].id;
+				inventoryToolbar.addControl(toolbarButton('tb-move', 'Move up', '#374151', 110, async () => {
+					try {
+						await adapter.updateItem!(getInventoryContext(), item.id, parentId, item.name, item.slotData);
+						select(null);
+						refreshList();
+					} catch (error) { showMessage(error instanceof Error ? error.message : 'Could not move item', '#f87171'); }
+				}));
+			}
+			inventoryToolbar.addControl(toolbarButton('tb-delete', 'Delete', '#991b1b', 110, async () => {
+				await adapter.deleteItem(getInventoryContext(), item.id);
+				select(null);
+				refreshList();
+			}));
+		}
+		inventoryToolbar.addControl(toolbarButton('tb-close', '✕', '#374151', 50, () => select(null)));
+	}
+
+	function formatBytes(bytes: number): string {
+		if (bytes < 1024) return `${bytes} B`;
+		const units = ['KB', 'MB', 'GB', 'TB'];
+		let value = bytes / 1024;
+		let unit = 0;
+		while (value >= 1024 && unit < units.length - 1) { value /= 1024; unit++; }
+		return `${value.toFixed(value < 10 ? 1 : 0)} ${units[unit]}`;
+	}
+
+	async function refreshUsage() {
+		const adapter = activeAdapter;
+		quotaTrack.isVisible = false;
+		if (!adapter?.usage) return;
+		try {
+			const usage = await adapter.usage(getInventoryContext());
+			if (adapter !== activeAdapter || !usage) return;
+			const format = usage.unit === 'bytes' ? formatBytes : (n: number) => String(n);
+			const limited = usage.total > 0;
+			const ratio = limited ? Math.min(1, usage.used / usage.total) : 0;
+			quotaFill.width = ratio;
+			quotaFill.background = ratio > 0.9 ? '#dc2626' : ratio > 0.75 ? '#d97706' : '#16a34a';
+			quotaLabel.text = limited ? `${format(usage.used)} / ${format(usage.total)}` : `${format(usage.used)} used`;
+			quotaTrack.isVisible = true;
+		} catch {
+			// usage is informational; keep the bar hidden
+		}
+	}
+
 	function refreshPath() {
 		for (const child of [...inventoryPath.children]) inventoryPath.removeControl(child);
 		path.forEach((crumb, i) => {
 			const btn = Button.CreateSimpleButton(`crumb-${i}`, crumb.name);
-			btn.height = '40px';
+			btn.height = '34px';
+			btn.width = `${Math.min(220, 40 + crumb.name.length * 11)}px`;
+			btn.fontSize = 16;
 			btn.color = 'white';
 			btn.background = i === path.length - 1 ? '#2563eb' : '#1f2937';
 			btn.cornerRadius = 6;
@@ -459,6 +746,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			btn.onPointerClickObservable.add(() => {
 				path = path.slice(0, i + 1);
 				gameState.currentInventoryFolderId = crumb.id;
+				selected = null;
 				refreshPath();
 				refreshList();
 			});
@@ -466,11 +754,72 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		});
 	}
 
+	/** Largest font size at which the wrapped name still fits the box. */
+	function fitFontSize(text: string, width: number, height: number): number {
+		const longestWord = Math.max(1, ...text.split(/\s+/).map((word) => word.length));
+		for (let size = 20; size > 9; size--) {
+			const charWidth = size * 0.6;
+			const perLine = Math.floor(width / charWidth);
+			if (longestWord > perLine) continue;
+			const lines = Math.ceil((text.length * charWidth) / width);
+			if (lines * size * 1.2 <= height) return size;
+		}
+		return 9;
+	}
+
+	function createCell(entry: Entry, icon: string): Rectangle {
+		const key = entryKey(entry);
+		const cell = new Rectangle(`cell-${key}`);
+		cell.width = `${CELL_W}px`;
+		cell.height = `${CELL_H}px`;
+		cell.background = '#1f2937';
+		cell.color = '#374151';
+		cell.thickness = 2;
+		cell.cornerRadius = 8;
+		cell.isPointerBlocker = true;
+		cell.hoverCursor = 'pointer';
+
+		const iconText = new TextBlock(`cell-icon-${key}`, icon);
+		iconText.fontSize = 28;
+		iconText.height = '36px';
+		iconText.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+		iconText.top = '4px';
+		iconText.color = 'white';
+		cell.addControl(iconText);
+
+		const nameW = CELL_W - 14;
+		const nameH = CELL_H - 46;
+		const name = new TextBlock(`cell-name-${key}`, entry.name);
+		name.width = `${nameW}px`;
+		name.height = `${nameH}px`;
+		name.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+		name.top = '-4px';
+		name.textWrapping = true;
+		name.color = 'white';
+		name.fontSize = fitFontSize(entry.name, nameW, nameH);
+		cell.addControl(name);
+
+		cell.onPointerClickObservable.add(() => {
+			const now = Date.now();
+			if (lastClick.key === key && now - lastClick.at <= DOUBLE_CLICK_MS) {
+				lastClick = { key: '', at: 0 };
+				activate(entry);
+				return;
+			}
+			lastClick = { key, at: now };
+			select(entry);
+		});
+		cellByKey.set(key, cell);
+		return cell;
+	}
+
 	async function refreshList() {
 		if (!activeAdapter) return;
 		const adapter = activeAdapter;
 		const folderId = currentFolderId();
-		setStatus(inventoryList, 'Cargando…');
+		setStatus(inventoryList, 'Loading…');
+		cellByKey.clear();
+		void refreshUsage();
 
 		let folders: InventoryFolder[] = [];
 		let items: InventoryItem[] = [];
@@ -481,110 +830,37 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			]);
 		} catch (err) {
 			console.error(`Failed to list inventory (${adapter.id})`, err);
-			setStatus(inventoryList, 'Error al cargar el inventario (ver consola)', '#f87171');
+			setStatus(inventoryList, 'Could not load the inventory (see console)', '#f87171');
 			return;
 		}
+		if (adapter !== activeAdapter) return;
 
 		for (const child of [...inventoryList.children]) inventoryList.removeControl(child);
-		if (folders.length === 0 && items.length === 0) {
-			setStatus(inventoryList, '(vacío)');
+		const entries: Array<{ entry: Entry; icon: string }> = [
+			...folders.map((folder) => ({ entry: { type: 'folder', id: folder.id, name: folder.name, folder } as Entry, icon: '📁' })),
+			...items.map((item) => ({ entry: { type: 'item', id: item.id, name: item.name, item } as Entry, icon: item.kind === 'world' ? '🌍' : '📦' }))
+		];
+		if (entries.length === 0) {
+			setStatus(inventoryList, '(empty)');
+			select(null);
+			return;
 		}
-
-		for (const folder of folders) {
-			const row = new StackPanel(`folder-row-${folder.id}`);
+		for (let start = 0; start < entries.length; start += GRID_COLUMNS) {
+			const row = new StackPanel(`inventory-row-${start}`);
 			row.isVertical = false;
-			row.height = '52px';
-			row.paddingTop = '4px';
-
-			const openBtn = Button.CreateSimpleButton(`folder-open-${folder.id}`, `📁 ${folder.name}`);
-			openBtn.width = '340px';
-			openBtn.height = '52px';
-			openBtn.color = 'white';
-			openBtn.background = '#1f2937';
-			openBtn.cornerRadius = 8;
-			openBtn.onPointerClickObservable.add(() => {
-				path = [...path, { id: folder.id, name: folder.name }];
-				gameState.currentInventoryFolderId = folder.id;
-				refreshPath();
-				refreshList();
-			});
-			row.addControl(openBtn);
-
-			const deleteBtn = Button.CreateSimpleButton(`folder-del-${folder.id}`, '✕');
-			deleteBtn.width = '52px';
-			deleteBtn.height = '52px';
-			deleteBtn.color = 'white';
-			deleteBtn.background = '#7f1d1d';
-			deleteBtn.cornerRadius = 8;
-			deleteBtn.onPointerClickObservable.add(async () => {
-				await adapter.deleteFolder(getInventoryContext(), folder.id);
-				refreshList();
-			});
-			row.addControl(deleteBtn);
-
-			inventoryList.addControl(row);
-		}
-
-		for (const item of items) {
-			const row = new StackPanel(`item-row-${item.id}`);
-			row.isVertical = false;
-			row.height = '52px';
-			row.paddingTop = '4px';
-
-			const isWorld = item.kind === 'world';
-			const spawnBtn = Button.CreateSimpleButton(`item-spawn-${item.id}`, isWorld ? `${item.name} · v${item.revisionNumber ?? 1} — Place orb` : `${item.name} — Spawn`);
-			spawnBtn.width = isWorld ? '260px' : '340px';
-			spawnBtn.height = '52px';
-			spawnBtn.color = 'white';
-			spawnBtn.background = '#1f2937';
-			spawnBtn.cornerRadius = 8;
-			spawnBtn.onPointerClickObservable.add(() => {
-				if (isWorld) callbacks.onSpawnWorldOrb(item, adapter.id);
-				else callbacks.onSpawnItem(item.slotData);
-			});
-			row.addControl(spawnBtn);
-			if (isWorld) {
-				const loadBtn = Button.CreateSimpleButton(`item-load-${item.id}`, 'Load');
-				loadBtn.width = '80px'; loadBtn.height = '52px'; loadBtn.color = 'white';
-				loadBtn.background = '#2563eb'; loadBtn.cornerRadius = 8;
-				loadBtn.onPointerClickObservable.add(async () => {
-					try { await callbacks.onLaunchWorldItem(item, adapter.id); }
-					catch (error) { setStatus(inventoryList, error instanceof Error ? error.message : 'Could not load world', '#f87171'); }
-				});
-				row.addControl(loadBtn);
-				if (gameState.userId) {
-					const publish = Button.CreateSimpleButton(`item-publish-${item.id}`, 'Publish');
-					publish.width = '100px'; publish.height = '52px'; publish.color = 'white';
-					publish.background = '#7c3aed'; publish.cornerRadius = 8;
-					publish.onPointerClickObservable.add(async () => {
-						try {
-							validateWorldScene(item.slotData);
-							const res = await fetch('/api/published-worlds', {
-								method: 'POST', headers: { 'content-type': 'application/json' },
-								body: JSON.stringify({ name: item.name, scene: item.slotData })
-							});
-							if (!res.ok) throw new Error('Could not publish world');
-							setStatus(inventoryList, 'World published. Find it in the Worlds tab.', '#86efac');
-						} catch (error) { setStatus(inventoryList, error instanceof Error ? error.message : 'Could not publish world', '#f87171'); }
-					});
-					row.addControl(publish);
-				}
+			row.height = `${CELL_H + 8}px`;
+			row.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+			for (const { entry, icon } of entries.slice(start, start + GRID_COLUMNS)) {
+				const cell = createCell(entry, icon);
+				cell.paddingRight = '6px';
+				cell.paddingBottom = '6px';
+				row.addControl(cell);
 			}
-
-			const deleteBtn = Button.CreateSimpleButton(`item-del-${item.id}`, '✕');
-			deleteBtn.width = '52px';
-			deleteBtn.height = '52px';
-			deleteBtn.color = 'white';
-			deleteBtn.background = '#7f1d1d';
-			deleteBtn.cornerRadius = 8;
-			deleteBtn.onPointerClickObservable.add(async () => {
-				await adapter.deleteItem(getInventoryContext(), item.id);
-				refreshList();
-			});
-			row.addControl(deleteBtn);
-
 			inventoryList.addControl(row);
 		}
+		// Keep the selection across a refresh if the entry still exists.
+		const keep = selected && cellByKey.has(entryKey(selected)) ? selected : null;
+		select(keep);
 	}
 
 	function selectAdapter(adapter: InventoryAdapter) {
@@ -592,6 +868,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		gameState.currentInventoryAdapterId = adapter.id;
 		gameState.currentInventoryFolderId = null;
 		path = [{ id: null, name: adapter.label }];
+		selected = null;
 		refreshRoots();
 		refreshPath();
 		refreshList();
@@ -599,41 +876,28 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 
 	function refreshRoots() {
 		for (const child of [...inventoryRoots.children]) inventoryRoots.removeControl(child);
-		for (const child of [...inventoryActions.children]) if (child !== worldNameInput && child !== saveWorldBtn) inventoryActions.removeControl(child);
 
 		const folders = availableInventoryFolders(getInventoryContext());
 		for (const folder of folders) {
 			const btn = Button.CreateSimpleButton(`root-${folder.id}`, folder.label);
-			btn.width = '180px';
-			btn.height = '48px';
+			btn.width = '160px';
+			btn.height = '42px';
+			btn.fontSize = 18;
 			btn.color = 'white';
 			btn.background = folder === activeAdapter ? '#2563eb' : '#374151';
 			btn.cornerRadius = 8;
+			btn.paddingRight = '6px';
 			btn.onPointerClickObservable.add(() => selectAdapter(folder));
 			inventoryRoots.addControl(btn);
 		}
 
-		if (activeAdapter) {
-			const newFolderBtn = Button.CreateSimpleButton('new-folder-btn', '+ Carpeta');
-			newFolderBtn.width = '140px';
-			newFolderBtn.height = '44px';
-			newFolderBtn.color = 'white';
-			newFolderBtn.background = '#16a34a';
-			newFolderBtn.cornerRadius = 8;
-			newFolderBtn.onPointerClickObservable.add(async () => {
-				if (!activeAdapter) return;
-				const name = `Carpeta ${new Date().toLocaleTimeString()}`;
-				await activeAdapter.createFolder(getInventoryContext(), currentFolderId(), name);
-				refreshList();
-			});
-			inventoryActions.addControl(newFolderBtn);
-		}
-
+		refreshToolbar();
 		if (!activeAdapter && folders[0]) selectAdapter(folders[0]);
 	}
 
 	function refreshInventoryTab() {
 		refreshRoots();
+		if (activeAdapter) void refreshUsage();
 	}
 
 	// --- Settings tab: locomotion (movement + turn mode) ---
@@ -858,7 +1122,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	}
 	void refreshSession();
 
-	showTab('Worlds');
+	showTab('Session');
 
 	return {
 		root: node,

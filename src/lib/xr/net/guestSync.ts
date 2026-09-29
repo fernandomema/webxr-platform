@@ -1,4 +1,4 @@
-import { TransformNode, type Scene, type WebXRDefaultExperience } from '@babylonjs/core';
+import { TransformNode, type Scene, type UniversalCamera, type WebXRDefaultExperience } from '@babylonjs/core';
 import type { SceneGraph } from '../sceneGraph';
 import type { GrabSystem } from '../interaction/grabSystem';
 import type { EquipmentSystem } from '../interaction/equipmentSystem';
@@ -6,6 +6,7 @@ import type { MediaControlAction, Slot } from '$lib/ecs/types';
 import { SignalingClient, type SignalingMessage } from './signalingClient';
 import { PeerLink } from './peerConnection';
 import type { PlayerInfo, WorldStateMessage, WorldSyncMessage } from './protocol';
+import { migrateSlotTree } from '$lib/assets/ref';
 import { createGhostRig, type GhostRig, type TransformPose } from '../avatar/defaultAvatar';
 
 const PRESENCE_INTERVAL_MS = 50;
@@ -29,7 +30,8 @@ export class GuestSync {
 
 	constructor(
 		private scene: Scene,
-		private xr: WebXRDefaultExperience,
+		private xr: WebXRDefaultExperience | null,
+		private desktopCamera: UniversalCamera,
 		private sceneGraph: SceneGraph,
 		private grabSystem: GrabSystem,
 		private equipment: EquipmentSystem,
@@ -156,7 +158,7 @@ export class GuestSync {
 			case 'scene-snapshot':
 				if (msg.revision < this.snapshotRevision) break;
 				this.snapshotRevision = msg.revision;
-				this.sceneGraph.reconcile(msg.tree, this.locallyGrabbed);
+				this.sceneGraph.reconcile(migrateSlotTree(msg.tree), this.locallyGrabbed);
 				if (msg.equipped) this.equipment.applyRemote(msg.equipped, this.localPlayer.playerId);
 				this.onSceneChanged?.();
 				if (this.latestTransforms && this.latestTransforms.revision > msg.revision) this.sceneGraph.applyTransforms(this.latestTransforms.transforms, this.locallyGrabbed);
@@ -185,13 +187,13 @@ export class GuestSync {
 
 	private sendPresence(): void {
 		if (!this.link) return;
-		const camera = this.xr.baseExperience.camera;
+		const camera = this.xr?.baseExperience.camera ?? this.desktopCamera;
 		const head: TransformPose = {
 			position: camera.globalPosition.asArray() as TransformPose['position'],
 			rotation: (camera.rotationQuaternion?.asArray() ?? [0, 0, 0, 1]) as TransformPose['rotation']
 		};
 		const hands: Partial<Record<'left' | 'right', TransformPose>> = {};
-		for (const controller of this.xr.input.controllers) {
+		for (const controller of this.xr?.input.controllers ?? []) {
 			if (controller.inputSource.handedness === 'none') continue;
 			const node = controller.grip ?? controller.pointer;
 			hands[controller.inputSource.handedness] = {

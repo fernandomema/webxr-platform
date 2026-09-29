@@ -34,6 +34,8 @@
 		"vite": "^8.0.16"
 	},
 	"dependencies": {
+		"@aws-sdk/client-s3": "^3.1142.0",
+		"@aws-sdk/s3-request-presigner": "^3.1142.0",
 		"@babylonjs/core": "^9.28.0",
 		"@babylonjs/gui": "^9.28.0",
 		"@babylonjs/loaders": "^9.28.0",

@@ -26,6 +26,7 @@ model user {
   publications    publishedWorld[]
   cloudItems      cloudInventoryItem[]
   cloudFolders    cloudInventoryFolder[]
+  assetOwnerships assetOwner[]
 
   @@unique([email])
   @@unique([username])
@@ -93,6 +94,7 @@ model world {
   worldFolders    worldInventoryFolder[]
 
   @@index([hostUserId])
+  assets           worldAsset[]
 }
 
 model worldSession {
@@ -143,6 +145,7 @@ model cloudInventoryItem {
   @@index([ownerId])
   @@index([folderId])
   @@unique([ownerId, worldLineageId, revisionNumber])
+  assets           cloudItemAsset[]
 }
 
 model worldInventoryFolder {
@@ -177,6 +180,7 @@ model worldInventoryItem {
   @@index([worldId])
   @@index([folderId])
   @@unique([worldId, worldLineageId, revisionNumber])
+  assets           worldInventoryItemAsset[]
 }
 
 // Published worlds are independent from live sessions and from inventory drafts.
@@ -203,4 +207,89 @@ model publishedWorldRevision {
   createdAt        DateTime @default(now())
 
   @@unique([publicationId, number])
+  assets           publishedRevisionAsset[]
+}
+
+// --- 3D model assets -------------------------------------------------------
+// One row per distinct file, keyed by the SHA-256 of its bytes; the file itself
+// lives once in object storage. Many users can own the same asset (each is
+// charged its full size), and scenes reference it, so an asset nobody owns and
+// nothing references can be found and cleaned up.
+
+model asset {
+  id                String    @id // "sha256:<64 hex>"
+  byteSize          Int
+  mimeType          String
+  format            String
+  manifest          Json
+  storageKey        String    @unique
+  status            String    @default("pending") // pending | ready
+  createdAt         DateTime  @default(now())
+  readyAt           DateTime?
+  firstUploadedById String?
+  /// Set when the last owner and the last reference are gone; cleared if someone claims it again.
+  orphanedAt        DateTime?
+
+  owners            assetOwner[]
+  cloudItems        cloudItemAsset[]
+  worldItems        worldInventoryItemAsset[]
+  revisions         publishedRevisionAsset[]
+  worlds            worldAsset[]
+
+  @@index([status, createdAt])
+  @@index([orphanedAt])
+}
+
+model assetOwner {
+  assetId   String
+  ownerId   String
+  name      String
+  source    String   @default("upload") // upload | reupload | clone
+  createdAt DateTime @default(now())
+
+  asset     asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  owner     user     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@id([assetId, ownerId])
+  @@index([ownerId])
+}
+
+model cloudItemAsset {
+  itemId  String
+  assetId String
+  item    cloudInventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  asset   asset              @relation(fields: [assetId], references: [id], onDelete: Restrict)
+
+  @@id([itemId, assetId])
+  @@index([assetId])
+}
+
+model worldInventoryItemAsset {
+  itemId  String
+  assetId String
+  item    worldInventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  asset   asset              @relation(fields: [assetId], references: [id], onDelete: Restrict)
+
+  @@id([itemId, assetId])
+  @@index([assetId])
+}
+
+model publishedRevisionAsset {
+  revisionId String
+  assetId    String
+  revision   publishedWorldRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  asset      asset                  @relation(fields: [assetId], references: [id], onDelete: Restrict)
+
+  @@id([revisionId, assetId])
+  @@index([assetId])
+}
+
+model worldAsset {
+  worldId String
+  assetId String
+  world   world @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  asset   asset @relation(fields: [assetId], references: [id], onDelete: Restrict)
+
+  @@id([worldId, assetId])
+  @@index([assetId])
 }

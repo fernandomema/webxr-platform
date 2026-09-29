@@ -1,10 +1,17 @@
 const RELIABLE_CHUNK_SIZE = 8_000;
 const MAX_RELIABLE_MESSAGE_SIZE = 8_000_000;
+/** The binary channel pauses sending above this much unsent data and resumes below the low mark. */
+const ASSET_HIGH_WATER = 512_000;
+const ASSET_LOW_WATER = 128_000;
 
 export interface PeerLinkOptions {
 	iceServers: RTCIceServer[];
 	onData(data: unknown, channel: 'reliable' | 'state'): void;
 	onOpen?(): void;
+	/** A frame from the binary `asset-data` channel (model transfers). */
+	onBinary?(data: Uint8Array): void;
+	/** The binary channel finished opening; transfers can start. */
+	onAssetChannelOpen?(): void;
 	onConnectionStateChange?(state: RTCPeerConnectionState): void;
 	onRemoteTrack?(track: MediaStreamTrack, streams: readonly MediaStream[]): void;
 }
@@ -18,6 +25,8 @@ export class PeerLink {
 	readonly pc: RTCPeerConnection;
 	private channel: RTCDataChannel | null = null;
 	private stateChannel: RTCDataChannel | null = null;
+	private assetChannel: RTCDataChannel | null = null;
+	private pendingAsset: Array<{ data: Uint8Array; sent: () => void }> = [];
 	private pendingReliable: string[] = [];
 	private receivedChunks = new Map<string, { parts: string[]; count: number; createdAt: number }>();
 	private pendingIceCandidates: RTCIceCandidateInit[] = [];
@@ -34,12 +43,62 @@ export class PeerLink {
 		if (isInitiator) {
 			this.wireChannel(this.pc.createDataChannel('world-sync', { ordered: true }));
 			this.wireChannel(this.pc.createDataChannel('world-state', { ordered: false, maxRetransmits: 0 }));
+			this.wireChannel(this.pc.createDataChannel('asset-data', { ordered: true }));
 		} else {
 			this.pc.ondatachannel = (event) => this.wireChannel(event.channel);
 		}
 	}
 
+	private wireAssetChannel(channel: RTCDataChannel): void {
+		this.assetChannel = channel;
+		channel.binaryType = 'arraybuffer';
+		channel.bufferedAmountLowThreshold = ASSET_LOW_WATER;
+		channel.onbufferedamountlow = () => this.flushAsset();
+		channel.onopen = () => {
+			this.flushAsset();
+			this.opts.onAssetChannelOpen?.();
+		};
+		channel.onmessage = (event) => {
+			if (event.data instanceof ArrayBuffer) this.opts.onBinary?.(new Uint8Array(event.data));
+		};
+	}
+
+	private flushAsset(): void {
+		const channel = this.assetChannel;
+		if (channel?.readyState !== 'open') return;
+		while (this.pendingAsset.length > 0 && channel.bufferedAmount < ASSET_HIGH_WATER) {
+			const next = this.pendingAsset.shift()!;
+			channel.send(next.data as unknown as ArrayBuffer);
+			next.sent();
+		}
+	}
+
+	get assetChannelOpen(): boolean {
+		return this.assetChannel?.readyState === 'open';
+	}
+
+	/**
+	 * Queues one binary frame. The promise resolves once the frame has been
+	 * handed to the network, so a sender that awaits it never buffers more than
+	 * the channel can drain (a model is hundreds of frames).
+	 */
+	sendBinary(data: Uint8Array): Promise<void> {
+		return new Promise((resolve) => {
+			this.pendingAsset.push({ data, sent: resolve });
+			this.flushAsset();
+		});
+	}
+
 	private wireChannel(channel: RTCDataChannel): void {
+		// Channels are told apart by label; an unknown label must never replace the reliable channel.
+		if (channel.label === 'asset-data') {
+			this.wireAssetChannel(channel);
+			return;
+		}
+		if (channel.label !== 'world-sync' && channel.label !== 'world-state') {
+			channel.close(); // from a newer build than this one: ignore it rather than mistake it for the reliable channel
+			return;
+		}
 		const isStateChannel = channel.label === 'world-state';
 		if (isStateChannel) this.stateChannel = channel;
 		else this.channel = channel;
@@ -163,8 +222,11 @@ export class PeerLink {
 	close(): void {
 		this.pendingReliable = [];
 		this.receivedChunks.clear();
+		// Nobody is waiting for these frames any more; release anything awaiting them.
+		for (const frame of this.pendingAsset.splice(0)) frame.sent();
 		this.channel?.close();
 		this.stateChannel?.close();
+		this.assetChannel?.close();
 		this.pc.close();
 	}
 }

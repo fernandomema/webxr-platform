@@ -6,13 +6,15 @@
  * the host->guest scene snapshot sent over the DataChannel.
  */
 
+import type { MeshRef } from '../assets/ref';
+
 export type Vec3 = [number, number, number];
 export type Quat = [number, number, number, number];
 
 export interface MeshRendererComponent {
 	type: 'meshRenderer';
-	/** Built-in primitive id ('box' | 'sphere' | 'plane' | 'ground' | ...) or an asset URL. */
-	meshRef: string;
+	/** A built-in primitive, or a model addressed by the SHA-256 of its bytes (see $lib/assets/ref). */
+	meshRef: MeshRef;
 	color?: string;
 }
 

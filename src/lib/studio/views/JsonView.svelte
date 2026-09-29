@@ -1,4 +1,5 @@
 <script lang="ts">
+	import CodeEditor from '../CodeEditor.svelte';
 	import { parseSlotTreeJSON, serializeSlotTree } from '../model';
 	import type { StudioDocument } from '../state/document.svelte';
 	import { toasts } from '../state/toasts.svelte';
@@ -44,7 +45,7 @@
 		<button class="btn sm" disabled={!edited} onclick={reset}>Reset</button>
 		<button class="btn primary sm" disabled={!edited} onclick={apply}>Apply</button>
 	</div>
-	<textarea class="input" spellcheck="false" aria-label="Scene JSON" aria-invalid={error ? 'true' : undefined} bind:value={draft} oninput={() => (edited = true)}></textarea>
+	<CodeEditor language="json" value={draft} onChange={(text) => { if (text === draft) return; draft = text; edited = true; }} />
 	{#if error}<p class="error" role="alert">{error}</p>{/if}
 </div>
 
@@ -52,6 +53,5 @@
 	.json-view { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 	.bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); }
 	.bar .muted { flex: 1; }
-	textarea { flex: 1; height: auto; border: 0; border-radius: 0; resize: none; background: #0b0e14; font-size: 12px; line-height: 1.5; }
 	.error { margin: 0; padding: 8px 12px; border-top: 1px solid var(--border); color: var(--danger); }
 </style>

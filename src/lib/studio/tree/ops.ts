@@ -110,7 +110,7 @@ export function insertSubtree(
 	parentId: string | null,
 	fragment: SlotTree,
 	newId: () => string = () => crypto.randomUUID()
-): { tree: SlotTree; id: string } | null {
+): { tree: SlotTree; id: string; idMap: Record<string, string> } | null {
 	if (fragment.length === 0) return null;
 	const target = getSlot(tree, parentId) ? parentId : null;
 	const ids = new Set(fragment.map((slot) => slot.id));
@@ -122,7 +122,7 @@ export function insertSubtree(
 		parentId: slot.parentId && ids.has(slot.parentId) ? remap.get(slot.parentId)! : target
 	}));
 	const firstRoot = copies.find((slot) => slot.parentId === target) ?? copies[0];
-	return { tree: [...tree, ...copies], id: firstRoot.id };
+	return { tree: [...tree, ...copies], id: firstRoot.id, idMap: Object.fromEntries(remap) };
 }
 
 /** Moves a slot under a new parent (or to the root). Refuses cycles. The local transform is kept as is. */

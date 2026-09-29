@@ -2,6 +2,8 @@ import { randomBytes } from 'node:crypto';
 import { prisma } from '../db';
 import { UnauthorizedError, ForbiddenError, NotFoundError, BadRequestError } from '../errors';
 import { validateWorldScene } from '$lib/worlds/package';
+import { migrateSlotTree } from '$lib/assets/ref';
+import { linkSceneAssets, readyAssetIds } from './assets';
 import type { SlotTree } from '$lib/ecs/types';
 import type { HostedWorldVisibility } from '$lib/worldVisibility';
 import { getActiveRoomCodes } from '../rooms';
@@ -73,16 +75,22 @@ export async function startHostingSession(
 	world = world
 		? await prisma.world.update({
 				where: { id: world.id },
-				data: { sceneData: params.sceneSnapshot as object, visibility: params.visibility }
+				data: { sceneData: migrateSlotTree(params.sceneSnapshot) as object, visibility: params.visibility }
 			})
 		: await prisma.world.create({
 				data: {
 					name: params.name ?? 'My Lobby',
 					hostUserId: user.id,
-					sceneData: params.sceneSnapshot as object,
+					sceneData: migrateSlotTree(params.sceneSnapshot) as object,
 					visibility: params.visibility
 				}
 			});
+
+	// Models already in the cloud are linked so guests can download them; the rest are sent by the host peer to peer.
+	const hostedWorldId = world.id;
+	await prisma.$transaction(async (tx) => {
+		await linkSceneAssets(tx, user, { kind: 'world', id: hostedWorldId }, await readyAssetIds(tx, migrateSlotTree(params.sceneSnapshot)));
+	});
 
 	await prisma.worldSession.updateMany({
 		where: { worldId: world.id, endedAt: null },

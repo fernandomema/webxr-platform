@@ -66,7 +66,7 @@ export function createInspectorPanel(
 		name: 'Inspector',
 		position: [0.9, 1.4, -1],
 		components: [
-			{ type: 'meshRenderer', meshRef: 'plane' },
+			{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'plane' } },
 			{ type: 'grabbable', scalable: true }
 		]
 	});

@@ -1,4 +1,5 @@
 import type { Component } from '../../ecs/types';
+import { BUILTIN_MESH_IDS } from '../../assets/ref.ts';
 
 export type ComponentType = Component['type'];
 export type ComponentGroup = 'Render' | 'Interaction' | 'Logic' | 'Media' | 'World';
@@ -22,6 +23,7 @@ export type FieldDef = FieldBase &
 		| { kind: 'color'; default?: string }
 		| { kind: 'enum'; options: { value: string; label: string }[]; default?: string }
 		| { kind: 'vec3'; step?: number; default?: [number, number, number] }
+		| { kind: 'mesh' }
 		| { kind: 'pose' }
 		| { kind: 'lines' }
 		| { kind: 'code' }
@@ -42,20 +44,18 @@ export interface ComponentSchema {
 
 export const DEFAULT_CODE = `// A code block returns event handlers.\nreturn {\n  onSpawn() {\n    ctx.log('Ready:', ctx.self.getSlot()?.name);\n  },\n  onGrab() {\n    ctx.log('Grabbed by', ctx.grab.heldBy());\n  },\n  tick(dt) {\n    // Use ctx.self, ctx.world, ctx.hierarchy and ctx.math here.\n  }\n};`;
 
-const MESH_PRESETS = ['box', 'sphere', 'plane', 'ground'];
-
 export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 	{
 		type: 'meshRenderer',
 		label: 'Mesh Renderer',
 		group: 'Render',
-		description: 'Draw a primitive shape or a model URL.',
+		description: 'Draw a built-in primitive shape or an already-imported model.',
 		glyph: '◇',
 		fields: [
-			{ key: 'meshRef', label: 'Mesh', kind: 'text', suggestions: MESH_PRESETS, help: 'A built-in shape or a model URL.' },
+			{ key: 'meshRef', label: 'Mesh', kind: 'mesh', help: `A built-in shape (${BUILTIN_MESH_IDS.join(', ')}) or a model already imported into this project. Models cannot be loaded from a URL.` },
 			{ key: 'color', label: 'Color', kind: 'color', optional: true, default: '#8b7cf6' }
 		],
-		create: () => ({ type: 'meshRenderer', meshRef: 'box', color: '#8b7cf6' })
+		create: () => ({ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'box' }, color: '#8b7cf6' })
 	},
 	{
 		type: 'textDisplay',

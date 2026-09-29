@@ -8,11 +8,13 @@
 	import { studioSession } from '$lib/studio/state/session.svelte';
 	import { dialogs } from '$lib/studio/state/dialogs.svelte';
 	import { toasts } from '$lib/studio/state/toasts.svelte';
+	import { studioModels } from '$lib/studio/state/models.svelte';
 	import { canRemoveSlot } from '$lib/studio/tree/ops';
 	import ScenePreview from '$lib/studio/ScenePreview.svelte';
 	import TopBar from '$lib/studio/components/TopBar.svelte';
 	import Hierarchy from '$lib/studio/components/Hierarchy.svelte';
 	import Inspector from '$lib/studio/components/Inspector.svelte';
+	import AiPanel from '$lib/studio/components/AiPanel.svelte';
 	import AssetsPanel from '$lib/studio/components/AssetsPanel.svelte';
 	import AddObjectMenu, { type ObjectPreset } from '$lib/studio/components/AddObjectMenu.svelte';
 	import SaveDialog from '$lib/studio/components/SaveDialog.svelte';
@@ -28,6 +30,7 @@
 	let advanced = $state(false);
 	let centerView = $state<'scene' | 'code' | 'json'>('scene');
 	let leftTab = $state<'hierarchy' | 'assets'>('hierarchy');
+	let rightTab = $state<'inspector' | 'ai'>('inspector');
 	let mobilePanel = $state<'left' | 'center' | 'right'>('center');
 	let dialog = $state<'save' | 'publish' | 'palette' | null>(null);
 	let showAddObject = $state(false);
@@ -164,6 +167,7 @@
 		{ id: 'duplicate', label: 'Duplicate selected object', shortcut: 'Ctrl+D', enabled: Boolean(doc.selectedId), run: () => doc.duplicateSelected() },
 		{ id: 'delete', label: 'Delete selected object', shortcut: 'Del', enabled: Boolean(doc.selectedId && canRemoveSlot(doc.tree, doc.selectedId)), run: removeSelected },
 		{ id: 'focus', label: 'Focus camera on selection', shortcut: 'F', enabled: Boolean(doc.selectedId), run: () => preview?.focusSelected() },
+		{ id: 'import-model', label: 'Import model (.glb)…', run: () => void studioModels.pickAndImport() },
 		{ id: 'play', label: 'Play in the game', run: play },
 		{ id: 'publish', label: 'Publish world…', enabled: doc.kind === 'world', run: () => (dialog = 'publish') },
 		{ id: 'mode', label: advanced ? 'Switch to Simple mode' : 'Switch to Advanced mode', run: () => setAdvanced(!advanced) },
@@ -275,7 +279,14 @@
 			</section>
 
 			<section class="right" aria-label="Properties">
-				<Inspector {doc} {advanced} onOpenCode={openCode} />
+				<div class="tabs" role="tablist">
+					<button class="tab" role="tab" aria-selected={rightTab === 'inspector'} onclick={() => (rightTab = 'inspector')}><Icon name="sliders" size={14} />Inspector</button>
+					<button class="tab" role="tab" aria-selected={rightTab === 'ai'} onclick={() => (rightTab = 'ai')}>AI</button>
+				</div>
+				<div class="right-body">
+					<div class="right-view" hidden={rightTab !== 'inspector'}><Inspector {doc} {advanced} onOpenCode={openCode} /></div>
+					<div class="right-view" hidden={rightTab !== 'ai'}><AiPanel {doc} projectKey={project.key} /></div>
+				</div>
 			</section>
 		</div>
 
@@ -303,7 +314,11 @@
 	.panels { display: grid; grid-template-columns: 260px minmax(0, 1fr) 340px; flex: 1; min-height: 0; }
 	.left, .right { min-height: 0; min-width: 0; background: var(--panel); }
 	.left { display: flex; flex-direction: column; border-right: 1px solid var(--border); }
-	.right { border-left: 1px solid var(--border); overflow: hidden; }
+	.right { border-left: 1px solid var(--border); overflow: hidden; display: flex; flex-direction: column; }
+	.right .tabs { margin: 8px 8px 0; }
+	.right-body { flex: 1; min-height: 0; }
+	.right-view { height: 100%; min-height: 0; }
+	.right-view[hidden] { display: none; }
 	.left .tabs { margin: 8px 8px 0; }
 	.left-body { position: relative; flex: 1; min-height: 0; }
 	.center { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
@@ -318,7 +333,7 @@
 		.panels { display: block; position: relative; }
 		.left, .center, .right { display: none; position: absolute; inset: 0; border: 0; }
 		.editor[data-panel='left'] .left, .editor[data-panel='right'] .right { display: flex; }
-		.editor[data-panel='right'] .right { display: block; overflow-y: auto; }
+		.editor[data-panel='right'] .right { display: flex; }
 		.editor[data-panel='center'] .center { display: flex; }
 		.mobile-nav { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--border); background: var(--panel); }
 		.mobile-nav button { display: grid; justify-items: center; gap: 2px; padding: 8px 0; border: 0; background: transparent; color: var(--muted); font: 500 11px var(--font); }

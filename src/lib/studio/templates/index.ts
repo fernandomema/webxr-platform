@@ -23,7 +23,7 @@ export const TEMPLATES: StudioTemplate[] = [
 			createSlot({
 				id: 'floor',
 				name: 'Floor',
-				components: [{ type: 'meshRenderer', meshRef: 'ground', color: '#4b5563' }, { type: 'collider', shape: 'box' }]
+				components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'ground' }, color: '#4b5563' }, { type: 'collider', shape: 'box' }]
 			})
 		]
 	},
@@ -45,7 +45,7 @@ export const TEMPLATES: StudioTemplate[] = [
 			createSlot({
 				name: 'Untitled object',
 				components: [
-					{ type: 'meshRenderer', meshRef: 'box', color: '#8b7cf6' },
+					{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'box' }, color: '#8b7cf6' },
 					{ type: 'collider', shape: 'box' },
 					{ type: 'grabbable', scalable: true }
 				]

@@ -1,3 +1,4 @@
+import { migrateItems } from '../migrate';
 import type { InventoryAdapter, InventoryFolder, InventoryItem } from '../types';
 
 const DB_NAME = 'webxr-platform-inventory';
@@ -72,7 +73,7 @@ export const localInventoryAdapter: InventoryAdapter = {
 
 	async listItems(_ctx, folderId) {
 		const items = await withStore<InventoryItem[]>(ITEMS_STORE, 'readonly', (store) => store.getAll());
-		return items.filter((i) => i.folderId === folderId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+		return migrateItems(items.filter((i) => i.folderId === folderId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
 	},
 
 	async saveItem(_ctx, folderId, name, slotData, kind = 'object', lineageId) {

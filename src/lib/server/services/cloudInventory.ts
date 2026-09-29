@@ -2,8 +2,12 @@ import { randomUUID } from 'node:crypto';
 import { prisma } from '../db';
 import { UnauthorizedError, ForbiddenError, NotFoundError, BadRequestError } from '../errors';
 import { validateWorldScene } from '$lib/worlds/package';
+import { migrateSlotTree } from '$lib/assets/ref';
+import { assertAssetsReady, assertInventoryQuota, linkSceneAssets } from './assets';
 import type { SlotTree } from '$lib/ecs/types';
 import type { SessionUser } from './worlds';
+
+const sceneBytes = (scene: unknown) => Buffer.byteLength(JSON.stringify(scene));
 
 export async function listCloudFolders(user: SessionUser | null, parentId: string | null) {
 	if (!user) throw new UnauthorizedError();
@@ -54,13 +58,25 @@ export async function saveCloudItem(
 				where: { ownerId: user.id, worldLineageId: lineage, kind: 'world' },
 				orderBy: { revisionNumber: 'desc' }, select: { revisionNumber: true }
 			});
-			return tx.cloudInventoryItem.create({ data: {
-				ownerId: user.id, folderId, name, slotData: slotData as object,
+			const scene = migrateSlotTree(slotData);
+			const assetIds = await assertAssetsReady(tx, scene);
+			await assertInventoryQuota(tx, user.id, sceneBytes(scene));
+			const item = await tx.cloudInventoryItem.create({ data: {
+				ownerId: user.id, folderId, name, slotData: scene as object,
 				kind, worldLineageId: lineage, revisionNumber: (latest?.revisionNumber ?? 0) + 1
 			} });
+			await linkSceneAssets(tx, user, { kind: 'cloudItem', id: item.id }, assetIds);
+			return item;
 		});
 	}
-	return prisma.cloudInventoryItem.create({ data: { ownerId: user.id, folderId, name, slotData: slotData as object, kind } });
+	return prisma.$transaction(async (tx) => {
+		const scene = migrateSlotTree(slotData);
+		const assetIds = await assertAssetsReady(tx, scene);
+		await assertInventoryQuota(tx, user.id, sceneBytes(scene));
+		const item = await tx.cloudInventoryItem.create({ data: { ownerId: user.id, folderId, name, slotData: scene as object, kind } });
+		await linkSceneAssets(tx, user, { kind: 'cloudItem', id: item.id }, assetIds);
+		return item;
+	});
 }
 
 export async function deleteCloudItem(user: SessionUser | null, itemId: string) {
@@ -77,8 +93,12 @@ export async function updateCloudItem(user: SessionUser | null, itemId: string, 
 	if (!item) throw new NotFoundError();
 	if (item.ownerId !== user.id) throw new ForbiddenError();
 	if (item.kind === 'world') throw new BadRequestError('World revisions are immutable; save a new revision instead');
-	return prisma.cloudInventoryItem.update({
-		where: { id: itemId },
-		data: { folderId, name, slotData: slotData as object }
+	return prisma.$transaction(async (tx) => {
+		const scene = migrateSlotTree(slotData);
+		const assetIds = await assertAssetsReady(tx, scene);
+		await assertInventoryQuota(tx, user.id, sceneBytes(scene) - sceneBytes(item.slotData));
+		const updated = await tx.cloudInventoryItem.update({ where: { id: itemId }, data: { folderId, name, slotData: scene as object } });
+		await linkSceneAssets(tx, user, { kind: 'cloudItem', id: itemId }, assetIds);
+		return updated;
 	});
 }

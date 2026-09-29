@@ -3,6 +3,10 @@
 	import { Library } from '../state/library.svelte';
 	import { toasts } from '../state/toasts.svelte';
 	import type { StudioDocument } from '../state/document.svelte';
+	import { dialogs } from '../state/dialogs.svelte';
+	import { formatBytes, studioModels } from '../state/models.svelte';
+	import { assetMesh } from '$lib/assets/ref';
+	import type { AssetListing } from '$lib/assets/store';
 	import Icon from '../ui/Icon.svelte';
 
 	interface Props {
@@ -23,6 +27,46 @@
 
 	const objects = $derived(library.visibleItems.filter((item) => item.kind !== 'world'));
 
+	let dragging = $state(false);
+
+	$effect(() => {
+		if (!studioModels.loaded) void studioModels.refresh();
+	});
+
+	/** The model's real size in metres (largest side), so it lands in the scene at the scale it was authored. */
+	function naturalSize(model: AssetListing): number {
+		const { min, max } = model.bounds;
+		const size = Math.max(max[0] - min[0], max[1] - min[1], max[2] - min[2]);
+		return Number.isFinite(size) ? Math.min(50, Math.max(0.05, size)) : 1;
+	}
+
+	function addModel(model: AssetListing) {
+		const size = naturalSize(model);
+		doc.addSlot({
+			name: model.name,
+			position: [0, size / 2, 0],
+			scale: [size, size, size],
+			components: [{ type: 'meshRenderer', meshRef: assetMesh(model.assetId) }, { type: 'collider', shape: 'box' }]
+		});
+		toasts.success(`Added “${model.name}”`);
+	}
+
+	async function removeModel(model: AssetListing) {
+		const ok = await dialogs.confirm({
+			title: `Remove “${model.name}” from this device?`,
+			message: 'Objects and worlds that use it will show a placeholder until it is imported again.',
+			confirmLabel: 'Remove',
+			danger: true
+		});
+		if (ok) await studioModels.remove(model.assetId);
+	}
+
+	async function onDrop(event: DragEvent) {
+		event.preventDefault();
+		dragging = false;
+		if (event.dataTransfer?.files.length) await studioModels.importFiles([...event.dataTransfer.files]);
+	}
+
 	function insert(id: string) {
 		const item = library.items.find((candidate) => candidate.id === id);
 		if (!item) return;
@@ -30,7 +74,39 @@
 	}
 </script>
 
-<div class="assets">
+<div
+	class="assets"
+	class:dragging
+	role="region"
+	aria-label="Library"
+	ondragover={(event) => { if (event.dataTransfer?.types.includes('Files')) { event.preventDefault(); dragging = true; } }}
+	ondragleave={() => (dragging = false)}
+	ondrop={onDrop}
+>
+	<section class="models" aria-label="Models">
+		<div class="models-head">
+			<strong>Models</strong>
+			<button class="btn sm" disabled={studioModels.importing} onclick={() => studioModels.pickAndImport()}>
+				<Icon name="plus" size={12} />{studioModels.importing ? 'Importing…' : 'Import .glb'}
+			</button>
+		</div>
+		{#if studioModels.items.length}
+			<ul class="model-list">
+				{#each studioModels.items as model (model.assetId)}
+					<li class="model-row">
+						<button class="row" title={`Add “${model.name}” to the scene`} onclick={() => addModel(model)}>
+							<Icon name="cube" size={14} />
+							<span>{model.name}</span>
+							<small class="muted">{model.triangles.toLocaleString('en-US')} tris · {formatBytes(model.byteSize)}</small>
+						</button>
+						<button class="icon-btn danger" aria-label={`Remove ${model.name} from this device`} onclick={() => removeModel(model)}><Icon name="trash" size={13} /></button>
+					</li>
+				{/each}
+			</ul>
+		{:else}
+			<p class="hint muted">Drop a .glb file here, or import one. Models are stored on this device.</p>
+		{/if}
+	</section>
 	<div class="toolbar">
 		{#if adapters.length > 1}
 			<select class="select" aria-label="Library" value={library.adapterId} onchange={(event) => library.switchAdapter(event.currentTarget.value)}>
@@ -62,6 +138,13 @@
 
 <style>
 	.assets { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+	.assets.dragging { outline: 2px dashed var(--accent); outline-offset: -4px; }
+	.models { padding: 8px 8px 4px; border-bottom: 1px solid var(--border); }
+	.models-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+	.model-list { max-height: 160px; margin: 0; padding: 0; overflow-y: auto; list-style: none; flex: none; }
+	.model-row { display: flex; align-items: center; gap: 2px; }
+	.model-row .row small { flex: none; font-size: 10px; }
+	.hint { margin: 4px 0 6px; font-size: 12px; }
 	.toolbar { display: flex; gap: 6px; padding: 8px; }
 	.toolbar .select { width: auto; flex: none; }
 	.crumbs { display: flex; align-items: center; gap: 6px; padding: 0 8px 4px; }

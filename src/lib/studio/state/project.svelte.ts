@@ -2,6 +2,8 @@ import type { SlotTree } from '$lib/ecs/types';
 import { getInventoryAdapter } from '$lib/inventory/registry';
 import type { InventoryContext, InventoryItem } from '$lib/inventory/types';
 import { validateWorldScene } from '$lib/worlds/package';
+import { ensureCloudAssets, type CloudSyncProgress } from '$lib/assets/cloudSync';
+import { getLocalAssetStore } from '$lib/assets/store';
 import { getTemplate } from '../templates';
 import { cloneTree } from '../tree/ops';
 import { deleteDraft, loadDraft, saveDraft, type Draft } from './autosave';
@@ -37,6 +39,8 @@ export class StudioProject {
 	status = $state<ProjectStatus>('loading');
 	error = $state('');
 	saving = $state(false);
+	/** Set while models are being sent to the cloud before a save or publish. */
+	assetProgress = $state<CloudSyncProgress | null>(null);
 	adapterId = $state<string | null>(null);
 	folderId = $state<string | null>(null);
 	item = $state.raw<InventoryItem | null>(null);
@@ -128,6 +132,7 @@ export class StudioProject {
 
 		this.saving = true;
 		try {
+			if (adapterId === 'cloud') await this.sendModels(tree);
 			const sameLocation = this.item !== null && adapterId === this.adapterId;
 			const saved =
 				this.doc.kind === 'object' && sameLocation && adapter.updateItem
@@ -179,10 +184,20 @@ export class StudioProject {
 		return ((await response.json()) as PublicationSummary[]).filter((publication) => publication.ownerId === userId);
 	}
 
+	/** Sends the models a scene uses to the cloud, reporting progress. Models already there cost nothing. */
+	private async sendModels(scene: SlotTree): Promise<void> {
+		try {
+			await ensureCloudAssets(scene, getLocalAssetStore(), { onProgress: (progress) => (this.assetProgress = progress.done < progress.total ? progress : null) });
+		} finally {
+			this.assetProgress = null;
+		}
+	}
+
 	/** Publishes the current tree. With `publicationId` it adds a new revision to that world. */
 	async publish(publicationId?: string): Promise<PublishResult> {
 		const scene = cloneTree(this.doc.tree);
 		validateWorldScene(scene);
+		await this.sendModels(scene);
 		const response = publicationId
 			? await fetch(`/api/published-worlds/${publicationId}/revisions`, jsonPost({ scene }))
 			: await fetch('/api/published-worlds', jsonPost({ name: this.doc.name.trim(), scene }));

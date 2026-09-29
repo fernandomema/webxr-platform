@@ -15,6 +15,8 @@
 		Vector3
 	} from '@babylonjs/core';
 	import { SceneGraph } from '$lib/xr/sceneGraph';
+	import { ModelLibrary } from '$lib/xr/modelLibrary';
+	import { CloudResolver } from '$lib/assets/cloud';
 	import type { SlotTree } from '$lib/ecs/types';
 	import { cloneTree } from './tree/ops';
 	import { eulerToQuat } from '$lib/math/euler';
@@ -33,6 +35,8 @@
 	let scene: Scene | null = null;
 	let camera: ArcRotateCamera | null = null;
 	let sceneGraph: SceneGraph | null = null;
+	let models: ModelLibrary | null = null;
+	const cloudResolver = new CloudResolver();
 	let ready = $state(false);
 	/** Bumped whenever the live scene is rebuilt, so the selection highlight is re-applied. */
 	let rebuilds = $state(0);
@@ -77,7 +81,8 @@
 		boxes.frontColor = new Color3(0.49, 0.42, 0.96);
 		boxes.backColor = new Color3(0.49, 0.42, 0.96);
 
-		sceneGraph = new SceneGraph(scene);
+		models = new ModelLibrary(scene, { getResolvers: () => [cloudResolver] });
+		sceneGraph = new SceneGraph(scene, { models, getViewerPosition: () => camera?.position ?? null });
 
 		handNode = new TransformNode('studio-hand', scene);
 		handNode.position = new Vector3(0, 1.2, 0);
@@ -169,9 +174,11 @@
 		if (highlighted) highlighted.showBoundingBox = false;
 		highlighted = null;
 		const node = id ? sceneGraph.getLive(id)?.node : null;
-		if (node instanceof AbstractMesh) {
-			node.showBoundingBox = true;
-			highlighted = node;
+		// A model's root is an empty mesh; its invisible box proxy is what outlines the selection.
+		const target = (node?.metadata?.selectionMesh as AbstractMesh | undefined) ?? node;
+		if (target instanceof AbstractMesh) {
+			target.showBoundingBox = true;
+			highlighted = target;
 		}
 	});
 
@@ -207,6 +214,7 @@
 	onDestroy(() => {
 		clearTimeout(rebuildTimer);
 		sceneGraph?.dispose();
+		models?.dispose();
 		scene?.dispose();
 		engine?.dispose();
 	});

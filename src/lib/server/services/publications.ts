@@ -1,6 +1,8 @@
 import { prisma } from '../db';
 import { UnauthorizedError, ForbiddenError, NotFoundError } from '../errors';
 import { validateWorldScene } from '$lib/worlds/package';
+import { collectAssetIds, migrateSlotTree } from '$lib/assets/ref';
+import { assertAssetsReady, assetSummaries, linkSceneAssets } from './assets';
 import type { SlotTree } from '$lib/ecs/types';
 import type { WorldPackage } from '$lib/worlds/types';
 import type { SessionUser } from './worlds';
@@ -21,27 +23,37 @@ export async function listPublications() {
 export async function publishWorld(user: SessionUser | null, name: unknown, scene: unknown) {
   if (!user) throw new UnauthorizedError();
   const input = validateInput(name, scene);
-  return prisma.publishedWorld.create({
-    data: {
-      ownerId: user.id,
-      name: input.name,
-      revisions: { create: { number: 1, sceneData: input.scene as object } }
-    },
-    select: { id: true, name: true, latestRevision: true }
+  const migrated = migrateSlotTree(input.scene);
+  return prisma.$transaction(async (tx) => {
+    // A published world must be self-contained: every model it uses has to be in the cloud.
+    const assetIds = await assertAssetsReady(tx, migrated);
+    const publication = await tx.publishedWorld.create({
+      data: {
+        ownerId: user.id,
+        name: input.name,
+        revisions: { create: { number: 1, sceneData: migrated as object } }
+      },
+      select: { id: true, name: true, latestRevision: true, revisions: { select: { id: true } } }
+    });
+    await linkSceneAssets(tx, user, { kind: 'publishedRevision', id: publication.revisions[0].id }, assetIds);
+    return { id: publication.id, name: publication.name, latestRevision: publication.latestRevision };
   });
 }
 
 export async function publishRevision(user: SessionUser | null, publicationId: string, scene: unknown) {
   if (!user) throw new UnauthorizedError();
   validateWorldScene(scene);
+  const migrated = migrateSlotTree(scene);
   return prisma.$transaction(async (tx) => {
     const publication = await tx.publishedWorld.findUnique({ where: { id: publicationId } });
     if (!publication) throw new NotFoundError();
     if (publication.ownerId !== user.id) throw new ForbiddenError();
+    const assetIds = await assertAssetsReady(tx, migrated);
     const number = publication.latestRevision + 1;
     const revision = await tx.publishedWorldRevision.create({
-      data: { publicationId, number, sceneData: scene as object }
+      data: { publicationId, number, sceneData: migrated as object }
     });
+    await linkSceneAssets(tx, user, { kind: 'publishedRevision', id: revision.id }, assetIds);
     await tx.publishedWorld.update({ where: { id: publicationId }, data: { latestRevision: number } });
     return { id: revision.id, number };
   });
@@ -56,10 +68,12 @@ export async function getPublishedWorld(publicationId: string, revisionId?: stri
   if (!revision) throw new NotFoundError();
   const scene = revision.sceneData as unknown;
   validateWorldScene(scene);
+  const migrated = migrateSlotTree(scene);
   return {
     formatVersion: 1,
     name: publication.name,
-    scene,
+    scene: migrated,
+    assets: await assetSummaries(prisma, [...collectAssetIds(migrated)]),
     defaultVisibility: 'private',
     source: { kind: 'published', worldId: publication.id, revisionId: revision.id }
   };

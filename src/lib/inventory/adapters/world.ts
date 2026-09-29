@@ -1,3 +1,4 @@
+import { migrateItems } from '../migrate';
 import type { InventoryAdapter, InventoryFolder, InventoryItem } from '../types';
 
 /** Backed by /api/worlds/[id]/inventory — only meaningful while inside a hosted/joined world. */
@@ -38,7 +39,7 @@ export const worldInventoryAdapter: InventoryAdapter = {
 		const qs = folderId ? `?folderId=${folderId}` : '';
 		const res = await fetch(`/api/worlds/${ctx.worldId}/inventory${qs}`);
 		if (!res.ok) return [];
-		return (await res.json()) as InventoryItem[];
+		return migrateItems((await res.json()) as InventoryItem[]);
 	},
 
 	async saveItem(ctx, folderId, name, slotData, kind = 'object', worldLineageId) {

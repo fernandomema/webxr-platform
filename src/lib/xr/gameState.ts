@@ -5,7 +5,17 @@
  */
 import type { WorldVisibility } from '$lib/worldVisibility';
 
+/** The inventory world the current scene was loaded from, so saving can add a revision to it instead of creating a new world. */
+export interface LoadedWorld {
+	adapterId: 'local' | 'world' | 'cloud';
+	worldLineageId: string;
+	folderId: string | null;
+	name: string;
+	revisionNumber: number | null;
+}
+
 export interface GameState {
+	loadedWorld: LoadedWorld | null;
 	worldId: string | null;
 	worldName: string | null;
 	roomCode: string | null;
@@ -21,6 +31,7 @@ export interface GameState {
 }
 
 export const gameState: GameState = {
+	loadedWorld: null,
 	worldId: null,
 	worldName: null,
 	roomCode: null,

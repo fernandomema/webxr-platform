@@ -4,6 +4,8 @@
 	import Icon from '../ui/Icon.svelte';
 	import { handPreview } from '../state/handPreview.svelte';
 	import type { EquipPose } from '$lib/ecs/types';
+	import { assetMesh, BUILTIN_MESH_IDS, isAssetId, normalizeMeshRef, type BuiltinMeshId } from '$lib/assets/ref';
+	import { studioModels } from '../state/models.svelte';
 
 	interface Props {
 		field: FieldDef;
@@ -97,6 +99,33 @@
 					<NumberInput prefix={axis} label={`${field.label} ${axis}`} step={field.step ?? 0.1} value={Array.isArray(value) ? Number(value[index] ?? 0) : 0} onchange={(next) => vec(index, next)} />
 				{/each}
 			</div>
+		{:else if field.kind === 'mesh'}
+			{@const mesh = normalizeMeshRef(value)}
+			{@const current = mesh.kind === 'builtin' ? mesh.id : mesh.assetId}
+			{@const known = mesh.kind === 'builtin' || studioModels.byId(mesh.assetId) !== undefined}
+			<select
+				class="select"
+				{id}
+				value={current}
+				onchange={async (event) => {
+					const next = event.currentTarget.value;
+					if (next === '__import') {
+						event.currentTarget.value = current;
+						const [first] = await studioModels.pickAndImport();
+						if (first) onchange(assetMesh(first.assetId));
+					} else if (isAssetId(next)) onchange(assetMesh(next));
+					else onchange({ kind: 'builtin', id: next as BuiltinMeshId });
+				}}
+			>
+				<optgroup label="Shapes">
+					{#each BUILTIN_MESH_IDS as meshId (meshId)}<option value={meshId}>{meshId[0].toUpperCase() + meshId.slice(1)}</option>{/each}
+				</optgroup>
+				<optgroup label="Models">
+					{#each studioModels.items as model (model.assetId)}<option value={model.assetId}>{model.name}</option>{/each}
+					{#if !known}<option value={current}>Model {current.slice(7, 15)}… (not on this device)</option>{/if}
+					<option value="__import">Import a .glb…</option>
+				</optgroup>
+			</select>
 		{:else if field.kind === 'pose'}
 			<div class="pose">
 				{#each [['position', 'Pos', 0.01], ['rotation', 'Rot °', 5]] as const as [part, label, step] (part)}
