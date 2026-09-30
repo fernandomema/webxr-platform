@@ -6,6 +6,8 @@ import {
 	type AbstractMesh,
 	type Scene
 } from '@babylonjs/core';
+import { normalizeSourceRef } from '$lib/assets/ref';
+import type { BlobAssetLibrary, BlobLease } from './blobAssetLibrary';
 import {
 	findComponent,
 	type AudioPlayerComponent,
@@ -21,6 +23,10 @@ export interface MediaRuntimeBinding {
 
 interface MediaSurfaceCallbacks {
 	onControl(action: MediaControlAction): void;
+	/** Where asset-backed media gets its bytes. Without it, an audio asset stays silent. */
+	assets?: BlobAssetLibrary;
+	/** Whether clicking the surface toggles playback. False when something else (a socket) drives it. */
+	interactive?: boolean;
 }
 
 function resolveMediaUrl(url: string): string {
@@ -59,9 +65,40 @@ export function setupAudioPlayerSurface(
 	callbacks: MediaSurfaceCallbacks
 ): MediaRuntimeBinding {
 	let component = initial;
-	let sourceUrl = resolveMediaUrl(component.url);
+	let requestedTime = component.currentTime ?? 0;
+	let sourceKey = '';
+	let sourceUrl = '';
+	let lease: BlobLease | null = null;
 	let sound: Sound | null = null;
-	const actionManager = installMediaControl(scene, mesh, callbacks);
+
+	/** Points `sourceUrl` at the component's current source. Returns whether it changed. */
+	const resolveSource = (next: AudioPlayerComponent): boolean => {
+		const ref = normalizeSourceRef(next.source, next.url);
+		const key = ref.kind === 'asset' ? ref.assetId : `url:${ref.url}`;
+		let changed = false;
+		if (key !== sourceKey) {
+			sourceKey = key;
+			changed = true;
+			lease?.release();
+			lease = null;
+			if (ref.kind === 'asset' && callbacks.assets) {
+				lease = callbacks.assets.acquire(ref.assetId, () => {
+					const ready = lease?.state === 'ready' ? (lease.url ?? '') : '';
+					if (ready !== sourceUrl) {
+						sourceUrl = ready;
+						replaceSound();
+					}
+				});
+			}
+		}
+		const url = ref.kind === 'url' ? resolveMediaUrl(ref.url) : lease?.state === 'ready' ? (lease.url ?? '') : '';
+		if (url !== sourceUrl) {
+			sourceUrl = url;
+			changed = true;
+		}
+		return changed;
+	};
+	const actionManager = callbacks.interactive === false ? null : installMediaControl(scene, mesh, callbacks);
 	mesh.metadata = { ...(mesh.metadata ?? {}), specialSurface: 'audio-player' };
 
 	const createSound = () => {
@@ -97,26 +134,25 @@ export function setupAudioPlayerSurface(
 		sound?.dispose();
 		sound = createSound();
 	};
+	resolveSource(component);
 	replaceSound();
 
 	const sync = (slot: Slot) => {
 		const next = findComponent(slot, 'audioPlayer');
 		if (!next) return;
-		const nextUrl = resolveMediaUrl(next.url);
-		if (nextUrl !== sourceUrl) {
-			sourceUrl = nextUrl;
-			replaceSound();
-		}
 		component = next;
+		if (resolveSource(next)) replaceSound();
 		if (!sound) return;
 		sound.loop = component.loop ?? false;
 		sound.setVolume(clampVolume(component.volume));
 		if (component.playing && !sound.isPlaying) sound.play(0, component.currentTime ?? 0);
 		else if (!component.playing && sound.isPlaying) sound.pause();
-		else if (component.playing && Math.abs(sound.currentTime - (component.currentTime ?? 0)) > 0.5) {
+		else if (component.playing && (component.currentTime ?? 0) !== requestedTime) {
+			// Seek only when the requested position itself changed: a playing track's own progress is not a request to restart it.
 			sound.stop();
 			sound.play(0, component.currentTime ?? 0);
 		}
+		requestedTime = component.currentTime ?? 0;
 	};
 
 	const control = (action: MediaControlAction) => {
@@ -133,9 +169,10 @@ export function setupAudioPlayerSurface(
 
 	return {
 		dispose() {
-			actionManager.dispose();
+			actionManager?.dispose();
 			sound?.dispose();
-	},
+			lease?.release();
+		},
 		sync,
 		control
 	};

@@ -1,11 +1,12 @@
-import { GlbError } from '$lib/assets/glb';
-import { importGlbFile } from '$lib/assets/importGlb';
+import { AssetImportError } from '$lib/assets/kinds';
+import { acceptedExtensions, assetKindForFileName } from '$lib/assets/kinds';
+import { importAssetFile } from '$lib/assets/importAsset';
 import type { AssetId } from '$lib/assets/ref';
 import { getLocalAssetStore, type AssetListing } from '$lib/assets/store';
 import { toasts } from './toasts.svelte';
 
-/** The models imported on this device, as the Studio shows them. */
-class StudioModels {
+/** The assets imported on this device, as the Studio shows them. Works for every registered asset kind. */
+class StudioAssets {
 	items = $state<AssetListing[]>([]);
 	loaded = $state(false);
 	importing = $state(false);
@@ -14,10 +15,15 @@ class StudioModels {
 		try {
 			this.items = (await getLocalAssetStore().list()).sort((a, b) => b.importedAt - a.importedAt);
 		} catch (error) {
-			toasts.error(error, 'Could not read the models on this device');
+			toasts.error(error, 'Could not read the assets on this device');
 		} finally {
 			this.loaded = true;
 		}
+	}
+
+	/** The imported assets of one kind (`model`, `audio`, …). */
+	ofType<T extends AssetListing['type']>(type: T): Array<Extract<AssetListing, { type: T }>> {
+		return this.items.filter((item): item is Extract<AssetListing, { type: T }> => item.type === type);
 	}
 
 	byId(id: AssetId): AssetListing | undefined {
@@ -25,23 +31,24 @@ class StudioModels {
 	}
 
 	/** Imports each file independently; a bad file reports its own reason and never blocks the others. */
-	async importFiles(files: Iterable<File>): Promise<AssetListing[]> {
+	async importFiles(files: Iterable<File>, type?: string): Promise<AssetListing[]> {
 		this.importing = true;
 		const imported: AssetListing[] = [];
 		try {
 			for (const file of files) {
-				if (!/\.glb$/i.test(file.name)) {
-					toasts.push('error', `“${file.name}” is not a .glb file.`);
+				const kind = assetKindForFileName(file.name);
+				if (!kind || (type && kind.type !== type)) {
+					toasts.push('error', `“${file.name}” is not a supported file.`);
 					continue;
 				}
 				try {
-					const result = await importGlbFile(file, getLocalAssetStore());
+					const result = await importAssetFile(file, getLocalAssetStore());
 					await this.refresh();
 					const listing = this.byId(result.manifest.assetId);
 					if (listing) imported.push(listing);
 					toasts.success(result.alreadyStored ? `“${result.manifest.name}” was already imported.` : `Imported “${result.manifest.name}”.`);
 				} catch (error) {
-					toasts.push('error', error instanceof GlbError ? `“${file.name}”: ${error.message}` : `“${file.name}” could not be imported.`);
+					toasts.push('error', error instanceof AssetImportError ? `“${file.name}”: ${error.message}` : `“${file.name}” could not be imported.`);
 				}
 			}
 		} finally {
@@ -50,14 +57,14 @@ class StudioModels {
 		return imported;
 	}
 
-	/** Opens the system file picker and imports what is chosen. */
-	pickAndImport(): Promise<AssetListing[]> {
+	/** Opens the system file picker (restricted to one kind when given) and imports what is chosen. */
+	pickAndImport(type?: string): Promise<AssetListing[]> {
 		return new Promise((resolve) => {
 			const input = document.createElement('input');
 			input.type = 'file';
-			input.accept = '.glb,model/gltf-binary';
+			input.accept = acceptedExtensions(type).join(',');
 			input.multiple = true;
-			input.onchange = () => void this.importFiles([...(input.files ?? [])]).then(resolve);
+			input.onchange = () => void this.importFiles([...(input.files ?? [])], type).then(resolve);
 			input.oncancel = () => resolve([]);
 			input.click();
 		});
@@ -68,12 +75,23 @@ class StudioModels {
 			await getLocalAssetStore().delete(id);
 			await this.refresh();
 		} catch (error) {
-			toasts.error(error, 'Could not remove the model');
+			toasts.error(error, 'Could not remove the asset');
 		}
 	}
 }
 
-export const studioModels = new StudioModels();
+export const studioAssets = new StudioAssets();
+/** Kept for the callers written before assets had kinds; models are one kind among several. */
+export const studioModels = {
+	get items() { return studioAssets.ofType('model'); },
+	get loaded() { return studioAssets.loaded; },
+	get importing() { return studioAssets.importing; },
+	refresh: () => studioAssets.refresh(),
+	byId: (id: AssetId) => studioAssets.byId(id),
+	importFiles: (files: Iterable<File>) => studioAssets.importFiles(files, 'model'),
+	pickAndImport: () => studioAssets.pickAndImport('model'),
+	remove: (id: AssetId) => studioAssets.remove(id)
+};
 
 export function formatBytes(bytes: number): string {
 	return bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;

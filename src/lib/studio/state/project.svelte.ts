@@ -120,7 +120,7 @@ export class StudioProject {
 	}
 
 	async save(target?: SaveTarget): Promise<InventoryItem> {
-		const adapterId = target?.adapterId ?? this.adapterId;
+		const adapterId = target?.adapterId ?? (this.adapterId === 'purchased' ? 'local' : this.adapterId);
 		const adapter = adapterId ? getInventoryAdapter(adapterId) : undefined;
 		if (!adapter || !adapterId) throw new Error('Choose where to save this project.');
 		const name = (target?.name ?? this.doc.name).trim();
@@ -137,14 +137,9 @@ export class StudioProject {
 			const saved =
 				this.doc.kind === 'object' && sameLocation && adapter.updateItem
 					? await adapter.updateItem(this.context, this.item!.id, folderId, name, tree)
-					: await adapter.saveItem(
-							this.context,
-							folderId,
-							name,
-							tree,
-							this.doc.kind,
-							this.doc.kind === 'world' && sameLocation ? (this.item?.worldLineageId ?? undefined) : undefined
-						);
+					: await (adapter.saveItem
+						? adapter.saveItem(this.context, folderId, name, tree, this.doc.kind, this.doc.kind === 'world' && sameLocation ? (this.item?.worldLineageId ?? undefined) : undefined)
+						: Promise.reject(new Error('This inventory is read-only.')));
 			this.adapterId = adapterId;
 			this.folderId = saved.folderId;
 			this.item = saved;
@@ -160,8 +155,41 @@ export class StudioProject {
 
 	async deleteFromLibrary(): Promise<void> {
 		if (!this.item || !this.adapterId) return;
-		await getInventoryAdapter(this.adapterId)?.deleteItem(this.context, this.item.id);
+		await getInventoryAdapter(this.adapterId)?.deleteItem?.(this.context, this.item.id);
 		await deleteDraft(this.key);
+	}
+
+	async publishMarketplaceItem(name: string, description: string, thumbnailUrl?: string): Promise<{ id: string; revision: number }> {
+		if (this.doc.kind !== 'object') throw new Error('Only objects can be published to the marketplace.');
+		if (!this.item || this.adapterId === 'purchased') throw new Error('Save this object to a writable inventory before publishing it.');
+		const scene = cloneTree(this.doc.tree);
+		validateWorldScene(scene);
+		await this.sendModels(scene);
+		const body: Record<string, unknown> = { name, description, thumbnailUrl: thumbnailUrl || null };
+		if (this.item?.marketplaceItemId) {
+			body.slotData = scene;
+			const response = await fetch(`/api/marketplace/items/${this.item.marketplaceItemId}`, jsonPut(body));
+			if (!response.ok) throw new Error(await errorMessage(response, 'Could not update marketplace item'));
+			const result = await response.json() as { id: string; latestRevision: number };
+			return { id: result.id, revision: result.latestRevision };
+		}
+		if (this.item && this.adapterId === 'cloud') body.source = { adapterId: 'cloud', itemId: this.item.id };
+		else if (this.item && this.adapterId === 'world') body.source = { adapterId: 'world', itemId: this.item.id, worldId: this.context.worldId };
+		else body.slotData = scene;
+		const response = await fetch('/api/marketplace/items', jsonPost(body));
+		if (!response.ok) throw new Error(await errorMessage(response, 'Could not publish marketplace item'));
+		const result = await response.json() as { id: string; latestRevision: number };
+		if (this.item && this.adapterId === 'local') await getInventoryAdapter('local')?.setMarketplaceItemId?.(this.context, this.item.id, result.id);
+		if (this.item) this.item = { ...this.item, marketplaceItemId: result.id };
+		return { id: result.id, revision: result.latestRevision };
+	}
+
+	/** Hides or re-shows an already-published marketplace listing without touching its content. */
+	async setMarketplaceVisibility(status: 'published' | 'hidden'): Promise<void> {
+		const id = this.item?.marketplaceItemId;
+		if (!id) throw new Error('This object is not published yet.');
+		const response = await fetch(`/api/marketplace/items/${id}`, jsonPut({ status }));
+		if (!response.ok) throw new Error(await errorMessage(response, 'Could not change the listing visibility'));
 	}
 
 	// --- Publishing ------------------------------------------------------------
@@ -211,6 +239,10 @@ export class StudioProject {
 		}
 		return { id, revision: body.number ?? body.latestRevision ?? 1, name: body.name ?? this.doc.name };
 	}
+}
+
+function jsonPut(body: unknown): RequestInit {
+	return { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) };
 }
 
 function jsonPost(body: unknown): RequestInit {

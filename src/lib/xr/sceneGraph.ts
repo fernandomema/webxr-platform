@@ -6,24 +6,28 @@ import {
 	Color3,
 	Vector3,
 	Quaternion,
+	Ray,
 	TransformNode,
 	type Scene,
 	type AbstractMesh
 } from '@babylonjs/core';
-import type { MediaControlAction, Slot, SlotTree, UIEvent, Vec3 } from '$lib/ecs/types';
+import type { MediaControlAction, Slot, SlotTree, UIEvent, Vec3, Quat } from '$lib/ecs/types';
 import { findComponent, isGrabbable } from '$lib/ecs/types';
 import { meshRefKey, normalizeMeshRef, type AssetId, type MeshRef } from '$lib/assets/ref';
+import type { BlobAssetLibrary } from './blobAssetLibrary';
 import type { ModelInstance, ModelLease, ModelLibrary, ModelState } from './modelLibrary';
 import { setupMirrorSurface } from './specialSurfaces';
 import { setupAudioPlayerSurface, type MediaRuntimeBinding } from './mediaSurfaces';
+import { setupHtmlView } from './htmlViewSurface';
 import { setupParticleBurst } from './particleEffects';
+import { setupSurfaceMask } from './surfaceMaskRenderer';
 import { setupStroke } from './strokeRenderer';
 import { setupSkybox } from './skyboxRenderer';
 import { setupImpactSound } from './impactSoundEffects';
 import { setupTextDisplay } from './textDisplaySurface';
 import { setupScoreboard } from './scoreboardSurface';
 import { setupUIPanel, type UIMediaState, type UIPanelBinding } from './uiPanelSurface';
-import { createCodeBlockHandlers, type CodeBlockHost, type RadialItemDef, type CodeBlockLogEntry, type HandEvent, type TriggerEvent } from './codeBlockRuntime';
+import { createCodeBlockHandlers, type CodeBlockHost, type RadialItemDef, type CodeBlockLogEntry, type HandEvent, type TriggerEvent, type RaycastHit } from './codeBlockRuntime';
 
 interface LiveSlot {
 	slot: Slot;
@@ -74,6 +78,8 @@ export interface SceneGraphOptions {
 	resolvePlayer?: (grabberId: string) => { id: string; name: string };
 	/** Where model bytes come from. Without it, a slot that points at a model stays a placeholder. */
 	models?: ModelLibrary;
+	/** Where asset-backed media (audio) gets its bytes. */
+	mediaAssets?: BlobAssetLibrary;
 	/** The viewer's position, to load nearby models first. */
 	getViewerPosition?: () => Vector3 | null;
 	/** A slot's model changed state (queued, loading, ready, missing, error). */
@@ -240,6 +246,24 @@ export class SceneGraph {
 		entry.slot.parentId = parentId;
 		this.syncSlotTransform(entry);
 		return true;
+	}
+
+	/** Puts a slot at a pose in its parent's space, keeping the slot data in step with the node. */
+	placeSlotLocal(slotId: string, position: Vec3, rotation: Quat): void {
+		const entry = this.live.get(slotId);
+		if (!entry) return;
+		entry.node.position.copyFromFloats(...position);
+		entry.node.rotationQuaternion = Quaternion.FromArray(rotation);
+		this.syncSlotTransform(entry);
+	}
+
+	/**
+	 * Changes only which slot the data says is the parent, leaving the node where it is. For a slot that is
+	 * momentarily under a hand: `serialize()` already sends it in its data parent's space.
+	 */
+	setSlotParentData(slotId: string, parentId: string | null): void {
+		const entry = this.live.get(slotId);
+		if (entry && !entry.system) entry.slot.parentId = parentId;
 	}
 
 	controlMedia(slotId: string, action: MediaControlAction): boolean {
@@ -409,10 +433,14 @@ export class SceneGraph {
 			if (mirror) entry.runtime = { dispose: setupMirrorSurface(this.scene, node as AbstractMesh, mirror.resolution) };
 			const audio = findComponent(slot, 'audioPlayer');
 			if (audio) entry.runtime = this.createMediaRuntime(slot, node as AbstractMesh, setupAudioPlayerSurface);
+			const htmlView = findComponent(slot, 'htmlView');
+			if (htmlView) entry.runtime = setupHtmlView(this.scene, node as AbstractMesh, htmlView);
 			const textDisplay = findComponent(slot, 'textDisplay');
 			if (textDisplay) entry.runtime = setupTextDisplay(this.scene, node as AbstractMesh, textDisplay);
 			const scoreboard = findComponent(slot, 'scoreboard');
 			if (scoreboard) entry.runtime = setupScoreboard(this.scene, node as AbstractMesh, scoreboard);
+			const surfaceMask = findComponent(slot, 'surfaceMask');
+			if (surfaceMask) entry.runtime = setupSurfaceMask(this.scene, node as AbstractMesh, surfaceMask, ref);
 		}
 		if (uiPanel && node instanceof Mesh) {
 			const binding = setupUIPanel(
@@ -491,6 +519,7 @@ export class SceneGraph {
 				}
 			},
 			findNear: (worldPos, radius) => this.findSlotsNear(worldPos, radius),
+			raycast: (origin, direction, maxDistance) => this.raycastScene(origin, direction, maxDistance),
 			resolvePlayer: (grabberId) => this.options.resolvePlayer?.(grabberId) ?? { id: grabberId, name: 'Player' },
 			getEquipHolder: (slotId) => this.equipQuery?.getHolderOfSlotOrAncestor(slotId) ?? null,
 			getUIMedia: (slotId) => this.getUIMedia(slotId),
@@ -513,6 +542,25 @@ export class SceneGraph {
 			if (dx * dx + dy * dy + dz * dz <= radiusSq) results.push(entry.slot);
 		}
 		return results;
+	}
+
+	/** Casts a ray through every pickable mesh in the scene and resolves the closest hit back to its owning Slot — see CodeBlockHost.raycast's doc comment. `null` if nothing pickable (or nothing owned by a Slot, e.g. a placeholder proxy) is hit within `maxDistance`. */
+	private raycastScene(origin: Vec3, direction: Vec3, maxDistance: number): RaycastHit | null {
+		const dir = Vector3.FromArray(direction).normalize();
+		const ray = new Ray(Vector3.FromArray(origin), dir, Math.max(0.001, maxDistance));
+		const pick = this.scene.pickWithRay(ray, (mesh) => mesh.isPickable && mesh.isEnabled());
+		if (!pick?.hit || !pick.pickedMesh || !pick.pickedPoint) return null;
+		const slotId = this.getSlotIdForNode(pick.pickedMesh);
+		if (!slotId) return null;
+		const normal = pick.getNormal(true, true) ?? Vector3.Up();
+		const uv = pick.getTextureCoordinates();
+		return {
+			slotId,
+			point: pick.pickedPoint.asArray() as Vec3,
+			normal: normal.asArray() as Vec3,
+			u: uv?.x ?? 0,
+			v: uv?.y ?? 0
+		};
 	}
 
 	/** Applies each codeBlock's tick() (own try/catch inside), integrates generic `velocity` components, and sweeps expired slots — call every frame, on every peer, solo included. Returns how many slots were removed by expiry. */
@@ -637,11 +685,14 @@ export class SceneGraph {
 	private createMediaRuntime<T extends Slot['components'][number]>(
 		slot: Slot,
 		mesh: AbstractMesh,
-		setup: (scene: Scene, mesh: AbstractMesh, component: T, callbacks: { onControl(action: MediaControlAction): void }) => MediaRuntimeBinding
+		setup: (scene: Scene, mesh: AbstractMesh, component: T, callbacks: { onControl(action: MediaControlAction): void; assets?: BlobAssetLibrary; interactive?: boolean }) => MediaRuntimeBinding
 	): LiveSlot['runtime'] {
 		const component = slot.components.find((candidate) => candidate.type === 'audioPlayer') as T;
 		const runtime = setup(this.scene, mesh, component, {
-			onControl: (action) => this.options.onMediaControl?.(slot.id, action)
+			onControl: (action) => this.options.onMediaControl?.(slot.id, action),
+			assets: this.options.mediaAssets,
+			// An insertable object (a disc) is played by the socket it sits in, not by clicking it.
+			interactive: !findComponent(slot, 'insertable')
 		});
 		return runtime;
 	}

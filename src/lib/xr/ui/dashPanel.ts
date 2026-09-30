@@ -8,14 +8,17 @@ import {
 	InputText,
 	VirtualKeyboard,
 	Control,
-	ScrollViewer
+	ScrollViewer,
+	Image
 } from '@babylonjs/gui';
 import { createSlot, type SlotTree } from '$lib/ecs/types';
 import type { SceneGraph } from '../sceneGraph';
 import { authClient } from '$lib/auth-client';
 import { availableInventoryFolders, getInventoryAdapter } from '$lib/inventory/registry';
-import type { InventoryAdapter, InventoryAdapterId, InventoryFolder, InventoryItem } from '$lib/inventory/types';
+import type { InventoryAdapter, InventoryAdapterId, InventoryStorageAdapterId, InventoryFolder, InventoryItem } from '$lib/inventory/types';
 import { validateWorldScene } from '$lib/worlds/package';
+import { ensureCloudAssets } from '$lib/assets/cloudSync';
+import { getLocalAssetStore } from '$lib/assets/store';
 import type { WorldPackage } from '$lib/worlds/types';
 import { gameState, getInventoryContext } from '../gameState';
 import { xrSettings, saveSettings, type MovementMode, type RotationMode } from '../settings';
@@ -29,9 +32,9 @@ export interface DashPanelCallbacks {
 	onStopHosting(): Promise<void>;
 	onJoinWorld(roomCode: string): Promise<void>;
 	onSpawnItem(slotData: SlotTree): void;
-	onSpawnWorldOrb(item: InventoryItem, adapterId: InventoryAdapterId): void;
+	onSpawnWorldOrb(item: InventoryItem, adapterId: InventoryStorageAdapterId): void;
 	onSpawnPublishedWorld(world: WorldPackage): void;
-	onLaunchWorldItem(item: InventoryItem, adapterId: InventoryAdapterId): Promise<void>;
+	onLaunchWorldItem(item: InventoryItem, adapterId: InventoryStorageAdapterId): Promise<void>;
 	onLocomotionSettingsChanged(): void;
 	onExitVr(): Promise<void>;
 	onToggleInspector(): void;
@@ -308,6 +311,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			const snapshot = sceneGraph.serialize();
 			validateWorldScene(snapshot);
 			const lineage = loaded && loaded.adapterId === adapter.id ? loaded.worldLineageId : undefined;
+			if (!adapter.saveItem || adapter.id === 'purchased') throw new Error('This inventory is read-only');
 			const saved = await adapter.saveItem(getInventoryContext(), folderId, name, snapshot, 'world', lineage);
 			if (saved.worldLineageId) {
 				gameState.loadedWorld = { adapterId: adapter.id, worldLineageId: saved.worldLineageId, folderId: saved.folderId, name: saved.name, revisionNumber: saved.revisionNumber ?? null };
@@ -385,6 +389,10 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	publishedWorldsList.width = 1;
 	worldsList.addControl(publishedWorldsTitle);
 	worldsList.addControl(publishedWorldsList);
+	const marketplaceTitle = new TextBlock('marketplace-title', 'Marketplace');
+	marketplaceTitle.color = '#d1d5db'; marketplaceTitle.fontSize = 18; marketplaceTitle.height = '38px'; marketplaceTitle.top = '14px';
+	const marketplaceList = new StackPanel('marketplace-list'); marketplaceList.width = 1;
+	worldsList.addControl(marketplaceTitle); worldsList.addControl(marketplaceList);
 
 	async function refreshWorldsTab() {
 		refreshSaveWorld();
@@ -408,7 +416,9 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 
 		for (const child of [...publicSessionsList.children]) publicSessionsList.removeControl(child);
 		for (const child of [...publishedWorldsList.children]) publishedWorldsList.removeControl(child);
+		for (const child of [...marketplaceList.children]) marketplaceList.removeControl(child);
 		void refreshPublishedWorlds();
+		void refreshMarketplaceCatalog();
 		if (gameState.role === 'guest') return;
 		try {
 			const res = await fetch('/api/worlds');
@@ -480,6 +490,38 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 				publishedWorldsList.addControl(row);
 			}
 		} catch { /* offline */ }
+	}
+
+	async function refreshMarketplaceCatalog() {
+		try {
+			const [catalogResponse, purchasesResponse] = await Promise.all([
+			fetch('/api/marketplace/items'),
+			gameState.userId ? fetch('/api/marketplace/purchases') : Promise.resolve(null)
+		]);
+		if (!catalogResponse.ok) return;
+		const items = await catalogResponse.json() as Array<{ id: string; name: string; description: string; latestRevision: number; containsCode: boolean; thumbnailUrl: string | null }>;
+		const purchases = purchasesResponse?.ok ? await purchasesResponse.json() as Array<{ marketplaceItemId?: string }> : [];
+		const acquired = new Set(purchases.map((item) => item.marketplaceItemId).filter(Boolean));
+		if (!items.length) {
+			const empty = new TextBlock('marketplace-empty', 'No objects listed yet.'); empty.height = '34px'; empty.color = '#9ca3af'; marketplaceList.addControl(empty); return;
+		}
+		for (const item of items) {
+			const row = new StackPanel(`marketplace-row-${item.id}`); row.isVertical = true; row.height = item.containsCode ? '104px' : '64px'; row.width = 1;
+			const line = new StackPanel(`marketplace-line-${item.id}`); line.isVertical = false; line.height = '56px'; line.width = 1;
+			if (item.thumbnailUrl) { const thumbnail = new Image(`marketplace-thumbnail-${item.id}`, item.thumbnailUrl); thumbnail.width = '54px'; thumbnail.height = '48px'; thumbnail.stretch = Image.STRETCH_UNIFORM; line.addControl(thumbnail); }
+			const info = new TextBlock(`marketplace-info-${item.id}`, `${item.name} · v${item.latestRevision}${item.description ? `\n${item.description.slice(0, 100)}` : ''}`);
+			info.width = '560px'; info.height = '54px'; info.color = '#e2e8f0'; info.fontSize = 15; info.textWrapping = true; info.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT; line.addControl(info);
+			const button = Button.CreateSimpleButton(`marketplace-acquire-${item.id}`, acquired.has(item.id) ? 'Acquired' : 'Acquire');
+			button.width = '140px'; button.height = '48px'; button.color = 'white'; button.background = acquired.has(item.id) ? '#334155' : '#7c3aed'; button.cornerRadius = 8; button.isEnabled = !acquired.has(item.id);
+			button.onPointerClickObservable.add(async () => {
+				try { const response = await fetch(`/api/marketplace/items/${item.id}/purchase`, { method: 'POST' }); if (!response.ok) throw new Error(response.status === 401 ? 'Sign in to acquire this object.' : 'Could not acquire this object.'); button.textBlock!.text = 'Acquired'; button.background = '#334155'; button.isEnabled = false; browseStatus.text = 'Added to Purchased Objects inventory.'; }
+				catch (err) { browseStatus.text = err instanceof Error ? err.message : 'Could not acquire this object'; }
+			});
+			line.addControl(button); row.addControl(line);
+			if (item.containsCode) { const warning = new TextBlock(`marketplace-code-warning-${item.id}`, 'Warning: This product may execute potentially dangerous code.'); warning.height = '36px'; warning.color = '#fbbf24'; warning.fontSize = 15; warning.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT; row.addControl(warning); }
+			marketplaceList.addControl(row);
+		}
+		} catch { /* keep the rest of the Worlds tab usable while offline */ }
 	}
 
 	// --- Inventory tab -------------------------------------------------------
@@ -583,7 +625,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	}
 
 	const newFolderBtn = actionButton('new-folder-btn', '＋ Folder', INV.surface, 110, async () => {
-		if (!activeAdapter) return;
+		if (!activeAdapter?.createFolder) return;
 		await activeAdapter.createFolder(getInventoryContext(), currentFolderId(), `Folder ${new Date().toLocaleTimeString()}`);
 		refreshList();
 	});
@@ -668,6 +710,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			refreshPath();
 			refreshList();
 		} else if (entry.item.kind === 'world') {
+			if (adapter.id === 'purchased') return;
 			callbacks.onSpawnWorldOrb(entry.item, adapter.id);
 			showMessage(`Placed “${entry.name}” as a world orb`, 'ok');
 		} else {
@@ -681,14 +724,14 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		const entry = selected;
 		if (!adapter) return;
 		if (!entry) {
-			inventoryToolbar.addControl(newFolderBtn);
+			if (adapter.createFolder) inventoryToolbar.addControl(newFolderBtn);
 			return;
 		}
 
 		if (entry.type === 'folder') {
 			inventoryToolbar.addControl(actionButton('tb-open', 'Open', INV.accent, 90, () => activate(entry)));
-			inventoryToolbar.addControl(actionButton('tb-delete', 'Delete', INV.danger, 100, async () => {
-				await adapter.deleteFolder(getInventoryContext(), entry.id);
+			if (adapter.deleteFolder) inventoryToolbar.addControl(actionButton('tb-delete', 'Delete', INV.danger, 100, async () => {
+				await adapter.deleteFolder!(getInventoryContext(), entry.id);
 				select(null);
 				refreshList();
 			}));
@@ -696,8 +739,25 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			const item = entry.item;
 			const isWorld = item.kind === 'world';
 			inventoryToolbar.addControl(actionButton('tb-spawn', isWorld ? 'Place orb' : 'Spawn', INV.accent, isWorld ? 116 : 94, () => activate(entry)));
+			if (!isWorld && gameState.userId && (adapter.id !== 'world' || gameState.role === 'host')) {
+				inventoryToolbar.addControl(actionButton('tb-marketplace', item.marketplaceItemId ? 'Update Marketplace' : 'Publish', '#7c3aed', 160, async () => {
+					try {
+						await ensureCloudAssets(item.slotData, getLocalAssetStore());
+						const body: Record<string, unknown> = { name: item.name, description: '', thumbnailUrl: null, slotData: item.slotData };
+						const response = item.marketplaceItemId
+							? await fetch(`/api/marketplace/items/${item.marketplaceItemId}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ slotData: item.slotData }) })
+							: await fetch('/api/marketplace/items', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...body, source: adapter.id === 'local' ? undefined : { adapterId: adapter.id, itemId: item.id, worldId: gameState.worldId } }) });
+						if (!response.ok) throw new Error(response.status === 401 ? 'Sign in to publish objects.' : 'Could not publish marketplace object.');
+						const result = await response.json() as { id: string; latestRevision: number };
+						if (adapter.id === 'local') await adapter.setMarketplaceItemId?.(getInventoryContext(), item.id, result.id);
+						item.marketplaceItemId = result.id;
+						showMessage(`Marketplace revision ${result.latestRevision} published.`, 'ok');
+					} catch (error) { showMessage(error instanceof Error ? error.message : 'Could not publish marketplace object', 'error'); }
+				}));
+			}
 			if (isWorld) {
 				inventoryToolbar.addControl(actionButton('tb-load', 'Load', '#0f766e', 84, async () => {
+					if (adapter.id === 'purchased') return;
 					try { await callbacks.onLaunchWorldItem(item, adapter.id); }
 					catch (error) { showMessage(error instanceof Error ? error.message : 'Could not load world', 'error'); }
 				}));
@@ -725,8 +785,8 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 					} catch (error) { showMessage(error instanceof Error ? error.message : 'Could not move item', 'error'); }
 				}));
 			}
-			inventoryToolbar.addControl(actionButton('tb-delete', 'Delete', INV.danger, 90, async () => {
-				await adapter.deleteItem(getInventoryContext(), item.id);
+			if (adapter.deleteItem) inventoryToolbar.addControl(actionButton('tb-delete', 'Delete', INV.danger, 90, async () => {
+				await adapter.deleteItem!(getInventoryContext(), item.id);
 				select(null);
 				refreshList();
 			}));
@@ -842,6 +902,8 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		glyph.fontSize = 22;
 		badge.addControl(glyph);
 		cell.addControl(badge);
+
+		if (entry.type === 'item' && entry.item.thumbnailUrl) { const thumbnail = new Image(`cell-thumbnail-${key}`, entry.item.thumbnailUrl); thumbnail.width = '58px'; thumbnail.height = '58px'; thumbnail.stretch = Image.STRETCH_UNIFORM; thumbnail.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT; thumbnail.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP; thumbnail.left = '10px'; thumbnail.top = '10px'; thumbnail.isHitTestVisible = false; cell.addControl(thumbnail); }
 
 		const tag = new TextBlock(`cell-meta-${key}`, meta);
 		tag.fontSize = 13; tag.color = INV.muted;

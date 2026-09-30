@@ -1,15 +1,15 @@
 ---
 id: "editar-laser-2026-09-29"
-status: "backlog"
+status: "in-progress"
 priority: "medium"
 assignee: null
 epic: null
 dueDate: null
 created: "2026-09-28T23:39:19.568Z"
-modified: "2026-09-28T23:39:19.568Z"
+modified: "2026-09-29T17:05:19.901Z"
 completedAt: null
 labels: []
-order: "a4"
+order: "a0"
 ---
 # Editar laser
 

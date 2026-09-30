@@ -1,6 +1,6 @@
-import { GlbError } from './glb.ts';
 import { assetIdOf } from './hash.ts';
-import { importGlb } from './importGlb.ts';
+import { importAsset } from './importAsset.ts';
+import { AssetImportError } from './kinds/index.ts';
 import type { AssetId } from './ref.ts';
 import type { AssetStore } from './store.ts';
 
@@ -16,11 +16,11 @@ export type ResolveResult =
 	| { ok: false; reason: 'unavailable' | 'invalid'; message: string };
 
 /**
- * Finds a model's bytes: this device first, then each remote source in order.
+ * Finds an asset's bytes: this device first, then each remote source in order.
  * Whatever a remote source returns is checked against the hash it was asked for
  * and against the same import rules as a local file, then cached on this
  * device — a source can be wrong or hostile, but it cannot make the wrong
- * model appear.
+ * asset appear.
  */
 export async function resolveAsset(
 	id: AssetId,
@@ -47,9 +47,9 @@ export async function resolveAsset(
 			continue;
 		}
 		try {
-			await importGlb(bytes, options.nameHint ?? 'Model', store);
+			await importAsset(bytes, options.nameHint ?? '', store);
 		} catch (error) {
-			if (error instanceof GlbError) {
+			if (error instanceof AssetImportError) {
 				invalid = error.message;
 				continue;
 			}
@@ -59,5 +59,5 @@ export async function resolveAsset(
 	}
 	return invalid
 		? { ok: false, reason: 'invalid', message: invalid }
-		: { ok: false, reason: 'unavailable', message: 'No source has this model.' };
+		: { ok: false, reason: 'unavailable', message: 'No source has this asset.' };
 }

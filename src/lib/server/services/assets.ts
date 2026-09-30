@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
 import { env } from '$env/dynamic/private';
 import { canReleaseOwnership, wouldExceedQuota } from '$lib/assets/accounting';
-import { validateManifest, type AssetManifest } from '$lib/assets/manifest';
+import { getAssetKind } from '$lib/assets/kinds';
+import { summarizeManifest, validateManifest, type AssetManifest, type AssetSummary } from '$lib/assets/manifest';
 import { collectAssetIds, isAssetId, type AssetId } from '$lib/assets/ref';
 import { prisma } from '../db';
 import {
@@ -32,36 +33,40 @@ import type { SessionUser } from './worlds';
 /** Either the shared client or a transaction, so the same helpers work inside both. */
 type Db = Pick<
 	typeof prisma,
-	'asset' | 'assetOwner' | 'cloudItemAsset' | 'worldInventoryItemAsset' | 'publishedRevisionAsset' | 'worldAsset' | '$queryRaw'
+	'asset' | 'assetOwner' | 'cloudItemAsset' | 'worldInventoryItemAsset' | 'publishedRevisionAsset' | 'marketplaceRevisionAsset' | 'worldAsset' | '$queryRaw'
 >;
 
 export type AssetHolder =
 	| { kind: 'cloudItem'; id: string }
 	| { kind: 'worldInventoryItem'; id: string }
 	| { kind: 'publishedRevision'; id: string }
+	| { kind: 'marketplaceRevision'; id: string }
 	| { kind: 'world'; id: string };
 
-const GLB_MIME = 'model/gltf-binary';
-const GLB_MAGIC = 0x46546c67;
+/** Extension of the stored object: the first one the kind lists for the format. */
+function extensionOf(manifest: AssetManifest): string {
+	const format = getAssetKind(manifest.type)?.formats.find((entry) => entry.format === manifest.format);
+	return (format?.extensions[0] ?? '').replace(/^\./, '');
+}
 
 export const userQuotaBytes = () => Number(env.ASSET_USER_QUOTA_BYTES ?? 524_288_000);
 
 function requireStorage(): void {
-	if (!assetStorageConfigured()) throw new BadRequestError('Model storage is not configured on this server.');
+	if (!assetStorageConfigured()) throw new BadRequestError('Asset storage is not configured on this server.');
 }
 
 // --- URLs -------------------------------------------------------------------
 
 /** Where the browser sends the bytes: straight to S3 when it can, otherwise through this server. */
-async function uploadTarget(id: AssetId): Promise<{ method: 'PUT'; url: string; headers: Record<string, string> }> {
-	if (transferMode() === 'proxy') return { method: 'PUT', url: `/api/assets/blob/${encodeURIComponent(id)}`, headers: { 'content-type': GLB_MIME } };
-	const { url, headers } = await presignUpload(storageKeyFor(id), GLB_MIME);
+async function uploadTarget(id: AssetId, storageKey: string, mimeType: string): Promise<{ method: 'PUT'; url: string; headers: Record<string, string> }> {
+	if (transferMode() === 'proxy') return { method: 'PUT', url: `/api/assets/blob/${encodeURIComponent(id)}`, headers: { 'content-type': mimeType } };
+	const { url, headers } = await presignUpload(storageKey, mimeType);
 	return { method: 'PUT', url, headers };
 }
 
-async function downloadTarget(id: AssetId): Promise<{ url: string; expiresAt: number }> {
+async function downloadTarget(id: AssetId, storageKey: string): Promise<{ url: string; expiresAt: number }> {
 	if (transferMode() === 'proxy') return { url: `/api/assets/blob/${encodeURIComponent(id)}`, expiresAt: Date.now() + 15 * 60_000 };
-	return presignDownload(storageKeyFor(id));
+	return presignDownload(storageKey);
 }
 
 // --- ownership ----------------------------------------------------------------
@@ -105,13 +110,14 @@ async function grantOwnership(db: Db, userId: string, asset: { id: string; byteS
 }
 
 async function referenceCount(db: Db, assetId: string): Promise<number> {
-	const [items, worldItems, revisions, worlds] = await Promise.all([
+	const [items, worldItems, revisions, marketplaceRevisions, worlds] = await Promise.all([
 		db.cloudItemAsset.count({ where: { assetId } }),
 		db.worldInventoryItemAsset.count({ where: { assetId } }),
 		db.publishedRevisionAsset.count({ where: { assetId } }),
+		db.marketplaceRevisionAsset.count({ where: { assetId } }),
 		db.worldAsset.count({ where: { assetId } })
 	]);
-	return items + worldItems + revisions + worlds;
+	return items + worldItems + revisions + marketplaceRevisions + worlds;
 }
 
 /** Starts the grace period for an asset nobody owns or uses (the cleanup script is the final judge). */
@@ -138,8 +144,9 @@ export async function requestUpload(user: SessionUser | null, manifestInput: unk
 	try {
 		manifest = validateManifest(manifestInput);
 	} catch (error) {
-		throw new BadRequestError(error instanceof Error ? error.message : 'Invalid model');
+		throw new BadRequestError(error instanceof Error ? error.message : 'Invalid asset');
 	}
+	const storageKey = storageKeyFor(manifest.assetId, extensionOf(manifest));
 	const readyAlready = await prisma.$transaction(async (tx) => {
 		const existing = await tx.asset.findUnique({ where: { id: manifest.assetId } });
 		if (existing?.status === 'ready') {
@@ -152,10 +159,10 @@ export async function requestUpload(user: SessionUser | null, manifestInput: unk
 				data: {
 					id: manifest.assetId,
 					byteSize: manifest.byteSize,
-					mimeType: GLB_MIME,
-					format: 'glb',
+					mimeType: manifest.mimeType,
+					format: manifest.format,
 					manifest: manifest as unknown as object,
-					storageKey: storageKeyFor(manifest.assetId),
+					storageKey,
 					firstUploadedById: user.id
 				}
 			});
@@ -164,14 +171,14 @@ export async function requestUpload(user: SessionUser | null, manifestInput: unk
 		return false;
 	});
 	if (readyAlready) return { exists: true };
-	return { exists: false, upload: await uploadTarget(manifest.assetId) };
+	return { exists: false, upload: await uploadTarget(manifest.assetId, storageKey, manifest.mimeType) };
 }
 
 /** Step 2: checks that what arrived is the file that was announced, then marks the model ready for everyone. */
 export async function completeUpload(user: SessionUser | null, assetId: string): Promise<void> {
 	if (!user) throw new UnauthorizedError();
 	requireStorage();
-	if (!isAssetId(assetId)) throw new BadRequestError('Invalid model id');
+	if (!isAssetId(assetId)) throw new BadRequestError('Invalid asset id');
 	const asset = await prisma.asset.findUnique({ where: { id: assetId } });
 	if (!asset) throw new NotFoundError();
 	const owner = await prisma.assetOwner.findUnique({ where: { assetId_ownerId: { assetId, ownerId: user.id } } });
@@ -184,10 +191,12 @@ export async function completeUpload(user: SessionUser | null, assetId: string):
 		await deleteObject(asset.storageKey);
 		throw new BadRequestError('The uploaded file does not match its announced size.');
 	}
-	const head = await readHead(asset.storageKey, 12);
-	if (head.byteLength < 12 || new DataView(head.buffer, head.byteOffset, head.byteLength).getUint32(0, true) !== GLB_MAGIC) {
+	// The announced kind and format are claims too: the file's own first bytes must agree.
+	const kind = getAssetKind((asset.manifest as unknown as AssetManifest).type);
+	const head = kind ? await readHead(asset.storageKey, kind.headBytes) : new Uint8Array();
+	if (!kind || kind.sniff(head) !== asset.format) {
 		await deleteObject(asset.storageKey);
-		throw new UnsupportedMediaError('The uploaded file is not a .glb.');
+		throw new UnsupportedMediaError(`The uploaded file is not a valid ${asset.format} file.`);
 	}
 	// The announced hash is a claim: check it against what was actually stored.
 	if ((await hashObject(asset.storageKey)) !== assetId.slice('sha256:'.length)) {
@@ -201,15 +210,15 @@ export async function completeUpload(user: SessionUser | null, assetId: string):
 export async function receiveProxyUpload(user: SessionUser | null, assetId: string, bytes: Uint8Array): Promise<void> {
 	if (!user) throw new UnauthorizedError();
 	requireStorage();
-	if (!isAssetId(assetId)) throw new BadRequestError('Invalid model id');
+	if (!isAssetId(assetId)) throw new BadRequestError('Invalid asset id');
 	const asset = await prisma.asset.findUnique({ where: { id: assetId } });
 	if (!asset) throw new NotFoundError();
 	if (!(await prisma.assetOwner.findUnique({ where: { assetId_ownerId: { assetId, ownerId: user.id } } }))) throw new ForbiddenError();
 	if (asset.status === 'ready') return;
 	if (bytes.byteLength !== asset.byteSize) throw new BadRequestError('The uploaded file does not match its announced size.');
-	if (bytes.byteLength > Number(env.ASSET_MAX_BYTES ?? 26_214_400)) throw new PayloadTooLargeError('The model is too large.');
+	if (bytes.byteLength > Number(env.ASSET_MAX_BYTES ?? 26_214_400)) throw new PayloadTooLargeError('The asset is too large.');
 	if (createHash('sha256').update(bytes).digest('hex') !== assetId.slice('sha256:'.length)) throw new BadRequestError('The uploaded file does not match its hash.');
-	await putObject(asset.storageKey, bytes, GLB_MIME);
+	await putObject(asset.storageKey, bytes, asset.mimeType);
 }
 
 // --- download -----------------------------------------------------------------
@@ -226,11 +235,12 @@ async function readableIds(user: SessionUser | null, ids: string[]): Promise<Set
 	}
 	const remaining = ids.filter((id) => !readable.has(id));
 	if (remaining.length) {
-		const [published, hosted] = await Promise.all([
+		const [published, hosted, marketplace] = await Promise.all([
 			prisma.publishedRevisionAsset.findMany({ where: { assetId: { in: remaining } }, select: { assetId: true }, distinct: ['assetId'] }),
-			prisma.worldAsset.findMany({ where: { assetId: { in: remaining } }, select: { assetId: true }, distinct: ['assetId'] })
+			prisma.worldAsset.findMany({ where: { assetId: { in: remaining } }, select: { assetId: true }, distinct: ['assetId'] }),
+			prisma.marketplaceRevisionAsset.findMany({ where: { assetId: { in: remaining }, revision: { marketplaceItem: { OR: [{ status: 'published' }, ...(user ? [{ purchases: { some: { userId: user.id } } }] : [])] } } }, select: { assetId: true }, distinct: ['assetId'] })
 		]);
-		for (const row of [...published, ...hosted]) readable.add(row.assetId);
+		for (const row of [...published, ...hosted, ...marketplace]) readable.add(row.assetId);
 	}
 	return readable;
 }
@@ -250,21 +260,21 @@ export async function resolveAssets(user: SessionUser | null, idsInput: unknown)
 	const result: Record<string, ResolvedAsset> = {};
 	for (const asset of assets) {
 		if (!readable.has(asset.id)) continue;
-		result[asset.id] = { ...(await downloadTarget(asset.id as AssetId)), manifest: asset.manifest as unknown as AssetManifest };
+		result[asset.id] = { ...(await downloadTarget(asset.id as AssetId, asset.storageKey)), manifest: asset.manifest as unknown as AssetManifest };
 	}
 	return result;
 }
 
-/** Proxy mode only: streams a model this user is allowed to read. */
-export async function openAssetForReading(user: SessionUser | null, assetId: string): Promise<{ stream: ReadableStream; size: number | undefined }> {
+/** Proxy mode only: streams an asset this user is allowed to read. */
+export async function openAssetForReading(user: SessionUser | null, assetId: string): Promise<{ stream: ReadableStream; size: number | undefined; mimeType: string }> {
 	requireStorage();
-	if (!isAssetId(assetId)) throw new BadRequestError('Invalid model id');
+	if (!isAssetId(assetId)) throw new BadRequestError('Invalid asset id');
 	const asset = await prisma.asset.findUnique({ where: { id: assetId } });
 	if (!asset || asset.status !== 'ready') throw new NotFoundError();
 	if (!(await readableIds(user, [assetId])).has(assetId)) throw new NotFoundError();
 	const object = await getObjectStream(asset.storageKey);
 	if (!object) throw new NotFoundError();
-	return object;
+	return { ...object, mimeType: asset.mimeType };
 }
 
 // --- my models ----------------------------------------------------------------
@@ -281,13 +291,14 @@ export interface MyAsset {
 
 /** Counts of the things this user owns that still use the asset. */
 async function referencesOwnedBy(db: Db & Pick<typeof prisma, 'cloudInventoryItem'>, userId: string, assetId: string) {
-	const [items, worldItems, revisions, worlds] = await Promise.all([
+	const [items, worldItems, revisions, marketplaceRevisions, worlds] = await Promise.all([
 		db.cloudItemAsset.count({ where: { assetId, item: { ownerId: userId } } }),
 		db.worldInventoryItemAsset.count({ where: { assetId, item: { world: { hostUserId: userId } } } }),
 		db.publishedRevisionAsset.count({ where: { assetId, revision: { publication: { ownerId: userId } } } }),
+		db.marketplaceRevisionAsset.count({ where: { assetId, revision: { marketplaceItem: { ownerId: userId } } } }),
 		db.worldAsset.count({ where: { assetId, world: { hostUserId: userId } } })
 	]);
-	return { items: items + worldItems, worlds, publications: revisions };
+	return { items: items + worldItems, worlds, publications: revisions + marketplaceRevisions };
 }
 
 export async function listMyAssets(user: SessionUser | null): Promise<MyAsset[]> {
@@ -322,7 +333,7 @@ export async function assetUsage(user: SessionUser | null): Promise<{ bytes: num
  */
 export async function releaseOwnership(user: SessionUser | null, assetId: string): Promise<void> {
 	if (!user) throw new UnauthorizedError();
-	if (!isAssetId(assetId)) throw new BadRequestError('Invalid model id');
+	if (!isAssetId(assetId)) throw new BadRequestError('Invalid asset id');
 	await prisma.$transaction(async (tx) => {
 		const owner = await tx.assetOwner.findUnique({ where: { assetId_ownerId: { assetId, ownerId: user.id } } });
 		if (!owner) throw new NotFoundError();
@@ -351,6 +362,7 @@ const holderTables = {
 	cloudItem: (db: Db, holderId: string, assetIds: string[]) => db.cloudItemAsset.createMany({ data: assetIds.map((assetId) => ({ itemId: holderId, assetId })), skipDuplicates: true }),
 	worldInventoryItem: (db: Db, holderId: string, assetIds: string[]) => db.worldInventoryItemAsset.createMany({ data: assetIds.map((assetId) => ({ itemId: holderId, assetId })), skipDuplicates: true }),
 	publishedRevision: (db: Db, holderId: string, assetIds: string[]) => db.publishedRevisionAsset.createMany({ data: assetIds.map((assetId) => ({ revisionId: holderId, assetId })), skipDuplicates: true }),
+	marketplaceRevision: (db: Db, holderId: string, assetIds: string[]) => db.marketplaceRevisionAsset.createMany({ data: assetIds.map((assetId) => ({ revisionId: holderId, assetId })), skipDuplicates: true }),
 	world: (db: Db, holderId: string, assetIds: string[]) => db.worldAsset.createMany({ data: assetIds.map((assetId) => ({ worldId: holderId, assetId })), skipDuplicates: true })
 };
 
@@ -371,6 +383,11 @@ async function clearHolder(db: Db, holder: AssetHolder): Promise<string[]> {
 			await db.publishedRevisionAsset.deleteMany({ where: { revisionId: holder.id } });
 			return previous.map((row) => row.assetId);
 		}
+		case 'marketplaceRevision': {
+			const previous = await db.marketplaceRevisionAsset.findMany({ where: { revisionId: holder.id }, select: { assetId: true } });
+			await db.marketplaceRevisionAsset.deleteMany({ where: { revisionId: holder.id } });
+			return previous.map((row) => row.assetId);
+		}
 		case 'world': {
 			const previous = await db.worldAsset.findMany({ where: { worldId: holder.id }, select: { assetId: true } });
 			await db.worldAsset.deleteMany({ where: { worldId: holder.id } });
@@ -389,7 +406,7 @@ export async function linkSceneAssets(db: Db, user: SessionUser, holder: AssetHo
 	const previous = await clearHolder(db, holder);
 	if (assetIds.length) {
 		const assets = await db.asset.findMany({ where: { id: { in: assetIds } }, select: { id: true, byteSize: true, manifest: true } });
-		for (const asset of assets) await grantOwnership(db, user.id, asset, (asset.manifest as unknown as AssetManifest).name ?? 'Model', 'clone');
+		for (const asset of assets) await grantOwnership(db, user.id, asset, (asset.manifest as unknown as AssetManifest).name ?? 'Asset', 'clone');
 		await holderTables[holder.kind](db, holder.id, assetIds);
 		await db.asset.updateMany({ where: { id: { in: assetIds }, orphanedAt: { not: null } }, data: { orphanedAt: null } });
 	}
@@ -405,8 +422,8 @@ export async function readyAssetIds(db: Db, scene: unknown[]): Promise<AssetId[]
 }
 
 /** For consumers of a published world: sizes and bounds of its models so placeholders are right before any download. */
-export async function assetSummaries(db: Db, ids: AssetId[]): Promise<Array<{ assetId: AssetId; byteSize: number; bounds: AssetManifest['bounds']; availability: 'cloud' }>> {
+export async function assetSummaries(db: Db, ids: AssetId[]): Promise<AssetSummary[]> {
 	if (ids.length === 0) return [];
 	const rows = await db.asset.findMany({ where: { id: { in: ids }, status: 'ready' }, select: { id: true, byteSize: true, manifest: true } });
-	return rows.map((row) => ({ assetId: row.id as AssetId, byteSize: row.byteSize, bounds: (row.manifest as unknown as AssetManifest).bounds, availability: 'cloud' as const }));
+	return rows.map((row) => summarizeManifest(row.manifest as unknown as AssetManifest));
 }

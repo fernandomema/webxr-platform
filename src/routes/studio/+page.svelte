@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { adapterIcon, adapterLabel } from '$lib/studio/ui/adapters';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import type { InventoryItem } from '$lib/inventory/types';
@@ -115,7 +116,7 @@
 						<div class="tabs" role="tablist" aria-label="Storage">
 							{#each adapters as adapter (adapter.id)}
 								<button class="tab" role="tab" aria-selected={library.adapterId === adapter.id} onclick={() => library.switchAdapter(adapter.id)}>
-									<Icon name={adapter.id === 'cloud' ? 'cloud' : 'device'} size={14} />{adapter.id === 'cloud' ? 'Cloud' : 'This device'}
+									<Icon name={adapterIcon(adapter.id)} size={14} />{adapterLabel(adapter.id, adapter.label)}
 								</button>
 							{/each}
 						</div>

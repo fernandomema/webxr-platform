@@ -154,7 +154,7 @@ export class ModelLibrary {
 	private async learnManifest(entry: Entry): Promise<void> {
 		try {
 			const manifest = await this.store.getManifest(entry.id);
-			if (manifest && !entry.bounds) {
+			if (manifest?.type === 'model' && !entry.bounds) {
 				entry.bounds = manifest.bounds;
 				entry.name = manifest.name;
 				this.notify(entry);
@@ -211,7 +211,7 @@ export class ModelLibrary {
 				return;
 			}
 			const manifest = await this.store.getManifest(entry.id);
-			if (manifest) entry.bounds = manifest.bounds;
+			if (manifest?.type === 'model') entry.bounds = manifest.bounds;
 			const container = await LoadAssetContainerAsync(result.bytes, this.scene, { pluginExtension: '.glb', name: entry.id });
 			if (controller.signal.aborted || this.disposed || entry.leases.size === 0) {
 				container.dispose();

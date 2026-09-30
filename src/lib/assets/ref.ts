@@ -13,6 +13,12 @@ export type AssetId = `sha256:${string}`;
 
 export type MeshRef = { kind: 'builtin'; id: BuiltinMeshId } | { kind: 'asset'; assetId: AssetId };
 
+/**
+ * Where a media component gets its content: a direct URL, or an asset of the
+ * platform (local, cloud, shared). The scene only ever carries this reference.
+ */
+export type SourceRef = { kind: 'url'; url: string } | { kind: 'asset'; assetId: AssetId };
+
 const ASSET_ID_PATTERN = /^sha256:[0-9a-f]{64}$/;
 
 /** Portals embed whole worlds; nothing legitimate nests deeper than this. */
@@ -65,7 +71,23 @@ export function normalizeMeshRef(value: unknown): MeshRef {
 	return builtinMesh('box');
 }
 
-type LooseComponent = { type?: unknown; meshRef?: unknown; world?: { scene?: unknown } } & Record<string, unknown>;
+export const urlSource = (url: string): SourceRef => ({ kind: 'url', url });
+export const assetSource = (assetId: AssetId): SourceRef => ({ kind: 'asset', assetId });
+
+/**
+ * Reads a media source in any form it has ever been stored in: the current
+ * `{ kind }` object, or the legacy plain `url` string that predates assets.
+ */
+export function normalizeSourceRef(value: unknown, legacyUrl?: unknown): SourceRef {
+	if (value && typeof value === 'object') {
+		const ref = value as { kind?: unknown; url?: unknown; assetId?: unknown };
+		if (ref.kind === 'asset' && isAssetId(ref.assetId)) return assetSource(ref.assetId);
+		if (ref.kind === 'url' && typeof ref.url === 'string') return urlSource(ref.url);
+	}
+	return urlSource(typeof legacyUrl === 'string' ? legacyUrl : '');
+}
+
+type LooseComponent = { type?: unknown; meshRef?: unknown; source?: unknown; url?: unknown; world?: { scene?: unknown } } & Record<string, unknown>;
 
 /**
  * Returns the tree with every `meshRenderer.meshRef` in the current form,
@@ -82,6 +104,10 @@ export function migrateSlotTree(tree: readonly unknown[], depth = 0): SlotTree {
 			components: source.components.map((raw) => {
 				const component = raw as unknown as LooseComponent;
 				if (component?.type === 'meshRenderer') return { ...component, meshRef: normalizeMeshRef(component.meshRef) } as unknown as Slot['components'][number];
+				if (component?.type === 'audioPlayer') {
+					const { url: _legacyUrl, ...rest } = component;
+					return { ...rest, source: normalizeSourceRef(component.source, component.url) } as unknown as Slot['components'][number];
+				}
 				if (component?.type === 'worldPortal' && depth < MAX_PORTAL_DEPTH && Array.isArray(component.world?.scene)) {
 					return { ...component, world: { ...component.world, scene: migrateSlotTree(component.world.scene, depth + 1) } } as unknown as Slot['components'][number];
 				}
@@ -91,16 +117,32 @@ export function migrateSlotTree(tree: readonly unknown[], depth = 0): SlotTree {
 	});
 }
 
-/** Every model a scene needs, including those inside nested world portals. */
+/**
+ * Which assets each kind of component uses. A component that can point at an
+ * asset registers here once; everything that walks scenes for assets (upload,
+ * sharing, cleanup, validation) goes through `collectAssetIds` and needs no change.
+ */
+const ASSET_REFERENCES: Record<string, (component: LooseComponent) => AssetId[]> = {
+	meshRenderer: (component) => {
+		const ref = normalizeMeshRef(component.meshRef);
+		return ref.kind === 'asset' ? [ref.assetId] : [];
+	},
+	audioPlayer: (component) => {
+		const source = normalizeSourceRef(component.source, component.url);
+		return source.kind === 'asset' ? [source.assetId] : [];
+	}
+};
+
+/** Every asset a scene needs, including those inside nested world portals. */
 export function collectAssetIds(tree: readonly unknown[], into: Set<AssetId> = new Set(), depth = 0): Set<AssetId> {
 	for (const slot of tree) {
 		const components = (slot as Partial<Slot> | null)?.components;
 		if (!Array.isArray(components)) continue;
 		for (const raw of components) {
 			const component = raw as unknown as LooseComponent;
-			if (component?.type === 'meshRenderer') {
-				const ref = normalizeMeshRef(component.meshRef);
-				if (ref.kind === 'asset') into.add(ref.assetId);
+			const references = typeof component?.type === 'string' ? ASSET_REFERENCES[component.type] : undefined;
+			if (references) {
+				for (const id of references(component)) into.add(id);
 			} else if (component?.type === 'worldPortal' && depth < MAX_PORTAL_DEPTH && Array.isArray(component.world?.scene)) {
 				collectAssetIds(component.world.scene, into, depth + 1);
 			}

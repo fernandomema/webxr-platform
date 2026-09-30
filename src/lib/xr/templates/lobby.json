@@ -1069,19 +1069,151 @@
 		]
 	},
 	{
-		"id": "lobby-yt-youtube-player",
+		"id": "lobby-jukebox-body",
 		"parentId": null,
-		"name": "YouTube Player",
+		"name": "Record Player Body",
 		"position": [
-			-4.6,
 			1.9,
-			-1.2
+			0.4,
+			-1.5
 		],
 		"rotation": [
 			0,
-			-0.8206,
 			0,
-			0.5716
+			0,
+			1
+		],
+		"scale": [
+			0.75,
+			0.8,
+			0.55
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#1f2937"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-top",
+		"parentId": null,
+		"name": "Record Player Top",
+		"position": [
+			1.9,
+			0.82,
+			-1.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.81,
+			0.04,
+			0.61
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#6366f1"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-platter",
+		"parentId": null,
+		"name": "Record Player Platter",
+		"position": [
+			1.9,
+			0.855,
+			-1.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.42,
+			0.02,
+			0.42
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#0f172a"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-spindle",
+		"parentId": null,
+		"name": "Record Player Spindle",
+		"position": [
+			1.9,
+			0.885,
+			-1.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.015,
+			0.04,
+			0.015
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#e2e8f0"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-socket",
+		"parentId": null,
+		"name": "Record Player Socket",
+		"position": [
+			1.9,
+			0.872,
+			-1.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
 		],
 		"scale": [
 			1,
@@ -1090,22 +1222,418 @@
 		],
 		"components": [
 			{
-				"type": "uiPanel",
-				"width": 1280,
-				"height": 800,
-				"worldWidth": 2.4,
-				"background": "#0f172a"
+				"type": "socket",
+				"accepts": [
+					"disc"
+				],
+				"radius": 0.25,
+				"snap": {
+					"position": [
+						0,
+						0,
+						0
+					],
+					"rotation": [
+						0,
+						0,
+						0
+					]
+				},
+				"playMedia": true
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-rack",
+		"parentId": null,
+		"name": "Disc Rack",
+		"position": [
+			1.9,
+			0.35,
+			-0.75
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.95,
+			0.7,
+			0.35
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#334155"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-rack-top",
+		"parentId": null,
+		"name": "Disc Rack Top",
+		"position": [
+			1.9,
+			0.71,
+			-0.75
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.01,
+			0.03,
+			0.41
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#6366f1"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-1",
+		"parentId": null,
+		"name": "Disc: Morning Arpeggio",
+		"position": [
+			1.62,
+			0.735,
+			-0.75
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.28,
+			0.012,
+			0.28
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#ef4444"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "insertable",
+				"tag": "disc"
+			},
+			{
+				"type": "audioPlayer",
+				"source": {
+					"kind": "url",
+					"url": "/audio/hampus-naeselius-remembering-a-heartbeat-epidemic-fantasy.mp3"
+				},
+				"loop": true,
+				"volume": 0.8
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-2",
+		"parentId": null,
+		"name": "Disc: Riff Loop",
+		"position": [
+			2.18,
+			0.735,
+			-0.75
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.28,
+			0.012,
+			0.28
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#22c55e"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "insertable",
+				"tag": "disc"
+			},
+			{
+				"type": "audioPlayer",
+				"source": {
+					"kind": "url",
+					"url": "/audio/lobby-disc-2.wav"
+				},
+				"loop": true,
+				"volume": 0.8
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-sign",
+		"parentId": null,
+		"name": "Record Player Sign",
+		"position": [
+			1.9,
+			1.3,
+			-1.5
+		],
+		"rotation": [
+			0,
+			1,
+			0,
+			0
+		],
+		"scale": [
+			0.8,
+			0.34,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#1e1b4b"
+			},
+			{
+				"type": "textDisplay",
+				"title": "Record Player",
+				"lines": [
+					"Grab a disc and",
+					"set it on the platter"
+				],
+				"color": "#1e1b4b"
+			}
+		]
+	},
+	{
+		"id": "lobby-dirty-cube",
+		"parentId": null,
+		"name": "Dirty Cube",
+		"position": [
+			3.6,
+			0.4,
+			1.4
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			0.8,
+			0.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#d8d3c8"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			},
+			{
+				"type": "surfaceMask",
+				"color": "#4b3621",
+				"opacity": 0.92,
+				"resolution": 32,
+				"mask": "////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////"
+			}
+		]
+	},
+	{
+		"id": "lobby-washer-pedestal",
+		"parentId": null,
+		"name": "Washer Pedestal",
+		"position": [
+			4.6,
+			0.45,
+			1.4
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.55,
+			0.9,
+			0.55
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#334155"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "lobby-washer-pedestal-top",
+		"parentId": null,
+		"name": "Washer Pedestal Top",
+		"position": [
+			4.6,
+			0.92,
+			1.4
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.65,
+			0.06,
+			0.65
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#0ea5e9"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "lobby-pressure-washer",
+		"parentId": null,
+		"name": "Pressure Washer",
+		"position": [
+			4.6,
+			1.12,
+			1.4
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "equippable",
+				"left": {
+					"position": [
+						0,
+						0,
+						0.04
+					],
+					"rotation": [
+						15,
+						0,
+						0
+					]
+				},
+				"right": {
+					"position": [
+						0,
+						0,
+						0.04
+					],
+					"rotation": [
+						15,
+						0,
+						0
+					]
+				}
 			},
 			{
 				"type": "codeBlock",
-				"code": "const API = 'https://api.piped.private.coffee';\nconst ROWS = 10;\nlet query = '';\nlet results = [];\nlet token = 0;\nlet ids = null;\nlet candidates = [];\nlet candidate = 0;\nlet lastText = '';\nlet lastBroadcast = 0;\nlet sinceCheck = 0;\n\nfunction collect(parentId, out) {\n\tfor (const child of ctx.hierarchy.getChildren(parentId)) {\n\t\tout[child.name] = child.id;\n\t\tcollect(child.id, out);\n\t}\n\treturn out;\n}\nfunction id(name) {\n\tif (!ids || !ids[name]) ids = collect(ctx.self.id, {});\n\treturn ids[name];\n}\nfunction ui(slotId) {\n\tconst slot = slotId && ctx.hierarchy.getSlot(slotId);\n\treturn slot && slot.components.find((c) => c.type === 'uiElement');\n}\nfunction set(name, field, value, broadcast) {\n\tconst slotId = id(name);\n\tif (slotId) ctx.world.setComponentField(slotId, 'uiElement', field, value, broadcast !== false);\n}\nfunction clock(seconds) {\n\tconst total = Math.max(0, Math.floor(seconds || 0));\n\treturn Math.floor(total / 60) + ':' + String(total % 60).padStart(2, '0');\n}\n\nasync function search(text) {\n\ttext = (text || '').trim();\n\tctx.log('search', text);\n\tif (!text) return set('YT Status', 'text', 'Type something to search first.');\n\tconst mine = ++token;\n\tset('YT Status', 'text', 'Searching...');\n\ttry {\n\t\tconst data = await ctx.net.fetchJson(API + '/search?q=' + encodeURIComponent(text) + '&filter=videos');\n\t\tif (mine !== token) return;\n\t\tresults = (data.items || []).filter((item) => item.type === 'stream').slice(0, ROWS);\n\t\tfor (let i = 0; i < ROWS; i++) {\n\t\t\tconst item = results[i];\n\t\t\tset('YT Row ' + i, 'visible', Boolean(item), false);\n\t\t\tset('YT Thumb ' + i, 'src', item ? item.thumbnail : '', false);\n\t\t\tset('YT Pick ' + i, 'text', item ? item.title + '\\n' + item.uploaderName + ' - ' + clock(item.duration) : '', false);\n\t\t}\n\t\tset('YT Status', 'text', results.length ? results.length + ' results' : 'No results');\n\t} catch (error) {\n\t\tset('YT Status', 'text', 'Search failed: ' + error.message);\n\t}\n}\n\nfunction useCandidate() {\n\tset('YT Video', 'src', candidates[candidate].url, false);\n\tset('YT Video', 'currentTime', 0, false);\n\tset('YT Video', 'playing', true, false);\n\tset('YT Play', 'text', 'Pause', false);\n}\n\nasync function play(item) {\n\tconst mine = ++token;\n\tset('YT Now', 'text', 'Loading ' + item.title + '...');\n\ttry {\n\t\tconst videoId = item.url.split('v=')[1];\n\t\tconst data = await ctx.net.fetchJson(API + '/streams/' + videoId);\n\t\tif (mine !== token) return;\n\t\tif (data.error) throw new Error(String(data.message || data.error).split('\\n')[0].slice(0, 90));\n\t\tcandidates = (data.videoStreams || []).filter((s) => s.mimeType === 'video/mp4' && s.videoOnly === false && s.quality !== 'LBRY');\n\t\tif (!candidates.length) throw new Error('no playable stream');\n\t\tcandidate = 0;\n\t\tuseCandidate();\n\t\tset('YT Now', 'text', data.title || item.title);\n\t} catch (error) {\n\t\tset('YT Now', 'text', 'Could not play: ' + error.message);\n\t}\n}\n\nfunction seek(delta) {\n\tconst media = ctx.ui.getMedia(id('YT Video'));\n\tif (!media || !media.ready) return;\n\tconst end = media.duration || Infinity;\n\tset('YT Video', 'currentTime', Math.min(end, Math.max(0, media.currentTime + delta)));\n}\n\nfunction toggle(name, field, onLabel, offLabel, labelName) {\n\tconst element = ui(id(name));\n\tif (!element) return;\n\tconst next = !element[field];\n\tset(name, field, next, false);\n\tif (labelName) set(labelName, 'text', next ? onLabel : offLabel);\n\telse ctx.world.setComponentField(id(name), 'uiElement', field, next);\n}\n\nreturn {\n\tonUIEvent(e) {\n\t\tif (!ctx.world.isHost()) return;\n\t\tif (e.slotId === id('YT Input') && (e.type === 'change' || e.type === 'submit')) query = e.text || '';\n\t\tif (e.slotId === id('YT Input') && e.type === 'submit') return search(query);\n\t\tif (e.type !== 'press') return;\n\t\tif (e.slotId === id('YT Search')) return search(ctx.ui.getInputText(id('YT Input')) || query);\n\t\tif (e.slotId === id('YT Play')) return toggle('YT Video', 'playing', 'Pause', 'Play', 'YT Play');\n\t\tif (e.slotId === id('YT Back')) return seek(-10);\n\t\tif (e.slotId === id('YT Forward')) return seek(10);\n\t\tif (e.slotId === id('YT Mute')) return toggle('YT Video', 'muted', 'Unmute', 'Mute', 'YT Mute');\n\t\tfor (let i = 0; i < ROWS; i++) {\n\t\t\tif (e.slotId === id('YT Pick ' + i) && results[i]) return play(results[i]);\n\t\t}\n\t},\n\ttick(dt) {\n\t\tif (!ctx.world.isHost()) return;\n\t\tsinceCheck += dt;\n\t\tif (sinceCheck < 0.5) return;\n\t\tsinceCheck = 0;\n\t\tconst media = ctx.ui.getMedia(id('YT Video'));\n\t\tif (media && media.error && candidates.length) {\n\t\t\t// The browser could not load this stream: fall through to the next one the API listed.\n\t\t\tif (candidate < candidates.length - 1) {\n\t\t\t\tcandidate++;\n\t\t\t\tuseCandidate();\n\t\t\t\tset('YT Status', 'text', 'Stream failed, trying alternative ' + (candidate + 1) + ' of ' + candidates.length);\n\t\t\t} else {\n\t\t\t\tcandidates = [];\n\t\t\t\tset('YT Video', 'playing', false, false);\n\t\t\t\tset('YT Status', 'text', 'None of the streams could be loaded.');\n\t\t\t}\n\t\t\treturn;\n\t\t}\n\t\tif (!media || !media.ready) return;\n\t\tconst video = ui(id('YT Video'));\n\t\tif (media.ended && video && video.playing && !video.loop) {\n\t\t\tset('YT Video', 'playing', false, false);\n\t\t\tset('YT Play', 'text', 'Play');\n\t\t}\n\t\tconst text = clock(media.currentTime) + ' / ' + clock(media.duration);\n\t\tif (text === lastText) return;\n\t\tlastText = text;\n\t\tconst now = Date.now();\n\t\tconst share = now - lastBroadcast > 2000;\n\t\tif (share) lastBroadcast = now;\n\t\tset('YT Time', 'text', text, share);\n\t}\n};"
+				"code": "const RANGE = 1.4;          // max reach of the jet\nconst CLEAN_RADIUS = 0.17;  // per-face UV-space radius cleaned around the hit point (0-1)\nconst CLEAN_RATE = 0.55;    // fraction of coverage removed per tick within the radius\nconst SYNC_MS = 120;        // how often guests get the growing clean spot\nconst BEAM_SYNC_MS = 40;    // how often the beam's endpoints are pushed to guests\nconst ATLAS_COLS = 3;       // must match surfaceMaskRenderer.ts's box atlas layout\nconst ATLAS_ROWS = 2;\nlet spraying = false;\nlet beamId = null;\nlet lastMaskSync = 0;\nlet lastBeamSync = 0;\n\nfunction nozzlePose() {\n  const tip = ctx.hierarchy.findByName('Washer Nozzle');\n  return tip ? ctx.hierarchy.getWorldPose(tip.id) : null;\n}\n\nfunction decodeMask(b64, size) {\n  const bin = atob(b64);\n  const arr = new Uint8ClampedArray(size);\n  for (let i = 0; i < arr.length && i < bin.length; i++) arr[i] = bin.charCodeAt(i);\n  return arr;\n}\n\nfunction encodeMask(arr) {\n  let bin = '';\n  for (let i = 0; i < arr.length; i++) bin += String.fromCharCode(arr[i]);\n  return btoa(bin);\n}\n\n// Babylon's box builder order (boxBuilder.js CreateBoxVertexData's \"normals\"\n// array): +Z, -Z, +X, -X, +Y, -Y — surfaceMaskRenderer.ts's atlas cells follow\n// this same order, so identifying the hit face this way lands on the matching cell.\nfunction faceIndexFromNormal(normal, rotation) {\n  const inv = [-rotation[0], -rotation[1], -rotation[2], rotation[3]];\n  const local = ctx.math.rotateVec(inv, normal);\n  const ax = Math.abs(local[0]), ay = Math.abs(local[1]), az = Math.abs(local[2]);\n  if (az >= ax && az >= ay) return local[2] > 0 ? 0 : 1;\n  if (ax >= ay && ax >= az) return local[0] > 0 ? 2 : 3;\n  return local[1] > 0 ? 4 : 5;\n}\n\n// Erodes a surfaceMask's coverage around a raycast hit — any object with a\n// surfaceMask can be cleaned this way, not just the lobby's dirty cube. A box\n// host is laid out as a 3x2 face atlas (see surfaceMaskRenderer.ts), so the\n// hit's face is identified from its normal and mapped into that face's cell;\n// any other shape uses its single, already-unique UV region directly.\nfunction cleanAt(hit) {\n  const target = ctx.hierarchy.getSlot(hit.slotId);\n  const mask = target && target.components.find((c) => c.type === 'surfaceMask');\n  if (!mask) return;\n  const meshRef = target.components.find((c) => c.type === 'meshRenderer')?.meshRef;\n  const isBox = !!meshRef && meshRef.kind === 'builtin' && meshRef.id === 'box';\n  const cols = isBox ? ATLAS_COLS : 1;\n  const rows = isBox ? ATLAS_ROWS : 1;\n  const cell = mask.resolution;\n  const width = cell * cols;\n  const height = cell * rows;\n  const bytes = decodeMask(mask.mask, width * height);\n\n  let u = hit.u;\n  let v = hit.v;\n  if (isBox) {\n    const faceIndex = faceIndexFromNormal(hit.normal, target.rotation);\n    const col = faceIndex % ATLAS_COLS;\n    const row = Math.floor(faceIndex / ATLAS_COLS);\n    u = (col + hit.u) / ATLAS_COLS;\n    v = (row + hit.v) / ATLAS_ROWS;\n  }\n\n  const cx = u * width;\n  const cy = v * height;\n  const radiusPx = CLEAN_RADIUS * cell;\n  const minX = Math.max(0, Math.floor(cx - radiusPx));\n  const maxX = Math.min(width - 1, Math.ceil(cx + radiusPx));\n  const minY = Math.max(0, Math.floor(cy - radiusPx));\n  const maxY = Math.min(height - 1, Math.ceil(cy + radiusPx));\n  let changed = false;\n  for (let y = minY; y <= maxY; y++) {\n    for (let x = minX; x <= maxX; x++) {\n      const dx = x + 0.5 - cx;\n      const dy = y + 0.5 - cy;\n      const dist = Math.sqrt(dx * dx + dy * dy);\n      if (dist > radiusPx) continue;\n      const i = y * width + x;\n      const next = bytes[i] - 255 * CLEAN_RATE * (1 - dist / radiusPx);\n      if (next < bytes[i]) {\n        bytes[i] = next < 0 ? 0 : next;\n        changed = true;\n      }\n    }\n  }\n  if (!changed) return;\n  const now = Date.now();\n  const broadcast = now - lastMaskSync >= SYNC_MS;\n  if (broadcast) lastMaskSync = now;\n  ctx.world.setComponentField(hit.slotId, 'surfaceMask', 'mask', encodeMask(bytes), broadcast);\n}\n\nfunction beamPoints(from, to) {\n  return [from[0], from[1], from[2], to[0], to[1], to[2]];\n}\n\nfunction startBeam(from, to) {\n  beamId = crypto.randomUUID();\n  ctx.world.spawn({ id: beamId, name: 'Water Jet', components: [{ type: 'stroke', points: beamPoints(from, to), color: '#8ee3ff', width: 0.045 }] });\n  lastBeamSync = Date.now();\n}\n\nfunction updateBeam(from, to) {\n  if (!beamId) return;\n  const now = Date.now();\n  const broadcast = now - lastBeamSync >= BEAM_SYNC_MS;\n  if (broadcast) lastBeamSync = now;\n  ctx.world.setComponentField(beamId, 'stroke', 'points', beamPoints(from, to), broadcast);\n}\n\nfunction endBeam() {\n  if (beamId) ctx.world.deleteSlot(beamId);\n  beamId = null;\n}\n\nfunction spray() {\n  const pose = nozzlePose();\n  if (!pose) return;\n  const origin = ctx.math.vecAdd(pose.position, ctx.math.vecScale(pose.forward, 0.03));\n  const hit = ctx.world.raycast(origin, pose.forward, RANGE);\n  const target = hit ? hit.point : ctx.math.vecAdd(pose.position, ctx.math.vecScale(pose.forward, RANGE));\n  if (!beamId) startBeam(pose.position, target);\n  else updateBeam(pose.position, target);\n  if (hit) cleanAt(hit);\n}\n\nreturn {\n  onTrigger(e) {\n    if (e.phase === 'press') spraying = true;\n    else if (e.phase === 'release') { spraying = false; endBeam(); }\n    return true;\n  },\n  onUnequip() { spraying = false; endBeam(); },\n  tick() {\n    if (!spraying || !ctx.world.isHost()) return;\n    if (!ctx.equip.isEquipped() && !ctx.grab.isHeld()) { spraying = false; endBeam(); return; }\n    spray();\n  }\n};\n"
 			}
 		]
 	},
 	{
-		"id": "lobby-yt-yt-search-bar",
-		"parentId": "lobby-yt-youtube-player",
-		"name": "YT Search Bar",
+		"id": "lobby-pressure-washer-body",
+		"parentId": "lobby-pressure-washer",
+		"name": "Washer Body",
 		"position": [
 			0,
 			0,
@@ -1118,28 +1646,33 @@
 			1
 		],
 		"scale": [
-			1,
-			1,
-			1
+			0.05,
+			0.05,
+			0.22
 		],
 		"components": [
 			{
-				"type": "uiElement",
-				"kind": "container",
-				"flexDirection": "row",
-				"gap": 8,
-				"margin": 4
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#1d4ed8"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
 			}
 		]
 	},
 	{
-		"id": "lobby-yt-yt-input",
-		"parentId": "lobby-yt-yt-search-bar",
-		"name": "YT Input",
+		"id": "lobby-pressure-washer-nozzle",
+		"parentId": "lobby-pressure-washer",
+		"name": "Washer Nozzle",
 		"position": [
 			0,
 			0,
-			0
+			0.135
 		],
 		"rotation": [
 			0,
@@ -1148,1354 +1681,18 @@
 			1
 		],
 		"scale": [
-			1,
-			1,
-			1
+			0.028,
+			0.028,
+			0.05
 		],
 		"components": [
 			{
-				"type": "uiElement",
-				"kind": "input",
-				"width": 900,
-				"height": 52,
-				"placeholder": "Search YouTube",
-				"fontSize": 26
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-search",
-		"parentId": "lobby-yt-yt-search-bar",
-		"name": "YT Search",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "button",
-				"text": "Search",
-				"width": 260,
-				"height": 52,
-				"fontSize": 26
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-body",
-		"parentId": "lobby-yt-youtube-player",
-		"name": "YT Body",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "container",
-				"flexDirection": "row",
-				"gap": 12,
-				"margin": 4
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-results",
-		"parentId": "lobby-yt-yt-body",
-		"name": "YT Results",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "container",
-				"flexDirection": "column",
-				"gap": 8,
-				"width": 420,
-				"height": 560,
-				"overflow": "scroll",
-				"background": "#111c33"
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-row-0",
-		"parentId": "lobby-yt-yt-results",
-		"name": "YT Row 0",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "container",
-				"flexDirection": "row",
-				"gap": 8,
-				"width": 396,
-				"height": 84,
-				"visible": false
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-thumb-0",
-		"parentId": "lobby-yt-yt-row-0",
-		"name": "YT Thumb 0",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "image",
-				"width": 142,
-				"height": 80
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-pick-0",
-		"parentId": "lobby-yt-yt-row-0",
-		"name": "YT Pick 0",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "button",
-				"text": "",
-				"width": 246,
-				"height": 80,
-				"fontSize": 18,
-				"background": "#1e293b"
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-row-1",
-		"parentId": "lobby-yt-yt-results",
-		"name": "YT Row 1",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "container",
-				"flexDirection": "row",
-				"gap": 8,
-				"width": 396,
-				"height": 84,
-				"visible": false
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-thumb-1",
-		"parentId": "lobby-yt-yt-row-1",
-		"name": "YT Thumb 1",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "image",
-				"width": 142,
-				"height": 80
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-pick-1",
-		"parentId": "lobby-yt-yt-row-1",
-		"name": "YT Pick 1",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "button",
-				"text": "",
-				"width": 246,
-				"height": 80,
-				"fontSize": 18,
-				"background": "#1e293b"
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-row-2",
-		"parentId": "lobby-yt-yt-results",
-		"name": "YT Row 2",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "container",
-				"flexDirection": "row",
-				"gap": 8,
-				"width": 396,
-				"height": 84,
-				"visible": false
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-thumb-2",
-		"parentId": "lobby-yt-yt-row-2",
-		"name": "YT Thumb 2",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "image",
-				"width": 142,
-				"height": 80
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-pick-2",
-		"parentId": "lobby-yt-yt-row-2",
-		"name": "YT Pick 2",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "button",
-				"text": "",
-				"width": 246,
-				"height": 80,
-				"fontSize": 18,
-				"background": "#1e293b"
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-row-3",
-		"parentId": "lobby-yt-yt-results",
-		"name": "YT Row 3",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "container",
-				"flexDirection": "row",
-				"gap": 8,
-				"width": 396,
-				"height": 84,
-				"visible": false
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-thumb-3",
-		"parentId": "lobby-yt-yt-row-3",
-		"name": "YT Thumb 3",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "image",
-				"width": 142,
-				"height": 80
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-pick-3",
-		"parentId": "lobby-yt-yt-row-3",
-		"name": "YT Pick 3",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "button",
-				"text": "",
-				"width": 246,
-				"height": 80,
-				"fontSize": 18,
-				"background": "#1e293b"
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-row-4",
-		"parentId": "lobby-yt-yt-results",
-		"name": "YT Row 4",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "container",
-				"flexDirection": "row",
-				"gap": 8,
-				"width": 396,
-				"height": 84,
-				"visible": false
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-thumb-4",
-		"parentId": "lobby-yt-yt-row-4",
-		"name": "YT Thumb 4",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "image",
-				"width": 142,
-				"height": 80
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-pick-4",
-		"parentId": "lobby-yt-yt-row-4",
-		"name": "YT Pick 4",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "button",
-				"text": "",
-				"width": 246,
-				"height": 80,
-				"fontSize": 18,
-				"background": "#1e293b"
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-row-5",
-		"parentId": "lobby-yt-yt-results",
-		"name": "YT Row 5",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "container",
-				"flexDirection": "row",
-				"gap": 8,
-				"width": 396,
-				"height": 84,
-				"visible": false
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-thumb-5",
-		"parentId": "lobby-yt-yt-row-5",
-		"name": "YT Thumb 5",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "image",
-				"width": 142,
-				"height": 80
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-pick-5",
-		"parentId": "lobby-yt-yt-row-5",
-		"name": "YT Pick 5",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "button",
-				"text": "",
-				"width": 246,
-				"height": 80,
-				"fontSize": 18,
-				"background": "#1e293b"
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-row-6",
-		"parentId": "lobby-yt-yt-results",
-		"name": "YT Row 6",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "container",
-				"flexDirection": "row",
-				"gap": 8,
-				"width": 396,
-				"height": 84,
-				"visible": false
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-thumb-6",
-		"parentId": "lobby-yt-yt-row-6",
-		"name": "YT Thumb 6",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "image",
-				"width": 142,
-				"height": 80
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-pick-6",
-		"parentId": "lobby-yt-yt-row-6",
-		"name": "YT Pick 6",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "button",
-				"text": "",
-				"width": 246,
-				"height": 80,
-				"fontSize": 18,
-				"background": "#1e293b"
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-row-7",
-		"parentId": "lobby-yt-yt-results",
-		"name": "YT Row 7",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "container",
-				"flexDirection": "row",
-				"gap": 8,
-				"width": 396,
-				"height": 84,
-				"visible": false
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-thumb-7",
-		"parentId": "lobby-yt-yt-row-7",
-		"name": "YT Thumb 7",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "image",
-				"width": 142,
-				"height": 80
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-pick-7",
-		"parentId": "lobby-yt-yt-row-7",
-		"name": "YT Pick 7",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "button",
-				"text": "",
-				"width": 246,
-				"height": 80,
-				"fontSize": 18,
-				"background": "#1e293b"
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-row-8",
-		"parentId": "lobby-yt-yt-results",
-		"name": "YT Row 8",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "container",
-				"flexDirection": "row",
-				"gap": 8,
-				"width": 396,
-				"height": 84,
-				"visible": false
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-thumb-8",
-		"parentId": "lobby-yt-yt-row-8",
-		"name": "YT Thumb 8",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "image",
-				"width": 142,
-				"height": 80
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-pick-8",
-		"parentId": "lobby-yt-yt-row-8",
-		"name": "YT Pick 8",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "button",
-				"text": "",
-				"width": 246,
-				"height": 80,
-				"fontSize": 18,
-				"background": "#1e293b"
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-row-9",
-		"parentId": "lobby-yt-yt-results",
-		"name": "YT Row 9",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "container",
-				"flexDirection": "row",
-				"gap": 8,
-				"width": 396,
-				"height": 84,
-				"visible": false
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-thumb-9",
-		"parentId": "lobby-yt-yt-row-9",
-		"name": "YT Thumb 9",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "image",
-				"width": 142,
-				"height": 80
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-pick-9",
-		"parentId": "lobby-yt-yt-row-9",
-		"name": "YT Pick 9",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "button",
-				"text": "",
-				"width": 246,
-				"height": 80,
-				"fontSize": 18,
-				"background": "#1e293b"
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-player-column",
-		"parentId": "lobby-yt-yt-body",
-		"name": "YT Player Column",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "container",
-				"flexDirection": "column",
-				"gap": 8,
-				"width": 720
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-video",
-		"parentId": "lobby-yt-yt-player-column",
-		"name": "YT Video",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "video",
-				"width": 720,
-				"height": 405,
-				"playing": false,
-				"loop": false,
-				"muted": false,
-				"volume": 1
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-now",
-		"parentId": "lobby-yt-yt-player-column",
-		"name": "YT Now",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "text",
-				"text": "Search for a video and pick one to play.",
-				"height": 60,
-				"fontSize": 24,
-				"fontWeight": "bold"
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-time",
-		"parentId": "lobby-yt-yt-player-column",
-		"name": "YT Time",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "text",
-				"text": "0:00 / 0:00",
-				"height": 32,
-				"fontSize": 22,
-				"color": "#94a3b8"
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-controls",
-		"parentId": "lobby-yt-yt-player-column",
-		"name": "YT Controls",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "container",
-				"flexDirection": "row",
-				"gap": 8
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-back",
-		"parentId": "lobby-yt-yt-controls",
-		"name": "YT Back",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "button",
-				"text": "-10s",
-				"width": 150,
-				"height": 52,
-				"background": "#334155",
-				"fontSize": 24
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-play",
-		"parentId": "lobby-yt-yt-controls",
-		"name": "YT Play",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "button",
-				"text": "Play",
-				"width": 200,
-				"height": 52,
-				"fontSize": 24
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-forward",
-		"parentId": "lobby-yt-yt-controls",
-		"name": "YT Forward",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "button",
-				"text": "+10s",
-				"width": 150,
-				"height": 52,
-				"background": "#334155",
-				"fontSize": 24
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-mute",
-		"parentId": "lobby-yt-yt-controls",
-		"name": "YT Mute",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "button",
-				"text": "Mute",
-				"width": 200,
-				"height": 52,
-				"background": "#334155",
-				"fontSize": 24
-			}
-		]
-	},
-	{
-		"id": "lobby-yt-yt-status",
-		"parentId": "lobby-yt-youtube-player",
-		"name": "YT Status",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "uiElement",
-				"kind": "text",
-				"text": "Type a search and press Enter.",
-				"height": 36,
-				"fontSize": 20,
-				"color": "#94a3b8"
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#e2e8f0"
 			}
 		]
 	}

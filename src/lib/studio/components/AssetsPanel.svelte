@@ -4,10 +4,13 @@
 	import { toasts } from '../state/toasts.svelte';
 	import type { StudioDocument } from '../state/document.svelte';
 	import { dialogs } from '../state/dialogs.svelte';
-	import { formatBytes, studioModels } from '../state/models.svelte';
-	import { assetMesh } from '$lib/assets/ref';
+	import { formatBytes, studioAssets, studioModels } from '../state/models.svelte';
+	import { assetMesh, assetSource } from '$lib/assets/ref';
 	import type { AssetListing } from '$lib/assets/store';
+	type ModelListing = Extract<AssetListing, { type: 'model' }>;
+	type AudioListing = Extract<AssetListing, { type: 'audio' }>;
 	import Icon from '../ui/Icon.svelte';
+	import { adapterLabel } from '../ui/adapters';
 
 	interface Props {
 		doc: StudioDocument;
@@ -34,13 +37,13 @@
 	});
 
 	/** The model's real size in metres (largest side), so it lands in the scene at the scale it was authored. */
-	function naturalSize(model: AssetListing): number {
+	function naturalSize(model: ModelListing): number {
 		const { min, max } = model.bounds;
 		const size = Math.max(max[0] - min[0], max[1] - min[1], max[2] - min[2]);
 		return Number.isFinite(size) ? Math.min(50, Math.max(0.05, size)) : 1;
 	}
 
-	function addModel(model: AssetListing) {
+	function addModel(model: ModelListing) {
 		const size = naturalSize(model);
 		doc.addSlot({
 			name: model.name,
@@ -51,6 +54,24 @@
 		toasts.success(`Added “${model.name}”`);
 	}
 
+	function addAudio(audio: AudioListing) {
+		doc.addSlot({
+			name: audio.name,
+			position: [0, 1, 0],
+			scale: [0.4, 0.4, 0.4],
+			components: [
+				{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'sphere' } },
+				{ type: 'audioPlayer', source: assetSource(audio.assetId), loop: false, volume: 1 }
+			]
+		});
+		toasts.success(`Added “${audio.name}”`);
+	}
+
+	function formatDuration(seconds: number): string {
+		const total = Math.round(seconds);
+		return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+	}
+
 	async function removeModel(model: AssetListing) {
 		const ok = await dialogs.confirm({
 			title: `Remove “${model.name}” from this device?`,
@@ -58,13 +79,13 @@
 			confirmLabel: 'Remove',
 			danger: true
 		});
-		if (ok) await studioModels.remove(model.assetId);
+		if (ok) await studioAssets.remove(model.assetId);
 	}
 
 	async function onDrop(event: DragEvent) {
 		event.preventDefault();
 		dragging = false;
-		if (event.dataTransfer?.files.length) await studioModels.importFiles([...event.dataTransfer.files]);
+		if (event.dataTransfer?.files.length) await studioAssets.importFiles([...event.dataTransfer.files]);
 	}
 
 	function insert(id: string) {
@@ -107,10 +128,34 @@
 			<p class="hint muted">Drop a .glb file here, or import one. Models are stored on this device.</p>
 		{/if}
 	</section>
+	<section class="models" aria-label="Audio">
+		<div class="models-head">
+			<strong>Audio</strong>
+			<button class="btn sm" disabled={studioAssets.importing} onclick={() => studioAssets.pickAndImport('audio')}>
+				<Icon name="plus" size={12} />{studioAssets.importing ? 'Importing…' : 'Import audio'}
+			</button>
+		</div>
+		{#if studioAssets.ofType('audio').length}
+			<ul class="model-list">
+				{#each studioAssets.ofType('audio') as audio (audio.assetId)}
+					<li class="model-row">
+						<button class="row" title={`Add “${audio.name}” to the scene`} onclick={() => addAudio(audio)}>
+							<Icon name="play" size={14} />
+							<span>{audio.name}</span>
+							<small class="muted">{formatDuration(audio.duration)} · {formatBytes(audio.byteSize)}</small>
+						</button>
+						<button class="icon-btn danger" aria-label={`Remove ${audio.name} from this device`} onclick={() => removeModel(audio)}><Icon name="trash" size={13} /></button>
+					</li>
+				{/each}
+			</ul>
+		{:else}
+			<p class="hint muted">Drop an .mp3, .wav or .ogg file here, or import one. Audio is stored on this device.</p>
+		{/if}
+	</section>
 	<div class="toolbar">
 		{#if adapters.length > 1}
 			<select class="select" aria-label="Library" value={library.adapterId} onchange={(event) => library.switchAdapter(event.currentTarget.value)}>
-				{#each adapters as adapter (adapter.id)}<option value={adapter.id}>{adapter.id === 'cloud' ? 'Cloud' : 'This device'}</option>{/each}
+				{#each adapters as adapter (adapter.id)}<option value={adapter.id}>{adapterLabel(adapter.id, adapter.label)}</option>{/each}
 			</select>
 		{/if}
 		<input class="input" placeholder="Search objects" aria-label="Search objects" bind:value={library.query} />

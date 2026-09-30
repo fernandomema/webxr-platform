@@ -1,5 +1,5 @@
 import { createSlot, type Slot, type SlotTree } from '$lib/ecs/types';
-import type { InventoryAdapterId, InventoryItem } from '$lib/inventory/types';
+import type { InventoryStorageAdapterId, InventoryItem } from '$lib/inventory/types';
 import type { HostedWorldVisibility } from '$lib/worldVisibility';
 import type { WorldPackage, WorldSource } from './types';
 import { ASSET_LIMITS } from '$lib/assets/manifest';
@@ -25,7 +25,7 @@ export function validateWorldScene(value: unknown): asserts value is SlotTree {
 			!Array.isArray(slot.scale) || slot.scale.length !== 3) throw new Error('Invalid world slot');
 		ids.add(slot.id);
 	}
-	validateMeshRefs(value as SlotTree);
+	validateAssetRefs(value as SlotTree);
 	for (const slot of value as SlotTree) {
 		if (slot.parentId !== null && !ids.has(slot.parentId)) throw new Error('World has a missing parent slot');
 		let parentId = slot.parentId;
@@ -42,9 +42,16 @@ export function validateWorldScene(value: unknown): asserts value is SlotTree {
  * A meshRef may still be a legacy string (it is upgraded on read), but never an
  * arbitrary URL for an asset, and a world may only reference a bounded number of models.
  */
-function validateMeshRefs(scene: SlotTree): void {
+function validateAssetRefs(scene: SlotTree): void {
 	for (const slot of scene) {
-		for (const component of slot.components as unknown as Array<{ type?: string; meshRef?: unknown }>) {
+		for (const component of slot.components as unknown as Array<{ type?: string; meshRef?: unknown; source?: unknown; url?: unknown }>) {
+			if (component?.type === 'audioPlayer') {
+				const source = component.source as { kind?: unknown; url?: unknown; assetId?: unknown } | null | undefined;
+				if (source === undefined || source === null) continue; // legacy `url` form; upgraded on read
+				const valid = (source.kind === 'asset' && isAssetId(source.assetId)) || (source.kind === 'url' && typeof source.url === 'string' && source.url.length <= 2048);
+				if (!valid) throw new Error('Invalid audio source');
+				continue;
+			}
 			if (component?.type !== 'meshRenderer') continue;
 			const ref = component.meshRef;
 			if (typeof ref === 'string') continue; // legacy form; unknown strings render as a box
@@ -53,10 +60,10 @@ function validateMeshRefs(scene: SlotTree): void {
 			if (!valid) throw new Error('Invalid mesh reference');
 		}
 	}
-	if (collectAssetIds(scene).size > ASSET_LIMITS.maxAssetsPerWorld) throw new Error('World uses too many models');
+	if (collectAssetIds(scene).size > ASSET_LIMITS.maxAssetsPerWorld) throw new Error('World uses too many assets');
 }
 
-export function worldFromInventory(item: InventoryItem, adapterId: InventoryAdapterId, ownerId: string | null): WorldPackage {
+export function worldFromInventory(item: InventoryItem, adapterId: InventoryStorageAdapterId, ownerId: string | null): WorldPackage {
 	if (item.kind !== 'world') throw new Error('This inventory item is not a world');
 	validateWorldScene(item.slotData);
 	return {

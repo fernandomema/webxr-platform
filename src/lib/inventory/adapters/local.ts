@@ -104,6 +104,13 @@ export const localInventoryAdapter: InventoryAdapter = {
 		return updated;
 	},
 
+	async setMarketplaceItemId(_ctx, itemId, marketplaceItemId) {
+		const items = await withStore<InventoryItem[]>(ITEMS_STORE, 'readonly', (store) => store.getAll());
+		const item = items.find((entry) => entry.id === itemId);
+		if (!item) throw new Error('Inventory item not found');
+		await withStore(ITEMS_STORE, 'readwrite', (store) => store.put({ ...item, marketplaceItemId }));
+	},
+
 	async deleteItem(_ctx, itemId) {
 		await withStore(ITEMS_STORE, 'readwrite', (store) => store.delete(itemId));
 	}

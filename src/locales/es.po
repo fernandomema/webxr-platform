@@ -762,15 +762,11 @@ msgstr ""
 msgid "Storage"
 msgstr ""
 
-#: src/lib/studio/components/AssetsPanel.svelte
 #: src/lib/studio/components/SaveDialog.svelte
-#: src/routes/studio/+page.svelte
 msgid "Cloud"
 msgstr ""
 
-#: src/lib/studio/components/AssetsPanel.svelte
 #: src/lib/studio/components/SaveDialog.svelte
-#: src/routes/studio/+page.svelte
 msgid "This device"
 msgstr ""
 
@@ -1190,7 +1186,9 @@ msgid "No components yet. This object is just a group and a position."
 msgstr ""
 
 #. 0: model.name
+#. 0: audio.name
 #. 0: item.name
+#: src/lib/studio/components/AssetsPanel.svelte
 #: src/lib/studio/components/AssetsPanel.svelte
 #: src/lib/studio/components/AssetsPanel.svelte
 msgid "Added “{0}”"
@@ -1785,18 +1783,16 @@ msgstr ""
 msgid "Import model (.glb)…"
 msgstr ""
 
-#: src/lib/studio/state/models.svelte.ts
-msgid "Could not read the models on this device"
-msgstr ""
+#~ msgid "Could not read the models on this device"
+#~ msgstr ""
 
 #. 0: result.manifest.name
 #: src/lib/studio/state/models.svelte.ts
 msgid "Imported “{0}”."
 msgstr ""
 
-#: src/lib/studio/state/models.svelte.ts
-msgid "Could not remove the model"
-msgstr ""
+#~ msgid "Could not remove the model"
+#~ msgstr ""
 
 #: src/lib/studio/components/FieldEditor.svelte
 msgid "Shapes"
@@ -1835,6 +1831,7 @@ msgid "Files"
 msgstr ""
 
 #: src/lib/studio/components/AssetsPanel.svelte
+#: src/lib/studio/components/AssetsPanel.svelte
 msgid "Importing…"
 msgstr ""
 
@@ -1843,6 +1840,8 @@ msgid "Import .glb"
 msgstr ""
 
 #. 0: model.name
+#. 0: audio.name
+#: src/lib/studio/components/AssetsPanel.svelte
 #: src/lib/studio/components/AssetsPanel.svelte
 msgid "Add “{0}” to the scene"
 msgstr ""
@@ -1853,6 +1852,8 @@ msgid "{0} tris · {1}"
 msgstr ""
 
 #. 0: model.name
+#. 0: audio.name
+#: src/lib/studio/components/AssetsPanel.svelte
 #: src/lib/studio/components/AssetsPanel.svelte
 msgid "Remove {0} from this device"
 msgstr ""
@@ -1960,8 +1961,9 @@ msgstr ""
 #~ msgid "Marketplace revision {0} published"
 #~ msgstr ""
 
-#~ msgid "This inventory is read-only."
-#~ msgstr ""
+#: src/lib/studio/state/project.svelte.ts
+msgid "This inventory is read-only."
+msgstr ""
 
 #~ msgid "Update listing"
 #~ msgstr ""
@@ -2004,11 +2006,13 @@ msgstr ""
 msgid "Save this object to a writable inventory before publishing it."
 msgstr ""
 
-#~ msgid "Marketplace…"
-#~ msgstr ""
+#: src/routes/studio/edit/+page.svelte
+msgid "Marketplace…"
+msgstr ""
 
-#~ msgid "<0/>Marketplace"
-#~ msgstr ""
+#: src/routes/studio/edit/+page.svelte
+msgid "<0/>Marketplace"
+msgstr ""
 
 #: src/lib/studio/components/MarketplacePanel.svelte
 msgid "Could not load this listing."
@@ -2141,3 +2145,41 @@ msgstr ""
 #: src/routes/+page.svelte
 msgid "Sign out"
 msgstr ""
+
+#: src/lib/studio/components/AssetsPanel.svelte
+#: src/lib/studio/components/AssetsPanel.svelte
+msgid "Audio"
+msgstr "Audio"
+
+#: src/lib/studio/components/AssetsPanel.svelte
+msgid "Import audio"
+msgstr "Importar audio"
+
+#: src/lib/studio/components/AssetsPanel.svelte
+msgid "Drop an .mp3, .wav or .ogg file here, or import one. Audio is stored on this device."
+msgstr "Suelta aquí un archivo .mp3, .wav o .ogg, o importa uno. El audio se guarda en este dispositivo."
+
+#: src/lib/studio/components/FieldEditor.svelte
+msgid "Imported"
+msgstr "Importados"
+
+#. 0: source.assetId.slice(7, 15)
+#: src/lib/studio/components/FieldEditor.svelte
+msgid "{0}… (not on this device)"
+msgstr ""
+
+#: src/lib/studio/components/FieldEditor.svelte
+msgid "Import a file…"
+msgstr "Importar un archivo…"
+
+#: src/lib/studio/components/FieldEditor.svelte
+msgid "From a URL"
+msgstr "Desde una URL"
+
+#: src/lib/studio/state/models.svelte.ts
+msgid "Could not read the assets on this device"
+msgstr "No se pudieron leer los assets de este dispositivo"
+
+#: src/lib/studio/state/models.svelte.ts
+msgid "Could not remove the asset"
+msgstr "No se pudo eliminar el asset"

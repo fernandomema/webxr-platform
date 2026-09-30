@@ -11,7 +11,7 @@ const maxBytes = () => Number(env.ASSET_MAX_BYTES ?? 26_214_400);
 
 export const PUT: RequestHandler = async ({ locals, params, request }) => {
 	try {
-		if (Number(request.headers.get('content-length') ?? 0) > maxBytes()) return json({ message: 'The model is too large.' }, { status: 413 });
+		if (Number(request.headers.get('content-length') ?? 0) > maxBytes()) return json({ message: 'The asset is too large.' }, { status: 413 });
 		if (!request.body) return json({ message: 'Missing file.' }, { status: 400 });
 		// Read with a running cap so an oversized or lying Content-Length cannot exhaust memory.
 		const reader = request.body.getReader();
@@ -23,7 +23,7 @@ export const PUT: RequestHandler = async ({ locals, params, request }) => {
 			size += value.byteLength;
 			if (size > maxBytes()) {
 				await reader.cancel();
-				return json({ message: 'The model is too large.' }, { status: 413 });
+				return json({ message: 'The asset is too large.' }, { status: 413 });
 			}
 			chunks.push(value);
 		}
@@ -36,10 +36,10 @@ export const PUT: RequestHandler = async ({ locals, params, request }) => {
 
 export const GET: RequestHandler = async ({ locals, params }) => {
 	try {
-		const { stream, size } = await openAssetForReading(locals.user, params.id);
+		const { stream, size, mimeType } = await openAssetForReading(locals.user, params.id);
 		return new Response(stream, {
 			headers: {
-				'content-type': 'model/gltf-binary',
+				'content-type': mimeType,
 				// The address is the hash of the content, so a cached copy can never be stale.
 				'cache-control': 'private, max-age=31536000, immutable',
 				...(size !== undefined ? { 'content-length': String(size) } : {})

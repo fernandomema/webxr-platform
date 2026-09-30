@@ -1,15 +1,15 @@
 ---
 id: "planificar-la-carga-de-modelos-3d-2026-09-29"
-status: "backlog"
+status: "in-progress"
 priority: "medium"
 assignee: null
 epic: null
 dueDate: null
 created: "2026-09-28T23:37:34.083Z"
-modified: "2026-09-28T23:37:34.083Z"
+modified: "2026-09-29T17:29:43.923Z"
 completedAt: null
 labels: []
-order: "a3"
+order: "a1"
 ---
 # Planificar la carga de modelos 3d
 

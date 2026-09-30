@@ -1,5 +1,6 @@
 import type { Vec3 } from '../ecs/types';
-import { ASSET_LIMITS } from './manifest.ts';
+import { AssetImportError } from './kinds/types.ts';
+import { ASSET_LIMITS } from './limits.ts';
 
 /**
  * Reads a binary glTF just far enough to decide whether it is safe and cheap
@@ -10,9 +11,10 @@ export type GlbErrorCode =
 	| 'too-large' | 'not-glb' | 'version' | 'length' | 'json' | 'extension' | 'external-uri'
 	| 'empty' | 'bounds' | 'too-many-triangles' | 'too-many-images';
 
-export class GlbError extends Error {
-	constructor(readonly code: GlbErrorCode, message: string) {
-		super(message);
+export class GlbError extends AssetImportError {
+	declare readonly code: GlbErrorCode;
+	constructor(code: GlbErrorCode, message: string) {
+		super(code, message);
 		this.name = 'GlbError';
 	}
 }

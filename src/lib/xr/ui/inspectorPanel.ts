@@ -19,10 +19,12 @@ const COMPONENT_LABELS: Record<Component['type'], string> = {
 	worldPortal: 'World Portal',
 	mirror: 'Mirror',
 	audioPlayer: 'Audio Player',
+	htmlView: 'HTML View',
 	codeBlock: 'Code Block',
 	expires: 'Expires',
 	particleBurst: 'Particle Burst',
 	stroke: 'Stroke',
+	surfaceMask: 'Surface Mask',
 	skybox: 'Skybox',
 	velocity: 'Velocity',
 	textDisplay: 'Text Display',
@@ -31,7 +33,9 @@ const COMPONENT_LABELS: Record<Component['type'], string> = {
 	uiElement: 'UI Element',
 	scriptState: 'Script State',
 	pressableButton: 'Pressable Button',
-	impactSound: 'Impact Sound'
+	impactSound: 'Impact Sound',
+	socket: 'Socket',
+	insertable: 'Insertable'
 };
 
 const TREE_COLUMN_WIDTH = 290;
@@ -204,7 +208,7 @@ export function createInspectorPanel(
 		if (subtree.length === 0) return;
 		const adapters = availableInventoryFolders(getInventoryContext());
 		const adapter = adapters.find((a) => a.id === adapterId);
-		if (!adapter) return;
+		if (!adapter?.saveItem) return;
 		const rootSlot = subtree[0];
 		// only reuse the Dash's current "pwd" if it belongs to THIS adapter — otherwise save to that adapter's root
 		const folderId = gameState.currentInventoryAdapterId === adapterId ? gameState.currentInventoryFolderId : null;

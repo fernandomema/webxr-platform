@@ -1,5 +1,6 @@
 import { Control, StackPanel, TextBlock } from '@babylonjs/gui';
 import type { Component } from '$lib/ecs/types';
+import { normalizeSourceRef } from '$lib/assets/ref';
 import type { SceneGraph } from '../../sceneGraph';
 import { mountCodeBlockDebug } from './codeBlockDebug';
 
@@ -35,9 +36,15 @@ export function getComponentDetailRenderer(type: Component['type']): ComponentDe
 	return renderers.get(type);
 }
 
+function describeSource(component: Extract<Component, { type: 'audioPlayer' }>): string {
+	const source = normalizeSourceRef(component.source, component.url);
+	if (source.kind === 'url') return source.url || 'Not configured';
+	return `Asset ${source.assetId.slice(7, 15)}…`;
+}
+
 function mediaSourceRenderer(component: Component, ctx: ComponentDetailContext): void {
 	if (component.type !== 'audioPlayer') return;
-	const source = new TextBlock('', `Source: ${component.url || 'Not configured'}`);
+	const source = new TextBlock('', `Source: ${describeSource(component)}`);
 	source.color = '#d1d5db';
 	source.fontSize = 14;
 	source.height = '32px';

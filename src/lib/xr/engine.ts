@@ -20,8 +20,10 @@ import { isBuiltinMesh, migrateSlotTree } from '$lib/assets/ref';
 import type { AssetResolver } from '$lib/assets/resolve';
 import { CloudResolver } from '$lib/assets/cloud';
 import { getLocalAssetStore } from '$lib/assets/store';
+import { BlobAssetLibrary } from './blobAssetLibrary';
 import { ModelLibrary } from './modelLibrary';
 import { SceneGraph } from './sceneGraph';
+import { SocketSystem } from './interaction/socketSystem';
 import { GrabSystem } from './interaction/grabSystem';
 import { EquipmentSystem } from './interaction/equipmentSystem';
 import { PressableButtonSystem } from './interaction/pressableButtonSystem';
@@ -47,7 +49,7 @@ import type { PlayerInfo } from './net/protocol';
 import { PUBLIC_STUN_URLS } from '$env/static/public';
 import { createWorldOrb, copyScene, validateWorldPackage, validateWorldScene, worldFromInventory, MAX_SHARED_SCENE_BYTES } from '$lib/worlds/package';
 import type { WorldPackage } from '$lib/worlds/types';
-import type { InventoryAdapterId, InventoryItem } from '$lib/inventory/types';
+import type { InventoryAdapterId, InventoryStorageAdapterId, InventoryItem } from '$lib/inventory/types';
 import { createWorldPortalMenu } from './ui/worldPortalMenu';
 import { getInventoryAdapter } from '$lib/inventory/registry';
 import { getInventoryContext } from './gameState';
@@ -89,9 +91,11 @@ export async function mountGame(
 	// Models are found on this device first; the cloud and the session host are added to this list as they become available.
 	const assetResolvers: AssetResolver[] = [new CloudResolver()];
 	const models = new ModelLibrary(scene, { store: getLocalAssetStore(), getResolvers: () => assetResolvers });
+	const mediaAssets = new BlobAssetLibrary({ store: getLocalAssetStore(), getResolvers: () => assetResolvers });
 	let viewerCamera: () => { globalPosition: Vector3 } = () => desktopCamera;
 	const sceneGraph = new SceneGraph(scene, {
 		models,
+		mediaAssets,
 		getViewerPosition: () => viewerCamera().globalPosition,
 		onMediaControl: (slotId, action) => {
 			// Apply immediately on the local client so a click also unlocks
@@ -185,6 +189,8 @@ export async function mountGame(
 	loadSettings();
 	const grabSystem = new GrabSystem(scene, sceneGraph);
 	sceneGraph.setGrabQuery(grabSystem);
+	// Objects let go near a socket settle into it (host/solo decide; guests get the result in the snapshot).
+	new SocketSystem(sceneGraph, grabSystem, () => gameState.role !== 'guest');
 	// Objects held in a hand until unequipped. Registered right after GrabSystem so a
 	// guest hand's proxy follows presence before equipped scripts read their pose.
 	const equipment = new EquipmentSystem(
@@ -344,7 +350,7 @@ export async function mountGame(
 
 	async function launchWorldPackage(world: WorldPackage, visibility: HostedWorldVisibility | 'solo'): Promise<void> {
 		validateWorldPackage(world);
-		for (const asset of world.assets ?? []) models.provideBounds(asset.assetId, asset.bounds);
+		for (const asset of world.assets ?? []) if (asset.bounds) models.provideBounds(asset.assetId, asset.bounds);
 		const source = world.source;
 		const loaded: LoadedWorld | null = source?.kind === 'inventory' && source.worldLineageId
 			? { adapterId: source.adapterId, worldLineageId: source.worldLineageId, folderId: source.folderId ?? null, name: world.name, revisionNumber: source.revisionNumber ?? null }
@@ -419,7 +425,7 @@ export async function mountGame(
 		if (gameState.role !== 'guest') hostAuthority?.broadcastSnapshot();
 	}
 
-	function spawnWorldOrb(item: InventoryItem, adapterId: InventoryAdapterId): void {
+	function spawnWorldOrb(item: InventoryItem, adapterId: InventoryStorageAdapterId): void {
 		spawnWorldOrbPackage(worldFromInventory(item, adapterId, gameState.userId));
 	}
 
@@ -436,7 +442,7 @@ export async function mountGame(
 		onSpawnItem: spawnFromInventory,
 		onSpawnWorldOrb: spawnWorldOrb,
 		onSpawnPublishedWorld: spawnWorldOrbPackage,
-		onLaunchWorldItem: async (item, adapterId) => {
+		onLaunchWorldItem: async (item, adapterId: InventoryStorageAdapterId) => {
 			const world = worldFromInventory(item, adapterId, gameState.userId);
 			await launchWorldPackage(world, world.defaultVisibility);
 		},
@@ -450,7 +456,7 @@ export async function mountGame(
 		validateWorldPackage(world);
 		const selected = getInventoryAdapter(gameState.currentInventoryAdapterId ?? 'local');
 		const adapter = selected?.isAvailable(getInventoryContext()) ? selected : getInventoryAdapter('local');
-		if (!adapter) throw new Error('No inventory is available');
+		if (!adapter?.saveItem) throw new Error('Choose a writable inventory first');
 		const folderId = adapter.id === gameState.currentInventoryAdapterId ? gameState.currentInventoryFolderId : null;
 		await adapter.saveItem(getInventoryContext(), folderId, world.name, copyScene(world.scene), 'world');
 	});
@@ -548,6 +554,7 @@ export async function mountGame(
 			voice.dispose();
 			sceneGraph.dispose();
 			models.dispose();
+			mediaAssets.dispose();
 			engine.dispose();
 		}
 	};

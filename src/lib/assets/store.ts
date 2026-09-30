@@ -5,10 +5,10 @@ import type { AssetId } from './ref';
 export const assetStoreChanges = new EventTarget();
 const announcePut = () => assetStoreChanges.dispatchEvent(new Event('put'));
 
-export interface AssetListing extends AssetManifest {
+export type AssetListing = AssetManifest & {
 	importedAt: number;
 	lastUsedAt: number;
-}
+};
 
 /**
  * Where model bytes live on this device: imported files, and everything

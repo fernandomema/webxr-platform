@@ -6,7 +6,7 @@
  * the host->guest scene snapshot sent over the DataChannel.
  */
 
-import type { MeshRef } from '../assets/ref';
+import type { MeshRef, SourceRef } from '../assets/ref';
 
 export type Vec3 = [number, number, number];
 export type Quat = [number, number, number, number];
@@ -69,13 +69,37 @@ export interface MirrorComponent {
 
 export interface AudioPlayerComponent {
 	type: 'audioPlayer';
-	/** A browser-loadable audio URL (for example MP3/OGG/WAV when supported). */
-	url: string;
+	/** A direct browser-loadable audio URL, or an audio asset (local, cloud or shared). */
+	source: SourceRef;
+	/** Legacy form of `source`; read by `normalizeSourceRef`, never written. */
+	url?: string;
 	autoplay?: boolean;
 	loop?: boolean;
 	volume?: number;
 	playing?: boolean;
 	currentTime?: number;
+}
+
+/**
+ * A live web page (a sandboxed iframe) drawn onto this slot's mesh through the
+ * WICG HTML-in-Canvas API, via Babylon's `HtmlTexture`. The browser must expose
+ * that API (Chrome: chrome://flags/#canvas-draw-element); without it the mesh
+ * shows a short notice instead. Put it on a slot with a plane `meshRenderer`.
+ */
+export interface HtmlViewComponent {
+	type: 'htmlView';
+	/** https (or same-origin) URL loaded in the iframe. Empty shows a blank page. */
+	url: string;
+	/** Size of the page in CSS pixels; fixed when the view is created. */
+	width?: number;
+	height?: number;
+	/**
+	 * How pointer input reaches the page. `raycast` forwards the laser/mouse hit (as UV) as DOM pointer and click
+	 * events into a same-origin page (a cross-origin page cannot be reached);
+	 * `overlay` puts the real element under the cursor so the browser hit-tests it natively (flat, camera-facing
+	 * surfaces only); `none` is display only. Fixed when the view is created.
+	 */
+	interaction?: 'none' | 'raycast' | 'overlay';
 }
 
 export type MediaControlAction = 'toggle' | 'play' | 'pause';
@@ -117,6 +141,30 @@ export interface StrokeComponent {
 	color: string;
 	/** Line thickness (diameter) in meters. */
 	width: number;
+}
+
+/**
+ * A translucent coating tinted over a surface's own material — grime, frost,
+ * paint, snow, blood, rust, or anything else that reads as a layer ON an
+ * object rather than a property of it. `mask` is a small grayscale coverage
+ * bitmap (`resolution` × `resolution`, row-major, base64-encoded bytes:
+ * 0 = fully clean/absent, 255 = fully covered), fixed at creation time and
+ * mutated in place by a script — see `world.raycast` (codeBlockRuntime.ts)
+ * for finding where on the mask to paint and `world.setComponentField` for
+ * writing the result back. Generic: any "erode/build up a coating by
+ * contact" mechanic (a pressure washer, a snowball, a paintbrush spray gun)
+ * reuses this same component and the same read/paint/write primitives — see
+ * the "Pressure Washer" lobby tool for the reference reader/writer.
+ */
+export interface SurfaceMaskComponent {
+	type: 'surfaceMask';
+	/** Overlay tint, alpha-blended by the mask. */
+	color: string;
+	/** Alpha where the mask reads fully "on" (1 = a fully opaque coating), 0-1. */
+	opacity?: number;
+	/** Mask width/height in pixels. Fixed when the coating is created. */
+	resolution: number;
+	mask: string;
 }
 
 /** A gradient sky with optional stars, drawn behind everything and following the camera. Use one per scene. */
@@ -256,6 +304,35 @@ export interface ImpactSoundComponent {
 	volume?: number;
 }
 
+/**
+ * A place where a matching object can be set down and stay: a record player's
+ * platter, a key slot, a shelf. When a grabbed slot carrying `insertable` is
+ * released within `radius` of the socket and one of its `tags` is accepted, it
+ * snaps into `snap` (in the socket's space) and becomes a child of the socket
+ * until someone grabs it again. Resolved by the host (or solo player) only;
+ * everyone else sees the result in the next snapshot.
+ */
+export interface SocketComponent {
+	type: 'socket';
+	/** Tags of `insertable` objects this socket takes. Empty takes anything insertable. */
+	accepts: string[];
+	/** How close, in metres, a released object must be to the socket's snap point. */
+	radius: number;
+	/** Where the object settles, in the socket's local space. Rotation is Euler degrees (pitch, yaw, roll). */
+	snap: EquipPose;
+	/** Whether inserting starts the object's `audioPlayer` and removing it pauses it. */
+	playMedia?: boolean;
+	/** Set by the host while something sits in the socket. Never author this by hand. */
+	occupantId?: string;
+}
+
+/** Marks a grabbable object as something a `socket` can take. */
+export interface InsertableComponent {
+	type: 'insertable';
+	/** What kind of object this is, matched against a socket's `accepts` (for example `disc`). */
+	tag: string;
+}
+
 export type Component =
 	| MeshRendererComponent
 	| ColliderComponent
@@ -266,14 +343,18 @@ export type Component =
 	| WorldPortalComponent
 	| MirrorComponent
 	| AudioPlayerComponent
+	| HtmlViewComponent
 	| CodeBlockComponent
 	| ExpiresComponent
 	| ParticleBurstComponent
 	| StrokeComponent
+	| SurfaceMaskComponent
 	| SkyboxComponent
 	| VelocityComponent
 	| PressableButtonComponent
 	| ImpactSoundComponent
+	| SocketComponent
+	| InsertableComponent
 	| TextDisplayComponent
 	| ScoreboardComponent
 	| UIPanelComponent

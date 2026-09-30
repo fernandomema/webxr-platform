@@ -52,10 +52,10 @@ export function transferMode(): TransferMode {
 	return env.S3_ENDPOINT?.startsWith('https:') ? 'direct' : 'proxy';
 }
 
-/** `assets/sha256/ab/cd/<hex>.glb` — the hash spread over two directory levels. */
-export function storageKeyFor(id: AssetId): string {
+/** `assets/sha256/ab/cd/<hex>.<ext>` — the hash spread over two directory levels. */
+export function storageKeyFor(id: AssetId, extension: string): string {
 	const hex = id.slice('sha256:'.length);
-	return `assets/sha256/${hex.slice(0, 2)}/${hex.slice(2, 4)}/${hex}.glb`;
+	return `assets/sha256/${hex.slice(0, 2)}/${hex.slice(2, 4)}/${hex}${extension ? `.${extension}` : ''}`;
 }
 
 const PRESIGN_SECONDS = 15 * 60;

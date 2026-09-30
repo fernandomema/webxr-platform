@@ -16,6 +16,12 @@ export interface GrabGuard {
 	canGrab(slotId: string, grabberId: string): boolean;
 }
 
+/** Lets another system react to a grab starting or ending, once the grab itself is done. */
+export interface GrabListener {
+	onGrab(slotId: string): void;
+	onRelease(slotId: string): void;
+}
+
 /**
  * Generic grab behaviour shared by every `grabbable` Slot, including UI
  * panels: a single grabber (hand or laser) rigidly follows the grabber node
@@ -30,6 +36,7 @@ export class GrabSystem {
 	private twoPoint = new Map<string, TwoPointState>();
 	private originalParent = new Map<string, TransformNode | null>();
 	private guard: GrabGuard | null = null;
+	private listener: GrabListener | null = null;
 
 	constructor(
 		scene: Scene,
@@ -40,6 +47,15 @@ export class GrabSystem {
 
 	setGuard(guard: GrabGuard): void {
 		this.guard = guard;
+	}
+
+	setListener(listener: GrabListener): void {
+		this.listener = listener;
+	}
+
+	/** Where a slot goes when let go, if not where it was when grabbed (for example, taken out of a socket). */
+	overrideReleaseParent(slotId: string, parent: TransformNode | null): void {
+		if (this.originalParent.has(slotId)) this.originalParent.set(slotId, parent);
 	}
 
 	/**
@@ -107,6 +123,7 @@ export class GrabSystem {
 			} catch (err) {
 				console.error(`[grabSystem] onGrab threw for ${effectiveTargetId}`, err);
 			}
+			this.listener?.onGrab(effectiveTargetId);
 		}
 	}
 
@@ -149,6 +166,7 @@ export class GrabSystem {
 		} catch (err) {
 			console.error(`[grabSystem] onRelease threw for ${slotId}`, err);
 		}
+		this.listener?.onRelease(slotId);
 	}
 
 	/** Release every grabber holding anything (e.g. controller disconnected). */

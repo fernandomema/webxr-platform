@@ -24,6 +24,8 @@ model user {
   accounts        account[]
   worlds          world[]
   publications    publishedWorld[]
+  marketplaceItems marketplaceItem[]
+  marketplacePurchases marketplacePurchase[]
   cloudItems      cloudInventoryItem[]
   cloudFolders    cloudInventoryFolder[]
   assetOwnerships assetOwner[]
@@ -146,6 +148,9 @@ model cloudInventoryItem {
   @@index([folderId])
   @@unique([ownerId, worldLineageId, revisionNumber])
   assets           cloudItemAsset[]
+  marketplaceItemId String?
+  marketplaceItem marketplaceItem? @relation(fields: [marketplaceItemId], references: [id], onDelete: SetNull)
+  @@index([marketplaceItemId])
 }
 
 model worldInventoryFolder {
@@ -181,6 +186,9 @@ model worldInventoryItem {
   @@index([folderId])
   @@unique([worldId, worldLineageId, revisionNumber])
   assets           worldInventoryItemAsset[]
+  marketplaceItemId String?
+  marketplaceItem marketplaceItem? @relation(fields: [marketplaceItemId], references: [id], onDelete: SetNull)
+  @@index([marketplaceItemId])
 }
 
 // Published worlds are independent from live sessions and from inventory drafts.
@@ -210,6 +218,51 @@ model publishedWorldRevision {
   assets           publishedRevisionAsset[]
 }
 
+// Marketplace objects are independent from the inventory entry they were published from.
+model marketplaceItem {
+  id             String @id @default(cuid())
+  ownerId        String
+  owner          user @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name           String
+  description    String @default("")
+  thumbnailUrl   String?
+  latestRevision Int @default(1)
+  status         String @default("published") // published | hidden
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  revisions      marketplaceItemRevision[]
+  purchases      marketplacePurchase[]
+  cloudItems     cloudInventoryItem[]
+  worldItems     worldInventoryItem[]
+
+  @@index([ownerId])
+  @@index([status, updatedAt])
+}
+
+model marketplaceItemRevision {
+  id                 String @id @default(cuid())
+  marketplaceItemId  String
+  marketplaceItem    marketplaceItem @relation(fields: [marketplaceItemId], references: [id], onDelete: Cascade)
+  number             Int
+  slotData           Json
+  createdAt          DateTime @default(now())
+  assets             marketplaceRevisionAsset[]
+
+  @@unique([marketplaceItemId, number])
+}
+
+model marketplacePurchase {
+  id                String @id @default(cuid())
+  userId            String
+  user              user @relation(fields: [userId], references: [id], onDelete: Cascade)
+  marketplaceItemId String
+  marketplaceItem   marketplaceItem @relation(fields: [marketplaceItemId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+
+  @@unique([userId, marketplaceItemId])
+  @@index([marketplaceItemId])
+}
+
 // --- 3D model assets -------------------------------------------------------
 // One row per distinct file, keyed by the SHA-256 of its bytes; the file itself
 // lives once in object storage. Many users can own the same asset (each is
@@ -234,6 +287,7 @@ model asset {
   cloudItems        cloudItemAsset[]
   worldItems        worldInventoryItemAsset[]
   revisions         publishedRevisionAsset[]
+  marketplaceRevisions marketplaceRevisionAsset[]
   worlds            worldAsset[]
 
   @@index([status, createdAt])
@@ -279,6 +333,16 @@ model publishedRevisionAsset {
   assetId    String
   revision   publishedWorldRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
   asset      asset                  @relation(fields: [assetId], references: [id], onDelete: Restrict)
+
+  @@id([revisionId, assetId])
+  @@index([assetId])
+}
+
+model marketplaceRevisionAsset {
+  revisionId String
+  assetId    String
+  revision   marketplaceItemRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  asset      asset @relation(fields: [assetId], references: [id], onDelete: Restrict)
 
   @@id([revisionId, assetId])
   @@index([assetId])

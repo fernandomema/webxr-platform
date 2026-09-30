@@ -66,10 +66,10 @@ export function setupRadialMenuForHand(
 			...equipItems,
 			{
 				label: 'Save',
-				isEnabled: () => gameState.currentInventoryAdapterId !== null,
+				isEnabled: () => Boolean(gameState.currentInventoryAdapterId && getInventoryAdapter(gameState.currentInventoryAdapterId)?.saveItem),
 				onSelect: async () => {
-					const adapter = gameState.currentInventoryAdapterId && getInventoryAdapter(gameState.currentInventoryAdapterId);
-					if (!adapter) return;
+					const adapter = gameState.currentInventoryAdapterId ? getInventoryAdapter(gameState.currentInventoryAdapterId) : undefined;
+					if (!adapter?.saveItem) return;
 					const subtree = extractSubtree(sceneGraph.serialize(), slotId);
 					if (subtree.length) await adapter.saveItem(getInventoryContext(), gameState.currentInventoryFolderId, subtree[0].name, subtree);
 				}

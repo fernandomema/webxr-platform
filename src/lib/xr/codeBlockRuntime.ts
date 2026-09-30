@@ -16,6 +16,8 @@ export interface CodeBlockHost {
 	setComponentField(slotId: string, componentType: string, field: string, value: unknown, broadcast?: boolean): void;
 	/** Every non-system Slot whose world position is within `radius` of `worldPos` — a generic spatial query for proximity/collision-style logic (hit detection, triggers, area effects), not tied to any one demo. O(live slot count) per call. */
 	findNear(worldPos: Vec3, radius: number): Slot[];
+	/** Casts a ray through the live scene — generic aiming/hit-testing for any tool (a laser, a thrown object, a spray), not tied to any one demo. `null` when nothing pickable is hit within `maxDistance`. */
+	raycast(origin: Vec3, direction: Vec3, maxDistance: number): RaycastHit | null;
 	/** Resolves a grabberId (from `getGrabbers`/`ctx.grab.heldBy()`) to a stable player id + display name — generic attribution for scripts that need to know "who did this" (scoreboards, ownership tags, logs), not tied to any one demo. */
 	resolvePlayer(grabberId: string): { id: string; name: string };
 	/** Which player/hand has this slot — or one of its ancestors — equipped, if any. */
@@ -24,6 +26,16 @@ export interface CodeBlockHost {
 	getUIMedia(slotId: string): UIMediaState | undefined;
 	/** Current text, on this peer, of the `input` uiElement `slotId`. */
 	getUIInputText(slotId: string): string | undefined;
+}
+
+/** A ray's hit against the live scene, resolved back to the Slot it belongs to — see `CodeBlockHost.raycast`. */
+export interface RaycastHit {
+	slotId: string;
+	point: Vec3;
+	normal: Vec3;
+	/** Texture coordinates at the hit point, if the mesh has UVs (every builtin primitive does) — for painting a `surfaceMask` or similar at the exact spot touched. */
+	u: number;
+	v: number;
 }
 
 /** Who and which hand an equip/unequip/trigger event is about. */
@@ -243,6 +255,7 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 			setComponentField: (targetId: string, componentType: string, field: string, value: unknown, broadcast = true) =>
 				host.setComponentField(targetId, componentType, field, value, broadcast),
 			findNear: (worldPos: Vec3, radius: number) => host.findNear(worldPos, radius),
+			raycast: (origin: Vec3, direction: Vec3, maxDistance: number) => host.raycast(origin, direction, maxDistance),
 			getPlayer: (grabberId: string) => host.resolvePlayer(grabberId)
 		},
 		particles: {

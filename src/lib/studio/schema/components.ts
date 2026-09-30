@@ -1,5 +1,5 @@
 import type { Component } from '../../ecs/types';
-import { BUILTIN_MESH_IDS } from '../../assets/ref.ts';
+import { BUILTIN_MESH_IDS, urlSource } from '../../assets/ref.ts';
 
 export type ComponentType = Component['type'];
 export type ComponentGroup = 'Render' | 'Interaction' | 'Logic' | 'Media' | 'World';
@@ -24,6 +24,8 @@ export type FieldDef = FieldBase &
 		| { kind: 'enum'; options: { value: string; label: string }[]; default?: string }
 		| { kind: 'vec3'; step?: number; default?: [number, number, number] }
 		| { kind: 'mesh' }
+		/** A direct URL, or an asset of `assetType` (local, cloud or shared). Stored as a `SourceRef`. */
+		| { kind: 'asset'; assetType: string }
 		| { kind: 'pose' }
 		| { kind: 'lines' }
 		| { kind: 'code' }
@@ -43,6 +45,14 @@ export interface ComponentSchema {
 }
 
 export const DEFAULT_CODE = `// A code block returns event handlers.\nreturn {\n  onSpawn() {\n    ctx.log('Ready:', ctx.self.getSlot()?.name);\n  },\n  onGrab() {\n    ctx.log('Grabbed by', ctx.grab.heldBy());\n  },\n  tick(dt) {\n    // Use ctx.self, ctx.world, ctx.hierarchy and ctx.math here.\n  }\n};`;
+
+/** A `resolution` × `resolution` fully-covered coverage mask (every byte 255), base64-encoded — the starting state for a freshly added `surfaceMask`. */
+function fullCoverageMask(resolution: number): string {
+	const bytes = new Uint8ClampedArray(resolution * resolution).fill(255);
+	let binary = '';
+	for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+	return btoa(binary);
+}
 
 export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 	{
@@ -221,6 +231,29 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		create: () => ({ type: 'impactSound', frequency: 220, pitchDrop: 60, noiseMix: 0.3, durationMs: 200, volume: 1 })
 	},
 	{
+		type: 'socket',
+		label: 'Socket',
+		group: 'Interaction',
+		description: 'A spot where matching objects snap in and stay, such as a record player platter.',
+		glyph: '⌷',
+		fields: [
+			{ key: 'accepts', label: 'Accepts tags', kind: 'lines', help: 'One tag per line. Leave empty to take any insertable object.' },
+			{ key: 'radius', label: 'Snap distance', kind: 'number', min: 0.02, max: 2, step: 0.01, unit: 'm' },
+			{ key: 'snap', label: 'Resting pose', kind: 'pose', help: 'Where the object sits, relative to this slot.' },
+			{ key: 'playMedia', label: 'Plays its audio', kind: 'bool', optional: true, default: true, help: 'Start the inserted object’s audio player, and pause it when removed.' }
+		],
+		create: () => ({ type: 'socket', accepts: ['disc'], radius: 0.2, snap: { position: [0, 0, 0], rotation: [0, 0, 0] }, playMedia: true })
+	},
+	{
+		type: 'insertable',
+		label: 'Insertable',
+		group: 'Interaction',
+		description: 'Lets a grabbable object be set into a matching socket.',
+		glyph: '⇩',
+		fields: [{ key: 'tag', label: 'Tag', kind: 'text', suggestions: ['disc'], help: 'Sockets that accept this tag will take the object.' }],
+		create: () => ({ type: 'insertable', tag: 'disc' })
+	},
+	{
 		type: 'audioSource',
 		label: 'Audio Source',
 		group: 'Media',
@@ -234,15 +267,33 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		type: 'audioPlayer',
 		label: 'Audio Player',
 		group: 'Media',
-		description: 'Play an audio file from a URL.',
+		description: 'Play an audio file from a URL or an imported asset.',
 		glyph: '◖',
 		fields: [
-			{ key: 'url', label: 'Audio URL', kind: 'url' },
+			{ key: 'source', label: 'Audio', kind: 'asset', assetType: 'audio' },
 			{ key: 'autoplay', label: 'Autoplay', kind: 'bool', optional: true, default: false },
 			{ key: 'loop', label: 'Loop', kind: 'bool', optional: true, default: false },
 			{ key: 'volume', label: 'Volume', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 1 }
 		],
-		create: () => ({ type: 'audioPlayer', url: '', loop: false, volume: 1 })
+		create: () => ({ type: 'audioPlayer', source: urlSource(''), loop: false, volume: 1 })
+	},
+	{
+		type: 'htmlView',
+		label: 'HTML View',
+		group: 'Media',
+		description: 'Draw a live web page (for example an embedded player) on a plane, using the WICG HTML-in-Canvas API. Needs a browser that exposes it (Chrome: chrome://flags/#canvas-draw-element).',
+		glyph: '▣',
+		fields: [
+			{ key: 'url', label: 'Page URL', kind: 'url', help: 'https only.' },
+			{ key: 'width', label: 'Page width', kind: 'number', min: 64, max: 4096, step: 16, unit: 'px', optional: true, default: 1280, help: 'Fixed when the view is created.' },
+			{ key: 'height', label: 'Page height', kind: 'number', min: 64, max: 4096, step: 16, unit: 'px', optional: true, default: 720, help: 'Fixed when the view is created.' },
+			{ key: 'interaction', label: 'Input', kind: 'enum', options: [
+				{ value: 'raycast', label: 'Forward laser/mouse' },
+				{ value: 'overlay', label: 'Native overlay' },
+				{ value: 'none', label: 'Display only' }
+			], optional: true, default: 'raycast' }
+		],
+		create: () => ({ type: 'htmlView', url: '', width: 1280, height: 720, interaction: 'raycast' })
 	},
 	{
 		type: 'codeBlock',
@@ -315,6 +366,19 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 			{ key: 'width', label: 'Width', kind: 'number', min: 0.002, max: 0.2, step: 0.002, unit: 'm', default: 0.018 }
 		],
 		create: () => ({ type: 'stroke', points: [], color: '#ef4444', width: 0.018 })
+	},
+	{
+		type: 'surfaceMask',
+		label: 'Surface Mask',
+		group: 'Render',
+		description: 'A translucent coating tinted over the surface — grime, frost, paint, snow — meant to be built up or eroded by a script (a spray tool, a snowball, a brush).',
+		glyph: '▨',
+		advanced: true,
+		fields: [
+			{ key: 'color', label: 'Tint', kind: 'color', optional: true, default: '#4b3621' },
+			{ key: 'opacity', label: 'Opacity', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 0.9 }
+		],
+		create: () => ({ type: 'surfaceMask', color: '#4b3621', opacity: 0.9, resolution: 32, mask: fullCoverageMask(32) })
 	},
 	{
 		type: 'expires',

@@ -15,6 +15,7 @@
 		Vector3
 	} from '@babylonjs/core';
 	import { SceneGraph } from '$lib/xr/sceneGraph';
+	import { BlobAssetLibrary } from '$lib/xr/blobAssetLibrary';
 	import { ModelLibrary } from '$lib/xr/modelLibrary';
 	import { CloudResolver } from '$lib/assets/cloud';
 	import type { SlotTree } from '$lib/ecs/types';
@@ -36,6 +37,7 @@
 	let camera: ArcRotateCamera | null = null;
 	let sceneGraph: SceneGraph | null = null;
 	let models: ModelLibrary | null = null;
+	let mediaAssets: BlobAssetLibrary | null = null;
 	const cloudResolver = new CloudResolver();
 	let ready = $state(false);
 	/** Bumped whenever the live scene is rebuilt, so the selection highlight is re-applied. */
@@ -56,7 +58,7 @@
 	}
 
 	onMount(() => {
-		engine = new Engine(canvas, true);
+		engine = new Engine(canvas, true, { audioEngine: true });
 		scene = new Scene(engine);
 		scene.clearColor = new Color4(0.04, 0.05, 0.07, 1);
 
@@ -82,7 +84,8 @@
 		boxes.backColor = new Color3(0.49, 0.42, 0.96);
 
 		models = new ModelLibrary(scene, { getResolvers: () => [cloudResolver] });
-		sceneGraph = new SceneGraph(scene, { models, getViewerPosition: () => camera?.position ?? null });
+		mediaAssets = new BlobAssetLibrary({ getResolvers: () => [cloudResolver] });
+		sceneGraph = new SceneGraph(scene, { models, mediaAssets, getViewerPosition: () => camera?.position ?? null });
 
 		handNode = new TransformNode('studio-hand', scene);
 		handNode.position = new Vector3(0, 1.2, 0);
@@ -215,6 +218,7 @@
 		clearTimeout(rebuildTimer);
 		sceneGraph?.dispose();
 		models?.dispose();
+		mediaAssets?.dispose();
 		scene?.dispose();
 		engine?.dispose();
 	});

@@ -15,6 +15,7 @@
 	import Hierarchy from '$lib/studio/components/Hierarchy.svelte';
 	import Inspector from '$lib/studio/components/Inspector.svelte';
 	import AiPanel from '$lib/studio/components/AiPanel.svelte';
+	import MarketplacePanel from '$lib/studio/components/MarketplacePanel.svelte';
 	import AssetsPanel from '$lib/studio/components/AssetsPanel.svelte';
 	import AddObjectMenu, { type ObjectPreset } from '$lib/studio/components/AddObjectMenu.svelte';
 	import SaveDialog from '$lib/studio/components/SaveDialog.svelte';
@@ -30,7 +31,7 @@
 	let advanced = $state(false);
 	let centerView = $state<'scene' | 'code' | 'json'>('scene');
 	let leftTab = $state<'hierarchy' | 'assets'>('hierarchy');
-	let rightTab = $state<'inspector' | 'ai'>('inspector');
+	let rightTab = $state<'inspector' | 'ai' | 'marketplace'>('inspector');
 	let mobilePanel = $state<'left' | 'center' | 'right'>('center');
 	let dialog = $state<'save' | 'publish' | 'palette' | null>(null);
 	let showAddObject = $state(false);
@@ -63,6 +64,11 @@
 		setAdvanced(true);
 		centerView = 'code';
 		mobilePanel = 'center';
+	}
+
+	function openMarketplace() {
+		rightTab = 'marketplace';
+		mobilePanel = 'right';
 	}
 
 	// Keep a local draft while there are unsaved edits, so a crash or reload loses nothing.
@@ -170,6 +176,7 @@
 		{ id: 'import-model', label: 'Import model (.glb)…', run: () => void studioModels.pickAndImport() },
 		{ id: 'play', label: 'Play in the game', run: play },
 		{ id: 'publish', label: 'Publish world…', enabled: doc.kind === 'world', run: () => (dialog = 'publish') },
+		{ id: 'marketplace', label: 'Marketplace…', enabled: doc.kind === 'object' && project.adapterId !== 'purchased', run: openMarketplace },
 		{ id: 'mode', label: advanced ? 'Switch to Simple mode' : 'Switch to Advanced mode', run: () => setAdvanced(!advanced) },
 		{ id: 'assets', label: 'Show asset library', run: () => { leftTab = 'assets'; mobilePanel = 'left'; } },
 		{ id: 'projects', label: 'Back to projects', run: back }
@@ -282,10 +289,16 @@
 				<div class="tabs" role="tablist">
 					<button class="tab" role="tab" aria-selected={rightTab === 'inspector'} onclick={() => (rightTab = 'inspector')}><Icon name="sliders" size={14} />Inspector</button>
 					<button class="tab" role="tab" aria-selected={rightTab === 'ai'} onclick={() => (rightTab = 'ai')}>AI</button>
+					{#if doc.kind === 'object' && project.adapterId !== 'purchased'}
+						<button class="tab" role="tab" aria-selected={rightTab === 'marketplace'} onclick={openMarketplace}><Icon name="publish" size={14} />Marketplace</button>
+					{/if}
 				</div>
 				<div class="right-body">
 					<div class="right-view" hidden={rightTab !== 'inspector'}><Inspector {doc} {advanced} onOpenCode={openCode} /></div>
 					<div class="right-view" hidden={rightTab !== 'ai'}><AiPanel {doc} projectKey={project.key} /></div>
+					{#if doc.kind === 'object' && project.adapterId !== 'purchased'}
+						<div class="right-view" hidden={rightTab !== 'marketplace'}><MarketplacePanel {project} /></div>
+					{/if}
 				</div>
 			</section>
 		</div>

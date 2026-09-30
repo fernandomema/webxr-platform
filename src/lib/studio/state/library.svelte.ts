@@ -66,17 +66,20 @@ export class Library {
 	}
 
 	async createFolder(name: string): Promise<void> {
-		await this.adapter?.createFolder(this.context, this.folderId, name);
+		if (!this.adapter?.createFolder) throw new Error('This inventory is read-only.');
+		await this.adapter.createFolder(this.context, this.folderId, name);
 		await this.load();
 	}
 
 	async deleteFolder(folder: InventoryFolder): Promise<void> {
-		await this.adapter?.deleteFolder(this.context, folder.id);
+		if (!this.adapter?.deleteFolder) throw new Error('This inventory is read-only.');
+		await this.adapter.deleteFolder(this.context, folder.id);
 		await this.load();
 	}
 
 	async deleteItem(item: InventoryItem): Promise<void> {
-		await this.adapter?.deleteItem(this.context, item.id);
+		if (!this.adapter?.deleteItem) throw new Error('This inventory is read-only.');
+		await this.adapter.deleteItem(this.context, item.id);
 		await this.load();
 	}
 }

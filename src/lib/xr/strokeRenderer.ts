@@ -17,8 +17,14 @@ export function setupStroke(scene: Scene, node: TransformNode, initial: StrokeCo
 	const material = new StandardMaterial(`stroke-mat-${node.name}`, scene);
 	material.specularColor = Color3.Black();
 	let mesh: Mesh | null = null;
-	let renderedPoints = -1;
+	let renderedPoints: number[] = [];
 	let renderedWidth = -1;
+
+	function pointsEqual(a: number[], b: number[]): boolean {
+		if (a.length !== b.length) return false;
+		for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+		return true;
+	}
 
 	function render(component: StrokeComponent): void {
 		const color = Color3.FromHexString(component.color || '#ffffff');
@@ -26,10 +32,13 @@ export function setupStroke(scene: Scene, node: TransformNode, initial: StrokeCo
 		material.emissiveColor = color.scale(0.55);
 
 		const flat = component.points ?? [];
-		const count = Math.floor(flat.length / 3);
-		if (count === renderedPoints && component.width === renderedWidth) return;
-		renderedPoints = count;
+		// Compares values, not just point count: a fixed-length stroke that moves
+		// every frame (e.g. a tool's water-jet beam, its 2 endpoints re-sent each
+		// tick) needs a rebuild just as much as a growing paint stroke does.
+		if (pointsEqual(flat, renderedPoints) && component.width === renderedWidth) return;
+		renderedPoints = flat.slice();
 		renderedWidth = component.width;
+		const count = Math.floor(flat.length / 3);
 		mesh?.dispose();
 		mesh = null;
 		if (count < 2) return;

@@ -4,8 +4,8 @@
 	import Icon from '../ui/Icon.svelte';
 	import { handPreview } from '../state/handPreview.svelte';
 	import type { EquipPose } from '$lib/ecs/types';
-	import { assetMesh, BUILTIN_MESH_IDS, isAssetId, normalizeMeshRef, type BuiltinMeshId } from '$lib/assets/ref';
-	import { studioModels } from '../state/models.svelte';
+	import { assetMesh, assetSource, BUILTIN_MESH_IDS, isAssetId, normalizeMeshRef, normalizeSourceRef, urlSource, type BuiltinMeshId } from '$lib/assets/ref';
+	import { studioAssets, studioModels } from '../state/models.svelte';
 
 	interface Props {
 		field: FieldDef;
@@ -126,6 +126,36 @@
 					<option value="__import">Import a .glb…</option>
 				</optgroup>
 			</select>
+		{:else if field.kind === 'asset'}
+			{@const source = normalizeSourceRef(value)}
+			{@const choices = studioAssets.items.filter((item) => item.type === field.assetType)}
+			{@const known = source.kind !== 'asset' || choices.some((item) => item.assetId === source.assetId)}
+			<div class="asset-field">
+				<select
+					class="select"
+					{id}
+					value={source.kind === 'asset' ? source.assetId : '__url'}
+					onchange={async (event) => {
+						const next = event.currentTarget.value;
+						if (next === '__import') {
+							event.currentTarget.value = source.kind === 'asset' ? source.assetId : '__url';
+							const [first] = await studioAssets.pickAndImport(field.assetType);
+							if (first) onchange(assetSource(first.assetId));
+						} else if (isAssetId(next)) onchange(assetSource(next));
+						else onchange(urlSource(source.kind === 'url' ? source.url : ''));
+					}}
+				>
+					<option value="__url">From a URL</option>
+					<optgroup label="Imported">
+						{#each choices as item (item.assetId)}<option value={item.assetId}>{item.name}</option>{/each}
+						{#if !known && source.kind === 'asset'}<option value={source.assetId}>{source.assetId.slice(7, 15)}… (not on this device)</option>{/if}
+						<option value="__import">Import a file…</option>
+					</optgroup>
+				</select>
+				{#if source.kind === 'url'}
+					<input class="input" type="url" placeholder="https://…" aria-label={field.label} value={source.url} oninput={(event) => onchange(urlSource(event.currentTarget.value))} />
+				{/if}
+			</div>
 		{:else if field.kind === 'pose'}
 			<div class="pose">
 				{#each [['position', 'Pos', 0.01], ['rotation', 'Rot °', 5]] as const as [part, label, step] (part)}
@@ -173,4 +203,5 @@
 	.unit { color: var(--muted); font-size: 11px; white-space: nowrap; }
 	.mono { font-family: var(--mono); }
 	.error { grid-column: 2; margin: 0; color: var(--danger); font-size: 11px; }
+	.asset-field { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
 </style>
