@@ -25,9 +25,13 @@ export interface CloudSyncResult {
 export async function ensureCloudAssets(
 	scene: readonly unknown[],
 	store: AssetStore,
-	options: { onProgress?: (progress: CloudSyncProgress) => void } = {}
+	options: {
+		onProgress?: (progress: CloudSyncProgress) => void;
+		/** Assets to send that the scene does not reference, such as the preview image of the item being saved. */
+		extraIds?: readonly AssetId[];
+	} = {}
 ): Promise<CloudSyncResult> {
-	const ids = [...collectAssetIds(scene)];
+	const ids = [...new Set([...collectAssetIds(scene), ...(options.extraIds ?? [])])];
 	const result: CloudSyncResult = { uploaded: [], existing: [], notLocal: [] };
 	let done = 0;
 	for (const id of ids) {

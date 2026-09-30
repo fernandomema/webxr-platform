@@ -141,7 +141,7 @@ model cloudInventoryItem {
   kind         String                @default("object")
   worldLineageId String?
   revisionNumber Int?
-  thumbnailUrl String?
+  thumbnailAssetId String?
   createdAt    DateTime              @default(now())
 
   @@index([ownerId])
@@ -179,7 +179,7 @@ model worldInventoryItem {
   kind         String                @default("object")
   worldLineageId String?
   revisionNumber Int?
-  thumbnailUrl String?
+  thumbnailAssetId String?
   createdAt    DateTime              @default(now())
 
   @@index([worldId])
@@ -225,7 +225,7 @@ model marketplaceItem {
   owner          user @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   name           String
   description    String @default("")
-  thumbnailUrl   String?
+  thumbnailAssetId   String?
   latestRevision Int @default(1)
   status         String @default("published") // published | hidden
   createdAt      DateTime @default(now())

@@ -1,5 +1,7 @@
 import { migrateItems } from '../migrate';
 import type { InventoryAdapter, InventoryFolder, InventoryItem } from '../types';
+import type { AssetId } from '$lib/assets/ref';
+import { getLocalAssetStore } from '$lib/assets/store';
 
 const DB_NAME = 'webxr-platform-inventory';
 const DB_VERSION = 2;
@@ -44,6 +46,19 @@ async function withStore<T>(
  * which isn't usable inside an active `immersive-vr` session and isn't
  * supported by every browser. IndexedDB works everywhere, including in XR.)
  */
+/**
+ * A preview lives in the on-device asset store and nowhere else. When the item that had it is replaced or deleted it goes too,
+ * unless another item shows the same image. Failing to tidy up is harmless (a few kilobytes), so it never fails the operation.
+ */
+async function dropPreviewIfUnused(assetId: AssetId | null | undefined, remaining: InventoryItem[]): Promise<void> {
+	if (!assetId || remaining.some((item) => item.thumbnailAssetId === assetId)) return;
+	try {
+		await getLocalAssetStore().delete(assetId);
+	} catch {
+		// leave it for the next time
+	}
+}
+
 export const localInventoryAdapter: InventoryAdapter = {
 	id: 'local',
 	label: 'Local',
@@ -76,7 +91,7 @@ export const localInventoryAdapter: InventoryAdapter = {
 		return migrateItems(items.filter((i) => i.folderId === folderId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
 	},
 
-	async saveItem(_ctx, folderId, name, slotData, kind = 'object', lineageId) {
+	async saveItem(_ctx, folderId, name, slotData, kind = 'object', lineageId, thumbnailAssetId) {
 		const worldLineageId = kind === 'world' ? lineageId ?? crypto.randomUUID() : null;
 		const existing = kind === 'world' ? await withStore<InventoryItem[]>(ITEMS_STORE, 'readonly', (store) => store.getAll()) : [];
 		const revisionNumber = kind === 'world' ? 1 + Math.max(0, ...existing.filter((item) => item.worldLineageId === worldLineageId).map((item) => item.revisionNumber ?? 0)) : null;
@@ -88,19 +103,21 @@ export const localInventoryAdapter: InventoryAdapter = {
 			kind,
 			worldLineageId,
 			revisionNumber,
+			...(thumbnailAssetId ? { thumbnailAssetId } : {}),
 			createdAt: new Date().toISOString()
 		};
 		await withStore(ITEMS_STORE, 'readwrite', (store) => store.put(item));
 		return item;
 	},
 
-	async updateItem(_ctx, itemId, folderId, name, slotData) {
+	async updateItem(_ctx, itemId, folderId, name, slotData, thumbnailAssetId) {
 		const items = await withStore<InventoryItem[]>(ITEMS_STORE, 'readonly', (store) => store.getAll());
 		const existing = items.find((item) => item.id === itemId);
 		if (!existing) throw new Error('Inventory item not found');
 		if (existing.kind === 'world') throw new Error('World revisions are immutable; save a new revision instead');
-		const updated: InventoryItem = { ...existing, folderId, name, slotData };
+		const updated: InventoryItem = { ...existing, folderId, name, slotData, ...(thumbnailAssetId === undefined ? {} : { thumbnailAssetId }) };
 		await withStore(ITEMS_STORE, 'readwrite', (store) => store.put(updated));
+		if (existing.thumbnailAssetId !== updated.thumbnailAssetId) await dropPreviewIfUnused(existing.thumbnailAssetId, items.filter((item) => item.id !== itemId));
 		return updated;
 	},
 
@@ -112,6 +129,8 @@ export const localInventoryAdapter: InventoryAdapter = {
 	},
 
 	async deleteItem(_ctx, itemId) {
+		const items = await withStore<InventoryItem[]>(ITEMS_STORE, 'readonly', (store) => store.getAll());
 		await withStore(ITEMS_STORE, 'readwrite', (store) => store.delete(itemId));
+		await dropPreviewIfUnused(items.find((item) => item.id === itemId)?.thumbnailAssetId, items.filter((item) => item.id !== itemId));
 	}
 };

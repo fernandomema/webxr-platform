@@ -9,6 +9,7 @@ import type { SceneGraph } from '../sceneGraph';
 import { lockHand, unlockHand, type Hand } from '../interaction/handLock';
 import { createRadialView, type RadialItem } from './radialView';
 import { forInventory } from '../avatar/build';
+import { saveWithPreview } from '../inventorySave';
 
 export interface RadialMenuNetworkHooks {
 	onDelete?(slotId: string): void;
@@ -74,7 +75,7 @@ export function setupRadialMenuForHand(
 					const subtree = extractSubtree(sceneGraph.serialize(), slotId);
 					if (!subtree.length) return;
 					const { tree, kind } = forInventory(subtree);
-					await adapter.saveItem(getInventoryContext(), gameState.currentInventoryFolderId, tree[0].name, tree, kind);
+					await saveWithPreview(adapter, getInventoryContext(), gameState.currentInventoryFolderId, tree[0].name, tree, kind);
 				}
 			},
 			{

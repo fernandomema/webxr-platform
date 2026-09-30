@@ -1,6 +1,6 @@
 import type { SlotTree } from '$lib/ecs/types';
 import { getInventoryAdapter } from '$lib/inventory/registry';
-import type { InventoryContext, InventoryItem } from '$lib/inventory/types';
+import type { InventoryContext, InventoryItem, InventoryKind } from '$lib/inventory/types';
 import { validateWorldScene } from '$lib/worlds/package';
 import { ensureCloudAssets, type CloudSyncProgress } from '$lib/assets/cloudSync';
 import { getLocalAssetStore } from '$lib/assets/store';
@@ -8,6 +8,9 @@ import { getTemplate } from '../templates';
 import { cloneTree } from '../tree/ops';
 import { deleteDraft, loadDraft, saveDraft, type Draft } from './autosave';
 import { StudioDocument } from './document.svelte';
+import { captureItemThumbnail } from '../../xr/thumbnail/capture';
+import { CloudResolver } from '$lib/assets/cloud';
+import type { AssetId } from '$lib/assets/ref';
 import { isAvatarTree } from '../../xr/avatar/build';
 import { takeNewAvatar } from './newAvatar';
 
@@ -138,15 +141,17 @@ export class StudioProject {
 
 		this.saving = true;
 		try {
-			if (adapterId === 'cloud') await this.sendModels(tree);
-			const sameLocation = this.item !== null && adapterId === this.adapterId;
 			// A single body with an avatar component is saved as an avatar, so it shows up as one in the game's inventory.
 			const kind = this.doc.kind === 'object' && isAvatarTree(tree) ? 'avatar' : this.doc.kind;
+			// The preview: made on this device and kept in its asset store, so a local save needs no account and no network.
+			const thumbnail = (await this.makePreview(tree, kind, name)) ?? undefined;
+			if (adapterId === 'cloud') await this.sendModels(tree, thumbnail);
+			const sameLocation = this.item !== null && adapterId === this.adapterId;
 			const saved =
 				this.doc.kind === 'object' && kind === (this.item?.kind ?? 'object') && sameLocation && adapter.updateItem
-					? await adapter.updateItem(this.context, this.item!.id, folderId, name, tree)
+					? await adapter.updateItem(this.context, this.item!.id, folderId, name, tree, thumbnail)
 					: await (adapter.saveItem
-						? adapter.saveItem(this.context, folderId, name, tree, kind, this.doc.kind === 'world' && sameLocation ? (this.item?.worldLineageId ?? undefined) : undefined)
+						? adapter.saveItem(this.context, folderId, name, tree, kind, this.doc.kind === 'world' && sameLocation ? (this.item?.worldLineageId ?? undefined) : undefined, thumbnail)
 						: Promise.reject(new Error('This inventory is read-only.')));
 			this.adapterId = adapterId;
 			this.folderId = saved.folderId;
@@ -167,13 +172,21 @@ export class StudioProject {
 		await deleteDraft(this.key);
 	}
 
-	async publishMarketplaceItem(name: string, description: string, thumbnailUrl?: string): Promise<{ id: string; revision: number }> {
+	/** A preview of the tree as an image asset on this device, or null if it could not be made. Never throws. */
+	private makePreview(tree: SlotTree, kind: InventoryKind, name: string): Promise<AssetId | null> {
+		const cloud = this.context.userId ? [new CloudResolver()] : [];
+		return captureItemThumbnail(tree, kind, { name, getResolvers: () => cloud });
+	}
+
+	async publishMarketplaceItem(name: string, description: string): Promise<{ id: string; revision: number }> {
 		if (this.doc.kind !== 'object') throw new Error('Only objects can be published to the marketplace.');
 		if (!this.item || this.adapterId === 'purchased') throw new Error('Save this object to a writable inventory before publishing it.');
 		const scene = cloneTree(this.doc.tree);
 		validateWorldScene(scene);
-		await this.sendModels(scene);
-		const body: Record<string, unknown> = { name, description, thumbnailUrl: thumbnailUrl || null };
+		// The marketplace listing shows the object's own preview; an object saved before previews existed gets one now.
+		const thumbnail = this.item.thumbnailAssetId ?? (await this.makePreview(scene, 'object', name));
+		await this.sendModels(scene, thumbnail ?? undefined);
+		const body: Record<string, unknown> = { name, description, thumbnailAssetId: thumbnail };
 		if (this.item?.marketplaceItemId) {
 			body.slotData = scene;
 			const response = await fetch(`/api/marketplace/items/${this.item.marketplaceItemId}`, jsonPut(body));
@@ -221,9 +234,9 @@ export class StudioProject {
 	}
 
 	/** Sends the models a scene uses to the cloud, reporting progress. Models already there cost nothing. */
-	private async sendModels(scene: SlotTree): Promise<void> {
+	private async sendModels(scene: SlotTree, thumbnail?: AssetId): Promise<void> {
 		try {
-			await ensureCloudAssets(scene, getLocalAssetStore(), { onProgress: (progress) => (this.assetProgress = progress.done < progress.total ? progress : null) });
+			await ensureCloudAssets(scene, getLocalAssetStore(), { extraIds: thumbnail ? [thumbnail] : [], onProgress: (progress) => (this.assetProgress = progress.done < progress.total ? progress : null) });
 		} finally {
 			this.assetProgress = null;
 		}

@@ -2,6 +2,9 @@ import { migrateItems } from '../migrate';
 import { CloudAssetError } from '$lib/assets/cloud';
 import { ensureCloudAssets } from '$lib/assets/cloudSync';
 import { getLocalAssetStore } from '$lib/assets/store';
+import type { AssetId } from '$lib/assets/ref';
+
+const previewIds = (id: AssetId | null | undefined): AssetId[] => (id ? [id] : []);
 
 async function saveFailure(response: Response, fallback: string): Promise<Error> {
 	let body: { message?: string; missing?: string[] } = {};
@@ -51,24 +54,24 @@ export const cloudInventoryAdapter: InventoryAdapter = {
 		return migrateItems((await res.json()) as InventoryItem[]);
 	},
 
-	async saveItem(_ctx, folderId, name, slotData, kind = 'object', worldLineageId) {
-		// Models are stored once, by hash: send the ones the cloud does not have yet, then the scene that uses them.
-		await ensureCloudAssets(slotData, getLocalAssetStore());
+	async saveItem(_ctx, folderId, name, slotData, kind = 'object', worldLineageId, thumbnailAssetId) {
+		// Models are stored once, by hash: send the ones the cloud does not have yet, then the scene that uses them, and its preview.
+		await ensureCloudAssets(slotData, getLocalAssetStore(), { extraIds: previewIds(thumbnailAssetId) });
 		const res = await fetch('/api/inventory', {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify({ folderId, name, slotData, kind, worldLineageId })
+			body: JSON.stringify({ folderId, name, slotData, kind, worldLineageId, thumbnailAssetId })
 		});
 		if (!res.ok) throw await saveFailure(res, 'Failed to save cloud item');
 		return (await res.json()) as InventoryItem;
 	},
 
-	async updateItem(_ctx, itemId, folderId, name, slotData) {
-		await ensureCloudAssets(slotData, getLocalAssetStore());
+	async updateItem(_ctx, itemId, folderId, name, slotData, thumbnailAssetId) {
+		await ensureCloudAssets(slotData, getLocalAssetStore(), { extraIds: previewIds(thumbnailAssetId) });
 		const res = await fetch(`/api/inventory/${itemId}`, {
 			method: 'PUT',
 			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify({ folderId, name, slotData })
+			body: JSON.stringify({ folderId, name, slotData, thumbnailAssetId })
 		});
 		if (!res.ok) throw await saveFailure(res, 'Failed to update cloud item');
 		return (await res.json()) as InventoryItem;

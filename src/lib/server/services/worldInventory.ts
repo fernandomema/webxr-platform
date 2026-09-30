@@ -3,7 +3,7 @@ import { prisma } from '../db';
 import { UnauthorizedError, ForbiddenError, NotFoundError, BadRequestError } from '../errors';
 import { validateWorldScene } from '$lib/worlds/package';
 import { migrateSlotTree } from '$lib/assets/ref';
-import { linkSceneAssets, readyAssetIds } from './assets';
+import { linkSceneAssets, readyAssetIds, resolveThumbnail, withThumbnail } from './assets';
 import type { SlotTree } from '$lib/ecs/types';
 import type { SessionUser } from './worlds';
 
@@ -48,7 +48,8 @@ export async function saveWorldItem(
 	name: string,
 	slotData: SlotTree,
 	kind: 'object' | 'world' | 'avatar' = 'object',
-	worldLineageId?: string
+	worldLineageId?: string,
+	thumbnailAssetId?: unknown
 ) {
 	await assertHost(user, worldId);
 	if (kind === 'world') {
@@ -61,19 +62,21 @@ export async function saveWorldItem(
 				orderBy: { revisionNumber: 'desc' }, select: { revisionNumber: true }
 			});
 			const scene = migrateSlotTree(slotData);
+			const thumbnail = await resolveThumbnail(tx, thumbnailAssetId, null);
 			const item = await tx.worldInventoryItem.create({ data: {
-				worldId, folderId, name, slotData: scene as object,
+				worldId, folderId, name, slotData: scene as object, thumbnailAssetId: thumbnail,
 				kind, worldLineageId: lineage, revisionNumber: (latest?.revisionNumber ?? 0) + 1
 			} });
 			// Best effort: models that only exist on the host's device reach guests peer to peer.
-			await linkSceneAssets(tx, user!, { kind: 'worldInventoryItem', id: item.id }, await readyAssetIds(tx, scene));
+			await linkSceneAssets(tx, user!, { kind: 'worldInventoryItem', id: item.id }, withThumbnail(await readyAssetIds(tx, scene), thumbnail));
 			return item;
 		});
 	}
 	return prisma.$transaction(async (tx) => {
 		const scene = migrateSlotTree(slotData);
-		const item = await tx.worldInventoryItem.create({ data: { worldId, folderId, name, slotData: scene as object, kind } });
-		await linkSceneAssets(tx, user!, { kind: 'worldInventoryItem', id: item.id }, await readyAssetIds(tx, scene));
+		const thumbnail = await resolveThumbnail(tx, thumbnailAssetId, null);
+		const item = await tx.worldInventoryItem.create({ data: { worldId, folderId, name, slotData: scene as object, thumbnailAssetId: thumbnail, kind } });
+		await linkSceneAssets(tx, user!, { kind: 'worldInventoryItem', id: item.id }, withThumbnail(await readyAssetIds(tx, scene), thumbnail));
 		return item;
 	});
 }
@@ -83,15 +86,16 @@ export async function deleteWorldItem(user: SessionUser | null, worldId: string,
 	await prisma.worldInventoryItem.delete({ where: { id: itemId } });
 }
 
-export async function updateWorldItem(user: SessionUser | null, worldId: string, itemId: string, folderId: string | null, name: string, slotData: SlotTree) {
+export async function updateWorldItem(user: SessionUser | null, worldId: string, itemId: string, folderId: string | null, name: string, slotData: SlotTree, thumbnailAssetId?: unknown) {
 	await assertHost(user, worldId);
 	const item = await prisma.worldInventoryItem.findUnique({ where: { id: itemId } });
 	if (!item || item.worldId !== worldId) throw new NotFoundError();
 	if (item.kind === 'world') throw new BadRequestError('World revisions are immutable; save a new revision instead');
 	return prisma.$transaction(async (tx) => {
 		const scene = migrateSlotTree(slotData);
-		const updated = await tx.worldInventoryItem.update({ where: { id: itemId }, data: { folderId, name, slotData: scene as object } });
-		await linkSceneAssets(tx, user!, { kind: 'worldInventoryItem', id: itemId }, await readyAssetIds(tx, scene));
+		const thumbnail = await resolveThumbnail(tx, thumbnailAssetId, item.thumbnailAssetId);
+		const updated = await tx.worldInventoryItem.update({ where: { id: itemId }, data: { folderId, name, slotData: scene as object, thumbnailAssetId: thumbnail } });
+		await linkSceneAssets(tx, user!, { kind: 'worldInventoryItem', id: itemId }, withThumbnail(await readyAssetIds(tx, scene), thumbnail));
 		return updated;
 	});
 }

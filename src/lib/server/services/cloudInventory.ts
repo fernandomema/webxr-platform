@@ -3,7 +3,7 @@ import { prisma } from '../db';
 import { UnauthorizedError, ForbiddenError, NotFoundError, BadRequestError } from '../errors';
 import { validateWorldScene } from '$lib/worlds/package';
 import { migrateSlotTree } from '$lib/assets/ref';
-import { assertAssetsReady, assertInventoryQuota, linkSceneAssets } from './assets';
+import { assertAssetsReady, assertInventoryQuota, linkSceneAssets, resolveThumbnail, withThumbnail } from './assets';
 import type { SlotTree } from '$lib/ecs/types';
 import type { SessionUser } from './worlds';
 
@@ -46,7 +46,8 @@ export async function saveCloudItem(
 	name: string,
 	slotData: SlotTree,
 	kind: 'object' | 'world' | 'avatar' = 'object',
-	worldLineageId?: string
+	worldLineageId?: string,
+	thumbnailAssetId?: unknown
 ) {
 	if (!user) throw new UnauthorizedError();
 	if (kind === 'world') {
@@ -60,21 +61,23 @@ export async function saveCloudItem(
 			});
 			const scene = migrateSlotTree(slotData);
 			const assetIds = await assertAssetsReady(tx, scene);
+			const thumbnail = await resolveThumbnail(tx, thumbnailAssetId, null);
 			await assertInventoryQuota(tx, user.id, sceneBytes(scene));
 			const item = await tx.cloudInventoryItem.create({ data: {
-				ownerId: user.id, folderId, name, slotData: scene as object,
+				ownerId: user.id, folderId, name, slotData: scene as object, thumbnailAssetId: thumbnail,
 				kind, worldLineageId: lineage, revisionNumber: (latest?.revisionNumber ?? 0) + 1
 			} });
-			await linkSceneAssets(tx, user, { kind: 'cloudItem', id: item.id }, assetIds);
+			await linkSceneAssets(tx, user, { kind: 'cloudItem', id: item.id }, withThumbnail(assetIds, thumbnail));
 			return item;
 		});
 	}
 	return prisma.$transaction(async (tx) => {
 		const scene = migrateSlotTree(slotData);
 		const assetIds = await assertAssetsReady(tx, scene);
+		const thumbnail = await resolveThumbnail(tx, thumbnailAssetId, null);
 		await assertInventoryQuota(tx, user.id, sceneBytes(scene));
-		const item = await tx.cloudInventoryItem.create({ data: { ownerId: user.id, folderId, name, slotData: scene as object, kind } });
-		await linkSceneAssets(tx, user, { kind: 'cloudItem', id: item.id }, assetIds);
+		const item = await tx.cloudInventoryItem.create({ data: { ownerId: user.id, folderId, name, slotData: scene as object, thumbnailAssetId: thumbnail, kind } });
+		await linkSceneAssets(tx, user, { kind: 'cloudItem', id: item.id }, withThumbnail(assetIds, thumbnail));
 		return item;
 	});
 }
@@ -87,7 +90,7 @@ export async function deleteCloudItem(user: SessionUser | null, itemId: string) 
 	await prisma.cloudInventoryItem.delete({ where: { id: itemId } });
 }
 
-export async function updateCloudItem(user: SessionUser | null, itemId: string, folderId: string | null, name: string, slotData: SlotTree) {
+export async function updateCloudItem(user: SessionUser | null, itemId: string, folderId: string | null, name: string, slotData: SlotTree, thumbnailAssetId?: unknown) {
 	if (!user) throw new UnauthorizedError();
 	const item = await prisma.cloudInventoryItem.findUnique({ where: { id: itemId } });
 	if (!item) throw new NotFoundError();
@@ -96,9 +99,10 @@ export async function updateCloudItem(user: SessionUser | null, itemId: string, 
 	return prisma.$transaction(async (tx) => {
 		const scene = migrateSlotTree(slotData);
 		const assetIds = await assertAssetsReady(tx, scene);
+		const thumbnail = await resolveThumbnail(tx, thumbnailAssetId, item.thumbnailAssetId);
 		await assertInventoryQuota(tx, user.id, sceneBytes(scene) - sceneBytes(item.slotData));
-		const updated = await tx.cloudInventoryItem.update({ where: { id: itemId }, data: { folderId, name, slotData: scene as object } });
-		await linkSceneAssets(tx, user, { kind: 'cloudItem', id: itemId }, assetIds);
+		const updated = await tx.cloudInventoryItem.update({ where: { id: itemId }, data: { folderId, name, slotData: scene as object, thumbnailAssetId: thumbnail } });
+		await linkSceneAssets(tx, user, { kind: 'cloudItem', id: itemId }, withThumbnail(assetIds, thumbnail));
 		return updated;
 	});
 }

@@ -40,6 +40,9 @@ import { createInspectorPanel } from './ui/inspectorPanel';
 import { setupRadialMenuForHand } from './ui/radialMenu';
 import { loadSettings, saveSettings, xrSettings } from './settings';
 import { sanitizeAvatarTree } from './avatar/sanitize';
+import { saveWithPreview } from './inventorySave';
+import { configureThumbnails } from './thumbnail/capture';
+import { configureThumbnailSources } from '$lib/assets/thumbnails';
 import { AvatarSystem } from './avatar/avatarSystem';
 import { PlayerAvatars } from './avatar/playerAvatars';
 import { loadBaseAvatar } from './avatar/baseAvatar';
@@ -102,6 +105,9 @@ export async function mountGame(
 	];
 	const models = new ModelLibrary(scene, { store: getLocalAssetStore(), getResolvers: () => assetResolvers });
 	const mediaAssets = new BlobAssetLibrary({ store: getLocalAssetStore(), getResolvers: () => assetResolvers });
+	// Previews of what is saved are drawn as a second scene on this engine (a second WebGL context would be costly on a headset).
+	configureThumbnails({ engine, getResolvers: () => assetResolvers });
+	configureThumbnailSources(() => assetResolvers);
 	let viewerCamera: () => { globalPosition: Vector3 } = () => desktopCamera;
 	const sceneGraph = new SceneGraph(scene, {
 		models,
@@ -530,7 +536,7 @@ export async function mountGame(
 		const adapter = selected?.isAvailable(getInventoryContext()) ? selected : getInventoryAdapter('local');
 		if (!adapter?.saveItem) throw new Error('Choose a writable inventory first');
 		const folderId = adapter.id === gameState.currentInventoryAdapterId ? gameState.currentInventoryFolderId : null;
-		await adapter.saveItem(getInventoryContext(), folderId, world.name, copyScene(world.scene), 'world');
+		await saveWithPreview(adapter, getInventoryContext(), folderId, world.name, copyScene(world.scene), 'world');
 	});
 	scene.onPointerObservable.add((event) => {
 		if (event.type !== PointerEventTypes.POINTERPICK || xr?.baseExperience.state === WebXRState.IN_XR) return;

@@ -413,6 +413,22 @@ export async function linkSceneAssets(db: Db, user: SessionUser, holder: AssetHo
 	for (const assetId of previous) if (!assetIds.includes(assetId as AssetId)) await markOrphanIfUnused(db, assetId);
 }
 
+/**
+ * The preview image of an inventory item, made safe to store and link. `undefined` keeps what the item has, `null` removes it,
+ * and an id is used only if it is a finished image asset: a preview that is missing or wrong never fails the save it belongs to.
+ */
+export async function resolveThumbnail(db: Db, requested: unknown, current: string | null): Promise<AssetId | null> {
+	if (requested === undefined) return (current as AssetId | null) ?? null;
+	if (requested === null) return null;
+	if (!isAssetId(requested)) return (current as AssetId | null) ?? null;
+	const asset = await db.asset.findUnique({ where: { id: requested }, select: { status: true, manifest: true } });
+	const ready = asset?.status === 'ready' && (asset.manifest as unknown as AssetManifest).type === 'image';
+	return ready ? requested : ((current as AssetId | null) ?? null);
+}
+
+/** The ids to link for an item: what its scene uses, plus its preview image. */
+export const withThumbnail = (sceneIds: AssetId[], thumbnail: AssetId | null): AssetId[] => (thumbnail && !sceneIds.includes(thumbnail) ? [...sceneIds, thumbnail] : sceneIds);
+
 /** Hosting a session only links models that are already in the cloud; the rest travel peer to peer. */
 export async function readyAssetIds(db: Db, scene: unknown[]): Promise<AssetId[]> {
 	const ids = [...collectAssetIds(scene)];

@@ -2003,9 +2003,8 @@ msgstr ""
 msgid "Description<0/>"
 msgstr ""
 
-#: src/lib/studio/components/MarketplacePanel.svelte
-msgid "Thumbnail URL <0>(optional)</0><1/>"
-msgstr ""
+#~ msgid "Thumbnail URL <0>(optional)</0><1/>"
+#~ msgstr ""
 
 #: src/lib/studio/components/MarketplacePanel.svelte
 msgid "Save this object to a writable inventory before publishing it."

@@ -39,8 +39,16 @@ export interface AudioManifest extends AssetManifestBase {
 	sampleRate: number;
 }
 
+export interface ImageManifest extends AssetManifestBase {
+	type: 'image';
+	format: 'png' | 'webp';
+	/** Pixels, as declared by the file's header. */
+	width: number;
+	height: number;
+}
+
 /** Add a kind's manifest here when registering a new kind. */
-export type AssetManifest = ModelManifest | AudioManifest;
+export type AssetManifest = ModelManifest | AudioManifest | ImageManifest;
 export type AssetType = AssetManifest['type'];
 
 /** Where a peer can get the bytes from: the cloud, or (only) the host of the current session. */
@@ -56,6 +64,9 @@ export interface AssetSummary {
 	bounds?: { min: Vec3; max: Vec3 };
 	/** Audio only, in seconds. */
 	duration?: number;
+	/** Images only, in pixels. */
+	width?: number;
+	height?: number;
 }
 
 const HEX_ID = /^sha256:[0-9a-f]{64}$/;

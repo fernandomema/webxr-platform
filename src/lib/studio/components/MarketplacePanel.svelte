@@ -6,14 +6,13 @@
 	interface Props { project: StudioProject }
 	let { project }: Props = $props();
 
-	interface Listing { name: string; description: string; thumbnailUrl: string | null; status: 'published' | 'hidden'; latestRevision: number; updatedAt: string; containsCode: boolean }
+	interface Listing { name: string; description: string; thumbnailAssetId: string | null; status: 'published' | 'hidden'; latestRevision: number; updatedAt: string; containsCode: boolean }
 
 	const marketplaceItemId = $derived(project.item?.marketplaceItemId ?? null);
 	const canPublish = $derived(Boolean(project.item) && project.adapterId !== 'purchased');
 
 	let name = $state('');
 	let description = $state('');
-	let thumbnailUrl = $state('');
 	let listing = $state.raw<Listing | null>(null);
 	let loading = $state(false);
 	let saving = $state(false);
@@ -30,7 +29,6 @@
 			listing = null;
 			name = project.doc.name;
 			description = '';
-			thumbnailUrl = '';
 			return;
 		}
 		if (id === loadedItemId) return;
@@ -44,7 +42,6 @@
 				listing = item;
 				name = item.name;
 				description = item.description;
-				thumbnailUrl = item.thumbnailUrl ?? '';
 			})
 			.catch((cause) => { error = cause instanceof Error ? cause.message : 'Could not load this listing.'; })
 			.finally(() => { loading = false; });
@@ -54,7 +51,7 @@
 		saving = true;
 		error = '';
 		try {
-			const result = await project.publishMarketplaceItem(name, description, thumbnailUrl);
+			const result = await project.publishMarketplaceItem(name, description);
 			toasts.success(marketplaceItemId ? `Published revision ${result.revision}` : `Published “${name}” to the marketplace`);
 			loadedItemId = null; // force a refetch so status/revision/updatedAt reflect what just happened
 		} catch (cause) {
@@ -105,7 +102,6 @@
 
 			<label>Name<input class="input" bind:value={name} maxlength="120" disabled={loading} /></label>
 			<label>Description<textarea class="input" bind:value={description} rows="4" maxlength="2000" disabled={loading}></textarea></label>
-			<label>Thumbnail URL <span class="muted">(optional)</span><input class="input" bind:value={thumbnailUrl} maxlength="2048" disabled={loading} /></label>
 
 			{#if error}<p class="error" role="alert">{error}</p>{/if}
 

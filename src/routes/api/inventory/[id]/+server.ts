@@ -5,7 +5,7 @@ import { toHttpError } from '$lib/server/apiError';
 export const PUT: RequestHandler = async ({ locals, params, request }) => {
 	try {
 		const body = await request.json();
-		return new Response(JSON.stringify(await updateCloudItem(locals.user, params.id, body.folderId ?? null, body.name, body.slotData)), {
+		return new Response(JSON.stringify(await updateCloudItem(locals.user, params.id, body.folderId ?? null, body.name, body.slotData, body.thumbnailAssetId)), {
 			status: 200,
 			headers: { 'content-type': 'application/json' }
 		});

@@ -9,6 +9,7 @@ import { createScrollPanel, clearContainer, sectionLabel, row, stepButton, numbe
 import { createHierarchyTree } from './inspector/hierarchyTree';
 import { getComponentDetailRenderer } from './inspector/componentDetails';
 import { forInventory } from '../avatar/build';
+import { saveWithPreview } from '../inventorySave';
 
 const COMPONENT_LABELS: Record<Component['type'], string> = {
 	meshRenderer: 'Mesh',
@@ -216,7 +217,7 @@ export function createInspectorPanel(
 		// only reuse the Dash's current "pwd" if it belongs to THIS adapter — otherwise save to that adapter's root
 		const folderId = gameState.currentInventoryAdapterId === adapterId ? gameState.currentInventoryFolderId : null;
 		const { tree: toSave, kind } = forInventory(subtree);
-		await adapter.saveItem(getInventoryContext(), folderId, rootSlot.name, toSave, kind);
+		await saveWithPreview(adapter, getInventoryContext(), folderId, rootSlot.name, toSave, kind);
 	}
 
 	function showDetail(slotId: string) {

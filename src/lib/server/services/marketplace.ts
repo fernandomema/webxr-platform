@@ -2,7 +2,7 @@ import { prisma } from '../db';
 import { BadRequestError, ForbiddenError, NotFoundError, UnauthorizedError } from '../errors';
 import { validateWorldScene } from '$lib/worlds/package';
 import { migrateSlotTree, collectAssetIds } from '$lib/assets/ref';
-import { assertAssetsReady, assetSummaries, linkSceneAssets } from './assets';
+import { assertAssetsReady, assetSummaries, linkSceneAssets, resolveThumbnail, withThumbnail } from './assets';
 import type { SlotTree } from '$lib/ecs/types';
 import type { SessionUser } from './worlds';
 
@@ -18,9 +18,9 @@ function hasCodeBlock(scene: unknown): boolean {
   return Array.isArray(scene) && scene.some((slot) => Array.isArray(slot?.components) && slot.components.some((component: { type?: string }) => component?.type === 'codeBlock'));
 }
 
-function summary(item: { id: string; ownerId: string; name: string; description: string; thumbnailUrl: string | null; latestRevision: number; status: string; createdAt: Date; updatedAt: Date; revisions?: Array<{ slotData: unknown }> }) {
+function summary(item: { id: string; ownerId: string; name: string; description: string; thumbnailAssetId: string | null; latestRevision: number; status: string; createdAt: Date; updatedAt: Date; revisions?: Array<{ slotData: unknown }> }) {
   const latest = item.revisions?.[0]?.slotData;
-  return { id: item.id, ownerId: item.ownerId, name: item.name, description: item.description, thumbnailUrl: item.thumbnailUrl, latestRevision: item.latestRevision, status: item.status, createdAt: item.createdAt, updatedAt: item.updatedAt, containsCode: hasCodeBlock(latest) };
+  return { id: item.id, ownerId: item.ownerId, name: item.name, description: item.description, thumbnailAssetId: item.thumbnailAssetId, latestRevision: item.latestRevision, status: item.status, createdAt: item.createdAt, updatedAt: item.updatedAt, containsCode: hasCodeBlock(latest) };
 }
 
 export async function listMarketplaceItems() {
@@ -41,7 +41,7 @@ export async function getMarketplaceItem(id: string, user: SessionUser | null) {
   return { ...summary({ ...item, revisions: [revision] }), slotData: revision.slotData, assets: await assetSummaries(prisma, [...collectAssetIds(revision.slotData as unknown as SlotTree)]) };
 }
 
-export async function createMarketplaceItem(user: SessionUser | null, input: { name: unknown; description?: unknown; thumbnailUrl?: unknown; slotData: unknown; source?: { adapterId: string; itemId: string; worldId?: string | null } }) {
+export async function createMarketplaceItem(user: SessionUser | null, input: { name: unknown; description?: unknown; thumbnailAssetId?: unknown; slotData: unknown; source?: { adapterId: string; itemId: string; worldId?: string | null } }) {
   if (!user) throw new UnauthorizedError();
   if (input.source && !['local', 'cloud', 'world'].includes(input.source.adapterId)) throw new BadRequestError('Invalid inventory source');
   let scene = input.slotData;
@@ -60,18 +60,19 @@ export async function createMarketplaceItem(user: SessionUser | null, input: { n
     sourceRecord = { kind: 'world', id: item.id };
   }
   const data = validateItem(input.name, input.description, scene);
-  const thumbnailUrl = input.thumbnailUrl == null ? null : typeof input.thumbnailUrl === 'string' && input.thumbnailUrl.length <= 2048 ? input.thumbnailUrl : (() => { throw new BadRequestError('Invalid thumbnail URL'); })();
   return prisma.$transaction(async (tx) => {
     const assetIds = await assertAssetsReady(tx, data.scene);
-    const item = await tx.marketplaceItem.create({ data: { ownerId: user.id, name: data.name, description: data.description, thumbnailUrl, revisions: { create: { number: 1, slotData: data.scene as object } } }, include: { revisions: true } });
-    await linkSceneAssets(tx, user, { kind: 'marketplaceRevision', id: item.revisions[0].id }, assetIds);
+    const thumbnail = await resolveThumbnail(tx, input.thumbnailAssetId, null);
+    const item = await tx.marketplaceItem.create({ data: { ownerId: user.id, name: data.name, description: data.description, thumbnailAssetId: thumbnail, revisions: { create: { number: 1, slotData: data.scene as object } } }, include: { revisions: true } });
+    // The preview is linked to the revision so anyone who can see the published item can load it.
+    await linkSceneAssets(tx, user, { kind: 'marketplaceRevision', id: item.revisions[0].id }, withThumbnail(assetIds, thumbnail));
     if (sourceRecord?.kind === 'cloud') await tx.cloudInventoryItem.update({ where: { id: sourceRecord.id }, data: { marketplaceItemId: item.id } });
     if (sourceRecord?.kind === 'world') await tx.worldInventoryItem.update({ where: { id: sourceRecord.id }, data: { marketplaceItemId: item.id } });
     return summary({ ...item, revisions: item.revisions });
   });
 }
 
-export async function updateMarketplaceItem(user: SessionUser | null, id: string, input: { name?: unknown; description?: unknown; thumbnailUrl?: unknown; slotData?: unknown; status?: unknown }) {
+export async function updateMarketplaceItem(user: SessionUser | null, id: string, input: { name?: unknown; description?: unknown; thumbnailAssetId?: unknown; slotData?: unknown; status?: unknown }) {
   if (!user) throw new UnauthorizedError();
   const item = await prisma.marketplaceItem.findUnique({ where: { id } });
   if (!item) throw new NotFoundError();
@@ -83,17 +84,21 @@ export async function updateMarketplaceItem(user: SessionUser | null, id: string
   if (input.description !== undefined && (typeof input.description !== 'string' || input.description.length > MAX_DESCRIPTION)) throw new BadRequestError('Invalid item description');
   const name = input.name === undefined ? item.name : (input.name as string).trim();
   const description = input.description === undefined ? item.description : (input.description as string).trim();
-  const thumbnailUrl = input.thumbnailUrl === undefined ? item.thumbnailUrl : input.thumbnailUrl === null ? null : typeof input.thumbnailUrl === 'string' && input.thumbnailUrl.length <= 2048 ? input.thumbnailUrl : (() => { throw new BadRequestError('Invalid thumbnail URL'); })();
   return prisma.$transaction(async (tx) => {
     let latestRevision = item.latestRevision;
+    const thumbnail = await resolveThumbnail(tx, input.thumbnailAssetId, item.thumbnailAssetId);
     if (data) {
       const assetIds = await assertAssetsReady(tx, data.scene);
       const number = item.latestRevision + 1;
       const revision = await tx.marketplaceItemRevision.create({ data: { marketplaceItemId: id, number, slotData: data.scene as object } });
-      await linkSceneAssets(tx, user, { kind: 'marketplaceRevision', id: revision.id }, assetIds);
+      await linkSceneAssets(tx, user, { kind: 'marketplaceRevision', id: revision.id }, withThumbnail(assetIds, thumbnail));
       latestRevision = number;
+    } else if (thumbnail !== item.thumbnailAssetId) {
+      // A new preview for the same revision: link it to the revision as it is, next to the models it already uses.
+      const current = await tx.marketplaceItemRevision.findUnique({ where: { marketplaceItemId_number: { marketplaceItemId: id, number: item.latestRevision } } });
+      if (current) await linkSceneAssets(tx, user, { kind: 'marketplaceRevision', id: current.id }, withThumbnail([...collectAssetIds(current.slotData as unknown as SlotTree)], thumbnail));
     }
-    const updated = await tx.marketplaceItem.update({ where: { id }, data: { name, description, thumbnailUrl, latestRevision, ...(input.status ? { status: input.status } : {}) } });
+    const updated = await tx.marketplaceItem.update({ where: { id }, data: { name, description, thumbnailAssetId: thumbnail, latestRevision, ...(input.status ? { status: input.status } : {}) } });
     return summary({ ...updated, revisions: data ? [{ slotData: data.scene }] : [] });
   });
 }
@@ -112,6 +117,6 @@ export async function listPurchasedItems(user: SessionUser | null) {
   return Promise.all(purchases.map(async ({ marketplaceItem: item, createdAt }) => {
     const revision = await prisma.marketplaceItemRevision.findUnique({ where: { marketplaceItemId_number: { marketplaceItemId: item.id, number: item.latestRevision } } });
     if (!revision) return null;
-    return { id: item.id, folderId: null, name: item.name, slotData: revision.slotData, kind: 'object' as const, marketplaceItemId: item.id, thumbnailUrl: item.thumbnailUrl, createdAt: createdAt.toISOString(), revisionNumber: item.latestRevision };
+    return { id: item.id, folderId: null, name: item.name, slotData: revision.slotData, kind: 'object' as const, marketplaceItemId: item.id, thumbnailAssetId: item.thumbnailAssetId, createdAt: createdAt.toISOString(), revisionNumber: item.latestRevision };
   })).then((items) => items.filter(Boolean));
 }

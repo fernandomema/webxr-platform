@@ -23,6 +23,9 @@ import type { WorldPackage } from '$lib/worlds/types';
 import { gameState, getInventoryContext } from '../gameState';
 import { xrSettings, saveSettings, type MovementMode, type RotationMode } from '../settings';
 import { dashboardEditorOrder, dashboardItemLabel, moveDashboardItem, toggleDashboardItem, type DashboardItemId } from '../dashboardLayout';
+import { saveWithPreview } from '../inventorySave';
+import { thumbnailUrl } from '$lib/assets/thumbnails';
+import type { AssetId } from '$lib/assets/ref';
 import { WORLD_VISIBILITY_INFO, type HostedWorldVisibility } from '$lib/worldVisibility';
 
 const TABS = ['Home', 'Session', 'Worlds', 'Inventory', 'Settings', 'Account'] as const;
@@ -379,7 +382,9 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			validateWorldScene(snapshot);
 			const lineage = loaded && loaded.adapterId === adapter.id ? loaded.worldLineageId : undefined;
 			if (!adapter.saveItem || adapter.id === 'purchased') throw new Error('This inventory is read-only');
-			const saved = await adapter.saveItem(getInventoryContext(), folderId, name, snapshot, 'world', lineage);
+			saveWorldStatus.color = '#9ca3af';
+			saveWorldStatus.text = 'Saving…';
+			const saved = await saveWithPreview(adapter, getInventoryContext(), folderId, name, snapshot, 'world', lineage);
 			if (saved.worldLineageId) {
 				gameState.loadedWorld = { adapterId: adapter.id, worldLineageId: saved.worldLineageId, folderId: saved.folderId, name: saved.name, revisionNumber: saved.revisionNumber ?? null };
 			}
@@ -566,7 +571,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			gameState.userId ? fetch('/api/marketplace/purchases') : Promise.resolve(null)
 		]);
 		if (!catalogResponse.ok) return;
-		const items = await catalogResponse.json() as Array<{ id: string; name: string; description: string; latestRevision: number; containsCode: boolean; thumbnailUrl: string | null }>;
+		const items = await catalogResponse.json() as Array<{ id: string; name: string; description: string; latestRevision: number; containsCode: boolean; thumbnailAssetId: string | null }>;
 		const purchases = purchasesResponse?.ok ? await purchasesResponse.json() as Array<{ marketplaceItemId?: string }> : [];
 		const acquired = new Set(purchases.map((item) => item.marketplaceItemId).filter(Boolean));
 		if (!items.length) {
@@ -575,7 +580,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		for (const item of items) {
 			const row = new StackPanel(`marketplace-row-${item.id}`); row.isVertical = true; row.height = item.containsCode ? '104px' : '64px'; row.width = 1;
 			const line = new StackPanel(`marketplace-line-${item.id}`); line.isVertical = false; line.height = '56px'; line.width = 1;
-			if (item.thumbnailUrl) { const thumbnail = new Image(`marketplace-thumbnail-${item.id}`, item.thumbnailUrl); thumbnail.width = '54px'; thumbnail.height = '48px'; thumbnail.stretch = Image.STRETCH_UNIFORM; line.addControl(thumbnail); }
+			if (item.thumbnailAssetId) line.addControl(previewFrame(`marketplace-thumbnail-${item.id}`, item.thumbnailAssetId, 48, '#1f2937'));
 			const info = new TextBlock(`marketplace-info-${item.id}`, `${item.name} · v${item.latestRevision}${item.description ? `\n${item.description.slice(0, 100)}` : ''}`);
 			info.width = '560px'; info.height = '54px'; info.color = '#e2e8f0'; info.fontSize = 15; info.textWrapping = true; info.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT; line.addControl(info);
 			const button = Button.CreateSimpleButton(`marketplace-acquire-${item.id}`, acquired.has(item.id) ? 'Acquired' : 'Acquire');
@@ -820,10 +825,12 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			if (!isWorld && gameState.userId && (adapter.id !== 'world' || gameState.role === 'host')) {
 				inventoryToolbar.addControl(actionButton('tb-marketplace', item.marketplaceItemId ? 'Update Marketplace' : 'Publish', '#7c3aed', 160, async () => {
 					try {
-						await ensureCloudAssets(item.slotData, getLocalAssetStore());
-						const body: Record<string, unknown> = { name: item.name, description: '', thumbnailUrl: null, slotData: item.slotData };
+						// The listing shows the object's own preview, which goes up with its models.
+						const preview = item.thumbnailAssetId ?? null;
+						await ensureCloudAssets(item.slotData, getLocalAssetStore(), { extraIds: preview ? [preview] : [] });
+						const body: Record<string, unknown> = { name: item.name, description: '', thumbnailAssetId: preview, slotData: item.slotData };
 						const response = item.marketplaceItemId
-							? await fetch(`/api/marketplace/items/${item.marketplaceItemId}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ slotData: item.slotData }) })
+							? await fetch(`/api/marketplace/items/${item.marketplaceItemId}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ slotData: item.slotData, thumbnailAssetId: preview }) })
 							: await fetch('/api/marketplace/items', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...body, source: adapter.id === 'local' ? undefined : { adapterId: adapter.id, itemId: item.id, worldId: gameState.worldId } }) });
 						if (!response.ok) throw new Error(response.status === 401 ? 'Sign in to publish objects.' : 'Could not publish marketplace object.');
 						const result = await response.json() as { id: string; latestRevision: number };
@@ -956,6 +963,32 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		return 9;
 	}
 
+	/**
+	 * A square, rounded picture of an item's preview. It loads in the background; `onLoaded` runs once the picture is there.
+	 * A 360° world preview is twice as wide as tall, so the middle square of it (looking straight ahead from the spawn) is shown.
+	 */
+	function previewFrame(name: string, assetId: string, size: number, background: string, onLoaded?: () => void): Rectangle {
+		const frame = new Rectangle(name);
+		frame.width = `${size}px`; frame.height = `${size}px`;
+		frame.background = background; frame.thickness = 0; frame.cornerRadius = 10; frame.clipChildren = true;
+		frame.isHitTestVisible = false;
+		void thumbnailUrl(assetId as AssetId).then((url) => {
+			if (!url) return;
+			const picture = new Image(`${name}-image`, url);
+			picture.stretch = Image.STRETCH_FILL;
+			picture.onImageLoadedObservable.addOnce(() => {
+				const side = Math.min(picture.imageWidth, picture.imageHeight);
+				picture.sourceLeft = Math.floor((picture.imageWidth - side) / 2);
+				picture.sourceTop = Math.floor((picture.imageHeight - side) / 2);
+				picture.sourceWidth = side;
+				picture.sourceHeight = side;
+				onLoaded?.();
+			});
+			frame.addControl(picture);
+		});
+		return frame;
+	}
+
 	function createCell(entry: Entry): Rectangle {
 		const key = entryKey(entry);
 		const kind = entry.type === 'folder' ? 'folder' : entry.item.kind === 'world' ? 'world' : 'object';
@@ -981,15 +1014,22 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		badge.addControl(glyph);
 		cell.addControl(badge);
 
-		if (entry.type === 'item' && entry.item.thumbnailUrl) { const thumbnail = new Image(`cell-thumbnail-${key}`, entry.item.thumbnailUrl); thumbnail.width = '58px'; thumbnail.height = '58px'; thumbnail.stretch = Image.STRETCH_UNIFORM; thumbnail.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT; thumbnail.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP; thumbnail.left = '10px'; thumbnail.top = '10px'; thumbnail.isHitTestVisible = false; cell.addControl(thumbnail); }
+		// An item with a preview shows it in place of the icon once it has loaded; until then (or if it never does) the icon stays.
+		const previewId = entry.type === 'item' ? entry.item.thumbnailAssetId : null;
+		if (previewId) {
+			const frame = previewFrame(`cell-thumbnail-${key}`, previewId, 58, style.tint, () => { badge.isVisible = false; });
+			frame.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT; frame.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+			frame.left = '10px'; frame.top = '10px';
+			cell.addControl(frame);
+		}
 
 		const tag = new TextBlock(`cell-meta-${key}`, meta);
 		tag.fontSize = 13; tag.color = INV.muted;
-		tag.width = `${CELL_W - 64}px`; tag.height = '20px';
+		tag.width = `${CELL_W - (previewId ? 86 : 64)}px`; tag.height = '20px';
 		tag.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
 		tag.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
 		tag.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-		tag.left = '56px'; tag.top = '10px';
+		tag.left = previewId ? '76px' : '56px'; tag.top = '10px';
 		tag.isHitTestVisible = false;
 		cell.addControl(tag);
 

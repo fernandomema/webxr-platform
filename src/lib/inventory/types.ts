@@ -1,4 +1,5 @@
 import type { SlotTree } from '$lib/ecs/types';
+import type { AssetId } from '$lib/assets/ref';
 
 export interface InventoryFolder {
 	id: string;
@@ -17,7 +18,8 @@ export interface InventoryItem {
 	kind?: InventoryKind;
 	worldLineageId?: string | null;
 	revisionNumber?: number | null;
-	thumbnailUrl?: string | null;
+	/** The preview image: an `image` asset. Local items keep it in the on-device store only; cloud items also have it in the cloud. */
+	thumbnailAssetId?: AssetId | null;
 	marketplaceItemId?: string | null;
 	createdAt: string;
 }
@@ -45,8 +47,9 @@ export interface InventoryAdapter {
 	createFolder?(ctx: InventoryContext, parentId: string | null, name: string): Promise<InventoryFolder>;
 	deleteFolder?(ctx: InventoryContext, folderId: string): Promise<void>;
 	listItems(ctx: InventoryContext, folderId: string | null): Promise<InventoryItem[]>;
-	saveItem?(ctx: InventoryContext, folderId: string | null, name: string, slotData: SlotTree, kind?: InventoryKind, worldLineageId?: string): Promise<InventoryItem>;
-	updateItem?(ctx: InventoryContext, itemId: string, folderId: string | null, name: string, slotData: SlotTree): Promise<InventoryItem>;
+	saveItem?(ctx: InventoryContext, folderId: string | null, name: string, slotData: SlotTree, kind?: InventoryKind, worldLineageId?: string, thumbnailAssetId?: AssetId | null): Promise<InventoryItem>;
+	/** `thumbnailAssetId` left out keeps the item's current preview; `null` removes it. */
+	updateItem?(ctx: InventoryContext, itemId: string, folderId: string | null, name: string, slotData: SlotTree, thumbnailAssetId?: AssetId | null): Promise<InventoryItem>;
 	setMarketplaceItemId?(ctx: InventoryContext, itemId: string, marketplaceItemId: string): Promise<void>;
 	deleteItem?(ctx: InventoryContext, itemId: string): Promise<void>;
 	/** Optional: report storage use (e.g. cloud quota). */

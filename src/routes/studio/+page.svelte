@@ -10,6 +10,7 @@
 	import { TEMPLATES } from '$lib/studio/templates';
 	import Icon from '$lib/studio/ui/Icon.svelte';
 	import AvatarWizard from '$lib/studio/components/AvatarWizard.svelte';
+	import ItemThumb from '$lib/studio/components/ItemThumb.svelte';
 	import { studioModels } from '$lib/studio/state/models.svelte';
 	import { handOverNewAvatar } from '$lib/studio/state/newAvatar';
 	import type { SlotTree } from '$lib/ecs/types';
@@ -189,7 +190,7 @@
 					{#each library.visibleItems as item (item.id)}
 						<li class="card">
 							<button class="card-main" onclick={() => openItem(item)}>
-								<span class="card-icon"><Icon name={item.kind === 'world' ? 'world' : item.kind === 'avatar' ? 'user' : 'cube'} size={20} /></span>
+								<span class="card-icon preview"><ItemThumb assetId={item.thumbnailAssetId} icon={item.kind === 'world' ? 'world' : item.kind === 'avatar' ? 'user' : 'cube'} iconSize={22} /></span>
 								<span class="card-text">
 									<strong>{item.name}</strong>
 									<span class="muted">{dateLabel(item.createdAt)}{item.kind === 'world' && item.revisionNumber ? ` · revision ${item.revisionNumber}` : ''}</span>
@@ -234,6 +235,7 @@
 	.card:hover { border-color: #3a4157; }
 	.card-main { display: flex; flex: 1; align-items: center; gap: 10px; min-width: 0; padding: 4px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 	.card-main strong, .card-text strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.card-icon.preview { width: 56px; height: 56px; overflow: hidden; }
 	.card.folder .card-icon { background: var(--panel-3); color: var(--muted); }
 	@media (max-width: 600px) { .search { width: 100%; } .tools { width: 100%; } }
 </style>

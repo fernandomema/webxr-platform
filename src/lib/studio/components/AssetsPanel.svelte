@@ -12,6 +12,7 @@
 	import Icon from '../ui/Icon.svelte';
 	import { adapterLabel } from '../ui/adapters';
 	import AvatarWizard from './AvatarWizard.svelte';
+	import ItemThumb from './ItemThumb.svelte';
 	import type { AssetId } from '$lib/assets/ref';
 	import type { SlotTree } from '$lib/ecs/types';
 
@@ -186,7 +187,7 @@
 			<li><button class="row" onclick={() => library.openFolder(folder)}><Icon name="folder" size={14} />{folder.name}</button></li>
 		{/each}
 		{#each objects as item (item.id)}
-			<li><button class="row" title="Add to the scene" onclick={() => insert(item.id)}><Icon name="cube" size={14} /><span>{item.name}</span><Icon name="plus" size={13} /></button></li>
+			<li><button class="row" title="Add to the scene" onclick={() => insert(item.id)}><span class="mini"><ItemThumb assetId={item.thumbnailAssetId} icon="cube" iconSize={14} /></span><span>{item.name}</span><Icon name="plus" size={13} /></button></li>
 		{/each}
 		{#if library.error}
 			<li class="empty" role="alert">{library.error}</li>
@@ -223,4 +224,5 @@
 	.row span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 	.row:hover { background: var(--panel-2); }
 	.row :global(svg:last-child) { color: var(--muted); }
+	.mini { display: grid; place-items: center; flex: none; width: 24px; height: 24px; overflow: hidden; border-radius: 6px; }
 </style>

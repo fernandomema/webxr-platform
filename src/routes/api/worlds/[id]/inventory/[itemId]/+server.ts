@@ -6,7 +6,7 @@ import { toHttpError } from '$lib/server/apiError';
 export const PUT: RequestHandler = async ({ locals, params, request }) => {
 	try {
 		const body = await request.json();
-		return json(await updateWorldItem(locals.user, params.id, params.itemId, body.folderId ?? null, body.name, body.slotData));
+		return json(await updateWorldItem(locals.user, params.id, params.itemId, body.folderId ?? null, body.name, body.slotData, body.thumbnailAssetId));
 	} catch (err) {
 		toHttpError(err);
 	}

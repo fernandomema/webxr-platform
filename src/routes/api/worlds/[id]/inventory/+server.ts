@@ -11,7 +11,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 export const POST: RequestHandler = async ({ locals, params, request }) => {
 	try {
 		const body = await request.json();
-		return json(await saveWorldItem(locals.user, params.id, body.folderId ?? null, body.name, body.slotData, body.kind === 'world' || body.kind === 'avatar' ? body.kind : 'object', body.worldLineageId));
+		return json(await saveWorldItem(locals.user, params.id, body.folderId ?? null, body.name, body.slotData, body.kind === 'world' || body.kind === 'avatar' ? body.kind : 'object', body.worldLineageId, body.thumbnailAssetId));
 	} catch (err) {
 		toHttpError(err);
 	}
