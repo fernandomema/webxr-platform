@@ -9,20 +9,12 @@ import type { Primitive } from './grasp';
  * model as its bounding box. Expressed in the hand's frame, which is what the grasp solver works in.
  */
 
-function isWithin(sceneGraph: SceneGraph, slotId: string, rootId: string): boolean {
-	for (let id: string | null = slotId, hops = 0; id && hops < 64; hops++) {
-		if (id === rootId) return true;
-		id = sceneGraph.getLive(id)?.slot.parentId ?? null;
-	}
-	return false;
-}
-
 /** `handWorld` is the hand frame's world matrix (rotation and translation only). */
 export function graspObstacles(sceneGraph: SceneGraph, rootSlotId: string, handWorld: Matrix): Primitive[] {
 	const toHand = handWorld.clone().invert();
 	const shapes: Primitive[] = [];
-	for (const entry of sceneGraph.allSlots()) {
-		if (entry.system || !isWithin(sceneGraph, entry.slot.id, rootSlotId)) continue;
+	for (const entry of sceneGraph.subtreeOf(rootSlotId)) {
+		if (entry.system) continue;
 		const mesh = findComponent(entry.slot, 'meshRenderer');
 		if (!mesh) continue;
 		const ref = normalizeMeshRef(mesh.meshRef);

@@ -15,7 +15,8 @@ import type { GrabSystem } from './grabSystem';
 import type { EquipmentSystem } from './equipmentSystem';
 import type { EquipHand } from './equipmentRegistry';
 import { claimStickY, isHandLocked, releaseStickY } from './handLock';
-import { STICK_DEADZONE, pushedDistance } from './pushPull';
+import { PUSH_RANGE, STICK_DEADZONE, pushedDistance } from './pushPull';
+import { isEquippable } from '$lib/ecs/types';
 
 const HAND_GRAB_RADIUS = 0.15;
 const LASER_MAX_LENGTH = 5;
@@ -43,6 +44,13 @@ export interface PointerControllerNetworkHooks {
 	onUse?(slotId: string, hand: EquipHand, phase: 'press' | 'release' | 'value', value: number): void;
 	/** A controller went away while holding an equipped object. */
 	onUnequip?(hand: EquipHand, slotId: string): void;
+	/** An object pulled all the way in along the laser equipped itself in the hand. */
+	onEquip?(hand: EquipHand, slotId: string): void;
+}
+
+export interface PointerControllerState {
+	/** Current visible laser hit for a hand, including objects that cannot be grabbed. */
+	getLaserTarget(hand: EquipHand): string | null;
 }
 
 const TRIGGER_VALUE_INTERVAL_MS = 50;
@@ -131,7 +139,7 @@ export function setupPointerAndGrabControllers(
 	equipment: EquipmentSystem,
 	localPlayerId: () => string,
 	network?: PointerControllerNetworkHooks
-): void {
+): PointerControllerState {
 	const pointerSelection = xr.pointerSelection;
 	pointerSelection.displayLaserPointer = false;
 	pointerSelection.displaySelectionMesh = false;
@@ -152,7 +160,8 @@ export function setupPointerAndGrabControllers(
 
 	/**
 	 * While a hand holds an object with its laser (and it alone), its stick brings the object closer (back) or pushes it
-	 * away (forward) along the laser, faster the further away it is.
+	 * away (forward) along the laser, faster the further away it is. Pulled all the way in, an equippable object goes into
+	 * the hand, equipped, as if caught.
 	 */
 	function pushOrPull(controller: WebXRInputSource, grabberId: string, dt: number): void {
 		const hand = handOf(grabberId);
@@ -182,6 +191,12 @@ export function setupPointerAndGrabControllers(
 		const along = Vector3.Dot(position.subtract(pushRay.origin), pushRay.direction);
 		const next = pushedDistance(along, y, dt);
 		node.setAbsolutePosition(position.add(pushRay.direction.scale(next - along)));
+		const live = slotId ? sceneGraph.getLive(slotId) : undefined;
+		if (y > 0 && next <= PUSH_RANGE.min && slotId && live && isEquippable(live.slot)) {
+			if (!equipment.equip(localPlayerId(), hand, controller.grip ?? controller.pointer, slotId)) return;
+			grabMode.delete(grabberId);
+			network?.onEquip?.(hand, slotId);
+		}
 	}
 
 	const handOf = (grabberId: string): EquipHand | null => (grabberId === 'left' || grabberId === 'right' ? grabberId : null);
@@ -380,6 +395,19 @@ export function setupPointerAndGrabControllers(
 			}
 		}
 	});
+
+	return {
+		getLaserTarget(hand) {
+			const controller = controllers.get(hand);
+			if (!controller || !visuals.has(hand) || !laserActive.get(hand)) return null;
+			const ray = new Ray(Vector3.Zero(), Vector3.Forward(), LASER_MAX_LENGTH);
+			controller.getWorldPointerRayToRef(ray);
+			ray.length = LASER_MAX_LENGTH;
+			const hit = scene.pickWithRay(ray, (mesh) => mesh.isPickable && mesh.isEnabled() && mesh.isVisible);
+			const slotId = sceneGraph.getSlotIdForNode(hit?.pickedMesh);
+			return slotId && sceneGraph.slotIds({ withoutAvatars: true }).includes(slotId) ? slotId : null;
+		}
+	};
 }
 
 function resolveGrabTarget(

@@ -1,4 +1,7 @@
 <script lang="ts">
+	import Select, { type SelectOption } from '../ui/Select.svelte';
+	import Tooltip from '../ui/Tooltip.svelte';
+	import Icon from '../ui/Icon.svelte';
 	import { BODY_BONES, REQUIRED_BONES, avatarCapabilities, detectHumanoidMap, fingerJoints, pruneHumanoidMap, type HumanoidBone, type HumanoidMap } from '../../xr/avatar/humanoid';
 
 	interface Props {
@@ -45,6 +48,18 @@
 	function detectAgain() {
 		onchange(detectHumanoidMap(joints));
 	}
+	/** Which collapsible sections the user has toggled; the rest follow their default. */
+	let toggled = $state<Record<string, boolean>>({});
+	const isOpen = (key: string, fallback: boolean) => toggled[key] ?? fallback;
+	const toggle = (key: string, fallback: boolean) => (toggled[key] = !isOpen(key, fallback));
+
+	function options(current: string, none: string): SelectOption[] {
+		return [
+			{ value: '', label: none },
+			...(current && !known.has(current) ? [{ value: current, label: `${current} (not in model)`, disabled: true }] : []),
+			...joints.map((joint) => ({ value: joint, label: joint }))
+		];
+	}
 	const mark = (ok: boolean) => (ok ? '✓' : '—');
 </script>
 
@@ -61,47 +76,44 @@
 		{#if missing.length}<p class="notice error">Still needed to wear it: {missing.join(', ')}.</p>{/if}
 		{#if stale}<p class="notice error">{stale} mapped {stale === 1 ? 'bone is' : 'bones are'} not in this model any more (marked in red).</p>{/if}
 		<div class="tools">
-			<button type="button" class="btn sm" title="Fill empty roles from the model’s bone names and drop the ones it no longer has" onclick={fill}>Fix &amp; fill</button>
-			<button type="button" class="btn sm" title="Throw the map away and detect it again from the model" onclick={detectAgain}>Detect again</button>
+			<Tooltip text="Fill empty roles from the model’s bone names and drop the ones it no longer has" side="top"><button type="button" class="btn sm" onclick={fill}>Fix &amp; fill</button></Tooltip>
+			<Tooltip text="Throw the map away and detect it again from the model" side="top"><button type="button" class="btn sm" onclick={detectAgain}>Detect again</button></Tooltip>
 			<span class="muted">{mappedBody}/{BODY_BONES.length} body bones</span>
 		</div>
 
 		{#each SECTIONS as section (section.title)}
-			<details open={section.title === 'Body' || missing.some((role) => section.roles.includes(role))}>
-				<summary>{section.title}</summary>
-				<div class="rows">
+			{@const fallback = section.title === 'Body' || missing.some((role) => section.roles.includes(role))}
+			<div class="section">
+				<button type="button" class="summary-btn" aria-expanded={isOpen(section.title, fallback)} onclick={() => toggle(section.title, fallback)}>
+					<Icon name={isOpen(section.title, fallback) ? 'chevron-down' : 'chevron-right'} size={12} />{section.title}
+				</button>
+				{#if isOpen(section.title, fallback)}<div class="rows">
 					{#each section.roles as role (role)}
 						{@const current = value[role] ?? ''}
-						<label class:required={REQUIRED_BONES.includes(role)} class:bad={current && !known.has(current)}>
+						<div class="role" class:required={REQUIRED_BONES.includes(role)} class:unset={!current} class:bad={current && !known.has(current)}>
 							<span>{LABELS[role]}{REQUIRED_BONES.includes(role) ? ' *' : ''}</span>
-							<select class="select" value={current} onchange={(event) => set(role, event.currentTarget.value)}>
-								<option value="">— none —</option>
-								{#if current && !known.has(current)}<option value={current}>{current} (not in model)</option>{/if}
-								{#each joints as joint (joint)}<option value={joint}>{joint}</option>{/each}
-							</select>
-						</label>
+							<Select searchable label={LABELS[role] ?? role} value={current} invalid={Boolean(current && !known.has(current))} options={options(current, '— none —')} onchange={(bone) => set(role, bone)} />
+						</div>
 					{/each}
-				</div>
-			</details>
+				</div>{/if}
+			</div>
 		{/each}
 
 		{#each ['left', 'right'] as const as side (side)}
-			<details>
-				<summary>{side === 'left' ? 'Left' : 'Right'} fingers ({capabilities.fingers[side]}/5)</summary>
-				<div class="fingers">
+			<div class="section">
+				<button type="button" class="summary-btn" aria-expanded={isOpen(`${side}-fingers`, false)} onclick={() => toggle(`${side}-fingers`, false)}>
+					<Icon name={isOpen(`${side}-fingers`, false) ? 'chevron-down' : 'chevron-right'} size={12} />{side === 'left' ? 'Left' : 'Right'} fingers ({capabilities.fingers[side]}/5)
+				</button>
+				{#if isOpen(`${side}-fingers`, false)}<div class="fingers">
 					{#each FINGERS as finger (finger)}
 						<span class="finger-name">{finger}</span>
 						{#each fingerJoints(side, finger) as role, index (role)}
 							{@const current = value[role] ?? ''}
-							<select class="select" class:bad={current && !known.has(current)} aria-label={`${side} ${finger} joint ${index + 1}`} value={current} onchange={(event) => set(role, event.currentTarget.value)}>
-								<option value="">—</option>
-								{#if current && !known.has(current)}<option value={current}>{current} (not in model)</option>{/if}
-								{#each joints as joint (joint)}<option value={joint}>{joint}</option>{/each}
-							</select>
+							<Select searchable label={`${side} ${finger} joint ${index + 1}`} value={current} invalid={Boolean(current && !known.has(current))} options={options(current, '—')} onchange={(bone) => set(role, bone)} />
 						{/each}
 					{/each}
-				</div>
-			</details>
+				</div>{/if}
+			</div>
 		{/each}
 	{/if}
 </div>
@@ -113,14 +125,11 @@
 	.tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 	.notice { margin: 0; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; }
 	.notice.error { border-color: var(--danger); color: var(--danger); }
-	details { border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; }
-	summary { cursor: pointer; font-size: 12px; color: var(--muted); padding: 2px 0; }
+	.section { border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; }
+	.summary-btn { display: flex; align-items: center; gap: 6px; width: 100%; min-height: var(--control-h, 30px); padding: 0; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
 	.rows { display: grid; gap: 6px; padding: 6px 0; }
-	label { display: grid; grid-template-columns: 84px 1fr; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
-	label.required:has(select[value='']) span { color: var(--danger); }
-	label.bad span { color: var(--danger); }
-	.fingers { display: grid; grid-template-columns: 52px repeat(3, minmax(0, 1fr)); gap: 4px; align-items: center; padding: 6px 0; }
+	.role { display: grid; grid-template-columns: 84px 1fr; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+	.role.required.unset span, .role.bad span { color: var(--danger); }
+	.fingers { display: grid; grid-template-columns: 52px repeat(3, minmax(0, 1fr)); gap: 4px; align-items: center; padding: 6px 0; font-size: 11px; }
 	.finger-name { font-size: 11px; color: var(--muted); }
-	.fingers :global(.select) { min-width: 0; font-size: 11px; }
-	:global(.select.bad) { border-color: var(--danger); }
 </style>

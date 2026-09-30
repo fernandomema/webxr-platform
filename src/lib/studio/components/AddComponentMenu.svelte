@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { placePopover, type Placement } from '../ui/popover';
 	import { addableComponents, COMPONENT_GROUPS, type ComponentType } from '../schema/components';
 
 	interface Props {
@@ -19,6 +21,12 @@
 		})).filter((entry) => entry.items.length)
 	);
 	let root = $state<HTMLDivElement>();
+	let place = $state<Placement | null>(null);
+
+	// Opens towards the inside of the panel (it hangs from the right edge) and only as tall as the room there is, above or below.
+	onMount(() => {
+		if (root?.parentElement) place = placePopover(root.parentElement, 520);
+	});
 
 	function onWindowPointer(event: PointerEvent) {
 		if (root && !root.contains(event.target as Node)) onclose();
@@ -27,7 +35,7 @@
 
 <svelte:window onpointerdown={onWindowPointer} onkeydown={(event) => event.key === 'Escape' && onclose()} />
 
-<div class="menu" bind:this={root} role="menu" aria-label="Add component">
+<div class="menu" class:up={place?.up} style:max-height={place ? `${place.maxHeight}px` : undefined} bind:this={root} role="menu" aria-label="Add component">
 	<!-- svelte-ignore a11y_autofocus -->
 	<input class="input" autofocus placeholder="Search components" aria-label="Search components" bind:value={query} />
 	{#each groups as entry (entry.group)}
@@ -44,7 +52,8 @@
 </div>
 
 <style>
-	.menu { right: 0; left: 0; top: calc(100% + 6px); display: grid; gap: 1px; }
+	.menu { right: 0; left: auto; top: calc(100% + 6px); width: min(340px, 90vw); display: grid; align-content: start; gap: 1px; }
+	.menu.up { top: auto; bottom: calc(100% + 6px); }
 	.input { margin-bottom: 4px; }
 	.glyph { display: inline-grid; place-items: center; flex: none; width: 24px; height: 24px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); font-size: 12px; }
 	.text { display: grid; min-width: 0; }

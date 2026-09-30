@@ -1,7 +1,7 @@
 import type { Component, Slot, SlotTree, Vec3 } from '$lib/ecs/types';
-import { eulerToQuat } from '$lib/math/euler';
-import { componentSchema, type ComponentType } from '../schema/components';
+import type { ComponentType } from '../schema/components';
 import * as ops from '../tree/ops';
+import { coalesceKeyOf, reduceDocOp, type DocOp, type DocOpResult, type InspectorDocument } from './docOps';
 import { History } from './history';
 
 export type DocumentKind = 'object' | 'world';
@@ -11,7 +11,9 @@ export type DocumentKind = 'object' | 'world';
  * the selection, undo/redo and the "unsaved changes" flag. UI components call
  * these methods instead of mutating the tree themselves.
  */
-export class StudioDocument {
+export class StudioDocument implements InspectorDocument {
+	/** The Studio's own document is always editable. */
+	readonly readonly = false;
 	tree = $state.raw<SlotTree>([]);
 	selectedId = $state<string | null>(null);
 	name = $state('Untitled');
@@ -89,28 +91,33 @@ export class StudioDocument {
 		this.name = name;
 	}
 
+	/** Applies one op to the tree (undoable). Returns the result so callers can read `selectId`; null when refused. */
+	private apply(op: DocOp): DocOpResult | null {
+		const result = reduceDocOp(this.tree, op);
+		if (!result || !this.commit(result.tree, coalesceKeyOf(op))) return null;
+		return result;
+	}
+
 	addSlot(partial: Partial<Slot> & { name: string }, parentId: string | null = this.selectedId): string {
-		const result = ops.addSlot(this.tree, parentId, partial);
-		this.commit(result.tree);
-		this.selectedId = result.id;
-		return result.id;
+		const id = partial.id ?? crypto.randomUUID();
+		this.apply({ op: 'addSlot', parentId, slot: { ...partial, id } });
+		this.selectedId = id;
+		return id;
 	}
 
 	removeSelected(): boolean {
 		const id = this.selectedId;
 		if (!id) return false;
-		const parentId = ops.getSlot(this.tree, id)?.parentId ?? null;
-		if (!this.commit(ops.removeSlot(this.tree, id))) return false;
-		this.selectedId = ops.getSlot(this.tree, parentId)?.id ?? ops.rootSlots(this.tree)[0]?.id ?? null;
+		const result = this.apply({ op: 'removeSlot', id });
+		if (!result) return false;
+		this.selectedId = result.selectId ?? null;
 		return true;
 	}
 
 	duplicateSelected(): void {
 		if (!this.selectedId) return;
-		const result = ops.duplicateSlot(this.tree, this.selectedId);
-		if (!result) return;
-		this.commit(result.tree);
-		this.selectedId = result.id;
+		const result = this.apply({ op: 'duplicate', id: this.selectedId });
+		if (result?.selectId) this.selectedId = result.selectId;
 	}
 
 	/** Inserts a copy of an inventory object under `parentId` (default: the selection) and selects it. */
@@ -122,46 +129,40 @@ export class StudioDocument {
 	}
 
 	reparent(id: string, newParentId: string | null): boolean {
-		return this.commit(ops.reparent(this.tree, id, newParentId));
+		return this.apply({ op: 'reparent', id, parentId: newParentId }) !== null;
 	}
 
 	renameSlot(id: string, name: string): void {
-		this.commit(ops.updateSlot(this.tree, id, { name }), `name:${id}`);
+		this.apply({ op: 'rename', id, name });
 	}
 
 	setPosition(id: string, position: Vec3): void {
-		this.commit(ops.updateSlot(this.tree, id, { position }), `pos:${id}`);
+		this.apply({ op: 'setPosition', id, position });
 	}
 
 	setScale(id: string, scale: Vec3): void {
-		this.commit(ops.updateSlot(this.tree, id, { scale }), `scale:${id}`);
+		this.apply({ op: 'setScale', id, scale });
 	}
 
 	/** Takes Euler angles in degrees, the way the inspector shows them. */
 	setRotationEuler(id: string, degrees: Vec3): void {
-		this.commit(ops.updateSlot(this.tree, id, { rotation: eulerToQuat(degrees) }), `rot:${id}`);
+		this.apply({ op: 'setRotationEuler', id, degrees });
 	}
 
 	addComponent(id: string, type: ComponentType): void {
-		const slot = ops.getSlot(this.tree, id);
-		// A Preview camera is a point of view, not a property of what it looks at. On a slot that already is something (or holds
-		// something) it goes on a child of its own, so that moving the camera does not move the object.
-		if (type === 'previewCamera' && slot && (slot.components.length > 0 || ops.childrenOf(this.tree, id).length > 0)) {
-			this.addSlot({ name: 'Preview Camera', position: [0, 1.2, -3], components: [componentSchema(type).create()] }, id);
-			return;
-		}
-		this.commit(ops.addComponent(this.tree, id, componentSchema(type).create()));
+		const result = this.apply({ op: 'addComponent', id, type });
+		if (result?.selectId) this.selectedId = result.selectId;
 	}
 
 	addRawComponent(id: string, component: Component): void {
-		this.commit(ops.addComponent(this.tree, id, component));
+		this.apply({ op: 'addRawComponent', id, component });
 	}
 
 	removeComponent(id: string, index: number): void {
-		this.commit(ops.removeComponent(this.tree, id, index));
+		this.apply({ op: 'removeComponent', id, index });
 	}
 
 	setField(id: string, index: number, key: string, value: unknown): void {
-		this.commit(ops.setComponentField(this.tree, id, index, key, value), `field:${id}:${index}:${key}`);
+		this.apply({ op: 'setField', id, index, key, value });
 	}
 }

@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { Vec3 } from '$lib/ecs/types';
 	import { quatToEuler, roundDisplay } from '$lib/math/euler';
-	import type { StudioDocument } from '../state/document.svelte';
+	import type { Snippet } from 'svelte';
+	import type { InspectorDocument } from '../state/docOps';
 	import AddComponentMenu from './AddComponentMenu.svelte';
 	import ComponentCard from './ComponentCard.svelte';
 	import PreviewCameraTools from './PreviewCameraTools.svelte';
@@ -12,14 +13,16 @@
 	import type { Component, Slot } from '$lib/ecs/types';
 
 	interface Props {
-		doc: StudioDocument;
+		doc: InspectorDocument;
 		advanced: boolean;
 		onOpenCode: () => void;
-		/** The editor camera's pose in the world, for setting a Preview camera from the current view. */
-		getViewPose?: () => { position: Vec3; rotation: [number, number, number, number] } | null;
+		/** The editor camera's pose in the world, for setting a Preview camera from the current view. May answer later (the XR panel asks the game). */
+		getViewPose?: () => { position: Vec3; rotation: [number, number, number, number] } | null | Promise<{ position: Vec3; rotation: [number, number, number, number] } | null>;
+		/** Extra content after the components (the in-game actions and debug log). */
+		footer?: Snippet<[Slot]>;
 	}
 
-	let { doc, advanced, onOpenCode, getViewPose = () => null }: Props = $props();
+	let { doc, advanced, onOpenCode, getViewPose = () => null, footer }: Props = $props();
 
 	let showAdd = $state(false);
 
@@ -77,10 +80,12 @@
 		<div class="section">
 			<label class="name">
 				<span class="sr-only">Name</span>
-				<input class="input" value={slot.name} oninput={(event) => doc.renameSlot(slot.id, event.currentTarget.value)} aria-label="Object name" />
+				<input class="input" disabled={doc.readonly} value={slot.name} oninput={(event) => doc.renameSlot(slot.id, event.currentTarget.value)} aria-label="Object name" />
 			</label>
 		</div>
 
+		<fieldset class="editable" disabled={doc.readonly}>
+		{#if doc.readonly}<p class="readonly">Only the host can edit this world.</p>{/if}
 		<div class="section">
 			<h3>Transform</h3>
 			{#each rows as row (row.kind)}
@@ -131,16 +136,20 @@
 				{/each}
 			</div>
 		</div>
+		</fieldset>
+		{#if footer}{@render footer(slot)}{/if}
 	{/if}
 </aside>
 
 <style>
 	.inspector { display: flex; flex-direction: column; height: 100%; overflow-y: auto; background: var(--panel); }
+	.editable { display: contents; min-width: 0; margin: 0; padding: 0; border: 0; }
+	.readonly { margin: 0; padding: 8px 12px 0; color: var(--warning); font-size: 12px; }
 	.section { display: grid; gap: 8px; padding: 12px; border-bottom: 1px solid var(--border); }
 	.section.grow { flex: 1; border-bottom: 0; align-content: start; }
 	h3 { margin: 0; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
-	.name .input { height: 34px; font-size: 14px; font-weight: 600; }
-	.transform { display: grid; grid-template-columns: 70px 1fr; align-items: center; gap: 8px; }
+	.name .input { height: calc(var(--control-h, 30px) + 4px); font-size: 14px; font-weight: 600; }
+	.transform { display: grid; grid-template-columns: var(--label-w, 70px) 1fr; align-items: center; gap: 8px; }
 	.row-label { color: var(--muted); font-size: 12px; }
 	.vec { display: flex; gap: 4px; }
 	.head { display: flex; align-items: center; justify-content: space-between; }

@@ -17,6 +17,16 @@ export interface EquipmentChange {
 
 export type TriggerOutcome = 'none' | 'consumed' | 'passed';
 
+/** How long an object takes to settle into its place in the hand once equipped, in seconds. */
+const SETTLE_SECONDS = 0.25;
+
+/** Where an equipped object is on its way from where it was to its place in the hand (poses in the hand's space). */
+interface Settling {
+	from: { position: Vector3; rotation: Quaternion };
+	to: { position: Vector3; rotation: Quaternion };
+	elapsed: number;
+}
+
 /**
  * Objects held in a hand until explicitly unequipped. This is separate from
  * GrabSystem on purpose: letting go of the grip ends a grab but not an
@@ -32,9 +42,10 @@ export class EquipmentSystem implements GrabGuard, EquipQuery {
 	readonly registry = new EquipmentRegistry();
 	readonly onChanged = new Observable<EquipmentChange>();
 	private handNodes = new Map<string, TransformNode>(); // slotId -> the hand node it follows
+	private settling = new Map<string, Settling>(); // slotId -> its way into the hand
 
 	constructor(
-		scene: Scene,
+		private scene: Scene,
 		private sceneGraph: SceneGraph,
 		private grabSystem: GrabSystem,
 		private localPlayerId: () => string,
@@ -105,10 +116,16 @@ export class EquipmentSystem implements GrabGuard, EquipQuery {
 			return false;
 		}
 
+		// Hung from the hand where it is (setParent keeps its place in the world), then eased into its pose rather than
+		// jumping there.
 		const pose = hand === 'left' ? equippable.left : equippable.right;
 		live.node.setParent(handNode);
-		live.node.position = Vector3.FromArray(pose.position);
-		live.node.rotationQuaternion = Quaternion.FromArray(eulerToQuat(pose.rotation));
+		const node = live.node;
+		this.settling.set(slotId, {
+			from: { position: node.position.clone(), rotation: (node.rotationQuaternion ?? Quaternion.FromEulerVector(node.rotation)).clone() },
+			to: { position: Vector3.FromArray(pose.position), rotation: Quaternion.FromArray(eulerToQuat(pose.rotation)) },
+			elapsed: 0
+		});
 		this.handNodes.set(slotId, handNode);
 
 		this.fire(slotId, playerId, hand, 'onEquip');
@@ -197,6 +214,7 @@ export class EquipmentSystem implements GrabGuard, EquipQuery {
 	/** Puts the node back under its real parent, keeping the world pose it had in the hand. */
 	private restore(slotId: string): void {
 		this.handNodes.delete(slotId);
+		this.settling.delete(slotId);
 		const live = this.sceneGraph.getLive(slotId);
 		if (!live) return;
 		const parentId = live.slot.parentId;
@@ -215,6 +233,7 @@ export class EquipmentSystem implements GrabGuard, EquipQuery {
 	}
 
 	private update(): void {
+		this.settle(this.scene.getEngine().getDeltaTime() / 1000);
 		for (const entry of this.registry.list()) {
 			const live = this.sceneGraph.getLive(entry.slotId);
 			const handNode = this.handNodes.get(entry.slotId);
@@ -222,10 +241,28 @@ export class EquipmentSystem implements GrabGuard, EquipQuery {
 				// Deleted: just drop the association (there is no node to restore).
 				this.registry.releaseSlot(entry.slotId);
 				this.handNodes.delete(entry.slotId);
+				this.settling.delete(entry.slotId);
 				this.onChanged.notifyObservers({ playerId: entry.playerId, hand: entry.hand, slotId: null, previousSlotId: entry.slotId });
 			} else if (handNode?.isDisposed()) {
 				this.unequip(entry.playerId, entry.hand);
 			}
+		}
+	}
+
+	/** Moves each object still on its way into the hand a step closer, easing out as it arrives. */
+	private settle(dt: number): void {
+		for (const [slotId, way] of this.settling) {
+			const node = this.sceneGraph.getLive(slotId)?.node;
+			if (!node) {
+				this.settling.delete(slotId);
+				continue;
+			}
+			way.elapsed += dt;
+			const t = Math.min(1, way.elapsed / SETTLE_SECONDS);
+			const k = 1 - (1 - t) ** 3;
+			node.position = Vector3.Lerp(way.from.position, way.to.position, k);
+			node.rotationQuaternion = Quaternion.Slerp(way.from.rotation, way.to.rotation, k);
+			if (t >= 1) this.settling.delete(slotId);
 		}
 	}
 }

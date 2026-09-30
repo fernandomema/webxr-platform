@@ -11,7 +11,8 @@
 	// literal `false` in production and the whole branch — including the
 	// dynamic import — is dead-code-eliminated out of the build.
 	onMount(() => {
-		if (import.meta.env.DEV) {
+		// Not inside an iframe: the XR panels are pages drawn onto a surface, and a floating console would be drawn onto them.
+		if (import.meta.env.DEV && window.self === window.top) {
 			import('eruda')
 				.then(({ default: eruda }) => eruda.init())
 				.catch((err) => console.error('failed to load eruda', err));

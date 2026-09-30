@@ -41,7 +41,8 @@ function cellBackground(color: string): Rectangle {
  * data; all scoring logic lives in the codeBlock that writes it.
  */
 export function setupScoreboard(scene: Scene, mesh: AbstractMesh, initial: ScoreboardComponent): ScoreboardBinding {
-	const texture = AdvancedDynamicTexture.CreateForMesh(mesh, 960, 560, true);
+	// Display only: it need not follow the pointers moving over it.
+	const texture = AdvancedDynamicTexture.CreateForMesh(mesh, 960, 560, false);
 
 	const background = new Rectangle('scoreboard-bg');
 	background.width = 1;

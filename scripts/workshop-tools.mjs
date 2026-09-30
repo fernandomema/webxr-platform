@@ -689,4 +689,4 @@ export const TOOLS = [
 export const toolEquippable = () => ({ type: 'equippable', left: WAND_GRIP, right: WAND_GRIP, autoGrip: true });
 
 /** The general tip at the entrance: how any tool is picked up and used. */
-export const TOOL_BASICS = { title: 'Using tools', lines: ['Grip: pick a tool up', 'B or Y while holding: its menu', 'Menu > Equip: keep it in hand', 'Trigger: use it'] };
+export const TOOL_BASICS = { title: 'Using tools', lines: ['Grip: pick a tool up', 'B, Y or stick click: its menu', 'Menu > Equip: keep it in hand', 'Trigger: use it'] };

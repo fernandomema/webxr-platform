@@ -195,8 +195,10 @@ msgstr ""
 msgid "Scene"
 msgstr ""
 
-#~ msgid "Code"
-#~ msgstr ""
+#: src/routes/xr-panel/inspector/+page.svelte
+#: src/routes/xr-panel/inspector/+page.svelte
+msgid "Code"
+msgstr ""
 
 #~ msgid "Open runtime"
 #~ msgstr ""
@@ -328,6 +330,9 @@ msgstr ""
 #~ msgstr ""
 
 #: src/lib/studio/components/Inspector.svelte
+#: src/routes/xr-panel/inspector/+page.svelte
+#: src/routes/xr-panel/inspector/+page.svelte
+#: src/routes/xr-panel/inspector/+page.svelte
 msgid "Inspector"
 msgstr ""
 
@@ -571,7 +576,10 @@ msgstr ""
 #: src/lib/studio/components/CommandPalette.svelte
 #: src/lib/studio/components/PublishDialog.svelte
 #: src/lib/studio/components/SaveDialog.svelte
+#: src/lib/studio/ui/ColorInput.svelte
+#: src/lib/studio/ui/Combobox.svelte
 #: src/lib/studio/ui/DialogHost.svelte
+#: src/lib/studio/ui/Select.svelte
 msgid "Escape"
 msgstr ""
 
@@ -581,6 +589,7 @@ msgstr ""
 #: src/lib/studio/ui/DialogHost.svelte
 #: src/lib/studio/ui/DialogHost.svelte
 #: src/lib/studio/ui/DialogHost.svelte
+#: src/routes/xr-panel/inspector/+page.svelte
 msgid "Cancel"
 msgstr ""
 
@@ -754,6 +763,7 @@ msgstr ""
 #: src/lib/studio/components/TopBar.svelte
 #: src/routes/studio/+page.svelte
 #: src/routes/studio/+page.svelte
+#: src/routes/xr-panel/inspector/+page.svelte
 msgid "Object"
 msgstr ""
 
@@ -773,6 +783,7 @@ msgstr ""
 msgid "This device"
 msgstr ""
 
+#: src/lib/studio/ui/Select.svelte
 #: src/routes/studio/+page.svelte
 msgid "Search"
 msgstr ""
@@ -1030,6 +1041,7 @@ msgid "Drag to orbit · Scroll to zoom · Right-drag to pan · <0>F</0> to focus
 msgstr ""
 
 #: src/routes/studio/edit/+page.svelte
+#: src/routes/xr-panel/inspector/+page.svelte
 msgid "Properties"
 msgstr ""
 
@@ -1082,6 +1094,7 @@ msgid "Simple"
 msgstr ""
 
 #: src/lib/studio/components/TopBar.svelte
+#: src/routes/xr-panel/inspector/+page.svelte
 msgid "Advanced"
 msgstr ""
 
@@ -1114,11 +1127,21 @@ msgstr ""
 
 #: src/lib/studio/components/CommandPalette.svelte
 #: src/lib/studio/components/Hierarchy.svelte
+#: src/lib/studio/components/NumberInput.svelte
+#: src/lib/studio/ui/Combobox.svelte
+#: src/lib/studio/ui/Combobox.svelte
+#: src/lib/studio/ui/Select.svelte
+#: src/lib/studio/ui/Select.svelte
 msgid "ArrowDown"
 msgstr ""
 
 #: src/lib/studio/components/CommandPalette.svelte
 #: src/lib/studio/components/Hierarchy.svelte
+#: src/lib/studio/components/NumberInput.svelte
+#: src/lib/studio/components/NumberInput.svelte
+#: src/lib/studio/ui/Combobox.svelte
+#: src/lib/studio/ui/Select.svelte
+#: src/lib/studio/ui/Select.svelte
 msgid "ArrowUp"
 msgstr ""
 
@@ -1161,6 +1184,7 @@ msgid "Collapse"
 msgstr ""
 
 #: src/lib/studio/components/Hierarchy.svelte
+#: src/lib/studio/components/WorldObjectActions.svelte
 msgid "Unnamed"
 msgstr ""
 
@@ -1343,6 +1367,9 @@ msgid "Publish “{0}”"
 msgstr ""
 
 #: src/lib/studio/components/CommandPalette.svelte
+#: src/lib/studio/ui/Combobox.svelte
+#: src/lib/studio/ui/Select.svelte
+#: src/lib/studio/ui/Select.svelte
 msgid "Enter"
 msgstr ""
 
@@ -1404,6 +1431,7 @@ msgstr ""
 
 #: src/lib/studio/components/AiPanel.svelte
 #: src/lib/studio/views/JsonView.svelte
+#: src/routes/xr-panel/inspector/+page.svelte
 msgid "Apply"
 msgstr ""
 
@@ -1450,9 +1478,8 @@ msgstr ""
 msgid "Clear {0}"
 msgstr ""
 
-#: src/lib/studio/components/FieldEditor.svelte
-msgid "Clear"
-msgstr ""
+#~ msgid "Clear"
+#~ msgstr ""
 
 #: src/lib/studio/components/FieldEditor.svelte
 msgid "Pos"
@@ -2161,7 +2188,7 @@ msgstr "Suelta aquí un archivo .mp3, .wav o .ogg, o importa uno. El audio se gu
 msgid "Imported"
 msgstr "Importados"
 
-#. 0: source.assetId.slice(7, 15)
+#. 0: missing.slice(7, 15)
 #: src/lib/studio/components/FieldEditor.svelte
 msgid "{0}… (not on this device)"
 msgstr ""
@@ -2330,9 +2357,8 @@ msgstr ""
 msgid "An avatar is a skinned .glb with a skeleton. Import one from the Library panel first if it is not listed."
 msgstr ""
 
-#: src/lib/studio/components/BoneMapEditor.svelte
-msgid "— none —"
-msgstr ""
+#~ msgid "— none —"
+#~ msgstr ""
 
 #. 0: missing.map((role) => ROLE_NAMES[role] ?? role).join(', ')
 #: src/lib/studio/components/AvatarWizard.svelte
@@ -2438,16 +2464,13 @@ msgstr ""
 
 #. 0: current
 #. 0: current
-#. 0: String(value)
-#: src/lib/studio/components/BoneMapEditor.svelte
 #: src/lib/studio/components/BoneMapEditor.svelte
 #: src/lib/studio/components/FieldEditor.svelte
 msgid "{0} (not in model)"
 msgstr ""
 
-#: src/lib/studio/components/FieldEditor.svelte
-msgid "— choose a bone —"
-msgstr ""
+#~ msgid "— choose a bone —"
+#~ msgstr ""
 
 #: src/lib/studio/components/FieldEditor.svelte
 msgid "Bone name"
@@ -2579,10 +2602,8 @@ msgstr ""
 msgid "{0} {1} joint {2}"
 msgstr ""
 
-#. 0: side === 'left' ? 'Left' \\: 'Right'; 1: capabilities.fingers[side]
-#: src/lib/studio/components/BoneMapEditor.svelte
-msgid "{0} fingers ({1}/5)"
-msgstr ""
+#~ msgid "{0} fingers ({1}/5)"
+#~ msgstr ""
 
 #: src/lib/studio/components/AddObjectMenu.svelte
 msgid "Preview camera"
@@ -2590,7 +2611,6 @@ msgstr ""
 
 #: src/lib/studio/components/AddObjectMenu.svelte
 #: src/lib/studio/components/PreviewCameraTools.svelte
-#: src/lib/studio/state/document.svelte.ts
 msgid "Preview Camera"
 msgstr ""
 
@@ -2672,4 +2692,164 @@ msgstr ""
 #. 0: PLATFORM_NAME
 #: src/routes/play/+page.svelte
 msgid "Play · {0}"
+msgstr ""
+
+#: src/routes/xr-panel/inspector/+page.svelte
+msgid "Read only"
+msgstr ""
+
+#: src/routes/xr-panel/inspector/+page.svelte
+msgid "Advanced mode"
+msgstr ""
+
+#: src/routes/xr-panel/inspector/+page.svelte
+msgid "Close inspector"
+msgstr ""
+
+#: src/routes/xr-panel/inspector/+page.svelte
+msgid "Connecting to the world…"
+msgstr ""
+
+#: src/routes/xr-panel/inspector/+page.svelte
+msgid "Objects"
+msgstr ""
+
+#: src/routes/xr-panel/inspector/+page.svelte
+msgid "Applied when you press Apply."
+msgstr ""
+
+#: src/lib/studio/components/Inspector.svelte
+msgid "Only the host can edit this world."
+msgstr ""
+
+#: src/lib/studio/components/WorldObjectActions.svelte
+msgid "Not configured"
+msgstr ""
+
+#. 0: source.assetId.slice(7, 15)
+#: src/lib/studio/components/WorldObjectActions.svelte
+msgid "Asset {0}…"
+msgstr ""
+
+#. 0: Math.floor(delta / 1000)
+#: src/lib/studio/components/WorldObjectActions.svelte
+msgid "{0}s ago"
+msgstr ""
+
+#. 0: Math.floor(delta / 60_000)
+#: src/lib/studio/components/WorldObjectActions.svelte
+msgid "{0}m ago"
+msgstr ""
+
+#. 0: Math.floor(delta / 3_600_000)
+#: src/lib/studio/components/WorldObjectActions.svelte
+msgid "{0}h ago"
+msgstr ""
+
+#: src/lib/studio/components/WorldObjectActions.svelte
+#: src/lib/studio/components/WorldObjectActions.svelte
+msgid "Parent"
+msgstr ""
+
+#: src/lib/studio/components/WorldObjectActions.svelte
+msgid "Hierarchy"
+msgstr ""
+
+#: src/lib/studio/components/WorldObjectActions.svelte
+msgid "Audio player"
+msgstr ""
+
+#. 0: audioSource
+#: src/lib/studio/components/WorldObjectActions.svelte
+msgid "Source: {0}"
+msgstr ""
+
+#: src/lib/studio/components/WorldObjectActions.svelte
+msgid "Code block debug log"
+msgstr ""
+
+#: src/lib/studio/components/WorldObjectActions.svelte
+msgid "No errors or log output yet."
+msgstr ""
+
+#: src/lib/studio/components/WorldObjectActions.svelte
+msgid "Code block — debug log"
+msgstr ""
+
+#. 0: folder.label
+#: src/lib/studio/components/WorldObjectActions.svelte
+msgid "<0/>Save ({0})"
+msgstr ""
+
+#: src/lib/studio/components/WorldObjectActions.svelte
+msgid "<0/>Container"
+msgstr ""
+
+#: src/lib/studio/components/WorldObjectActions.svelte
+msgid "<0/>Duplicate"
+msgstr ""
+
+#: src/lib/studio/components/WorldObjectActions.svelte
+msgid "<0/>Delete"
+msgstr ""
+
+#: src/lib/studio/components/WorldObjectActions.svelte
+msgid "Actions"
+msgstr ""
+
+#. 0: text
+#: src/lib/studio/ui/Tooltip.svelte
+msgid "Help: {0}"
+msgstr ""
+
+#. 0: side === 'left' ? 'Left' \\: 'Right'; 1: capabilities.fingers[side]
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "<0/>{0} fingers ({1}/5)"
+msgstr ""
+
+#. 0: label
+#: src/lib/studio/components/NumberInput.svelte
+msgid "Decrease {0}"
+msgstr ""
+
+#. 0: label
+#: src/lib/studio/components/NumberInput.svelte
+msgid "Increase {0}"
+msgstr ""
+
+#: src/lib/studio/ui/Select.svelte
+msgid "Choose…"
+msgstr ""
+
+#: src/lib/studio/ui/Select.svelte
+msgid "Tab"
+msgstr ""
+
+#. 0: label
+#: src/lib/studio/ui/Select.svelte
+msgid "Search {0}"
+msgstr ""
+
+#: src/lib/studio/ui/Select.svelte
+msgid "Nothing matches."
+msgstr ""
+
+#. 0: label
+#: src/lib/studio/ui/Combobox.svelte
+msgid "Show suggestions for {0}"
+msgstr ""
+
+#. 0: label
+#: src/lib/studio/ui/Combobox.svelte
+msgid "{0} suggestions"
+msgstr ""
+
+#. 0: label
+#: src/lib/studio/ui/ColorInput.svelte
+msgid "{0} picker"
+msgstr ""
+
+#. 0: label
+#: src/lib/studio/ui/ColorInput.svelte
+msgid "{0} hex"
 msgstr ""

@@ -80,7 +80,8 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		fields: [
 			{ key: 'title', label: 'Title', kind: 'text', optional: true, default: '' },
 			{ key: 'lines', label: 'Lines', kind: 'lines' },
-			{ key: 'color', label: 'Color', kind: 'color', optional: true, default: '#ffffff' }
+			{ key: 'color', label: 'Color', kind: 'color', optional: true, default: '#ffffff' },
+			{ key: 'scale', label: 'Text size', kind: 'number', min: 0.25, max: 6, step: 0.25, optional: true, default: 1, help: 'Times the usual size of the text.' }
 		],
 		create: () => ({ type: 'textDisplay', title: 'New label', lines: ['Edit this text'] })
 	},
@@ -329,7 +330,8 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 				{ value: 'raycast', label: 'Forward laser/mouse' },
 				{ value: 'overlay', label: 'Native overlay' },
 				{ value: 'none', label: 'Display only' }
-			], optional: true, default: 'raycast' }
+			], optional: true, default: 'raycast' },
+			{ key: 'pixelRatio', label: 'Sharpness', kind: 'number', min: 1, max: 3, step: 0.25, optional: true, default: 1, advanced: true, help: 'Detail of the picture when the page has to be redrawn (an immersive session). Fixed when the view is created.' }
 		],
 		create: () => ({ type: 'htmlView', url: '', width: 1280, height: 720, interaction: 'raycast' })
 	},

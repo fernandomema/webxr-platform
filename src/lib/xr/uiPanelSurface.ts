@@ -1,4 +1,4 @@
-import type { AbstractMesh, Observer, Scene } from '@babylonjs/core';
+import { Texture, type AbstractMesh, type Observer, type Scene } from '@babylonjs/core';
 import {
 	AdvancedDynamicTexture,
 	Button,
@@ -132,6 +132,12 @@ export function setupUIPanel(
 	// an empty-space laser toggle (see interaction/pointerController.ts).
 	mesh.metadata = { ...(mesh.metadata ?? {}), interactive: true, uiPanel: true };
 	const texture = AdvancedDynamicTexture.CreateForMesh(mesh, panel.width, panel.height, true);
+	if (panel.mirrorX) {
+		// Babylon applies this texture matrix to GUI picking as well as rendering.
+		texture.uScale = -1;
+		texture.uOffset = 1;
+		texture.wrapU = Texture.CLAMP_ADDRESSMODE;
+	}
 	const background = new Rectangle('ui-panel-background');
 	background.width = 1;
 	background.height = 1;

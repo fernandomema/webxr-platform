@@ -7,15 +7,21 @@ export interface TextDisplayBinding {
 	sync(slot: Slot): void;
 }
 
-/** Pixels along the sign's shorter side; the longer side gets as many more as the sign is long, so text keeps its shape. */
-const SHORT_SIDE = 512;
+/**
+ * Pixels along the sign's shorter side: about 1200 per metre of it, between 128 (a price tag) and 512 (a large sign).
+ * The longer side gets as many more as the sign is long, so text keeps its shape. The layout is designed for 512.
+ */
+const DESIGN_SHORT_SIDE = 512;
+const MIN_SHORT_SIDE = 128;
+const PIXELS_PER_METRE = 1200;
 const MAX_SIDE = 2048;
 
-/** The texture size for a plane scaled `width` by `height`: its own proportions, the shorter side `SHORT_SIDE` pixels. */
+/** The texture size for a plane scaled `width` by `height` (metres): its own proportions, its shorter side by its size. */
 export function textDisplayTextureSize(width: number, height: number): [number, number] {
 	const w = Math.abs(width) || 1, h = Math.abs(height) || 1;
-	const size = (ratio: number) => Math.round(Math.min(MAX_SIDE, SHORT_SIDE * ratio));
-	return w >= h ? [size(w / h), SHORT_SIDE] : [SHORT_SIDE, size(h / w)];
+	const short = Math.round(Math.min(DESIGN_SHORT_SIDE, Math.max(MIN_SHORT_SIDE, Math.min(w, h) * PIXELS_PER_METRE)));
+	const size = (ratio: number) => Math.round(Math.min(MAX_SIDE, short * ratio));
+	return w >= h ? [size(w / h), short] : [short, size(h / w)];
 }
 
 /**
@@ -31,7 +37,8 @@ export function textDisplayTextureSize(width: number, height: number): [number, 
  */
 export function setupTextDisplay(scene: Scene, mesh: AbstractMesh, initial: TextDisplayComponent): TextDisplayBinding {
 	let size = textDisplayTextureSize(mesh.scaling.x, mesh.scaling.y);
-	const texture = AdvancedDynamicTexture.CreateForMesh(mesh, size[0], size[1], true);
+	// Display only: it need not follow the pointers moving over it (in a headset, every controller's, every frame).
+	const texture = AdvancedDynamicTexture.CreateForMesh(mesh, size[0], size[1], false);
 
 	const background = new Rectangle('text-display-bg');
 	background.width = 1;
@@ -42,8 +49,15 @@ export function setupTextDisplay(scene: Scene, mesh: AbstractMesh, initial: Text
 	const stack = new StackPanel('text-display-stack');
 	stack.width = '90%';
 	stack.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-	stack.top = '24px';
 	background.addControl(stack);
+
+	/** Design pixels (for a 512 px short side) to this texture's pixels, times the component's text scale. */
+	let unit = 1;
+	const fit = (component: TextDisplayComponent) => {
+		unit = Math.min(size[0], size[1]) / DESIGN_SHORT_SIDE;
+		stack.top = `${Math.round(24 * unit)}px`;
+		return unit * (component.scale ?? 1);
+	};
 
 	function textRow(text: string, color: string, fontSize: number): TextBlock {
 		const block = new TextBlock('', text);
@@ -56,11 +70,14 @@ export function setupTextDisplay(scene: Scene, mesh: AbstractMesh, initial: Text
 		return block;
 	}
 
+	let current = initial;
 	function render(component: TextDisplayComponent): void {
+		current = component;
+		const k = fit(component);
 		background.background = component.color ?? '#0f172a';
 		for (const child of [...stack.children]) stack.removeControl(child);
-		if (component.title) stack.addControl(textRow(component.title, '#facc15', 40));
-		for (const line of component.lines) stack.addControl(textRow(line, 'white', 30));
+		if (component.title) stack.addControl(textRow(component.title, '#facc15', 40 * k));
+		for (const line of component.lines) stack.addControl(textRow(line, 'white', 30 * k));
 	}
 
 	render(initial);
@@ -70,6 +87,7 @@ export function setupTextDisplay(scene: Scene, mesh: AbstractMesh, initial: Text
 		if (wanted[0] === size[0] && wanted[1] === size[1]) return;
 		size = wanted;
 		texture.scaleTo(size[0], size[1]);
+		render(current);
 	});
 
 	return {

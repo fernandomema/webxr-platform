@@ -20,7 +20,7 @@ import { ensureCloudAssets } from '$lib/assets/cloudSync';
 import { getLocalAssetStore } from '$lib/assets/store';
 import type { WorldPackage } from '$lib/worlds/types';
 import { gameState, getInventoryContext } from '../gameState';
-import { xrSettings, saveSettings, type MovementMode, type RotationMode } from '../settings';
+import { xrSettings, saveSettings, type FoveationLevel, type MovementMode, type RotationMode } from '../settings';
 import { dashboardEditorOrder, dashboardItemLabel, moveDashboardItem, toggleDashboardItem, type DashboardItemId } from '../dashboardLayout';
 import { saveWithPreview } from '../inventorySave';
 import { typeWithKeyboard } from '../keyboard/guiInput';
@@ -50,6 +50,10 @@ export interface DashPanelCallbacks {
 	onToggleInspector(): void;
 	/** Seated mode was switched on or off (`xrSettings.seatedMode` already holds the new value). */
 	onSeatedModeChanged(): void;
+	/** Foveated rendering or the performance readout was changed (`xrSettings` already holds the new values). */
+	onPerformanceSettingsChanged(): void;
+	/** The display refresh rates the headset offers (empty until a headset session has started). */
+	frameRates(): number[];
 }
 
 export interface DashPanelHandle {
@@ -1200,112 +1204,186 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		if (activeAdapter) void refreshUsage();
 	}
 
-	// --- Settings tab: locomotion (movement + turn mode) ---
-	const settingsPanel = new StackPanel('settings-panel');
-	settingsPanel.width = 0.85;
-	settingsPanel.top = '10px';
-	contentByTab.Settings.addControl(settingsPanel);
+	// --- Settings tab ----------------------------------------------------------
+	// Sections of setting cards, all the same width: what the setting is and does on the left, and on the right a
+	// segmented control of a fixed width whatever the number of options. The whole list scrolls.
+	const SETTINGS_WIDTH = 940;
+	const CHOICE_WIDTH = 420;
+	const settingsScroll = new ScrollViewer('settings-scroll');
+	settingsScroll.width = 1;
+	settingsScroll.height = '520px';
+	settingsScroll.thickness = 0;
+	settingsScroll.barColor = INV.accent;
+	settingsScroll.barBackground = INV.bg;
+	contentByTab.Settings.addControl(settingsScroll);
+	// The list spans the scroll area and its cards keep their own width, centred in it.
+	const settingsList = new StackPanel('settings-list');
+	settingsList.width = 1;
+	settingsList.paddingBottom = '16px';
+	settingsScroll.addControl(settingsList);
 
-	function settingsSection(title: string): StackPanel {
-		const label = new TextBlock(`label-${title}`, title);
-		label.color = '#9ca3af';
-		label.fontSize = 18;
-		label.height = '32px';
-		label.top = '8px';
-		settingsPanel.addControl(label);
+	interface SettingOption {
+		label: string;
+		active(): boolean;
+		select(): void;
+	}
+	const settingRows: Array<() => void> = [];
 
-		const row = new StackPanel(`row-${title}`);
-		row.isVertical = false;
-		row.height = '56px';
-		settingsPanel.addControl(row);
-		return row;
+	function settingsSection(title: string): void {
+		const heading = new TextBlock(`settings-section-${title}`, title);
+		heading.width = `${SETTINGS_WIDTH}px`;
+		heading.height = '56px';
+		heading.paddingTop = '18px';
+		heading.fontSize = 22;
+		heading.fontWeight = 'bold';
+		heading.color = INV.text;
+		heading.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+		settingsList.addControl(heading);
 	}
 
-	function optionButton(row: StackPanel, key: string, text: string, isActive: () => boolean, onClick: () => void): Button {
-		const btn = Button.CreateSimpleButton(key, text);
-		btn.width = '240px';
-		btn.height = '52px';
-		btn.color = 'white';
-		btn.cornerRadius = 8;
-		btn.paddingRight = '8px';
-		btn.background = isActive() ? '#2563eb' : '#374151';
-		btn.onPointerClickObservable.add(() => {
-			onClick();
-			refreshSettingsTab();
+	/** A setting's card: its name and what it does, and a segmented control choosing between `options()`. */
+	function settingRow(key: string, title: string, description: string, options: () => SettingOption[]): void {
+		const card = new Rectangle(`setting-${key}`);
+		card.width = `${SETTINGS_WIDTH}px`;
+		card.height = '112px';
+		card.paddingBottom = '10px';
+		card.thickness = 1;
+		card.color = INV.border;
+		card.background = INV.surface;
+		card.cornerRadius = 12;
+		settingsList.addControl(card);
+
+		const name = new TextBlock(`setting-${key}-title`, title);
+		name.fontSize = 20;
+		name.color = INV.text;
+		name.height = '30px';
+		name.width = `${SETTINGS_WIDTH - CHOICE_WIDTH - 60}px`;
+		name.top = '14px';
+		name.left = '20px';
+		name.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+		name.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+		name.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+		card.addControl(name);
+
+		const about = new TextBlock(`setting-${key}-about`, description);
+		about.fontSize = 15;
+		about.color = INV.muted;
+		about.textWrapping = true;
+		about.height = '50px';
+		about.width = `${SETTINGS_WIDTH - CHOICE_WIDTH - 60}px`;
+		about.top = '44px';
+		about.left = '20px';
+		about.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+		about.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+		about.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+		about.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+		card.addControl(about);
+
+		const choice = new Rectangle(`setting-${key}-choice`);
+		choice.width = `${CHOICE_WIDTH}px`;
+		choice.height = '54px';
+		choice.left = '-18px';
+		choice.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+		choice.thickness = 1;
+		choice.color = INV.border;
+		choice.background = INV.bg;
+		choice.cornerRadius = 12;
+		card.addControl(choice);
+		const segments = new StackPanel(`setting-${key}-segments`);
+		segments.isVertical = false;
+		segments.height = '54px';
+		choice.addControl(segments);
+
+		settingRows.push(() => {
+			for (const child of [...segments.children]) {
+				segments.removeControl(child);
+				child.dispose();
+			}
+			const list = options();
+			const width = Math.floor((CHOICE_WIDTH - 8) / list.length);
+			list.forEach((option, i) => {
+				const on = option.active();
+				const button = Button.CreateSimpleButton(`setting-${key}-${i}`, option.label);
+				button.width = `${width}px`;
+				button.height = '46px';
+				button.paddingLeft = button.paddingRight = '3px';
+				button.cornerRadius = 9;
+				button.thickness = 0;
+				button.fontSize = 17;
+				button.color = on ? INV.text : INV.muted;
+				button.background = on ? INV.accent : 'transparent';
+				button.onPointerClickObservable.add(() => {
+					option.select();
+					refreshSettingsTab();
+				});
+				segments.addControl(button);
+			});
 		});
-		row.addControl(btn);
-		return btn;
 	}
 
-	const movementRow = settingsSection('Movimiento');
-	const rotationRow = settingsSection('Giro');
-	const seatedRow = settingsSection('Seated mode');
-	const keyboardRow = settingsSection('Keyboard layout');
+	/** One option of a setting held in `xrSettings`: chosen when the setting has `value`, and saving it on choice. */
+	function pick<K extends keyof typeof xrSettings>(setting: K, value: (typeof xrSettings)[K], label: string, then?: () => void): SettingOption {
+		return {
+			label,
+			active: () => xrSettings[setting] === value,
+			select: () => {
+				xrSettings[setting] = value;
+				saveSettings();
+				then?.();
+			}
+		};
+	}
+
+	settingsSection('Movement');
+	settingRow('movement', 'Moving', 'How the left stick gets you around: jump to where you point, or walk.', () => [
+		pick('movementMode', 'teleport' as MovementMode, 'Teleport', () => callbacks.onLocomotionSettingsChanged()),
+		pick('movementMode', 'smooth' as MovementMode, 'Walk', () => callbacks.onLocomotionSettingsChanged())
+	]);
+	settingRow('turning', 'Turning', 'How the right stick turns you: smoothly, or in steps (steps are gentler on the stomach).', () =>
+		([['smooth', 'Smooth'], ['snap-45', 'Steps of 45°'], ['snap-90', 'Steps of 90°']] as [RotationMode, string][]).map(([mode, label]) =>
+			pick('rotationMode', mode, label, () => callbacks.onLocomotionSettingsChanged())
+		)
+	);
+	settingRow('posture', 'Posture', 'Seated lifts your view to standing height (1.7 m), so you can play sitting down.', () => [
+		{ label: 'Standing', active: () => !xrSettings.seatedMode, select: () => setSeatedMode(false) },
+		{ label: 'Seated', active: () => xrSettings.seatedMode, select: () => setSeatedMode(true) }
+	]);
+
+	settingsSection('Keyboard');
+	settingRow('keyboard', 'Keyboard layout', 'The keys of the in-world keyboard. Auto follows the language of the page.', () => {
+		const layouts = layoutIds().map((id) => getLayout(id)!);
+		const auto = pick('keyboardLayout', null, 'Auto');
+		if (layouts.length <= 3) return [auto, ...layouts.map((layout) => pick('keyboardLayout', layout.id, layout.name))];
+		// Too many to list: the second option shows the chosen one and steps to the next.
+		const current = xrSettings.keyboardLayout ? getLayout(xrSettings.keyboardLayout) : undefined;
+		const next = layouts[(layouts.findIndex((layout) => layout.id === current?.id) + 1) % layouts.length];
+		return [auto, { label: `${current?.name ?? 'Choose'} ⇄`, active: () => Boolean(current), select: () => pick('keyboardLayout', next.id, '').select() }];
+	});
+
+	settingsSection('Performance');
+	settingRow('refresh', 'Refresh rate', 'Frames per second the headset shows. Higher is smoother, but each frame must be drawn faster (8 ms at 120 Hz): if the world cannot keep up, it stutters.', () => {
+		const rates = callbacks.frameRates().slice(-3);
+		return [
+			pick('frameRate', null, 'Default', () => callbacks.onPerformanceSettingsChanged()),
+			...rates.map((rate) => pick('frameRate', rate, `${rate} Hz`, () => callbacks.onPerformanceSettingsChanged()))
+		];
+	});
+	settingRow('detail', 'Detail at the edges', 'Draws the edges of your view with less detail, which you barely notice, so the world runs faster. Fastest is recommended; Full detail if the edges look blurry.', () =>
+		([['off', 'Full detail'], ['medium', 'Balanced'], ['high', 'Fastest']] as [FoveationLevel, string][]).map(([level, label]) =>
+			pick('foveation', level, label, () => callbacks.onPerformanceSettingsChanged())
+		)
+	);
+	settingRow('multiview', 'Multiview', 'Draws both eyes at once: much faster in busy worlds. Experimental: turn it off if anything looks wrong. Applies the next time you enter VR.', () => [
+		pick('multiview', false, 'Off', () => callbacks.onPerformanceSettingsChanged()),
+		pick('multiview', true, 'On', () => callbacks.onPerformanceSettingsChanged())
+	]);
+	settingRow('readout', 'Performance readout', 'Shows frames per second and how much is being drawn, low on the left of your view.', () => [
+		pick('showPerformance', false, 'Hidden', () => callbacks.onPerformanceSettingsChanged()),
+		pick('showPerformance', true, 'Shown', () => callbacks.onPerformanceSettingsChanged())
+	]);
 
 	function refreshSettingsTab() {
-		for (const child of [...movementRow.children]) movementRow.removeControl(child);
-		for (const child of [...rotationRow.children]) rotationRow.removeControl(child);
-		for (const child of [...seatedRow.children]) seatedRow.removeControl(child);
-		for (const child of [...keyboardRow.children]) keyboardRow.removeControl(child);
-
-		const movementOptions: [MovementMode, string][] = [
-			['teleport', 'Teleport'],
-			['smooth', 'Fluido']
-		];
-		for (const [mode, label] of movementOptions) {
-			optionButton(
-				movementRow,
-				`move-${mode}`,
-				label,
-				() => xrSettings.movementMode === mode,
-				() => {
-					xrSettings.movementMode = mode;
-					saveSettings();
-					callbacks.onLocomotionSettingsChanged();
-				}
-			);
-		}
-
-		const rotationOptions: [RotationMode, string][] = [
-			['smooth', 'Fluido'],
-			['snap-45', '45°'],
-			['snap-90', '90°']
-		];
-		for (const [mode, label] of rotationOptions) {
-			optionButton(
-				rotationRow,
-				`rotate-${mode}`,
-				label,
-				() => xrSettings.rotationMode === mode,
-				() => {
-					xrSettings.rotationMode = mode;
-					saveSettings();
-					callbacks.onLocomotionSettingsChanged();
-				}
-			);
-		}
-
-		for (const [enabled, label] of [[false, 'Standing'], [true, 'Seated (head at 1.7 m)']] as const) {
-			optionButton(seatedRow, `seated-${enabled}`, label, () => xrSettings.seatedMode === enabled, () => setSeatedMode(enabled));
-		}
-
-		// Auto follows the page's language; each installed layout by its own name. Too many for one row: one button cycles them.
-		const setLayout = (id: string | null) => {
-			xrSettings.keyboardLayout = id;
-			saveSettings();
-		};
-		const layouts = layoutIds().map((id) => getLayout(id)!);
-		if (layouts.length <= 3) {
-			optionButton(keyboardRow, 'keyboard-auto', 'Auto', () => xrSettings.keyboardLayout === null, () => setLayout(null));
-			for (const layout of layouts) {
-				optionButton(keyboardRow, `keyboard-${layout.id}`, layout.name, () => xrSettings.keyboardLayout === layout.id, () => setLayout(layout.id));
-			}
-		} else {
-			const current = xrSettings.keyboardLayout ? getLayout(xrSettings.keyboardLayout) : undefined;
-			const cycle = [null, ...layouts.map((layout) => layout.id)];
-			const next = cycle[(cycle.indexOf(current?.id ?? null) + 1) % cycle.length];
-			optionButton(keyboardRow, 'keyboard-cycle', `${current?.name ?? 'Auto'} ⇄`, () => true, () => setLayout(next));
-		}
+		for (const refresh of settingRows) refresh();
 	}
 	refreshSettingsTab();
 

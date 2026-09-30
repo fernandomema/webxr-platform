@@ -17,7 +17,7 @@ const PANEL_HEIGHT_OFFSET = -0.15; // slightly below eye level, like Resonite's 
  */
 export function setupPanelToggle(
 	scene: Scene,
-	xr: WebXRDefaultExperience,
+	xr: WebXRDefaultExperience | null,
 	panelRoot: TransformNode,
 	getActiveCamera: () => Camera,
 	options: { keyboardKey: string; buttonIdPattern: RegExp },
@@ -36,7 +36,8 @@ export function setupPanelToggle(
 		}
 	});
 
-	xr.input.onControllerAddedObservable.add((controller) => {
+	// Without WebXR (desktop) the keyboard key is all there is.
+	xr?.input.onControllerAddedObservable.add((controller) => {
 		controller.onMotionControllerInitObservable.add((motionController) => {
 			const buttonId = motionController.getComponentIds().find((id) => options.buttonIdPattern.test(id));
 			if (!buttonId) return;

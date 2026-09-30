@@ -15,6 +15,8 @@ export interface TextInputRequest {
 	/** Shown as dots on the keyboard, and never sent anywhere else by it. */
 	secret?: boolean;
 	maxLength?: number;
+	/** Several lines (code, JSON): enter adds a line break and the keyboard's close key is what finishes. */
+	multiline?: boolean;
 	/** What asked for the text (a panel): the keyboard comes up between the player and it. */
 	near?: TransformNode | null;
 }

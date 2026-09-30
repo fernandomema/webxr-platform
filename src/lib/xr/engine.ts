@@ -8,19 +8,21 @@ import {
 	Vector3,
 	UniversalCamera,
 	WebXRState,
+	WebXRFeatureName,
 	WebXRMotionControllerManager,
 	PointerEventTypes,
 	type AbstractMesh,
 	type WebXRDefaultExperience
 } from '@babylonjs/core';
 import lobbyTemplate from './templates/lobby.json';
-import type { SlotTree } from '$lib/ecs/types';
+import { createSlot, type SlotTree } from '$lib/ecs/types';
 import { instantiate } from '$lib/ecs/serialize';
 import { isBuiltinMesh, migrateSlotTree } from '$lib/assets/ref';
 import type { AssetResolver } from '$lib/assets/resolve';
 import { CloudResolver } from '$lib/assets/cloud';
 import { PeerResolver } from '$lib/assets/p2p';
 import { getLocalAssetStore } from '$lib/assets/store';
+import { importGlb } from '$lib/assets/importGlb';
 import { BlobAssetLibrary } from './blobAssetLibrary';
 import { ModelLibrary } from './modelLibrary';
 import { SceneGraph } from './sceneGraph';
@@ -36,11 +38,14 @@ import { setupPlayerBody } from './interaction/playerBody';
 import { setupLocomotion } from './locomotion';
 import { setupHandControllerSwitch } from './interaction/handControllerSwitch';
 import { createDashPanel } from './ui/dashPanel';
-import { createInspectorPanel } from './ui/inspectorPanel';
+import { createInspectorHost } from './ui/inspectorHost';
+import { forwardKeyTo } from './keyForwarding';
 import { setupRadialMenuForHand } from './ui/radialMenu';
 import { KeyboardSystem } from './keyboard/keyboardSystem';
 import { setTextInputProvider } from './keyboard/service';
-import { loadSettings, saveSettings, xrSettings } from './settings';
+import { createPerformanceOverlay } from './ui/performanceOverlay';
+import { uploadGuiBeforeDrawing } from './guiUploads';
+import { FOVEATION, loadSettings, saveSettings, xrSettings } from './settings';
 import { sanitizeAvatarTree } from './avatar/sanitize';
 import { saveWithPreview } from './inventorySave';
 import { configureThumbnails } from './thumbnail/capture';
@@ -92,6 +97,15 @@ export async function mountGame(
 	desktopCamera.setTarget(new Vector3(0, 1.4, 0));
 	desktopCamera.attachControl(canvas, true);
 	desktopCamera.speed = 1; // half Babylon's default of 2
+	// Babylon's default near plane is 1 m, which cut off panels opened 1 m away and anything held close.
+	desktopCamera.minZ = 0.05;
+	// Keys that land on the page itself (nothing focused: the focus was taken by a panel's page and dropped) are the
+	// game's: without this, opening a web panel could leave the player unable to move until they clicked the canvas.
+	const passStrayKey = (event: KeyboardEvent) => {
+		if (event.target === document.body || event.target === document.documentElement || event.target === document) forwardKeyTo(canvas, event);
+	};
+	window.addEventListener('keydown', passStrayKey);
+	window.addEventListener('keyup', passStrayKey);
 	desktopCamera.keysUp.push(87); // W
 	desktopCamera.keysDown.push(83); // S
 	desktopCamera.keysLeft.push(65); // A
@@ -128,6 +142,28 @@ export async function mountGame(
 			else if (sceneGraph.dispatchUIEvent(event) && event.type !== 'change') hostAuthority?.broadcastSnapshot();
 		},
 		isHost: () => gameState.role !== 'guest',
+		onImportPolyHavenModel: async (id, name) => {
+			if (gameState.role === 'guest') throw new Error('Only the host can import models into this world.');
+			if (!/^[A-Za-z0-9_]{1,90}$/.test(id)) throw new Error('Invalid Poly Haven model ID.');
+			const response = await fetch(`/api/polyhaven/models/${id}/glb`);
+			if (!response.ok) {
+				const body = await response.json().catch(() => null) as { message?: string } | null;
+				throw new Error(body?.message ?? 'Could not download this model.');
+			}
+			const objectName = (name.trim().slice(0, 80) || id);
+			const { manifest } = await importGlb(new Uint8Array(await response.arrayBuffer()), `${objectName}.glb`, getLocalAssetStore());
+			const adapter = getInventoryAdapter('local');
+			if (!adapter?.saveItem) throw new Error('Local inventory is unavailable.');
+			await saveWithPreview(adapter, getInventoryContext(), null, objectName, [createSlot({
+				name: objectName,
+				components: [
+					{ type: 'meshRenderer', meshRef: { kind: 'asset', assetId: manifest.assetId } },
+					{ type: 'collider', shape: 'box' },
+					{ type: 'grabbable', scalable: true }
+				]
+			})], 'object');
+			return manifest.assetId;
+		},
 		// codeBlock's world.spawn()/deleteSelf()/deleteSlot() — same routing as
 		// spawnFromInventory/radialNetwork.onDelete below, just reusable for scripts.
 		onSpawnRequest: (slot) => {
@@ -507,12 +543,21 @@ export async function mountGame(
 		spawnWorldOrbPackage(worldFromInventory(item, adapterId, gameState.userId));
 	}
 
-	const inspector = createInspectorPanel(scene, sceneGraph, {
+	const inspector = createInspectorHost(scene, sceneGraph, {
 		onSceneChanged: () => {
 			if (gameState.role !== 'guest') hostAuthority?.broadcastSnapshot();
+		},
+		getViewPose: () => {
+			const camera = getActiveCamera();
+			return { position: camera.globalPosition.asArray() as [number, number, number], rotation: camera.absoluteRotation.asArray() as [number, number, number, number] };
 		}
 	});
 
+	/**
+	 * The display refresh rates the headset offers, known once a session has started (the last session's otherwise).
+	 * Declared before the dash, which reads it while it builds its Settings tab.
+	 */
+	let supportedFrameRates: number[] = [];
 	const dash = createDashPanel(scene, sceneGraph, {
 		onHostWorld: hostCurrentWorld,
 		onStopHosting: stopHostingWorld,
@@ -536,7 +581,9 @@ export async function mountGame(
 		onLocomotionSettingsChanged: async () => { await locomotion?.applySettings(); },
 		onExitVr: async () => { await xr?.baseExperience.exitXRAsync(); },
 		onToggleInspector: () => inspector.root.setEnabled(!inspector.root.isEnabled()),
-		onSeatedModeChanged: () => playerBody.setSeated(xrSettings.seatedMode)
+		onSeatedModeChanged: () => playerBody.setSeated(xrSettings.seatedMode),
+		onPerformanceSettingsChanged: () => applyPerformanceSettings(),
+		frameRates: () => supportedFrameRates
 	});
 	refreshWorldsTab = dash.refreshWorldsTab;
 
@@ -553,7 +600,7 @@ export async function mountGame(
 		const slotId = sceneGraph.getSlotIdForNode(event.pickInfo?.pickedMesh);
 		if (slotId && sceneGraph.getLive(slotId)?.slot.components.some((component) => component.type === 'worldPortal')) worldPortalMenu.open(slotId);
 	});
-	if (xr) setupPointerAndGrabControllers(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, {
+	const pointerState = xr ? setupPointerAndGrabControllers(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, {
 		onWorldPortal: (slotId) => worldPortalMenu.open(slotId),
 		onUse: (slotId, hand, phase, value) => {
 			// A guest asks the host, which runs the object's actions once; solo/host run them here.
@@ -564,6 +611,10 @@ export async function mountGame(
 			if (gameState.role === 'guest') guestSync?.requestUnequip(hand, slotId);
 			else hostAuthority?.broadcastSnapshot();
 		},
+		onEquip: (hand, slotId) => {
+			if (gameState.role === 'guest') guestSync?.requestEquip(hand, slotId);
+			else hostAuthority?.broadcastSnapshot();
+		},
 		onGrab: (grabberId, slotId) => {
 			if (gameState.role === 'host') hostAuthority?.broadcastSnapshot();
 			else guestSync?.requestGrab(grabberId, slotId);
@@ -572,10 +623,12 @@ export async function mountGame(
 			if (gameState.role === 'host') hostAuthority?.broadcastSnapshot();
 			else guestSync?.requestRelease(grabberId, slotId);
 		}
-	});
-	if (xr) setupPanelToggle(scene, xr, dash.root, getActiveCamera, { keyboardKey: 'm', buttonIdPattern: /x-button|menu/i });
-	if (xr) setupPanelToggle(scene, xr, inspector.root, getActiveCamera, { keyboardKey: 'i', buttonIdPattern: /a-button/i });
+	}) : null;
+	setupPanelToggle(scene, xr, dash.root, getActiveCamera, { keyboardKey: 'm', buttonIdPattern: /x-button|menu/i });
+	setupPanelToggle(scene, xr, inspector.root, getActiveCamera, { keyboardKey: 'i', buttonIdPattern: /a-button/i });
 	const radialNetwork = {
+		getInspectTarget: (hand: 'left' | 'right') => inspector.root.isEnabled() ? pointerState?.getLaserTarget(hand) ?? null : null,
+		onInspect: (slotId: string) => { inspector.select(slotId); },
 		onEquip: (hand: 'left' | 'right', slotId: string) => {
 			if (gameState.role === 'guest') guestSync?.requestEquip(hand, slotId);
 			else hostAuthority?.broadcastSnapshot();
@@ -596,6 +649,43 @@ export async function mountGame(
 		setupRadialMenuForHand(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, 'left', /y-button/i, radialNetwork);
 		setupRadialMenuForHand(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, 'right', /b-button/i, radialNetwork);
 	}
+	// Fixed foveated rendering (less detail at the edges of the view) applies to a headset session's layer, so it is set
+	// again every time one starts; the readout can be shown anywhere.
+	const performanceOverlay = createPerformanceOverlay(scene, getActiveCamera);
+	/**
+	 * Multiview draws both eyes with each draw call (through WebXR layers). A session is set up with it or without it when
+	 * it starts, so the setting is applied only outside one: it takes effect the next time VR is entered.
+	 */
+	let multiviewApplied = false;
+	function applyMultiview(): void {
+		if (!xr || xr.baseExperience.state !== WebXRState.NOT_IN_XR || multiviewApplied === xrSettings.multiview) return;
+		const features = xr.baseExperience.featuresManager;
+		try {
+			if (xrSettings.multiview) features.enableFeature(WebXRFeatureName.LAYERS, 'latest', { preferMultiviewOnInit: true }, true, false);
+			else features.disableFeature(WebXRFeatureName.LAYERS);
+			multiviewApplied = xrSettings.multiview;
+		} catch (error) {
+			console.warn('[engine] multiview could not be set up; drawing each eye on its own', error);
+		}
+	}
+	function applyFrameRate(): void {
+		if (!xr || xr.baseExperience.state !== WebXRState.IN_XR) return;
+		const sessionManager = xr.baseExperience.sessionManager;
+		supportedFrameRates = Array.from(sessionManager.supportedFrameRates ?? []).sort((a, b) => a - b);
+		const wanted = xrSettings.frameRate;
+		if (wanted === null || !supportedFrameRates.includes(wanted) || sessionManager.currentFrameRate === wanted) return;
+		sessionManager.updateTargetFrameRate(wanted).catch((error) => console.warn('[engine] the headset refused that refresh rate', error));
+	}
+	function applyPerformanceSettings(): void {
+		applyFrameRate();
+		if (xr?.baseExperience.state === WebXRState.IN_XR) xr.baseExperience.sessionManager.fixedFoveation = FOVEATION[xrSettings.foveation];
+		performanceOverlay.setVisible(xrSettings.showPerformance);
+		applyMultiview();
+	}
+	xr?.baseExperience.onStateChangedObservable.add((state) => {
+		if (state === WebXRState.IN_XR || state === WebXRState.NOT_IN_XR) applyPerformanceSettings();
+	});
+	applyPerformanceSettings();
 	// Anything asking for text in a headset gets the in-world keyboard (see keyboard/service.ts).
 	const keyboards = xr ? new KeyboardSystem(scene, sceneGraph, xr, (side) => avatarSystem.localIndexTip(side)) : null;
 	setTextInputProvider(keyboards);
@@ -631,6 +721,8 @@ export async function mountGame(
 	// Lets a developer inspect the live scene from the browser console.
 	if (import.meta.env.DEV) (window as unknown as { __game?: unknown }).__game = { scene, sceneGraph, avatarSystem, playerAvatars, hostCurrentWorld, joinWorld, applyLocalAvatar, xrSettings };
 
+	// Last of the per-frame work: GUI textures changed during this frame are uploaded before the cameras draw (see guiUploads.ts).
+	const stopGuiUploads = uploadGuiBeforeDrawing(scene);
 	engine.runRenderLoop(() => scene.render());
 	const onResize = () => engine.resize();
 	window.addEventListener('resize', onResize);
@@ -644,6 +736,8 @@ export async function mountGame(
 		dispose() {
 			window.removeEventListener('resize', onResize);
 			setTextInputProvider(null);
+			stopGuiUploads();
+			performanceOverlay.dispose();
 			keyboards?.dispose();
 			avatarSystem.dispose();
 			hostAuthority?.dispose();
@@ -653,6 +747,8 @@ export async function mountGame(
 			sceneGraph.dispose();
 			models.dispose();
 			mediaAssets.dispose();
+			window.removeEventListener('keydown', passStrayKey);
+			window.removeEventListener('keyup', passStrayKey);
 			engine.dispose();
 		}
 	};

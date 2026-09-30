@@ -17,6 +17,8 @@ export interface EditorState {
 	shift: ShiftState;
 	page: string;
 	maxLength?: number;
+	/** Several lines of text: enter types a line break, and the close key is what finishes. */
+	multiline?: boolean;
 }
 
 /** Something the keyboard has to do beyond changing the text. */
@@ -29,10 +31,10 @@ export interface EditorResult {
 
 const characters = (text: string) => Array.from(text);
 
-export function initialEditorState(layout: KeyboardLayout, text = '', maxLength?: number): EditorState {
+export function initialEditorState(layout: KeyboardLayout, text = '', maxLength?: number, multiline = false): EditorState {
 	const chars = characters(text);
 	const kept = maxLength === undefined ? chars : chars.slice(0, maxLength);
-	return { text: kept.join(''), cursor: kept.length, composition: EMPTY_COMPOSITION, shift: 'off', page: layout.firstPage, maxLength };
+	return { text: kept.join(''), cursor: kept.length, composition: EMPTY_COMPOSITION, shift: 'off', page: layout.firstPage, maxLength, multiline };
 }
 
 /** The text as shown: what is still being composed sits at the cursor. */
@@ -76,8 +78,11 @@ export function pressKey(state: EditorState, layout: KeyboardLayout, key: KeyDef
 			const cursor = Math.min(characters(settled.text).length, Math.max(0, settled.cursor + step));
 			return { state: { ...settled, cursor } };
 		}
-		case 'enter':
-			return { state: flushed(state, layout), effect: 'submit' };
+		case 'enter': {
+			const settled = flushed(state, layout);
+			if (!state.multiline) return { state: settled, effect: 'submit' };
+			return { state: { ...settled, ...insert(settled, '\n') } };
+		}
 		case 'close':
 			return { state: flushed(state, layout), effect: 'close' };
 		case 'shift':

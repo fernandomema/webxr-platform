@@ -7,15 +7,16 @@
 	import type { Q4, V3 } from '../../xr/avatar/ik';
 	import { localPose } from '../../xr/thumbnail/cameraPose';
 	import { renderObjectThumbnail, renderWorldPanorama } from '../../xr/thumbnail/renderThumbnail';
-	import type { StudioDocument } from '../state/document.svelte';
+	import type { InspectorDocument } from '../state/docOps';
+	import Tooltip from '../ui/Tooltip.svelte';
 	import { studioSession } from '../state/session.svelte';
 	import { toasts } from '../state/toasts.svelte';
 
 	interface Props {
-		doc: StudioDocument;
+		doc: InspectorDocument;
 		slot: Slot;
-		/** The pose of the editor's camera in the world, or null if the viewport is not ready. */
-		getViewPose: () => { position: V3; rotation: Q4 } | null;
+		/** The pose of the editor's camera in the world, or null if the viewport is not ready. May answer later. */
+		getViewPose: () => { position: V3; rotation: Q4 } | null | Promise<{ position: V3; rotation: Q4 } | null>;
 	}
 
 	let { doc, slot, getViewPose }: Props = $props();
@@ -39,8 +40,8 @@
 	}
 
 	/** Puts this slot where the editor's camera is now, looking the same way, whatever slot it is nested in. */
-	function useEditorView() {
-		const view = getViewPose();
+	async function useEditorView() {
+		const view = await getViewPose();
 		if (!view) return toasts.error(new Error('The viewport is not ready yet.'), 'Could not read the editor view');
 		const local = localPose(doc.tree, slot.parentId, view);
 		doc.setPosition(slot.id, local.position);
@@ -72,7 +73,7 @@
 		<button class="btn sm" onclick={separate}>Move the camera to its own slot</button>
 	{/if}
 	<div class="buttons">
-		<button class="btn sm" onclick={useEditorView} title="Move this slot to where the editor camera is, looking the same way">Use editor view</button>
+		<Tooltip text="Move this slot to where the editor camera is, looking the same way" side="top"><button class="btn sm" onclick={() => void useEditorView()}>Use editor view</button></Tooltip>
 		<button class="btn sm" disabled={busy} onclick={preview}>{busy ? 'Drawing…' : 'Preview'}</button>
 	</div>
 	{#if image}

@@ -26,7 +26,7 @@ export class PressableButtonSystem {
 	private update(): void {
 		const pressers = this.getPresserNodes();
 
-		for (const entry of this.sceneGraph.allSlots()) {
+		for (const entry of this.sceneGraph.slotsWith('pressableButton')) {
 			const button = findComponent(entry.slot, 'pressableButton');
 			if (!button) continue;
 

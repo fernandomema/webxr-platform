@@ -15,6 +15,8 @@ export interface RadialMenuNetworkHooks {
 	onDelete?(slotId: string): void;
 	onEquip?(hand: Hand, slotId: string): void;
 	onUnequip?(hand: Hand, slotId: string): void;
+	getInspectTarget?(hand: Hand): string | null;
+	onInspect?(slotId: string): void;
 }
 
 /** Joystick input adapter for the shared radial view. */
@@ -39,6 +41,7 @@ export function setupRadialMenuForHand(
 	let selectedIndex = 0;
 	/** The object the open menu is about; the menu closes if it leaves the hand. */
 	let menuSlotId: string | null = null;
+	let inspectTargetId: string | null = null;
 	/**
 	 * The menu has closed but the stick is still pushed (it was used to pick an option): the hand goes back to moving and
 	 * turning only once the stick is let go, or that same push would turn or move the player.
@@ -48,6 +51,7 @@ export function setupRadialMenuForHand(
 	function close() {
 		view.close();
 		menuSlotId = null;
+		inspectTargetId = null;
 		releasing = true;
 	}
 	const inHand = (slotId: string) => equipment.getEquippedSlot(localPlayerId(), hand) === slotId || grabSystem.getHeldSlot(hand) === slotId;
@@ -56,54 +60,66 @@ export function setupRadialMenuForHand(
 		const equippedSlotId = equipment.getEquippedSlot(player, hand);
 		// An equipped object keeps its hand's menu available without holding the grip.
 		const slotId = equippedSlotId ?? grabSystem.getHeldSlot(hand);
-		if (!slotId) return;
-		const live = sceneGraph.getLive(slotId);
-		const equipItems: RadialItem[] = equippedSlotId
-			? [{
-				label: 'Unequip',
-				isEnabled: () => true,
-				onSelect: () => {
-					if (equipment.unequip(player, hand)) network?.onUnequip?.(hand, slotId);
-				}
-			}]
-			: live && isEquippable(live.slot)
+		const inspectTarget = network?.onInspect ? network.getInspectTarget?.(hand) ?? null : null;
+		if (!slotId && !inspectTarget) return;
+		const items: RadialItem[] = [];
+		if (slotId) {
+			const live = sceneGraph.getLive(slotId);
+			const equipItems: RadialItem[] = equippedSlotId
 				? [{
-					label: 'Equip',
-					isEnabled: () => equipment.getEquippedSlot(player, hand) === null,
+					label: 'Unequip',
+					isEnabled: () => true,
 					onSelect: () => {
-						if (equipment.equip(player, hand, controller.grip ?? controller.pointer, slotId)) network?.onEquip?.(hand, slotId);
+						if (equipment.unequip(player, hand)) network?.onUnequip?.(hand, slotId);
 					}
 				}]
-				: [];
-		const items: RadialItem[] = [
-			...sceneGraph.getRadialExtrasForSubtree(slotId),
-			...equipItems,
-			{
-				label: 'Save',
-				isEnabled: () => Boolean(gameState.currentInventoryAdapterId && getInventoryAdapter(gameState.currentInventoryAdapterId)?.saveItem),
-				onSelect: async () => {
-					const adapter = gameState.currentInventoryAdapterId ? getInventoryAdapter(gameState.currentInventoryAdapterId) : undefined;
-					if (!adapter?.saveItem) return;
-					const subtree = extractSubtree(sceneGraph.serialize(), slotId);
-					if (!subtree.length) return;
-					const { tree, kind } = forInventory(subtree);
-					await saveWithPreview(adapter, getInventoryContext(), gameState.currentInventoryFolderId, tree[0].name, tree, kind);
+				: live && isEquippable(live.slot)
+					? [{
+						label: 'Equip',
+						isEnabled: () => equipment.getEquippedSlot(player, hand) === null,
+						onSelect: () => {
+							if (equipment.equip(player, hand, controller.grip ?? controller.pointer, slotId)) network?.onEquip?.(hand, slotId);
+						}
+					}]
+					: [];
+			items.push(
+				...sceneGraph.getRadialExtrasForSubtree(slotId),
+				...equipItems,
+				{
+					label: 'Save',
+					isEnabled: () => Boolean(gameState.currentInventoryAdapterId && getInventoryAdapter(gameState.currentInventoryAdapterId)?.saveItem),
+					onSelect: async () => {
+						const adapter = gameState.currentInventoryAdapterId ? getInventoryAdapter(gameState.currentInventoryAdapterId) : undefined;
+						if (!adapter?.saveItem) return;
+						const subtree = extractSubtree(sceneGraph.serialize(), slotId);
+						if (!subtree.length) return;
+						const { tree, kind } = forInventory(subtree);
+						await saveWithPreview(adapter, getInventoryContext(), gameState.currentInventoryFolderId, tree[0].name, tree, kind);
+					}
+				},
+				{
+					label: 'Delete',
+					isEnabled: () => true,
+					onSelect: () => {
+						if (equipment.unequip(player, hand)) network?.onUnequip?.(hand, slotId);
+						grabSystem.release(hand);
+						if (network?.onDelete) network.onDelete(slotId);
+						else sceneGraph.removeSlot(slotId);
+					}
 				}
-			},
-			{
-				label: 'Delete',
-				isEnabled: () => true,
-				onSelect: () => {
-					if (equipment.unequip(player, hand)) network?.onUnequip?.(hand, slotId);
-					grabSystem.release(hand);
-					if (network?.onDelete) network.onDelete(slotId);
-					else sceneGraph.removeSlot(slotId);
-				}
+			);
+		}
+		if (inspectTarget) items.push({
+			label: 'Inspect',
+			isEnabled: () => network?.getInspectTarget?.(hand) === inspectTarget,
+			onSelect: () => {
+				if (network?.getInspectTarget?.(hand) === inspectTarget) network.onInspect?.(inspectTarget);
 			}
-		];
+		});
 		selectedIndex = 0;
 		view.open(controller.grip ?? controller.pointer, items);
 		menuSlotId = slotId;
+		inspectTargetId = inspectTarget;
 		releasing = false;
 		lockHand(hand);
 	}
@@ -119,8 +135,13 @@ export function setupRadialMenuForHand(
 				if (view.isOpen) close(); else open(controller);
 			});
 			stick?.onAxisValueChangedObservable.add((axes) => { stickX = axes.x; stickY = axes.y; });
+			// Clicking the stick opens the menu, like the menu button; while it is open, it picks the option pointed at.
 			stick?.onButtonStateChangedObservable.add((component) => {
-				if (!view.isOpen || !component.changes.pressed?.current) return;
+				if (!component.changes.pressed?.current) return;
+				if (!view.isOpen) {
+					open(controller);
+					return;
+				}
 				void view.select(selectedIndex);
 				if (!view.isOpen) close();
 			});
@@ -138,6 +159,7 @@ export function setupRadialMenuForHand(
 		}
 		// Dropped, unequipped or deleted: its options no longer apply.
 		if (view.isOpen && menuSlotId && !inHand(menuSlotId)) close();
+		if (view.isOpen && inspectTargetId && network?.getInspectTarget?.(hand) !== inspectTargetId) close();
 		if (!view.isOpen || Math.hypot(stickX, stickY) < 0.35) return;
 		const angle = Math.atan2(stickY, stickX);
 		const step = (2 * Math.PI) / view.itemCount;

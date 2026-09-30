@@ -4,16 +4,19 @@ import {
 	MeshBuilder,
 	StandardMaterial,
 	Color3,
+	Color4,
 	Vector3,
 	Quaternion,
 	Ray,
 	TransformNode,
 	type Scene,
-	type AbstractMesh
+	type AbstractMesh,
+	type InstancedMesh
 } from '@babylonjs/core';
 import type { MediaControlAction, Slot, SlotTree, UIEvent, Vec3, Quat } from '$lib/ecs/types';
 import { findComponent, isGrabbable } from '$lib/ecs/types';
-import { meshRefKey, normalizeMeshRef, type AssetId, type MeshRef } from '$lib/assets/ref';
+import { normalizeMeshRef, type AssetId, type MeshRef } from '$lib/assets/ref';
+import { needsRebuild } from './slotRebuild';
 import type { BlobAssetLibrary } from './blobAssetLibrary';
 import type { ModelInstance, ModelLease, ModelLibrary, ModelState } from './modelLibrary';
 import { setupMirrorSurface } from './specialSurfaces';
@@ -30,6 +33,20 @@ import { setupScoreboard } from './scoreboardSurface';
 import { setupUIPanel, type UIMediaState, type UIPanelBinding } from './uiPanelSurface';
 import { createCodeBlockHandlers, type CodeBlockHost, type RadialItemDef, type CodeBlockLogEntry, type HandEvent, type TriggerEvent, type RaycastHit } from './codeBlockRuntime';
 
+/**
+ * Built-in shapes drawn as instances of one shared mesh each: the GPU gets one draw call per shape, however many boxes
+ * or spheres a world has (each keeps its own pose, colour, picking and collisions). Floors and planes stay meshes of
+ * their own: planes carry signs, mirrors and screens, and floors are few.
+ */
+const INSTANCED_SHAPES = new Set(['box', 'sphere', 'cylinder']);
+/** Components that draw onto their slot's own mesh (a texture, or a material of its own): such a mesh cannot be shared. */
+const OWN_SURFACE = new Set<string>(['mirror', 'textDisplay', 'htmlView', 'scoreboard', 'uiPanel', 'uiElement', 'surfaceMask', 'worldPortal', 'audioPlayer']);
+
+const instanceColor = (color: string | undefined): Color4 => {
+	const c = Color3.FromHexString(color ?? '#ffffff');
+	return new Color4(c.r, c.g, c.b, 1);
+};
+
 interface LiveSlot {
 	slot: Slot;
 	node: TransformNode;
@@ -45,6 +62,8 @@ interface LiveSlot {
 	};
 	/** Load state of this slot's model, for the inspector and the network layer. */
 	assetState?: ModelState;
+	/** Present for an `htmlView`: the iframe its page lives in, for a host that talks to the page. */
+	htmlFrame?: HTMLIFrameElement;
 	/** Present on a `uiPanel` root: the controls rendered from its uiElement subtree. */
 	ui?: UIPanelBinding;
 	runtime?: {
@@ -68,6 +87,8 @@ export interface SceneGraphOptions {
 	onMediaControl?: (slotId: string, action: MediaControlAction) => void;
 	/** Routes UI interactions (button press, input change/submit) through the host-authoritative world channel. */
 	onUIEvent?: (event: UIEvent) => void;
+	/** Imports a Poly Haven model for a world codeBlock. */
+	onImportPolyHavenModel?: (id: string, name: string) => Promise<string>;
 	/** codeBlock's `world.spawn`/`deleteSelf`/`deleteSlot` — route through the host-authoritative sync pipeline (see engine.ts, mirrors onMediaControl). */
 	onSpawnRequest?: (slot: Slot) => void;
 	onDeleteRequest?: (slotId: string) => void;
@@ -105,10 +126,48 @@ export interface EquipQuery {
  */
 export class SceneGraph {
 	private live = new Map<string, LiveSlot>();
+	/** The hidden mesh each instanced shape is drawn from, and the material they all share. */
+	private primitiveSources = new Map<string, Mesh>();
+	private primitiveMaterial: StandardMaterial | null = null;
+	/** Slots by the components they carry, and whole objects, for the systems that look every frame; rebuilt after the scene changes. */
+	private byComponent = new Map<string, LiveSlot[]>();
+	private subtrees = new Map<string, LiveSlot[]>();
+
+	private invalidateIndexes(): void {
+		this.byComponent.clear();
+		this.subtrees.clear();
+	}
 	private grabQuery: GrabQuery | null = null;
 	private equipQuery: EquipQuery | null = null;
 
+	private changeListeners = new Set<(ids: readonly string[] | null) => void>();
+
 	constructor(private scene: Scene, private options: SceneGraphOptions = {}) {}
+
+	/**
+	 * Calls `listener` (synchronously) whenever the set of slots or what they hold changes: added, removed, reparented,
+	 * edited, or reconciled with a snapshot. It is given the ids of the slots concerned, or null when anything may have
+	 * changed (a snapshot). Frequent pose changes (grabs) are not announced. Returns the function that stops listening.
+	 */
+	onChanged(listener: (ids: readonly string[] | null) => void): () => void {
+		this.changeListeners.add(listener);
+		return () => this.changeListeners.delete(listener);
+	}
+
+	private notifyChanged(ids: readonly string[] | null): void {
+		for (const listener of this.changeListeners) {
+			try {
+				listener(ids);
+			} catch (err) {
+				console.warn('[sceneGraph] change listener threw', err);
+			}
+		}
+	}
+
+	/** The iframe of a slot's `htmlView`, once it exists. */
+	getHtmlViewFrame(slotId: string): HTMLIFrameElement | null {
+		return this.live.get(slotId)?.htmlFrame ?? null;
+	}
 
 	/** Called once from engine.ts right after `new GrabSystem(scene, sceneGraph)` — see GrabQuery's doc comment. */
 	setGrabQuery(grabQuery: GrabQuery): void {
@@ -146,6 +205,7 @@ export class SceneGraph {
 		}
 		this.activateCodeBlock(slot, node);
 		this.syncUIPanels();
+		if (!options?.system) this.notifyChanged([slot.id]);
 		return node;
 	}
 
@@ -160,7 +220,9 @@ export class SceneGraph {
 			entry.node.dispose();
 			this.live.delete(id);
 		}
+		this.invalidateIndexes();
 		this.syncUIPanels();
+		this.notifyChanged(idsToRemove);
 	}
 
 	dispose(): void {
@@ -169,6 +231,11 @@ export class SceneGraph {
 			entry.node.dispose();
 		}
 		this.live.clear();
+		this.invalidateIndexes();
+		for (const source of this.primitiveSources.values()) source.dispose();
+		this.primitiveSources.clear();
+		this.primitiveMaterial?.dispose();
+		this.primitiveMaterial = null;
 		for (const material of Object.values(this.placeholderMaterials)) material?.dispose();
 		this.placeholderMaterials = {};
 	}
@@ -246,10 +313,13 @@ export class SceneGraph {
 		// A bone attachment only means something under the model it names; moving on drops it.
 		if (entry.slot.parentId !== parentId && findComponent(entry.slot, 'boneAttach')) {
 			entry.slot.components = entry.slot.components.filter((component) => component.type !== 'boneAttach');
+			this.invalidateIndexes();
 		}
 		entry.slot.parentId = parentId;
+		this.invalidateIndexes();
 		entry.node.setParent(this.parentNodeFor(entry.slot));
 		this.syncSlotTransform(entry);
+		this.notifyChanged([slotId]);
 		return true;
 	}
 
@@ -291,7 +361,10 @@ export class SceneGraph {
 	 */
 	setSlotParentData(slotId: string, parentId: string | null): void {
 		const entry = this.live.get(slotId);
-		if (entry && !entry.system) entry.slot.parentId = parentId;
+		if (entry && !entry.system) {
+			entry.slot.parentId = parentId;
+			this.invalidateIndexes();
+		}
 	}
 
 	controlMedia(slotId: string, action: MediaControlAction): boolean {
@@ -343,6 +416,29 @@ export class SceneGraph {
 	}
 
 	/**
+	 * The live slots carrying a component of `type`. Kept between calls until the scene changes, so a system that looks
+	 * every frame (buttons, avatars) does not walk every slot of the world each time. Do not modify the list.
+	 */
+	/** `getSubtree`, kept between calls until the scene changes (a hand holding an object looks at its parts every frame). */
+	subtreeOf(rootId: string): readonly LiveSlot[] {
+		let list = this.subtrees.get(rootId);
+		if (!list) {
+			list = this.getSubtree(rootId);
+			this.subtrees.set(rootId, list);
+		}
+		return list;
+	}
+
+	slotsWith(type: Slot['components'][number]['type']): readonly LiveSlot[] {
+		let list = this.byComponent.get(type);
+		if (!list) {
+			list = [...this.live.values()].filter((entry) => entry.slot.components.some((component) => component.type === type));
+			this.byComponent.set(type, list);
+		}
+		return list;
+	}
+
+	/**
 	 * Current world state as a fresh SlotTree (ids/parentId unchanged, transforms live). System nodes (UI panels) are excluded.
 	 * Avatars belong to the session, not the world, so anything saved or re-hosted asks for `withoutAvatars`.
 	 */
@@ -353,22 +449,40 @@ export class SceneGraph {
 		return [...this.live.values()]
 			.filter((entry) => !entry.system)
 			.filter((entry) => !avatarIds.some((id) => entry.slot.id === id || this.isDescendantOf(entry.slot, id)))
-			.map(({ slot, node }) => {
-				// A grabbed node is temporarily parented to a hand. Serialize it in
-				// its Slot parent space so remote peers receive the same world pose,
-				// without breaking the live grab relationship.
-				const expectedParent = this.parentNodeFor(slot);
-				const transientParent = node.parent;
-				if (transientParent !== expectedParent) node.setParent(expectedParent);
-				const serialized = {
-					...slot,
-					position: node.position.asArray() as Slot['position'],
-					rotation: (node.rotationQuaternion ?? Quaternion.Identity()).asArray() as Slot['rotation'],
-					scale: node.scaling.asArray() as Slot['scale']
-				};
-				if (transientParent !== expectedParent) node.setParent(transientParent);
-				return serialized;
-			});
+			.map((entry) => this.serializeEntry(entry));
+	}
+
+	/** The ids serialize() would return, in the same order, without the cost of reading every pose. */
+	slotIds(options: { withoutAvatars?: boolean } = {}): string[] {
+		const avatarIds = options.withoutAvatars
+			? [...this.live.values()].filter((entry) => findComponent(entry.slot, 'avatar')).map((entry) => entry.slot.id)
+			: [];
+		return [...this.live.values()]
+			.filter((entry) => !entry.system && !avatarIds.some((id) => entry.slot.id === id || this.isDescendantOf(entry.slot, id)))
+			.map((entry) => entry.slot.id);
+	}
+
+	/** One slot as serialize() would give it, or null when it does not exist (or is a system slot). */
+	serializeSlot(slotId: string): Slot | null {
+		const entry = this.live.get(slotId);
+		return entry && !entry.system ? this.serializeEntry(entry) : null;
+	}
+
+	private serializeEntry({ slot, node }: LiveSlot): Slot {
+		// A grabbed node is temporarily parented to a hand. Serialize it in
+		// its Slot parent space so remote peers receive the same world pose,
+		// without breaking the live grab relationship.
+		const expectedParent = this.parentNodeFor(slot);
+		const transientParent = node.parent;
+		if (transientParent !== expectedParent) node.setParent(expectedParent);
+		const serialized = {
+			...slot,
+			position: node.position.asArray() as Slot['position'],
+			rotation: (node.rotationQuaternion ?? Quaternion.Identity()).asArray() as Slot['rotation'],
+			scale: node.scaling.asArray() as Slot['scale']
+		};
+		if (transientParent !== expectedParent) node.setParent(transientParent);
+		return serialized;
 	}
 
 	/**
@@ -393,15 +507,11 @@ export class SceneGraph {
 				continue;
 			}
 			if (existing.system) continue;
-			if (this.visualKey(existing.slot) !== this.visualKey(slot)) {
+			if (needsRebuild(existing.slot, slot)) {
 				this.rebuildSubtree(slot, tree);
 				continue;
 			}
-			existing.slot = slot;
-			existing.runtime?.sync?.(slot);
-			existing.node.position = Vector3.FromArray(slot.position);
-			existing.node.rotationQuaternion = Quaternion.FromArray(slot.rotation);
-			existing.node.scaling = Vector3.FromArray(slot.scale);
+			this.applyLive(existing, slot);
 		}
 
 		// Apply hierarchy after every slot exists so incoming local transforms are
@@ -414,6 +524,38 @@ export class SceneGraph {
 			node.parent = this.parentNodeFor(slot);
 		}
 		this.syncUIPanels();
+		this.notifyChanged(null);
+	}
+
+	/**
+	 * Applies an edit made in the inspector to one live slot (host and solo only; the caller then broadcasts). What can be
+	 * updated in place is; what cannot (see `needsRebuild`) rebuilds the slot and what hangs from it. The slot's own
+	 * parent is not changed here, use `reparentSlot`. Returns false for an unknown or system slot.
+	 */
+	applySlotEdit(slotId: string, next: Slot): boolean {
+		const entry = this.live.get(slotId);
+		if (!entry || entry.system) return false;
+		if (needsRebuild(entry.slot, next)) {
+			const tree = this.serialize().map((slot) => (slot.id === slotId ? { ...next, parentId: entry.slot.parentId } : slot));
+			this.rebuildSubtree(tree.find((slot) => slot.id === slotId)!, tree);
+		} else {
+			this.applyLive(entry, { ...next, parentId: entry.slot.parentId });
+			this.syncUIPanels();
+			this.notifyChanged([slotId]);
+		}
+		return true;
+	}
+
+	/** Brings a live slot up to date with `slot` without rebuilding it: its data, its surface, its colour and its pose. */
+	private applyLive(entry: LiveSlot, slot: Slot): void {
+		entry.slot = slot;
+		this.invalidateIndexes();
+		entry.runtime?.sync?.(slot);
+		const color = findComponent(slot, 'meshRenderer')?.color;
+		if (color && !entry.model) this.paint(entry.node, color);
+		entry.node.position = Vector3.FromArray(slot.position);
+		entry.node.rotationQuaternion = Quaternion.FromArray(slot.rotation);
+		entry.node.scaling = Vector3.FromArray(slot.scale);
 	}
 
 	/** Applies frequent pose updates without re-sending component payloads such as world packages. */
@@ -449,7 +591,7 @@ export class SceneGraph {
 		const node: TransformNode = mesh
 			? modelAssetId
 				? new Mesh(slot.id, this.scene) // empty: the visible parts are its children (see bindModel)
-				: this.createMesh(slot.id, ref!, mesh.color)
+				: this.createMesh(slot, ref!, mesh.color)
 			: uiPanel
 				? MeshBuilder.CreatePlane(slot.id, { width: worldWidth, height: worldWidth * uiPanel.height / uiPanel.width }, this.scene)
 				: new TransformNode(slot.id, this.scene);
@@ -461,6 +603,7 @@ export class SceneGraph {
 
 		const entry: LiveSlot = { slot, node };
 		this.live.set(slot.id, entry);
+		this.invalidateIndexes();
 		if (modelAssetId) this.bindModel(entry, modelAssetId);
 		// Surfaces that draw onto the mesh itself do not apply to a model.
 		if (mesh && !modelAssetId) {
@@ -469,7 +612,11 @@ export class SceneGraph {
 			const audio = findComponent(slot, 'audioPlayer');
 			if (audio) entry.runtime = this.createMediaRuntime(slot, node as AbstractMesh, setupAudioPlayerSurface);
 			const htmlView = findComponent(slot, 'htmlView');
-			if (htmlView) entry.runtime = setupHtmlView(this.scene, node as AbstractMesh, htmlView);
+			if (htmlView) {
+				const binding = setupHtmlView(this.scene, node as AbstractMesh, htmlView);
+				entry.runtime = binding;
+				entry.htmlFrame = binding.frame;
+			}
 			const textDisplay = findComponent(slot, 'textDisplay');
 			if (textDisplay) entry.runtime = setupTextDisplay(this.scene, node as AbstractMesh, textDisplay);
 			const scoreboard = findComponent(slot, 'scoreboard');
@@ -567,7 +714,11 @@ export class SceneGraph {
 			resolvePlayer: (grabberId) => this.options.resolvePlayer?.(grabberId) ?? { id: grabberId, name: 'Player' },
 			getEquipHolder: (slotId) => this.equipQuery?.getHolderOfSlotOrAncestor(slotId) ?? null,
 			getUIMedia: (slotId) => this.getUIMedia(slotId),
-			getUIInputText: (slotId) => this.getUIInputText(slotId)
+			getUIInputText: (slotId) => this.getUIInputText(slotId),
+			importPolyHavenModel: (id, name) => {
+				if (!(this.options.isHost?.() ?? true) || !this.options.onImportPolyHavenModel) throw new Error('Model importing is unavailable here.');
+				return this.options.onImportPolyHavenModel(id, name);
+			}
 		};
 	}
 
@@ -708,15 +859,13 @@ export class SceneGraph {
 		// Mutating the Slot's data doesn't retroactively touch the mesh created
 		// from it at spawn time — refresh the one thing that visibly matters
 		// for the switch/lever demo (a meshRenderer's color).
-		if (componentType === 'meshRenderer' && field === 'color' && typeof value === 'string') {
-			const material = (entry.node as AbstractMesh).material as StandardMaterial | null;
-			if (material) material.diffuseColor = Color3.FromHexString(value);
-		}
+		if (componentType === 'meshRenderer' && field === 'color' && typeof value === 'string') this.paint(entry.node, value);
 		// Same redraw hook reconcile() already uses for an incoming snapshot —
 		// so a LOCAL mutation (e.g. a script updating its own scoreboard) also
 		// redraws immediately, not just once a broadcast round-trips back.
 		entry.runtime?.sync?.(entry.slot);
 		this.syncUIPanels();
+		this.notifyChanged([slotId]);
 		return true;
 	}
 
@@ -864,13 +1013,54 @@ export class SceneGraph {
 		for (const item of order) this.addSlot(item);
 	}
 
-	private visualKey(slot: Slot): string {
-		const mesh = findComponent(slot, 'meshRenderer');
-		return mesh ? meshRefKey(normalizeMeshRef(mesh.meshRef)) : 'none';
+	/** Changes the colour a slot's mesh is drawn in: its instance's own colour, or its own material's. */
+	private paint(node: TransformNode, color: string): void {
+		const mesh = node as AbstractMesh;
+		if (mesh.getClassName() === 'InstancedMesh') {
+			(mesh as InstancedMesh).instancedBuffers.color = instanceColor(color);
+			return;
+		}
+		// By class name: the material may come from another copy of Babylon's module than this file's import.
+		const material = mesh.material;
+		if (material?.getClassName() === 'StandardMaterial') (material as StandardMaterial).diffuseColor = Color3.FromHexString(color);
+	}
+
+	/** The hidden mesh a shape's instances are drawn from, made the first time the shape is needed. */
+	private primitiveSource(shape: string): Mesh {
+		let source = this.primitiveSources.get(shape);
+		if (source) return source;
+		if (!this.primitiveMaterial) {
+			this.primitiveMaterial = new StandardMaterial('primitive-shared', this.scene);
+			this.primitiveMaterial.diffuseColor = Color3.White();
+			// A soft shine for every shape alike (each colour comes from its instance).
+			this.primitiveMaterial.specularColor = new Color3(0.2, 0.2, 0.2);
+		}
+		const name = `primitive-${shape}`;
+		source = shape === 'sphere'
+			? MeshBuilder.CreateSphere(name, { diameter: 1 }, this.scene)
+			: shape === 'cylinder'
+				? MeshBuilder.CreateCylinder(name, { diameter: 1, height: 1 }, this.scene)
+				: MeshBuilder.CreateBox(name, { size: 1 }, this.scene);
+		source.material = this.primitiveMaterial;
+		source.registerInstancedBuffer('color', 4);
+		source.instancedBuffers.color = instanceColor(undefined);
+		// Only its instances are seen, picked and collided with.
+		source.isVisible = false;
+		source.isPickable = false;
+		this.primitiveSources.set(shape, source);
+		return source;
 	}
 
 	// Model slots are built by bindModel(); an unknown builtin id still falls back to a box.
-	private createMesh(id: string, ref: MeshRef, color?: string): AbstractMesh {
+	private createMesh(slot: Slot, ref: MeshRef, color?: string): AbstractMesh {
+		const id = slot.id;
+		const shape = ref.kind === 'builtin' ? ref.id : 'box';
+		// A mirrored scale turns a mesh inside out, which instances of the same mesh cannot each do their own way.
+		if (INSTANCED_SHAPES.has(shape) && !slot.components.some((c) => OWN_SURFACE.has(c.type)) && slot.scale.every((v) => v > 0)) {
+			const instance = this.primitiveSource(shape).createInstance(id);
+			instance.instancedBuffers.color = instanceColor(color);
+			return instance;
+		}
 		let mesh: AbstractMesh;
 		switch (ref.kind === 'builtin' ? ref.id : 'box') {
 			case 'ground':

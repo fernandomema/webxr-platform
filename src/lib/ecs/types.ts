@@ -105,6 +105,8 @@ export interface HtmlViewComponent {
 	 * surfaces only); `none` is display only. Fixed when the view is created.
 	 */
 	interaction?: 'none' | 'raycast' | 'overlay';
+	/** Sharpness of the picture drawn when the page has to be rasterized (1–3; 1.5 reads text well). Fixed when the view is created. */
+	pixelRatio?: number;
 }
 
 export type MediaControlAction = 'toggle' | 'play' | 'pause';
@@ -196,6 +198,8 @@ export interface TextDisplayComponent {
 	title?: string;
 	lines: string[];
 	color?: string;
+	/** How big the text is, times the usual size (1). Larger for shop signs, smaller to fit more lines. */
+	scale?: number;
 }
 
 /**
@@ -231,6 +235,8 @@ export interface UIPanelComponent {
 	background?: string;
 	/** Physical width in world units; height follows the design-pixel aspect ratio. */
 	worldWidth?: number;
+	/** Mirrors only the GUI texture horizontally; the panel's world transform stays unchanged. */
+	mirrorX?: boolean;
 }
 
 /** A renderable UI control attached to a normal Slot in the scene hierarchy. */

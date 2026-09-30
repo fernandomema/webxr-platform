@@ -7,6 +7,11 @@
 	import { assetMesh, assetSource, BUILTIN_MESH_IDS, isAssetId, normalizeMeshRef, normalizeSourceRef, urlSource, type BuiltinMeshId } from '$lib/assets/ref';
 	import { studioAssets, studioModels } from '../state/models.svelte';
 	import BoneMapEditor from './BoneMapEditor.svelte';
+	import Select, { type SelectGroup, type SelectOption } from '../ui/Select.svelte';
+	import Checkbox from '../ui/Checkbox.svelte';
+	import ColorInput from '../ui/ColorInput.svelte';
+	import Combobox from '../ui/Combobox.svelte';
+	import Tooltip from '../ui/Tooltip.svelte';
 	import type { HumanoidMap } from '../../xr/avatar/humanoid';
 
 	interface Props {
@@ -37,6 +42,42 @@
 			default: return undefined;
 		}
 	});
+
+	function meshOptions(current: string, known: boolean): (SelectOption | SelectGroup)[] {
+		return [
+			{ label: 'Shapes', options: BUILTIN_MESH_IDS.map((meshId) => ({ value: meshId, label: meshId[0].toUpperCase() + meshId.slice(1) })) },
+			{
+				label: 'Models',
+				options: [
+					...studioModels.items.map((model) => ({ value: model.assetId, label: model.name })),
+					...(known ? [] : [{ value: current, label: `Model ${current.slice(7, 15)}… (not on this device)`, disabled: true }]),
+					{ value: '__import', label: 'Import a .glb…' }
+				]
+			}
+		];
+	}
+
+	function assetOptions(choices: { assetId: string; name: string }[], missing: string | null): (SelectOption | SelectGroup)[] {
+		return [
+			{ value: '__url', label: 'From a URL' },
+			{
+				label: 'Imported',
+				options: [
+					...choices.map((item) => ({ value: item.assetId, label: item.name })),
+					...(missing ? [{ value: missing, label: `${missing.slice(7, 15)}… (not on this device)`, disabled: true }] : []),
+					{ value: '__import', label: 'Import a file…' }
+				]
+			}
+		];
+	}
+
+	function boneOptions(current: string): SelectOption[] {
+		return [
+			{ value: '', label: '— choose a bone —' },
+			...(current && !joints.includes(current) ? [{ value: current, label: `${current} (not in model)`, disabled: true }] : []),
+			...joints.map((joint) => ({ value: joint, label: joint }))
+		];
+	}
 
 	function vec(index: number, next: number) {
 		const current = Array.isArray(value) ? [...(value as number[])] : [0, 0, 0];
@@ -70,7 +111,7 @@
 <div class="field" class:wide={field.kind === 'pose' || field.kind === 'boneMap'}>
 	<label class="label" for={id}>
 		{field.label}
-		{#if field.help}<span class="help" title={field.help}>?</span>{/if}
+		{#if field.help}<Tooltip text={field.help} />{/if}
 	</label>
 
 	<div class="control">
@@ -83,20 +124,20 @@
 			{#if field.multiline}
 				<textarea class="input" {id} rows="3" value={String(value ?? '')} oninput={(event) => onchange(event.currentTarget.value)}></textarea>
 			{:else}
-				<input class="input" {id} list={field.suggestions ? `${id}-list` : undefined} value={String(value ?? '')} oninput={(event) => onchange(event.currentTarget.value)} />
-				{#if field.suggestions}<datalist id="{id}-list">{#each field.suggestions as option (option)}<option value={option}></option>{/each}</datalist>{/if}
+				{#if field.suggestions}
+					<Combobox {id} label={field.label} value={String(value ?? '')} suggestions={field.suggestions} {onchange} />
+				{:else}
+					<input class="input" {id} value={String(value ?? '')} oninput={(event) => onchange(event.currentTarget.value)} />
+				{/if}
 			{/if}
 		{:else if field.kind === 'url'}
 			<input class="input" {id} type="url" placeholder="https://…" value={String(value ?? '')} oninput={(event) => onchange(event.currentTarget.value)} />
 		{:else if field.kind === 'bool'}
-			<input {id} type="checkbox" checked={Boolean(value ?? fallback)} onchange={(event) => onchange(event.currentTarget.checked)} />
+			<Checkbox {id} label={field.label} checked={Boolean(value ?? fallback)} {onchange} />
 		{:else if field.kind === 'color'}
-			<input class="input" {id} type="color" value={String(value ?? '#ffffff')} oninput={(event) => onchange(event.currentTarget.value)} />
-			<span class="unit mono">{String(value ?? '')}</span>
+			<ColorInput {id} label={field.label} value={String(value ?? '#ffffff')} {onchange} />
 		{:else if field.kind === 'enum'}
-			<select class="select" {id} value={String(value ?? '')} onchange={(event) => onchange(event.currentTarget.value)}>
-				{#each field.options as option (option.value)}<option value={option.value}>{option.label}</option>{/each}
-			</select>
+			<Select {id} label={field.label} value={String(value ?? '')} options={field.options} {onchange} />
 		{:else if field.kind === 'vec3'}
 			<div class="vec">
 				{#each ['X', 'Y', 'Z'] as axis, index (axis)}
@@ -107,55 +148,37 @@
 			{@const mesh = normalizeMeshRef(value)}
 			{@const current = mesh.kind === 'builtin' ? mesh.id : mesh.assetId}
 			{@const known = mesh.kind === 'builtin' || studioModels.byId(mesh.assetId) !== undefined}
-			<select
-				class="select"
+			<Select
 				{id}
+				label={field.label}
 				value={current}
-				onchange={async (event) => {
-					const next = event.currentTarget.value;
+				options={meshOptions(current, known)}
+				onchange={async (next) => {
 					if (next === '__import') {
-						event.currentTarget.value = current;
 						const [first] = await studioModels.pickAndImport();
 						if (first) onchange(assetMesh(first.assetId));
 					} else if (isAssetId(next)) onchange(assetMesh(next));
 					else onchange({ kind: 'builtin', id: next as BuiltinMeshId });
 				}}
-			>
-				<optgroup label="Shapes">
-					{#each BUILTIN_MESH_IDS as meshId (meshId)}<option value={meshId}>{meshId[0].toUpperCase() + meshId.slice(1)}</option>{/each}
-				</optgroup>
-				<optgroup label="Models">
-					{#each studioModels.items as model (model.assetId)}<option value={model.assetId}>{model.name}</option>{/each}
-					{#if !known}<option value={current}>Model {current.slice(7, 15)}… (not on this device)</option>{/if}
-					<option value="__import">Import a .glb…</option>
-				</optgroup>
-			</select>
+			/>
 		{:else if field.kind === 'asset'}
 			{@const source = normalizeSourceRef(value)}
 			{@const choices = studioAssets.items.filter((item) => item.type === field.assetType)}
 			{@const known = source.kind !== 'asset' || choices.some((item) => item.assetId === source.assetId)}
 			<div class="asset-field">
-				<select
-					class="select"
+				<Select
 					{id}
+					label={field.label}
 					value={source.kind === 'asset' ? source.assetId : '__url'}
-					onchange={async (event) => {
-						const next = event.currentTarget.value;
+					options={assetOptions(choices, source.kind === 'asset' && !known ? source.assetId : null)}
+					onchange={async (next) => {
 						if (next === '__import') {
-							event.currentTarget.value = source.kind === 'asset' ? source.assetId : '__url';
 							const [first] = await studioAssets.pickAndImport(field.assetType);
 							if (first) onchange(assetSource(first.assetId));
 						} else if (isAssetId(next)) onchange(assetSource(next));
 						else onchange(urlSource(source.kind === 'url' ? source.url : ''));
 					}}
-				>
-					<option value="__url">From a URL</option>
-					<optgroup label="Imported">
-						{#each choices as item (item.assetId)}<option value={item.assetId}>{item.name}</option>{/each}
-						{#if !known && source.kind === 'asset'}<option value={source.assetId}>{source.assetId.slice(7, 15)}… (not on this device)</option>{/if}
-						<option value="__import">Import a file…</option>
-					</optgroup>
-				</select>
+				/>
 				{#if source.kind === 'url'}
 					<input class="input" type="url" placeholder="https://…" aria-label={field.label} value={source.url} oninput={(event) => onchange(urlSource(event.currentTarget.value))} />
 				{/if}
@@ -185,11 +208,7 @@
 			<BoneMapEditor value={(value ?? {}) as HumanoidMap} {joints} onchange={(map) => onchange(map)} />
 		{:else if field.kind === 'bone'}
 			{#if joints.length}
-				<select class="select" {id} value={String(value ?? '')} onchange={(event) => onchange(event.currentTarget.value)}>
-					<option value="">— choose a bone —</option>
-					{#if value && !joints.includes(String(value))}<option value={String(value)}>{String(value)} (not in model)</option>{/if}
-					{#each joints as joint (joint)}<option value={joint}>{joint}</option>{/each}
-				</select>
+				<Select {id} label={field.label} searchable value={String(value ?? '')} options={boneOptions(String(value ?? ''))} {onchange} placeholder="— choose a bone —" />
 			{:else}
 				<input class="input" {id} value={String(value ?? '')} placeholder="Bone name" oninput={(event) => onchange(event.currentTarget.value)} />
 				<span class="unit">parent model has no bones on this device</span>
@@ -199,26 +218,24 @@
 		{/if}
 
 		{#if field.optional && !unset}
-			<button class="icon-btn" aria-label={`Clear ${field.label}`} title="Clear" onclick={() => onchange(undefined)}><Icon name="close" size={12} /></button>
+			<button class="icon-btn" aria-label={`Clear ${field.label}`} onclick={() => onchange(undefined)}><Icon name="close" size={12} /></button>
 		{/if}
 	</div>
 	{#if jsonError}<p class="error" role="alert">{jsonError}</p>{/if}
 </div>
 
 <style>
-	.field { display: grid; grid-template-columns: 96px 1fr; align-items: start; gap: 8px; }
+	.field { display: grid; grid-template-columns: var(--label-w, 96px) 1fr; align-items: start; gap: 8px; }
 	.field.wide { grid-template-columns: 1fr; gap: 4px; }
 	.field.wide .label { min-height: 0; }
-	.label { display: flex; align-items: center; gap: 4px; min-height: 30px; color: var(--muted); font-size: 12px; }
-	.help { display: inline-grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; background: var(--panel-3); font-size: 10px; cursor: help; }
+	.label { display: flex; align-items: center; gap: 4px; min-height: var(--control-h, 30px); color: var(--muted); font-size: 12px; }
 	.control { display: flex; align-items: center; gap: 6px; min-width: 0; }
-	.control > :global(textarea), .control > :global(.select) { flex: 1; }
+	.control > :global(textarea) { flex: 1; }
 	.vec { display: flex; gap: 4px; width: 100%; }
 	.pose { display: grid; gap: 6px; width: 100%; }
 	.pose-row { display: grid; grid-template-columns: 42px 1fr; align-items: center; gap: 4px; }
 	.btn[aria-pressed='true'] { border-color: var(--accent); background: var(--accent-soft); }
 	.unit { color: var(--muted); font-size: 11px; white-space: nowrap; }
-	.mono { font-family: var(--mono); }
 	.error { grid-column: 2; margin: 0; color: var(--danger); font-size: 11px; }
 	.asset-field { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
 </style>

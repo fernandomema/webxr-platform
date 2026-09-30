@@ -164,3 +164,17 @@ test('text typed in the middle still respects maxLength, and an unfinished compo
 	assert.equal(state.composition.preedit, '');
 	assert.equal(state.cursor, 3);
 });
+
+test('in a multiline field enter types a line break and only close finishes; in a single line enter submits', () => {
+	const enter = action(es, 'enter');
+	const single = pressKey(initialEditorState(es, 'ab'), es, enter);
+	assert.equal(single.effect, 'submit');
+	const multi = pressKey(initialEditorState(es, 'ab', undefined, true), es, enter);
+	assert.equal(multi.effect, undefined);
+	assert.equal(shownText(multi.state), 'ab\n');
+	assert.equal(pressKey(multi.state, es, { action: 'close' }).effect, 'close');
+	// A line break is text like any other: it goes at the cursor and counts towards the limit.
+	const middle = pressKey({ ...initialEditorState(es, 'ab', undefined, true), cursor: 1 }, es, enter);
+	assert.equal(shownText(middle.state), 'a\nb');
+	assert.equal(shownText(pressKey(initialEditorState(es, 'ab', 2, true), es, enter).state), 'ab');
+});

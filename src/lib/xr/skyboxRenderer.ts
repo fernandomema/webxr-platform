@@ -6,18 +6,29 @@ export interface SkyboxBinding {
 	sync(slot: Slot): void;
 }
 
-const SHADER = 'studioSkybox';
+/** Renamed with the multiview-aware vertex shader, so a page that still holds the old one in its shader store takes the new one. */
+const SHADER = 'studioSkyboxMultiview';
 
 function registerShader(): void {
 	if (Effect.ShadersStore[`${SHADER}VertexShader`]) return;
 	Effect.ShadersStore[`${SHADER}VertexShader`] = `
 		precision highp float;
 		attribute vec3 position;
-		uniform mat4 worldViewProjection;
+		uniform mat4 world;
+		uniform mat4 viewProjection;
+		#ifdef MULTIVIEW
+		uniform mat4 viewProjectionR;
+		#endif
 		varying vec3 vDir;
 		void main() {
 			vDir = position;
-			gl_Position = worldViewProjection * vec4(position, 1.0);
+			vec4 worldPos = world * vec4(position, 1.0);
+			// Drawing both eyes at once (multiview), each eye has its own view: the same choice Babylon's shaders make.
+			#ifdef MULTIVIEW
+			if (gl_ViewID_OVR == 0u) { gl_Position = viewProjection * worldPos; } else { gl_Position = viewProjectionR * worldPos; }
+			#else
+			gl_Position = viewProjection * worldPos;
+			#endif
 		}`;
 	Effect.ShadersStore[`${SHADER}FragmentShader`] = `
 		precision highp float;
@@ -53,7 +64,8 @@ export function setupSkybox(scene: Scene, _node: TransformNode, initial: SkyboxC
 	registerShader();
 	const material = new ShaderMaterial(`skybox-mat`, scene, SHADER, {
 		attributes: ['position'],
-		uniforms: ['worldViewProjection', 'topColor', 'horizonColor', 'bottomColor', 'stars']
+		// `viewProjection` (not a baked worldViewProjection) is what lets Babylon hand each eye its own matrix under multiview.
+		uniforms: ['world', 'viewProjection', 'topColor', 'horizonColor', 'bottomColor', 'stars']
 	});
 	material.backFaceCulling = false;
 	material.disableDepthWrite = true;

@@ -48,6 +48,8 @@ const KEY_HEIGHT = 0.012;
 const TRAVEL = 0.006;
 /** How long a key is held before its variants are offered, and how fast backspace repeats. */
 const HOLD_MS = 450;
+/** Right after the keyboard appears nothing types: it may have come up around a hand, or under a laser still pressed. */
+const SPAWN_GRACE_MS = 400;
 const REPEAT_MS = 65;
 /** Keys that go on by themselves while held down. */
 const REPEATS = new Set<KeyDef['action']>(['backspace', 'left', 'right']);
@@ -99,6 +101,8 @@ const pageLanguage = () => document.documentElement.lang || navigator.language |
 
 /** Without the default white shine a dark key under the world's light washes out to grey, and its label with it. */
 function matte(node: TransformNode): void {
+	// An instanced shape shares its material with every other (already softly lit): only a mesh of its own is changed.
+	if ((node as AbstractMesh).getClassName?.() === 'InstancedMesh') return;
 	// By class name: the material may come from another copy of Babylon's module than this file's import.
 	const material = (node as AbstractMesh).material;
 	if (material?.getClassName() === 'StandardMaterial') (material as StandardMaterial).specularColor = Color3.Black();
@@ -123,6 +127,7 @@ export class KeyboardSystem implements TextInputProvider {
 	private size = { width: 0, depth: 0 };
 	/** The layout setting last applied, to notice it being changed from the settings. */
 	private layoutSetting: string | null;
+	private spawnedAt = 0;
 	private readonly observers: Array<() => void> = [];
 
 	constructor(
@@ -171,7 +176,7 @@ export class KeyboardSystem implements TextInputProvider {
 		if (this.session) this.session.handlers.onClose?.(shownText(this.state));
 		const token = ++this.token;
 		this.session = { token, request, handlers };
-		this.state = initialEditorState(this.layout, request.initial ?? '', request.maxLength);
+		this.state = initialEditorState(this.layout, request.initial ?? '', request.maxLength, request.multiline);
 		if (!this.rootId || this.tooFar()) this.spawn(request.near ?? null);
 		else this.drawPreview();
 		return {
@@ -180,7 +185,7 @@ export class KeyboardSystem implements TextInputProvider {
 			},
 			setText: (text) => {
 				if (this.session?.token !== token) return;
-				this.state = initialEditorState(this.layout, text, request.maxLength);
+				this.state = initialEditorState(this.layout, text, request.maxLength, request.multiline);
 				this.drawPreview();
 			}
 		};
@@ -254,6 +259,9 @@ export class KeyboardSystem implements TextInputProvider {
 		tree[0] = { ...tree[0], rotation: rotation.asArray() as [number, number, number, number] };
 		for (const slot of tree) this.sceneGraph.addSlot(slot, { system: true });
 		this.rootId = tree[0].id;
+		// A finger that is already in the keys when they appear has to come out above them before it can type.
+		this.spawnedAt = performance.now();
+		for (const tip of this.tips.values()) tip.armed = false;
 		this.parts.clear();
 		for (const slot of tree) {
 			const node = this.sceneGraph.getLive(slot.id)?.node;
@@ -455,7 +463,7 @@ export class KeyboardSystem implements TextInputProvider {
 		}
 		const secret = this.session?.request.secret;
 		const chars = Array.from(this.state.text);
-		const shown = (part: string[]) => (secret ? '•'.repeat(part.length) : part.join(''));
+		const shown = (part: string[]) => (secret ? '•'.repeat(part.length) : part.join('').replaceAll('\n', '↵'));
 		const before = shown(chars.slice(0, this.state.cursor));
 		const after = shown(chars.slice(this.state.cursor));
 		const preedit = this.state.composition.preedit;
@@ -526,6 +534,7 @@ export class KeyboardSystem implements TextInputProvider {
 	// --- pressing -----------------------------------------------------------------------------------------------------
 
 	private keyDown(key: LiveKey, source: string, depth: number): void {
+		if (performance.now() - this.spawnedAt < SPAWN_GRACE_MS) return;
 		key.pressedBy.set(source, depth);
 		if (this.presses.has(source)) return;
 		const now = performance.now();
@@ -696,7 +705,9 @@ export class KeyboardSystem implements TextInputProvider {
 			for (const key of this.keys) key.hovered = key === over && local.y < KEY_HEIGHT + 0.03;
 			const top = KEY_HEIGHT + (over?.variant !== undefined ? 0.025 : 0);
 			const depth = over ? Math.min(TRAVEL, Math.max(0, top + 0.004 - local.y)) : 0;
-			if (local.y > KEY_HEIGHT + 0.012 || !over) tip.armed = true;
+			// Ready to press again once above the keys, or between keys at their height (sliding off one and onto the next
+			// types both). Not from below: a hand that came up through the board would otherwise type as it rose.
+			if (local.y > KEY_HEIGHT + 0.012 || (!over && local.y > KEY_HEIGHT / 2)) tip.armed = true;
 
 			if (tip.key && (tip.key !== over || depth <= 0)) {
 				tip.key.pressedBy.delete(source);
@@ -727,7 +738,8 @@ export class KeyboardSystem implements TextInputProvider {
 		marker.material = material;
 		marker.isPickable = false;
 		marker.setEnabled(false);
-		const tip: Tip = { marker, armed: true, key: null };
+		// A tip first seen while the keyboard is up may already be inside it: it arms like any other, from above.
+		const tip: Tip = { marker, armed: !this.rootId, key: null };
 		this.tips.set(id, tip);
 		return tip;
 	}

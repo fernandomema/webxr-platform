@@ -28,6 +28,8 @@ export interface CodeBlockHost {
 	getUIMedia(slotId: string): UIMediaState | undefined;
 	/** Current text, on this peer, of the `input` uiElement `slotId`. */
 	getUIInputText(slotId: string): string | undefined;
+	/** Imports a Poly Haven model into this device's asset store and local inventory. Host/solo only. */
+	importPolyHavenModel(id: string, name: string): Promise<string>;
 }
 
 /** A ray's hit against the live scene, resolved back to the Slot it belongs to — see `CodeBlockHost.raycast`. */
@@ -95,7 +97,7 @@ export interface CodeBlockLogEntry {
 	timestamp: number;
 }
 
-/** What `createCodeBlockHandlers` actually returns — the script-authored handlers plus a runtime-owned debug feed the Inspector can read (see inspector/codeBlockDebug.ts). Not part of `CodeBlockHandlers` because scripts never provide `getDebugLog` themselves. */
+/** What `createCodeBlockHandlers` actually returns — the script-authored handlers plus a runtime-owned debug feed the Inspector can read (see WorldObjectActions.svelte, which shows it in the in-game inspector). Not part of `CodeBlockHandlers` because scripts never provide `getDebugLog` themselves. */
 export interface CodeBlockRuntime extends CodeBlockHandlers {
 	getDebugLog(): CodeBlockLogEntry[];
 }
@@ -333,6 +335,10 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 				}
 				return response.json();
 			}
+		},
+		assets: {
+			/** Imports a Poly Haven model as a reusable local object and returns its content-addressed asset id. */
+			importPolyHavenModel: (id: string, name: string) => host.importPolyHavenModel(id, name)
 		},
 		ui: {
 			/** Playback state of a `video` uiElement on this peer (position, duration, paused, ended...). Write `playing`/`src`/`currentTime` with `world.setComponentField` to control it. */

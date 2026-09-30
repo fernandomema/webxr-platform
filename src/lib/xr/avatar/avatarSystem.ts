@@ -264,7 +264,7 @@ export class AvatarSystem {
 		const localId = this.options.getLocalPlayerId();
 		const seen = new Set<string>();
 		let localDriven = false;
-		for (const entry of this.sceneGraph.allSlots()) {
+		for (const entry of this.sceneGraph.slotsWith('avatar')) {
 			const avatar = findComponent(entry.slot, 'avatar');
 			const ownerId = avatar?.ownerId;
 			if (!avatar || !ownerId) continue;
