@@ -83,3 +83,65 @@ test('solveGraspFull reports the thumb swing and leaves an unreachable thumb at 
 	const empty = solveGraspFull(hand, [], holdingBends());
 	assert.equal(empty.thumbSwing, 0);
 });
+
+test('a finger whose knuckle already overlaps the object still wraps it without entering', () => {
+	const finger = defaultHandModel('right')[2];
+	// A handle pressed against the knuckles: the straight finger overlaps it only at its root.
+	const handle = cylinder([0, -0.02, 0.1], 0.015, 0.08, [0, 0, Math.SQRT1_2, Math.SQRT1_2]);
+	const grasp = solveFinger(finger, [handle]);
+	assert.equal(grasp.touched, true);
+	const joints = fingerJoints(finger, grasp.bends);
+	for (const t of [0.75, 1]) for (let s = 0; s < 3; s++) {
+		const p = joints[s].map((v, i) => v + (joints[s + 1][i] - v) * t);
+		assert.ok(signedDistance(handle, p) >= finger.radius - 1e-6);
+	}
+});
+
+test('a finger wraps a handle with all its joints instead of hooking its tip', () => {
+	const finger = defaultHandModel('right')[2];
+	const handle = cylinder([0, -0.035, 0.07], 0.02, 0.08, [0, 0, Math.SQRT1_2, Math.SQRT1_2]);
+	const { bends, touched } = solveFinger(finger, [handle]);
+	assert.equal(touched, true);
+	assert.ok(bends[0] > 0.5 && bends[1] > 0.5, `knuckle ${bends[0]} and middle joint ${bends[1]} both close`);
+	// It ends on the surface, not short of it.
+	const joints = fingerJoints(finger, bends);
+	const gap = Math.min(...[1, 2].flatMap((s) => [0.5, 1].map((t) => signedDistance(handle, joints[s].map((v, i) => v + (joints[s + 1][i] - v) * t)))));
+	assert.ok(gap - finger.radius < 0.004, `gap ${gap - finger.radius}`);
+});
+
+test('the thumb adapts its pose to the shape it grips', () => {
+	const hand = defaultHandModel('right');
+	const thin = solveGraspFull(hand, [cylinder([0, -0.03, 0.07], 0.015, 0.06, [0.7071, 0, 0, 0.7071])], holdingBends());
+	const thick = solveGraspFull(hand, [box([0, -0.05, 0.07], [0.05, 0.03, 0.05])], holdingBends());
+	assert.notDeepEqual(thin.bends.slice(0, 3), thick.bends.slice(0, 3));
+});
+
+import { palmShift, shiftPrimitives } from '../src/lib/xr/avatar/grasp.ts';
+
+const sphere = (center, r) => ({ kind: 'sphere', center, rotation: I, half: [r, r, r] });
+
+test('a grabbed object below the palm pulls the hand down onto it, and one sunk into the palm pushes it out', () => {
+	const hand = defaultHandModel('right');
+	const below = palmShift(hand, [sphere([0, -0.09, 0.06], 0.04)], 0.1);
+	assert.ok(below && below[1] < -0.02, `moved down by ${below?.[1]}`);
+	const inside = palmShift(hand, [sphere([0, -0.01, 0.06], 0.04)], 0.1);
+	assert.ok(inside && inside[1] > 0.02, `moved up by ${inside?.[1]}`);
+	for (const [shift, ball] of [[below, sphere([0, -0.09, 0.06], 0.04)], [inside, sphere([0, -0.01, 0.06], 0.04)]]) {
+		const grasp = solveGraspFull(hand, shiftPrimitives([ball], shift), holdingBends());
+		assert.notDeepEqual(grasp.bends.slice(3, 6), holdingBends().slice(3, 6), 'the index wraps the ball');
+	}
+});
+
+test('an object out of reach of the palm leaves the hand where it is', () => {
+	assert.equal(palmShift(defaultHandModel('left'), [box([0, -0.5, 1], [0.04, 0.04, 0.04])], 0.1), null);
+	assert.equal(palmShift(defaultHandModel('left'), [], 0.1), null);
+});
+
+test('a handle buried in the fingers is wrapped once the hand is moved off it', () => {
+	const hand = defaultHandModel('right');
+	const handle = cylinder([0, -0.004, 0.125], 0.02, 0.08, [0, 0, Math.SQRT1_2, Math.SQRT1_2]);
+	assert.equal(solveFinger(hand[2], [handle]).touched, false);
+	const shift = palmShift(hand, [handle], 0.1);
+	assert.ok(shift);
+	assert.equal(solveFinger(hand[2], shiftPrimitives([handle], shift)).touched, true);
+});

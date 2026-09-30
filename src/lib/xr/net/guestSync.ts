@@ -10,6 +10,9 @@ import { migrateSlotTree } from '$lib/assets/ref';
 import { createGhostRig, type GhostRig, type TransformPose } from '../avatar/defaultAvatar';
 import type { AvatarHooks } from '../avatar/avatarHooks';
 import { readHandPoses } from '../avatar/localHands';
+import { localKeyboardPresence } from '../keyboard/service';
+import { parseKeyboardPresence } from '../keyboard/presence';
+import { RemoteKeyboards } from '../keyboard/remoteKeyboards';
 import { AssetPeer } from '$lib/assets/p2p';
 import { announceAssetSourcesChanged, getLocalAssetStore } from '$lib/assets/store';
 import type { SlotTree } from '$lib/ecs/types';
@@ -34,6 +37,8 @@ export class GuestSync {
 	private avatars: AvatarHooks | null = null;
 	private assetPeer: AssetPeer | null = null;
 	readonly hostProxy: TransformNode;
+	/** Stand-ins of the other players' keyboards while they type. */
+	private keyboards: RemoteKeyboards;
 
 	constructor(
 		private scene: Scene,
@@ -54,6 +59,7 @@ export class GuestSync {
 		private onConnected?: () => void
 	) {
 		this.hostProxy = new TransformNode('host-proxy', scene);
+		this.keyboards = new RemoteKeyboards(scene);
 		this.signaling = new SignalingClient(roomCode, 'join');
 		this.signaling.onMessage((msg) => this.handleSignaling(msg));
 		this.presenceTimer = setInterval(() => this.sendPresence(), PRESENCE_INTERVAL_MS);
@@ -145,6 +151,7 @@ export class GuestSync {
 		this.avatars?.system.removePlayer(playerId);
 		this.remoteAvatars.get(playerId)?.dispose();
 		this.remoteAvatars.delete(playerId);
+		this.keyboards.remove(playerId);
 		this.players.delete(playerId);
 		this.lastPresenceSequences.delete(playerId);
 	}
@@ -156,6 +163,7 @@ export class GuestSync {
 		this.lastPresenceSequences.set(msg.player.playerId, msg.sequence);
 		const avatar = this.ensureAvatar(msg.player);
 		if (!avatar) return;
+		this.keyboards.update(msg.player.playerId, parseKeyboardPresence(msg.keyboard));
 		avatar.setPose({
 			head: msg.head,
 			leftHand: msg.hands.left ?? msg.head,
@@ -224,13 +232,15 @@ export class GuestSync {
 			rotation: (camera.rotationQuaternion?.asArray() ?? [0, 0, 0, 1]) as TransformPose['rotation']
 		};
 		const hands = readHandPoses(this.xr);
+		const keyboard = localKeyboardPresence();
 		this.link.sendState({
 			kind: 'presence',
 			player: this.localPlayer,
 			sequence: ++this.presenceSequence,
 			timestamp: Date.now(),
 			head,
-			hands
+			hands,
+			...(keyboard ? { keyboard } : {})
 		});
 	}
 
@@ -285,6 +295,7 @@ export class GuestSync {
 		this.signaling.close();
 		for (const avatar of this.remoteAvatars.values()) avatar.dispose();
 		this.remoteAvatars.clear();
+		this.keyboards.dispose();
 		this.hostProxy.dispose();
 	}
 }

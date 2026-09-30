@@ -21,6 +21,8 @@ export function createRadialView(
 	material.backFaceCulling = false;
 	plane.material = material;
 	plane.isPickable = options.pointerSelectable;
+	// Drawn after the scene with the depth cleared, so the object in the hand (or anything else) never hides an option.
+	plane.renderingGroupId = 1;
 	plane.metadata = { interactive: options.pointerSelectable, radialMenu: true };
 	plane.setEnabled(false);
 	const texture = AdvancedDynamicTexture.CreateForMesh(plane, 512, 512, true);
@@ -41,8 +43,13 @@ export function createRadialView(
 		plane.setEnabled(false);
 		anchor = null;
 		items = [];
+		// The buttons have to be taken off the texture: clearing it only wipes its pixels, and the old buttons would be
+		// drawn again under the next menu's.
+		for (const button of buttons) {
+			texture.removeControl(button);
+			button.dispose();
+		}
 		buttons = [];
-		texture.clear();
 	}
 
 	function open(node: TransformNode, nextItems: RadialItem[]) {

@@ -38,6 +38,8 @@ const COMPONENT_LABELS: Record<Component['type'], string> = {
 	impactSound: 'Impact Sound',
 	socket: 'Socket',
 	insertable: 'Insertable',
+	previewCamera: 'Preview Camera',
+	keyboardKey: 'Keyboard Key',
 	avatar: 'Avatar',
 	boneAttach: 'Bone Attach'
 };

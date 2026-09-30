@@ -2,6 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import type { MountedGame } from '$lib/xr/engine';
 	import XRLaunchOverlay from '$lib/xr/XRLaunchOverlay.svelte';
+	import { PLATFORM_NAME } from '$lib/platform';
 
 	let canvas: HTMLCanvasElement;
 	let game: MountedGame | null = null;
@@ -42,6 +43,6 @@
 	});
 </script>
 
-<svelte:head><title>Play · WebXR Platform</title></svelte:head>
+<svelte:head><title>Play · {PLATFORM_NAME}</title></svelte:head>
 <XRLaunchOverlay state={launchState} error={launchError} onEnterVR={enterVR} onContinueDesktop={() => (launchState = 'playing')} />
 <canvas bind:this={canvas} class="h-screen w-screen touch-none outline-none"></canvas>

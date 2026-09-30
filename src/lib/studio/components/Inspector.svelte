@@ -4,6 +4,7 @@
 	import type { StudioDocument } from '../state/document.svelte';
 	import AddComponentMenu from './AddComponentMenu.svelte';
 	import ComponentCard from './ComponentCard.svelte';
+	import PreviewCameraTools from './PreviewCameraTools.svelte';
 	import NumberInput from './NumberInput.svelte';
 	import Icon from '../ui/Icon.svelte';
 	import { skeletons } from '../state/skeletons.svelte';
@@ -14,9 +15,11 @@
 		doc: StudioDocument;
 		advanced: boolean;
 		onOpenCode: () => void;
+		/** The editor camera's pose in the world, for setting a Preview camera from the current view. */
+		getViewPose?: () => { position: Vec3; rotation: [number, number, number, number] } | null;
 	}
 
-	let { doc, advanced, onOpenCode }: Props = $props();
+	let { doc, advanced, onOpenCode, getViewPose = () => null }: Props = $props();
 
 	let showAdd = $state(false);
 
@@ -122,6 +125,7 @@
 						{onOpenCode}
 						joints={skeletons.get(boneModelFor(component)) ?? []}
 					/>
+					{#if component.type === 'previewCamera'}<PreviewCameraTools {doc} {slot} {getViewPose} />{/if}
 				{:else}
 					<div class="empty small">No components yet. This object is just a group and a position.</div>
 				{/each}

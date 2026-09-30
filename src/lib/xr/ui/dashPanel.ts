@@ -6,7 +6,6 @@ import {
 	TextBlock,
 	Button,
 	InputText,
-	VirtualKeyboard,
 	Control,
 	ScrollViewer,
 	Image
@@ -24,6 +23,9 @@ import { gameState, getInventoryContext } from '../gameState';
 import { xrSettings, saveSettings, type MovementMode, type RotationMode } from '../settings';
 import { dashboardEditorOrder, dashboardItemLabel, moveDashboardItem, toggleDashboardItem, type DashboardItemId } from '../dashboardLayout';
 import { saveWithPreview } from '../inventorySave';
+import { typeWithKeyboard } from '../keyboard/guiInput';
+import { getLayout, layoutIds } from '../keyboard/layouts';
+import { BUILTIN_WORLDS, type BuiltinWorld } from '../templates/builtinWorlds';
 import { thumbnailUrl } from '$lib/assets/thumbnails';
 import type { AssetId } from '$lib/assets/ref';
 import { WORLD_VISIBILITY_INFO, type HostedWorldVisibility } from '$lib/worldVisibility';
@@ -39,6 +41,8 @@ export interface DashPanelCallbacks {
 	onSpawnWorldOrb(item: InventoryItem, adapterId: InventoryStorageAdapterId): void;
 	onSpawnPublishedWorld(world: WorldPackage): void;
 	onLaunchWorldItem(item: InventoryItem, adapterId: InventoryStorageAdapterId): Promise<void>;
+	/** Goes to one of the worlds that ship with the app, on your own. */
+	onLaunchBuiltinWorld(world: BuiltinWorld): Promise<void>;
 	/** Makes an avatar item the one worn from now on, here and in every world joined later. Rejects with a readable message if it cannot be worn. */
 	onSetDefaultAvatar(item: InventoryItem): Promise<void>;
 	onLocomotionSettingsChanged(): void;
@@ -93,6 +97,8 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		if (tab === 'Home') refreshHomeTab();
 		if (tab === 'Session' || tab === 'Worlds') refreshWorldsTab();
 		if (tab === 'Inventory') refreshInventoryTab();
+		// The keyboard's own layout key changes a setting too: show what is chosen now.
+		if (tab === 'Settings') refreshSettingsTab();
 	}
 
 	for (const tab of TABS) {
@@ -185,6 +191,9 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 				homePanel.addControl(homeButton(`home-${id}`, action.text, action.background, 420, action.run));
 			}
 			homePanel.addControl(homeButton('home-customise', 'Customise', '#1f2937', 220, () => { customisingHome = true; refreshHomeTab(); }));
+			if (import.meta.env.DEV) {
+				homePanel.addControl(homeButton('home-reload', 'Reload', '#1f2937', 220, () => window.location.reload()));
+			}
 			return;
 		}
 
@@ -443,6 +452,32 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	addVisibilityOption('friends');
 	addVisibilityOption('friends-plus');
 	addVisibilityOption('public');
+
+	const builtinWorldsTitle = new TextBlock('builtin-worlds-title', 'Built-in worlds');
+	builtinWorldsTitle.color = '#d1d5db'; builtinWorldsTitle.fontSize = 18; builtinWorldsTitle.height = '38px'; builtinWorldsTitle.top = '10px';
+	worldsList.addControl(builtinWorldsTitle);
+	for (const world of BUILTIN_WORLDS) {
+		const row = new StackPanel(`builtin-row-${world.id}`);
+		row.isVertical = false; row.height = '64px'; row.width = 1;
+		const info = new TextBlock(`builtin-info-${world.id}`, `${world.name}\n${world.description}`);
+		info.width = '560px'; info.height = '58px'; info.color = '#e2e8f0'; info.fontSize = 15; info.textWrapping = true; info.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+		row.addControl(info);
+		const go = Button.CreateSimpleButton(`builtin-go-${world.id}`, 'Go');
+		go.width = '140px'; go.height = '52px'; go.color = 'white'; go.background = '#7c3aed'; go.cornerRadius = 8;
+		go.onPointerClickObservable.add(async () => {
+			go.isEnabled = false;
+			try {
+				await callbacks.onLaunchBuiltinWorld(world);
+				browseStatus.text = `Welcome to the ${world.name}.`;
+			} catch (error) {
+				browseStatus.text = error instanceof Error ? error.message : 'Could not open that world';
+			} finally {
+				go.isEnabled = true;
+			}
+		});
+		row.addControl(go);
+		worldsList.addControl(row);
+	}
 
 	const publicWorldsTitle = new TextBlock('public-worlds-title', 'Mundos públicos activos');
 	publicWorldsTitle.color = '#d1d5db';
@@ -1205,11 +1240,13 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	const movementRow = settingsSection('Movimiento');
 	const rotationRow = settingsSection('Giro');
 	const seatedRow = settingsSection('Seated mode');
+	const keyboardRow = settingsSection('Keyboard layout');
 
 	function refreshSettingsTab() {
 		for (const child of [...movementRow.children]) movementRow.removeControl(child);
 		for (const child of [...rotationRow.children]) rotationRow.removeControl(child);
 		for (const child of [...seatedRow.children]) seatedRow.removeControl(child);
+		for (const child of [...keyboardRow.children]) keyboardRow.removeControl(child);
 
 		const movementOptions: [MovementMode, string][] = [
 			['teleport', 'Teleport'],
@@ -1251,10 +1288,28 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		for (const [enabled, label] of [[false, 'Standing'], [true, 'Seated (head at 1.7 m)']] as const) {
 			optionButton(seatedRow, `seated-${enabled}`, label, () => xrSettings.seatedMode === enabled, () => setSeatedMode(enabled));
 		}
+
+		// Auto follows the page's language; each installed layout by its own name. Too many for one row: one button cycles them.
+		const setLayout = (id: string | null) => {
+			xrSettings.keyboardLayout = id;
+			saveSettings();
+		};
+		const layouts = layoutIds().map((id) => getLayout(id)!);
+		if (layouts.length <= 3) {
+			optionButton(keyboardRow, 'keyboard-auto', 'Auto', () => xrSettings.keyboardLayout === null, () => setLayout(null));
+			for (const layout of layouts) {
+				optionButton(keyboardRow, `keyboard-${layout.id}`, layout.name, () => xrSettings.keyboardLayout === layout.id, () => setLayout(layout.id));
+			}
+		} else {
+			const current = xrSettings.keyboardLayout ? getLayout(xrSettings.keyboardLayout) : undefined;
+			const cycle = [null, ...layouts.map((layout) => layout.id)];
+			const next = cycle[(cycle.indexOf(current?.id ?? null) + 1) % cycle.length];
+			optionButton(keyboardRow, 'keyboard-cycle', `${current?.name ?? 'Auto'} ⇄`, () => true, () => setLayout(next));
+		}
 	}
 	refreshSettingsTab();
 
-	// --- Account tab (login/register/logout, in-VR via VirtualKeyboard) ---
+	// --- Account tab (login/register/logout, typed in VR with the in-world keyboard) ---
 	const settingsStack = new StackPanel('settings-stack');
 	settingsStack.width = 0.7;
 	settingsStack.top = '10px';
@@ -1296,32 +1351,13 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	passwordInput.isVisible = false;
 	settingsStack.addControl(passwordInput);
 
-	const virtualKeyboard = VirtualKeyboard.CreateDefaultLayout('dash-keyboard');
-	virtualKeyboard.top = '260px';
-	joinCodeInput.onFocusObservable.add(() => { virtualKeyboard.isVisible = true; virtualKeyboard.connect(joinCodeInput); });
-	joinCodeInput.onBlurObservable.add(() => { virtualKeyboard.isVisible = false; virtualKeyboard.disconnect(joinCodeInput); });
-	worldNameInput.onFocusObservable.add(() => { virtualKeyboard.isVisible = true; virtualKeyboard.connect(worldNameInput); });
-	worldNameInput.onBlurObservable.add(() => { virtualKeyboard.isVisible = false; virtualKeyboard.disconnect(worldNameInput); });
-	virtualKeyboard.isVisible = false;
-	background.addControl(virtualKeyboard);
-	emailInput.onFocusObservable.add(() => {
-		virtualKeyboard.isVisible = true;
-		virtualKeyboard.connect(emailInput);
-	});
-	usernameInput.onFocusObservable.add(() => {
-		virtualKeyboard.isVisible = true;
-		virtualKeyboard.connect(usernameInput);
-	});
-	passwordInput.onFocusObservable.add(() => {
-		virtualKeyboard.isVisible = true;
-		virtualKeyboard.connect(passwordInput);
-	});
-	for (const input of [emailInput, usernameInput, passwordInput]) {
-		input.onBlurObservable.add(() => {
-			virtualKeyboard.isVisible = false;
-			virtualKeyboard.disconnect(input);
-		});
-	}
+	// In a headset these fields are typed with the in-world keyboard, brought up in front of the dash.
+	const nearDash = () => mesh;
+	typeWithKeyboard(joinCodeInput, { near: nearDash, title: 'Room code' });
+	typeWithKeyboard(worldNameInput, { near: nearDash, title: 'World name' });
+	typeWithKeyboard(emailInput, { near: nearDash, title: 'Email' });
+	typeWithKeyboard(usernameInput, { near: nearDash, title: 'Username' });
+	typeWithKeyboard(passwordInput, { near: nearDash, title: 'Password', secret: true });
 
 	const authButtons = new StackPanel('auth-buttons');
 	authButtons.isVertical = false;

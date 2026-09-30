@@ -1,0 +1,492 @@
+{
+	"id": "es",
+	"name": "Español",
+	"short": "ES",
+	"composer": "direct",
+	"firstPage": "letters",
+	"pages": {
+		"letters": [
+			[
+				{
+					"text": "1",
+					"variants": [
+						"¹",
+						"½",
+						"¼"
+					]
+				},
+				{
+					"text": "2",
+					"variants": [
+						"²"
+					]
+				},
+				{
+					"text": "3",
+					"variants": [
+						"³",
+						"¾"
+					]
+				},
+				{
+					"text": "4"
+				},
+				{
+					"text": "5"
+				},
+				{
+					"text": "6"
+				},
+				{
+					"text": "7"
+				},
+				{
+					"text": "8"
+				},
+				{
+					"text": "9"
+				},
+				{
+					"text": "0",
+					"variants": [
+						"°"
+					]
+				},
+				{
+					"action": "backspace",
+					"label": "⌫",
+					"width": 1.5
+				}
+			],
+			[
+				{
+					"text": "q"
+				},
+				{
+					"text": "w"
+				},
+				{
+					"text": "e",
+					"variants": [
+						"é",
+						"è",
+						"ê",
+						"ë"
+					]
+				},
+				{
+					"text": "r"
+				},
+				{
+					"text": "t"
+				},
+				{
+					"text": "y",
+					"variants": [
+						"ý",
+						"ÿ"
+					]
+				},
+				{
+					"text": "u",
+					"variants": [
+						"ú",
+						"ù",
+						"û",
+						"ü"
+					]
+				},
+				{
+					"text": "i",
+					"variants": [
+						"í",
+						"ì",
+						"î",
+						"ï"
+					]
+				},
+				{
+					"text": "o",
+					"variants": [
+						"ó",
+						"ò",
+						"ô",
+						"ö",
+						"õ",
+						"ø",
+						"œ"
+					]
+				},
+				{
+					"text": "p"
+				}
+			],
+			[
+				{
+					"text": "a",
+					"variants": [
+						"á",
+						"à",
+						"â",
+						"ä",
+						"ã",
+						"å",
+						"æ"
+					]
+				},
+				{
+					"text": "s",
+					"variants": [
+						"ß",
+						"š"
+					]
+				},
+				{
+					"text": "d"
+				},
+				{
+					"text": "f"
+				},
+				{
+					"text": "g"
+				},
+				{
+					"text": "h"
+				},
+				{
+					"text": "j"
+				},
+				{
+					"text": "k"
+				},
+				{
+					"text": "l"
+				},
+				{
+					"text": "ñ"
+				},
+				{
+					"action": "enter",
+					"label": "↵",
+					"width": 1.5
+				}
+			],
+			[
+				{
+					"action": "shift",
+					"label": "⇧",
+					"width": 1.5
+				},
+				{
+					"text": "z",
+					"variants": [
+						"ž"
+					]
+				},
+				{
+					"text": "x"
+				},
+				{
+					"text": "c",
+					"variants": [
+						"ç"
+					]
+				},
+				{
+					"text": "v"
+				},
+				{
+					"text": "b"
+				},
+				{
+					"text": "n",
+					"variants": [
+						"ñ"
+					]
+				},
+				{
+					"text": "m"
+				},
+				{
+					"text": ",",
+					"variants": [
+						";"
+					]
+				},
+				{
+					"text": ".",
+					"variants": [
+						"…",
+						"·"
+					]
+				},
+				{
+					"text": "-",
+					"variants": [
+						"–",
+						"—",
+						"_"
+					]
+				}
+			],
+			[
+				{
+					"action": "page",
+					"page": "symbols",
+					"label": "123",
+					"width": 1.5
+				},
+				{
+					"action": "layout",
+					"width": 1.5
+				},
+				{
+					"action": "space",
+					"label": " ",
+					"width": 4
+				},
+				{
+					"action": "left",
+					"label": "←"
+				},
+				{
+					"action": "right",
+					"label": "→"
+				},
+				{
+					"text": "@"
+				},
+				{
+					"text": "?",
+					"variants": [
+						"¿",
+						"!",
+						"¡"
+					]
+				}
+			]
+		],
+		"symbols": [
+			[
+				{
+					"text": "1",
+					"variants": [
+						"¹",
+						"½",
+						"¼"
+					]
+				},
+				{
+					"text": "2",
+					"variants": [
+						"²"
+					]
+				},
+				{
+					"text": "3",
+					"variants": [
+						"³",
+						"¾"
+					]
+				},
+				{
+					"text": "4"
+				},
+				{
+					"text": "5"
+				},
+				{
+					"text": "6"
+				},
+				{
+					"text": "7"
+				},
+				{
+					"text": "8"
+				},
+				{
+					"text": "9"
+				},
+				{
+					"text": "0",
+					"variants": [
+						"°"
+					]
+				},
+				{
+					"action": "backspace",
+					"label": "⌫",
+					"width": 1.5
+				}
+			],
+			[
+				{
+					"text": "@"
+				},
+				{
+					"text": "#"
+				},
+				{
+					"text": "$",
+					"variants": [
+						"€",
+						"£",
+						"¥",
+						"¢"
+					]
+				},
+				{
+					"text": "%",
+					"variants": [
+						"‰"
+					]
+				},
+				{
+					"text": "&"
+				},
+				{
+					"text": "*"
+				},
+				{
+					"text": "("
+				},
+				{
+					"text": ")"
+				},
+				{
+					"text": "="
+				},
+				{
+					"text": "+"
+				}
+			],
+			[
+				{
+					"text": "-",
+					"variants": [
+						"–",
+						"—",
+						"_"
+					]
+				},
+				{
+					"text": "/",
+					"variants": [
+						"\\",
+						"|"
+					]
+				},
+				{
+					"text": ":"
+				},
+				{
+					"text": ";"
+				},
+				{
+					"text": "'",
+					"variants": [
+						"\"",
+						"«",
+						"»"
+					]
+				},
+				{
+					"text": "\""
+				},
+				{
+					"text": "_"
+				},
+				{
+					"text": "<"
+				},
+				{
+					"text": ">"
+				},
+				{
+					"action": "enter",
+					"label": "↵",
+					"width": 1.5
+				}
+			],
+			[
+				{
+					"action": "page",
+					"page": "letters",
+					"label": "ABC",
+					"width": 1.5
+				},
+				{
+					"text": "?",
+					"variants": [
+						"¿"
+					]
+				},
+				{
+					"text": "!",
+					"variants": [
+						"¡"
+					]
+				},
+				{
+					"text": "¿"
+				},
+				{
+					"text": "¡"
+				},
+				{
+					"text": ".",
+					"variants": [
+						"…",
+						"·"
+					]
+				},
+				{
+					"text": ",",
+					"variants": [
+						";"
+					]
+				},
+				{
+					"text": "["
+				},
+				{
+					"text": "]"
+				},
+				{
+					"text": "€"
+				}
+			],
+			[
+				{
+					"action": "page",
+					"page": "letters",
+					"label": "ABC",
+					"width": 1.5
+				},
+				{
+					"action": "layout",
+					"width": 1.5
+				},
+				{
+					"action": "space",
+					"label": " ",
+					"width": 4
+				},
+				{
+					"action": "left",
+					"label": "←"
+				},
+				{
+					"action": "right",
+					"label": "→"
+				},
+				{
+					"text": "."
+				},
+				{
+					"text": ","
+				}
+			]
+		]
+	}
+}

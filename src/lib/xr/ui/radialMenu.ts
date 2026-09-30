@@ -37,8 +37,20 @@ export function setupRadialMenuForHand(
 	let stickX = 0;
 	let stickY = 0;
 	let selectedIndex = 0;
+	/** The object the open menu is about; the menu closes if it leaves the hand. */
+	let menuSlotId: string | null = null;
+	/**
+	 * The menu has closed but the stick is still pushed (it was used to pick an option): the hand goes back to moving and
+	 * turning only once the stick is let go, or that same push would turn or move the player.
+	 */
+	let releasing = false;
 
-	function close() { view.close(); unlockHand(hand); }
+	function close() {
+		view.close();
+		menuSlotId = null;
+		releasing = true;
+	}
+	const inHand = (slotId: string) => equipment.getEquippedSlot(localPlayerId(), hand) === slotId || grabSystem.getHeldSlot(hand) === slotId;
 	function open(controller: WebXRInputSource) {
 		const player = localPlayerId();
 		const equippedSlotId = equipment.getEquippedSlot(player, hand);
@@ -91,6 +103,8 @@ export function setupRadialMenuForHand(
 		];
 		selectedIndex = 0;
 		view.open(controller.grip ?? controller.pointer, items);
+		menuSlotId = slotId;
+		releasing = false;
 		lockHand(hand);
 	}
 
@@ -108,13 +122,22 @@ export function setupRadialMenuForHand(
 			stick?.onButtonStateChangedObservable.add((component) => {
 				if (!view.isOpen || !component.changes.pressed?.current) return;
 				void view.select(selectedIndex);
-				if (!view.isOpen) unlockHand(hand);
+				if (!view.isOpen) close();
 			});
 		});
-		controller.onDisposeObservable.add(close);
+		controller.onDisposeObservable.add(() => {
+			stickX = stickY = 0;
+			close();
+		});
 	});
 
 	scene.onBeforeRenderObservable.add(() => {
+		if (releasing && Math.hypot(stickX, stickY) < 0.2) {
+			releasing = false;
+			unlockHand(hand);
+		}
+		// Dropped, unequipped or deleted: its options no longer apply.
+		if (view.isOpen && menuSlotId && !inHand(menuSlotId)) close();
 		if (!view.isOpen || Math.hypot(stickX, stickY) < 0.35) return;
 		const angle = Math.atan2(stickY, stickX);
 		const step = (2 * Math.PI) / view.itemCount;

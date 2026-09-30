@@ -23,6 +23,7 @@ import { setupParticleBurst } from './particleEffects';
 import { setupSurfaceMask } from './surfaceMaskRenderer';
 import { setupStroke } from './strokeRenderer';
 import { setupSkybox } from './skyboxRenderer';
+import { setupWorldGlobe } from './worldGlobe';
 import { setupImpactSound } from './impactSoundEffects';
 import { setupTextDisplay } from './textDisplaySurface';
 import { setupScoreboard } from './scoreboardSurface';
@@ -475,6 +476,9 @@ export class SceneGraph {
 			if (scoreboard) entry.runtime = setupScoreboard(this.scene, node as AbstractMesh, scoreboard);
 			const surfaceMask = findComponent(slot, 'surfaceMask');
 			if (surfaceMask) entry.runtime = setupSurfaceMask(this.scene, node as AbstractMesh, surfaceMask, ref);
+			// A world orb whose world has a 360° preview shows it inside a glass globe.
+			const preview = findComponent(slot, 'worldPortal')?.world.preview;
+			if (preview && this.options.mediaAssets) entry.runtime = setupWorldGlobe(this.scene, node as AbstractMesh, preview, this.options.mediaAssets);
 		}
 		if (uiPanel && node instanceof Mesh) {
 			const binding = setupUIPanel(
@@ -551,6 +555,12 @@ export class SceneGraph {
 				if (this.setComponentField(slotId, componentType, field, value) && broadcast) {
 					this.options.onSlotMutated?.(slotId);
 				}
+			},
+			commitTransform: (slotId, broadcast = true) => {
+				const entry = this.live.get(slotId);
+				if (!entry || entry.system || !(this.options.isHost?.() ?? true)) return;
+				this.syncSlotTransform(entry);
+				if (broadcast) this.options.onSlotMutated?.(slotId);
 			},
 			findNear: (worldPos, radius) => this.findSlotsNear(worldPos, radius),
 			raycast: (origin, direction, maxDistance) => this.raycastScene(origin, direction, maxDistance),

@@ -1,4 +1,5 @@
 import type { MediaControlAction, Slot, SlotTree, UIEvent } from '$lib/ecs/types';
+import type { KeyboardPresence } from '../keyboard/presence';
 import type { HandPose, TransformPose } from '../avatar/defaultAvatar';
 
 export type SlotTransform = Pick<Slot, 'id' | 'position' | 'rotation' | 'scale'>;
@@ -44,4 +45,6 @@ export type WorldStateMessage =
 		timestamp: number;
 		head: TransformPose;
 		hands: Partial<Record<'left' | 'right', HandPose>>;
+		/** Where the player's in-world keyboard is while they type (never what is on it). See keyboard/presence.ts. */
+		keyboard?: KeyboardPresence;
 	};

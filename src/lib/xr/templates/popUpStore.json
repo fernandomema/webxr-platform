@@ -1,0 +1,3258 @@
+[
+	{
+		"id": "popup-skybox",
+		"parentId": null,
+		"name": "Evening Sky",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "skybox",
+				"topColor": "#213349",
+				"horizonColor": "#d9a184",
+				"bottomColor": "#303b49",
+				"stars": 0.1
+			}
+		]
+	},
+	{
+		"id": "popup-floor",
+		"parentId": null,
+		"name": "Store Floor",
+		"position": [
+			0,
+			0,
+			-6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9,
+			1,
+			1.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "ground"
+				},
+				"color": "#f7f1e5"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-arrival-pad",
+		"parentId": null,
+		"name": "Arrival Pad",
+		"position": [
+			0,
+			0.015,
+			2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.7,
+			0.03,
+			2.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#147d80"
+			}
+		]
+	},
+	{
+		"id": "popup-floor-inset",
+		"parentId": null,
+		"name": "Interior Floor",
+		"position": [
+			0,
+			0.012,
+			-8.1
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			14.2,
+			0.025,
+			15.6
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#e6d9c8"
+			}
+		]
+	},
+	{
+		"id": "popup-entry-runner",
+		"parentId": null,
+		"name": "Entrance Runner",
+		"position": [
+			0,
+			0.025,
+			-2.3
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			3.1,
+			0.025,
+			5.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#147d80"
+			}
+		]
+	},
+	{
+		"id": "popup-central-runner",
+		"parentId": null,
+		"name": "Central Runner",
+		"position": [
+			0,
+			0.026,
+			-10
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.6,
+			0.025,
+			9
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#d3b695"
+			}
+		]
+	},
+	{
+		"id": "popup-structure",
+		"parentId": null,
+		"name": "Storefront and Structure",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "popup-left-wall",
+		"parentId": "popup-structure",
+		"name": "Left Wall",
+		"position": [
+			-7.8,
+			1.8,
+			-8
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.26,
+			3.6,
+			16
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f7f1e5"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-left-wall-band",
+		"parentId": "popup-structure",
+		"name": "Left Wall Accent",
+		"position": [
+			-7.6499999999999995,
+			2.65,
+			-8
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.04,
+			0.28,
+			15.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#147d80"
+			}
+		]
+	},
+	{
+		"id": "popup-left-front-post",
+		"parentId": "popup-structure",
+		"name": "Left Storefront Post",
+		"position": [
+			-7.8,
+			1.8,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.36,
+			3.6,
+			0.36
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#202735"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-left-front-panel",
+		"parentId": "popup-structure",
+		"name": "Left Display Window Wall",
+		"position": [
+			-6.15,
+			1.45,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			3.2,
+			2.9,
+			0.18
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f0e5d4"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-left-window-trim",
+		"parentId": "popup-structure",
+		"name": "Left Window Trim",
+		"position": [
+			-6.15,
+			2.85,
+			0.12
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			3.25,
+			0.12,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#e7b65f"
+			}
+		]
+	},
+	{
+		"id": "popup-right-wall",
+		"parentId": "popup-structure",
+		"name": "Right Wall",
+		"position": [
+			7.8,
+			1.8,
+			-8
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.26,
+			3.6,
+			16
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f7f1e5"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-right-wall-band",
+		"parentId": "popup-structure",
+		"name": "Right Wall Accent",
+		"position": [
+			7.6499999999999995,
+			2.65,
+			-8
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.04,
+			0.28,
+			15.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#147d80"
+			}
+		]
+	},
+	{
+		"id": "popup-right-front-post",
+		"parentId": "popup-structure",
+		"name": "Right Storefront Post",
+		"position": [
+			7.8,
+			1.8,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.36,
+			3.6,
+			0.36
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#202735"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-right-front-panel",
+		"parentId": "popup-structure",
+		"name": "Right Display Window Wall",
+		"position": [
+			6.15,
+			1.45,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			3.2,
+			2.9,
+			0.18
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f0e5d4"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-right-window-trim",
+		"parentId": "popup-structure",
+		"name": "Right Window Trim",
+		"position": [
+			6.15,
+			2.85,
+			0.12
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			3.25,
+			0.12,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#e7b65f"
+			}
+		]
+	},
+	{
+		"id": "popup-back-wall",
+		"parentId": "popup-structure",
+		"name": "Back Wall",
+		"position": [
+			0,
+			1.8,
+			-16
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			15.8,
+			3.6,
+			0.26
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f7f1e5"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-back-accent",
+		"parentId": "popup-structure",
+		"name": "Back Wall Color Block",
+		"position": [
+			0,
+			1.8,
+			-15.83
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			7.5,
+			2.9,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#147d80"
+			}
+		]
+	},
+	{
+		"id": "popup-storefront-header",
+		"parentId": "popup-structure",
+		"name": "Storefront Header",
+		"position": [
+			0,
+			3.2,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			15.8,
+			0.8,
+			0.35
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#202735"
+			}
+		]
+	},
+	{
+		"id": "popup-roof",
+		"parentId": "popup-structure",
+		"name": "Flat Canopy Roof",
+		"position": [
+			0,
+			3.9,
+			-8
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			16.2,
+			0.15,
+			16.4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f0e8dc"
+			}
+		]
+	},
+	{
+		"id": "popup-awning-stripe-0",
+		"parentId": "popup-structure",
+		"name": "Striped Awning",
+		"position": [
+			-7,
+			3.55,
+			0.9
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.98,
+			0.12,
+			1.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f36f61"
+			}
+		]
+	},
+	{
+		"id": "popup-awning-stripe-1",
+		"parentId": "popup-structure",
+		"name": "Striped Awning",
+		"position": [
+			-5,
+			3.55,
+			0.9
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.98,
+			0.12,
+			1.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f7f1e5"
+			}
+		]
+	},
+	{
+		"id": "popup-awning-stripe-2",
+		"parentId": "popup-structure",
+		"name": "Striped Awning",
+		"position": [
+			-3,
+			3.55,
+			0.9
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.98,
+			0.12,
+			1.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f36f61"
+			}
+		]
+	},
+	{
+		"id": "popup-awning-stripe-3",
+		"parentId": "popup-structure",
+		"name": "Striped Awning",
+		"position": [
+			-1,
+			3.55,
+			0.9
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.98,
+			0.12,
+			1.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f7f1e5"
+			}
+		]
+	},
+	{
+		"id": "popup-awning-stripe-4",
+		"parentId": "popup-structure",
+		"name": "Striped Awning",
+		"position": [
+			1,
+			3.55,
+			0.9
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.98,
+			0.12,
+			1.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f36f61"
+			}
+		]
+	},
+	{
+		"id": "popup-awning-stripe-5",
+		"parentId": "popup-structure",
+		"name": "Striped Awning",
+		"position": [
+			3,
+			3.55,
+			0.9
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.98,
+			0.12,
+			1.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f7f1e5"
+			}
+		]
+	},
+	{
+		"id": "popup-awning-stripe-6",
+		"parentId": "popup-structure",
+		"name": "Striped Awning",
+		"position": [
+			5,
+			3.55,
+			0.9
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.98,
+			0.12,
+			1.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f36f61"
+			}
+		]
+	},
+	{
+		"id": "popup-awning-stripe-7",
+		"parentId": "popup-structure",
+		"name": "Striped Awning",
+		"position": [
+			7,
+			3.55,
+			0.9
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.98,
+			0.12,
+			1.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f7f1e5"
+			}
+		]
+	},
+	{
+		"id": "popup-awning-front-edge",
+		"parentId": "popup-structure",
+		"name": "Awning Edge",
+		"position": [
+			0,
+			3.4,
+			1.78
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			16.1,
+			0.27,
+			0.1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#202735"
+			}
+		]
+	},
+	{
+		"id": "popup-ceiling-beam-0",
+		"parentId": "popup-structure",
+		"name": "Ceiling Beam",
+		"position": [
+			0,
+			3.7,
+			-3.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			15.6,
+			0.15,
+			0.18
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#aa7955"
+			}
+		]
+	},
+	{
+		"id": "popup-lamp-left-0",
+		"parentId": "popup-structure",
+		"name": "Warm Ceiling Light",
+		"position": [
+			-4.5,
+			3.46,
+			-3.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.85,
+			0.13,
+			0.85
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#e7b65f"
+			}
+		]
+	},
+	{
+		"id": "popup-lamp-right-0",
+		"parentId": "popup-structure",
+		"name": "Warm Ceiling Light",
+		"position": [
+			4.5,
+			3.46,
+			-3.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.85,
+			0.13,
+			0.85
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#e7b65f"
+			}
+		]
+	},
+	{
+		"id": "popup-ceiling-beam-1",
+		"parentId": "popup-structure",
+		"name": "Ceiling Beam",
+		"position": [
+			0,
+			3.7,
+			-8
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			15.6,
+			0.15,
+			0.18
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#aa7955"
+			}
+		]
+	},
+	{
+		"id": "popup-lamp-left-1",
+		"parentId": "popup-structure",
+		"name": "Warm Ceiling Light",
+		"position": [
+			-4.5,
+			3.46,
+			-8
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.85,
+			0.13,
+			0.85
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#e7b65f"
+			}
+		]
+	},
+	{
+		"id": "popup-lamp-right-1",
+		"parentId": "popup-structure",
+		"name": "Warm Ceiling Light",
+		"position": [
+			4.5,
+			3.46,
+			-8
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.85,
+			0.13,
+			0.85
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#e7b65f"
+			}
+		]
+	},
+	{
+		"id": "popup-ceiling-beam-2",
+		"parentId": "popup-structure",
+		"name": "Ceiling Beam",
+		"position": [
+			0,
+			3.7,
+			-12.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			15.6,
+			0.15,
+			0.18
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#aa7955"
+			}
+		]
+	},
+	{
+		"id": "popup-lamp-left-2",
+		"parentId": "popup-structure",
+		"name": "Warm Ceiling Light",
+		"position": [
+			-4.5,
+			3.46,
+			-12.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.85,
+			0.13,
+			0.85
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#e7b65f"
+			}
+		]
+	},
+	{
+		"id": "popup-lamp-right-2",
+		"parentId": "popup-structure",
+		"name": "Warm Ceiling Light",
+		"position": [
+			4.5,
+			3.46,
+			-12.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.85,
+			0.13,
+			0.85
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#e7b65f"
+			}
+		]
+	},
+	{
+		"id": "popup-entrance",
+		"parentId": null,
+		"name": "Welcome Display",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "popup-front-sign",
+		"parentId": "popup-entrance",
+		"name": "Storefront Sign",
+		"position": [
+			0,
+			3.15,
+			0.22
+		],
+		"rotation": [
+			0,
+			1,
+			0,
+			0
+		],
+		"scale": [
+			4.8,
+			0.68,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#202735"
+			},
+			{
+				"type": "textDisplay",
+				"title": "POP UP STORE",
+				"lines": [
+					"Objects, tools and little discoveries"
+				],
+				"color": "#202735"
+			}
+		]
+	},
+	{
+		"id": "popup-welcome",
+		"parentId": "popup-entrance",
+		"name": "Welcome Sign",
+		"position": [
+			-5.3,
+			1.9,
+			0.14
+		],
+		"rotation": [
+			0,
+			1,
+			0,
+			0
+		],
+		"scale": [
+			2.1,
+			1.15,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#147d80"
+			},
+			{
+				"type": "textDisplay",
+				"title": "COME ON IN",
+				"lines": [
+					"Explore and pick things up",
+					"Everything here is free"
+				],
+				"color": "#147d80"
+			}
+		]
+	},
+	{
+		"id": "popup-how-it-works",
+		"parentId": "popup-entrance",
+		"name": "How It Works Sign",
+		"position": [
+			5.3,
+			1.9,
+			0.14
+		],
+		"rotation": [
+			0,
+			1,
+			0,
+			0
+		],
+		"scale": [
+			2.1,
+			1.15,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#147d80"
+			},
+			{
+				"type": "textDisplay",
+				"title": "TRY SOMETHING",
+				"lines": [
+					"Grip: pick up an object",
+					"Menu: open your inventory",
+					"Make yourself at home"
+				],
+				"color": "#147d80"
+			}
+		]
+	},
+	{
+		"id": "popup-entrance-column-left",
+		"parentId": "popup-entrance",
+		"name": "Entrance Accent Column",
+		"position": [
+			-3.8,
+			1.35,
+			-0.1
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.14,
+			2.7,
+			0.14
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#e7b65f"
+			}
+		]
+	},
+	{
+		"id": "popup-entrance-column-right",
+		"parentId": "popup-entrance",
+		"name": "Entrance Accent Column",
+		"position": [
+			3.8,
+			1.35,
+			-0.1
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.14,
+			2.7,
+			0.14
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#e7b65f"
+			}
+		]
+	},
+	{
+		"id": "popup-fixtures",
+		"parentId": null,
+		"name": "Display Fixtures",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "popup-shelf-left-5-5-back",
+		"parentId": "popup-fixtures",
+		"name": "Wall Display Back",
+		"position": [
+			-6.0200000000000005,
+			1.35,
+			-5.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.08,
+			2.4,
+			3.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#eadccb"
+			}
+		]
+	},
+	{
+		"id": "popup-shelf-left-5-5-0",
+		"parentId": "popup-fixtures",
+		"name": "Open Display Shelf",
+		"position": [
+			-6.45,
+			0.65,
+			-5.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.15,
+			0.1,
+			3.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#aa7955"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-shelf-left-5-5-1",
+		"parentId": "popup-fixtures",
+		"name": "Open Display Shelf",
+		"position": [
+			-6.45,
+			1.35,
+			-5.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.15,
+			0.1,
+			3.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#aa7955"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-shelf-left-5-5-2",
+		"parentId": "popup-fixtures",
+		"name": "Open Display Shelf",
+		"position": [
+			-6.45,
+			2.05,
+			-5.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.15,
+			0.1,
+			3.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#aa7955"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-shelf-left-5-5-top",
+		"parentId": "popup-fixtures",
+		"name": "Shelf Top Trim",
+		"position": [
+			-6.45,
+			2.48,
+			-5.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.2,
+			0.1,
+			3.9
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#147d80"
+			}
+		]
+	},
+	{
+		"id": "popup-shelf-left-11-5-back",
+		"parentId": "popup-fixtures",
+		"name": "Wall Display Back",
+		"position": [
+			-6.0200000000000005,
+			1.35,
+			-11.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.08,
+			2.4,
+			3.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#eadccb"
+			}
+		]
+	},
+	{
+		"id": "popup-shelf-left-11-5-0",
+		"parentId": "popup-fixtures",
+		"name": "Open Display Shelf",
+		"position": [
+			-6.45,
+			0.65,
+			-11.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.15,
+			0.1,
+			3.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#aa7955"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-shelf-left-11-5-1",
+		"parentId": "popup-fixtures",
+		"name": "Open Display Shelf",
+		"position": [
+			-6.45,
+			1.35,
+			-11.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.15,
+			0.1,
+			3.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#aa7955"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-shelf-left-11-5-2",
+		"parentId": "popup-fixtures",
+		"name": "Open Display Shelf",
+		"position": [
+			-6.45,
+			2.05,
+			-11.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.15,
+			0.1,
+			3.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#aa7955"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-shelf-left-11-5-top",
+		"parentId": "popup-fixtures",
+		"name": "Shelf Top Trim",
+		"position": [
+			-6.45,
+			2.48,
+			-11.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.2,
+			0.1,
+			3.9
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#147d80"
+			}
+		]
+	},
+	{
+		"id": "popup-shelf-right-5-5-back",
+		"parentId": "popup-fixtures",
+		"name": "Wall Display Back",
+		"position": [
+			6.0200000000000005,
+			1.35,
+			-5.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.08,
+			2.4,
+			3.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#eadccb"
+			}
+		]
+	},
+	{
+		"id": "popup-shelf-right-5-5-0",
+		"parentId": "popup-fixtures",
+		"name": "Open Display Shelf",
+		"position": [
+			6.45,
+			0.65,
+			-5.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.15,
+			0.1,
+			3.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#aa7955"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-shelf-right-5-5-1",
+		"parentId": "popup-fixtures",
+		"name": "Open Display Shelf",
+		"position": [
+			6.45,
+			1.35,
+			-5.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.15,
+			0.1,
+			3.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#aa7955"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-shelf-right-5-5-2",
+		"parentId": "popup-fixtures",
+		"name": "Open Display Shelf",
+		"position": [
+			6.45,
+			2.05,
+			-5.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.15,
+			0.1,
+			3.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#aa7955"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-shelf-right-5-5-top",
+		"parentId": "popup-fixtures",
+		"name": "Shelf Top Trim",
+		"position": [
+			6.45,
+			2.48,
+			-5.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.2,
+			0.1,
+			3.9
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#147d80"
+			}
+		]
+	},
+	{
+		"id": "popup-shelf-right-11-5-back",
+		"parentId": "popup-fixtures",
+		"name": "Wall Display Back",
+		"position": [
+			6.0200000000000005,
+			1.35,
+			-11.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.08,
+			2.4,
+			3.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#eadccb"
+			}
+		]
+	},
+	{
+		"id": "popup-shelf-right-11-5-0",
+		"parentId": "popup-fixtures",
+		"name": "Open Display Shelf",
+		"position": [
+			6.45,
+			0.65,
+			-11.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.15,
+			0.1,
+			3.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#aa7955"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-shelf-right-11-5-1",
+		"parentId": "popup-fixtures",
+		"name": "Open Display Shelf",
+		"position": [
+			6.45,
+			1.35,
+			-11.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.15,
+			0.1,
+			3.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#aa7955"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-shelf-right-11-5-2",
+		"parentId": "popup-fixtures",
+		"name": "Open Display Shelf",
+		"position": [
+			6.45,
+			2.05,
+			-11.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.15,
+			0.1,
+			3.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#aa7955"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-shelf-right-11-5-top",
+		"parentId": "popup-fixtures",
+		"name": "Shelf Top Trim",
+		"position": [
+			6.45,
+			2.48,
+			-11.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.2,
+			0.1,
+			3.9
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#147d80"
+			}
+		]
+	},
+	{
+		"id": "popup-island-left-front-body",
+		"parentId": "popup-fixtures",
+		"name": "Display Island Base",
+		"position": [
+			-2.7,
+			0.4,
+			-5.3
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.4,
+			0.8,
+			2.1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#efe3d4"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-island-left-front-top",
+		"parentId": "popup-fixtures",
+		"name": "Display Island Top",
+		"position": [
+			-2.7,
+			0.83,
+			-5.3
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.7,
+			0.09,
+			2.4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#aa7955"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-island-left-front-edge",
+		"parentId": "popup-fixtures",
+		"name": "Display Island Accent",
+		"position": [
+			-2.7,
+			0.73,
+			-4.24
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.45,
+			0.12,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f36f61"
+			}
+		]
+	},
+	{
+		"id": "popup-island-left-rear-body",
+		"parentId": "popup-fixtures",
+		"name": "Display Island Base",
+		"position": [
+			-2.7,
+			0.4,
+			-10.8
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.4,
+			0.8,
+			2.1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#efe3d4"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-island-left-rear-top",
+		"parentId": "popup-fixtures",
+		"name": "Display Island Top",
+		"position": [
+			-2.7,
+			0.83,
+			-10.8
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.7,
+			0.09,
+			2.4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#aa7955"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-island-left-rear-edge",
+		"parentId": "popup-fixtures",
+		"name": "Display Island Accent",
+		"position": [
+			-2.7,
+			0.73,
+			-9.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.45,
+			0.12,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f36f61"
+			}
+		]
+	},
+	{
+		"id": "popup-island-right-front-body",
+		"parentId": "popup-fixtures",
+		"name": "Display Island Base",
+		"position": [
+			2.7,
+			0.4,
+			-5.3
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.4,
+			0.8,
+			2.1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#efe3d4"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-island-right-front-top",
+		"parentId": "popup-fixtures",
+		"name": "Display Island Top",
+		"position": [
+			2.7,
+			0.83,
+			-5.3
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.7,
+			0.09,
+			2.4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#aa7955"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-island-right-front-edge",
+		"parentId": "popup-fixtures",
+		"name": "Display Island Accent",
+		"position": [
+			2.7,
+			0.73,
+			-4.24
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.45,
+			0.12,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f36f61"
+			}
+		]
+	},
+	{
+		"id": "popup-island-right-rear-body",
+		"parentId": "popup-fixtures",
+		"name": "Display Island Base",
+		"position": [
+			2.7,
+			0.4,
+			-10.8
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.4,
+			0.8,
+			2.1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#efe3d4"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-island-right-rear-top",
+		"parentId": "popup-fixtures",
+		"name": "Display Island Top",
+		"position": [
+			2.7,
+			0.83,
+			-10.8
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.7,
+			0.09,
+			2.4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#aa7955"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-island-right-rear-edge",
+		"parentId": "popup-fixtures",
+		"name": "Display Island Accent",
+		"position": [
+			2.7,
+			0.73,
+			-9.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.45,
+			0.12,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f36f61"
+			}
+		]
+	},
+	{
+		"id": "popup-gallery-0-base",
+		"parentId": "popup-fixtures",
+		"name": "Gallery Plinth",
+		"position": [
+			-4.8,
+			0.51,
+			-13.7
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.45,
+			1.02,
+			1.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f7f1e5"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-gallery-0-top",
+		"parentId": "popup-fixtures",
+		"name": "Gallery Plinth Top",
+		"position": [
+			-4.8,
+			1.04,
+			-13.7
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.58,
+			0.07,
+			1.62
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#e7b65f"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-gallery-1-base",
+		"parentId": "popup-fixtures",
+		"name": "Gallery Plinth",
+		"position": [
+			-2.4,
+			0.51,
+			-13.7
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.45,
+			1.02,
+			1.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f7f1e5"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-gallery-1-top",
+		"parentId": "popup-fixtures",
+		"name": "Gallery Plinth Top",
+		"position": [
+			-2.4,
+			1.04,
+			-13.7
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.58,
+			0.07,
+			1.62
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#e7b65f"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-gallery-2-base",
+		"parentId": "popup-fixtures",
+		"name": "Gallery Plinth",
+		"position": [
+			0,
+			0.51,
+			-13.7
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.45,
+			1.02,
+			1.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f7f1e5"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-gallery-2-top",
+		"parentId": "popup-fixtures",
+		"name": "Gallery Plinth Top",
+		"position": [
+			0,
+			1.04,
+			-13.7
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.58,
+			0.07,
+			1.62
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#e7b65f"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-gallery-3-base",
+		"parentId": "popup-fixtures",
+		"name": "Gallery Plinth",
+		"position": [
+			2.4,
+			0.51,
+			-13.7
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.45,
+			1.02,
+			1.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f7f1e5"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-gallery-3-top",
+		"parentId": "popup-fixtures",
+		"name": "Gallery Plinth Top",
+		"position": [
+			2.4,
+			1.04,
+			-13.7
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.58,
+			0.07,
+			1.62
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#e7b65f"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-gallery-4-base",
+		"parentId": "popup-fixtures",
+		"name": "Gallery Plinth",
+		"position": [
+			4.8,
+			0.51,
+			-13.7
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.45,
+			1.02,
+			1.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f7f1e5"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-gallery-4-top",
+		"parentId": "popup-fixtures",
+		"name": "Gallery Plinth Top",
+		"position": [
+			4.8,
+			1.04,
+			-13.7
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.58,
+			0.07,
+			1.62
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#e7b65f"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "popup-labels",
+		"parentId": null,
+		"name": "Display Labels",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "popup-back-message",
+		"parentId": "popup-labels",
+		"name": "Free Store Message",
+		"position": [
+			0,
+			2.5,
+			-15.65
+		],
+		"rotation": [
+			0,
+			1,
+			0,
+			0
+		],
+		"scale": [
+			4.4,
+			1.0,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#202735"
+			},
+			{
+				"type": "textDisplay",
+				"title": "ALL FREE",
+				"lines": [
+					"Take a look around",
+					"Pick up what catches your eye"
+				],
+				"color": "#202735"
+			}
+		]
+	},
+	{
+		"id": "popup-left-zone",
+		"parentId": "popup-labels",
+		"name": "Objects Section Sign",
+		"position": [
+			-6.05,
+			2.65,
+			-2.8
+		],
+		"rotation": [
+			0,
+			1,
+			0,
+			0
+		],
+		"scale": [
+			2.0,
+			0.62,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#147d80"
+			},
+			{
+				"type": "textDisplay",
+				"title": "OBJECTS",
+				"lines": [
+					"Small things to explore"
+				],
+				"color": "#147d80"
+			}
+		]
+	},
+	{
+		"id": "popup-right-zone",
+		"parentId": "popup-labels",
+		"name": "Tools Section Sign",
+		"position": [
+			6.05,
+			2.65,
+			-2.8
+		],
+		"rotation": [
+			0,
+			1,
+			0,
+			0
+		],
+		"scale": [
+			2.0,
+			0.62,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#147d80"
+			},
+			{
+				"type": "textDisplay",
+				"title": "TOOLS",
+				"lines": [
+					"Made to try and use"
+				],
+				"color": "#147d80"
+			}
+		]
+	},
+	{
+		"id": "popup-gallery-label",
+		"parentId": "popup-labels",
+		"name": "Featured Gallery Sign",
+		"position": [
+			0,
+			1.55,
+			-12.7
+		],
+		"rotation": [
+			0,
+			1,
+			0,
+			0
+		],
+		"scale": [
+			2.0,
+			0.6,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#202735"
+			},
+			{
+				"type": "textDisplay",
+				"title": "FEATURED",
+				"lines": [
+					"Space for new finds"
+				],
+				"color": "#202735"
+			}
+		]
+	},
+	{
+		"id": "popup-samples",
+		"parentId": null,
+		"name": "Sample Objects",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "popup-sample-coral-orb",
+		"parentId": "popup-samples",
+		"name": "Coral Orb",
+		"position": [
+			-2.7,
+			1.13,
+			-5.3
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.52,
+			0.52,
+			0.52
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#f36f61"
+			},
+			{
+				"type": "collider",
+				"shape": "sphere"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			}
+		]
+	},
+	{
+		"id": "popup-sample-teal-block",
+		"parentId": "popup-samples",
+		"name": "Teal Block",
+		"position": [
+			2.7,
+			1.12,
+			-5.3
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.48,
+			0.48,
+			0.48
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#147d80"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			}
+		]
+	},
+	{
+		"id": "popup-sample-gold-cylinder",
+		"parentId": "popup-samples",
+		"name": "Gold Cylinder",
+		"position": [
+			-2.7,
+			1.14,
+			-10.8
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			0.55,
+			0.4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#e7b65f"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			}
+		]
+	},
+	{
+		"id": "popup-sample-dark-orb",
+		"parentId": "popup-samples",
+		"name": "Midnight Orb",
+		"position": [
+			2.7,
+			1.12,
+			-10.8
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.48,
+			0.48,
+			0.48
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#202735"
+			},
+			{
+				"type": "collider",
+				"shape": "sphere"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			}
+		]
+	}
+]

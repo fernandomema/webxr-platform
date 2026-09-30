@@ -38,6 +38,8 @@ import { setupHandControllerSwitch } from './interaction/handControllerSwitch';
 import { createDashPanel } from './ui/dashPanel';
 import { createInspectorPanel } from './ui/inspectorPanel';
 import { setupRadialMenuForHand } from './ui/radialMenu';
+import { KeyboardSystem } from './keyboard/keyboardSystem';
+import { setTextInputProvider } from './keyboard/service';
 import { loadSettings, saveSettings, xrSettings } from './settings';
 import { sanitizeAvatarTree } from './avatar/sanitize';
 import { saveWithPreview } from './inventorySave';
@@ -89,6 +91,7 @@ export async function mountGame(
 	const desktopCamera = new UniversalCamera('desktop-cam', new Vector3(0, 1.6, 2), scene);
 	desktopCamera.setTarget(new Vector3(0, 1.4, 0));
 	desktopCamera.attachControl(canvas, true);
+	desktopCamera.speed = 1; // half Babylon's default of 2
 	desktopCamera.keysUp.push(87); // W
 	desktopCamera.keysDown.push(83); // S
 	desktopCamera.keysLeft.push(65); // A
@@ -377,7 +380,12 @@ export async function mountGame(
 			sceneGraph.reconcile(copyScene(snapshot));
 			refreshTeleportFloors();
 			void applyLocalAvatar();
-			if (visibility === 'solo') { refreshWorldsTab(); return; }
+			if (visibility === 'solo') {
+				// Kept so that hosting it later, or saving it, starts from its own name.
+				gameState.worldName = name;
+				refreshWorldsTab();
+				return;
+			}
 			gameState.worldId = worldId;
 			gameState.worldName = name;
 			gameState.worldVisibility = visibility;
@@ -523,6 +531,8 @@ export async function mountGame(
 			const world = worldFromInventory(item, adapterId, gameState.userId);
 			await launchWorldPackage(world, world.defaultVisibility);
 		},
+		// On your own at first; the Session tab hosts it for others like any world.
+		onLaunchBuiltinWorld: (world) => launchScene(world.name, copyScene(world.scene), 'solo'),
 		onLocomotionSettingsChanged: async () => { await locomotion?.applySettings(); },
 		onExitVr: async () => { await xr?.baseExperience.exitXRAsync(); },
 		onToggleInspector: () => inspector.root.setEnabled(!inspector.root.isEnabled()),
@@ -586,6 +596,9 @@ export async function mountGame(
 		setupRadialMenuForHand(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, 'left', /y-button/i, radialNetwork);
 		setupRadialMenuForHand(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, 'right', /b-button/i, radialNetwork);
 	}
+	// Anything asking for text in a headset gets the in-world keyboard (see keyboard/service.ts).
+	const keyboards = xr ? new KeyboardSystem(scene, sceneGraph, xr, (side) => avatarSystem.localIndexTip(side)) : null;
+	setTextInputProvider(keyboards);
 
 	scene.onBeforeRenderObservable.add(() => {
 		const camera = getActiveCamera();
@@ -630,6 +643,8 @@ export async function mountGame(
 		},
 		dispose() {
 			window.removeEventListener('resize', onResize);
+			setTextInputProvider(null);
+			keyboards?.dispose();
 			avatarSystem.dispose();
 			hostAuthority?.dispose();
 			guestSync?.dispose();

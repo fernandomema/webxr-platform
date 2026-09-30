@@ -14,6 +14,7 @@
 	import { studioModels } from '$lib/studio/state/models.svelte';
 	import { handOverNewAvatar } from '$lib/studio/state/newAvatar';
 	import type { SlotTree } from '$lib/ecs/types';
+	import { PLATFORM_NAME } from '$lib/platform';
 
 	const library = new Library(studioSession.context);
 	let loadedFor = $state<string | null>(null);
@@ -93,8 +94,8 @@
 </script>
 
 <svelte:head>
-	<title>Studio · WebXR Platform</title>
-	<meta name="description" content="Create and edit worlds and objects for the WebXR platform." />
+	<title>Studio · {PLATFORM_NAME}</title>
+	<meta name="description" content={`Create and edit worlds and objects for ${PLATFORM_NAME}.`} />
 </svelte:head>
 
 <div class="page">

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { PLATFORM_NAME } from '$lib/platform';
 	interface Props {
 		state: 'loading' | 'vr' | 'desktop' | 'playing';
 		error?: string;
@@ -14,12 +15,12 @@
 		<div class="card">
 			<div class="mark" aria-hidden="true">◈</div>
 			{#if state === 'loading'}
-				<p class="eyebrow">WebXR Platform</p>
+				<p class="eyebrow">{PLATFORM_NAME}</p>
 				<h1>Preparing your space</h1>
 				<p class="copy">Checking the available experience and loading the world.</p>
 				<div class="spinner" aria-label="Loading"></div>
 			{:else if state === 'vr'}
-				<p class="eyebrow">WebXR Platform</p>
+				<p class="eyebrow">{PLATFORM_NAME}</p>
 				<h1>Your space is ready</h1>
 				<p class="copy">Put on your headset and enter the shared world.</p>
 				{#if error}<p class="error">{error}</p>{/if}

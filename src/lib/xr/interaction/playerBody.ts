@@ -69,12 +69,18 @@ export function setupPlayerBody(
 		return false;
 	}
 
+	const hasDisposed = (meshes: Set<AbstractMesh>) => {
+		for (const mesh of meshes) if (mesh.isDisposed()) return true;
+		return false;
+	};
 	let floors = new Set<AbstractMesh>();
 	let solids = new Set<AbstractMesh>();
 	let refreshedAt = -Infinity;
 	function refreshSets(): void {
 		const now = performance.now();
-		if (now - refreshedAt < CACHE_MS) return;
+		// A world was swapped (or a floor rebuilt): the new floor must count at once, or the player falls through it before
+		// the next refresh and, by then more than a step below it, never finds it again.
+		if (now - refreshedAt < CACHE_MS && !hasDisposed(floors) && !hasDisposed(solids)) return;
 		refreshedAt = now;
 		floors = new Set();
 		solids = new Set();

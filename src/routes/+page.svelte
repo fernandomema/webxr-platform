@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { studioSession } from '$lib/studio/state/session.svelte';
 	import Icon from '$lib/studio/ui/Icon.svelte';
+	import { PLATFORM_NAME } from '$lib/platform';
 
 	onMount(() => {
 		void studioSession.init();
@@ -28,16 +29,16 @@
 </script>
 
 <svelte:head>
-	<title>WebXR Platform</title>
+	<title>{PLATFORM_NAME}</title>
 	<meta
 		name="description"
-		content="A peer-to-peer WebXR platform: host your own world from the browser and build what's in it with the Studio editor."
+		content={`${PLATFORM_NAME}: host your own WebXR world from the browser and build what's in it with the Studio editor.`}
 	/>
 </svelte:head>
 
 <div class="landing">
 	<header class="bar">
-		<div class="brand"><Icon name="cube" size={20} /><strong>WebXR Platform</strong></div>
+		<div class="brand"><Icon name="cube" size={20} /><strong>{PLATFORM_NAME}</strong></div>
 		<nav>
 			<a class="link" href={resolve('/studio')}>Studio</a>
 			{#if studioSession.userId}

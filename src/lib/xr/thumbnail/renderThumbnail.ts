@@ -23,6 +23,8 @@ import { isFloorSlot } from '../interaction/playerBody';
 import { bustBounds, frameBounds, THUMBNAIL_FOV, type V3 } from './framing';
 import { cubeToEquirect, flipRows } from './cubeToEquirect';
 import { stripActiveComponents } from './inertTree';
+import { findPreviewCamera, type PreviewCamera } from './cameraPose';
+import { rotateVector } from '../avatar/ik';
 
 /**
  * Renders previews of inventory items in a scene of their own that lives only for the picture: nothing in it runs (see
@@ -130,7 +132,12 @@ async function whenDrawable(scene: Scene, target: RenderTargetTexture, signal?: 
 
 /** Draws the scene as seen by `camera` into an offscreen texture and returns its RGBA pixels, top row first. */
 async function drawTopDown(scene: Scene, camera: FreeCamera | ArcRotateCamera, size: number, signal?: { cancelled: boolean }): Promise<Uint8Array | null> {
-	const target = new RenderTargetTexture('thumbnail-target', { width: size, height: size }, scene, { generateMipMaps: false, generateDepthBuffer: true });
+	const target = new RenderTargetTexture('thumbnail-target', { width: size, height: size }, scene, {
+		generateMipMaps: false,
+		generateDepthBuffer: true,
+		// The picture is square whatever the shape of the canvas the game happens to be drawing on.
+		doNotChangeAspectRatio: false
+	});
 	try {
 		target.activeCamera = camera;
 		target.renderList = scene.meshes.slice();
@@ -157,18 +164,38 @@ async function pixelsToBlob(rgba: Uint8Array | Uint8ClampedArray, width: number,
 	return await new Promise<Blob | null>((resolve) => out.toBlob(resolve, 'image/webp', 0.85));
 }
 
+/** A camera standing where a Preview camera slot is, looking along its forward direction. */
+function cameraAt(scene: Scene, authored: PreviewCamera): FreeCamera {
+	const position = Vector3.FromArray(authored.position);
+	const camera = new FreeCamera('thumbnail-camera', position, scene);
+	camera.upVector = Vector3.FromArray(rotateVector(authored.rotation, [0, 1, 0]));
+	camera.setTarget(position.add(Vector3.FromArray(rotateVector(authored.rotation, [0, 0, 1]))));
+	camera.fov = authored.fov;
+	camera.minZ = 0.02;
+	camera.maxZ = 500;
+	return camera;
+}
+
 /** A square picture of an object or an avatar (a head-and-shoulders view for avatars), or null if there was nothing to draw. */
 export async function renderObjectThumbnail(tree: SlotTree, kind: 'object' | 'avatar', options: RenderOptions = {}): Promise<Blob | null> {
 	const stage = await buildStage(tree, options);
 	try {
 		if (options.signal?.cancelled) return null;
-		const bounds = visibleBounds(stage.scene);
-		if (!bounds) return null;
-		const { target, radius } = kind === 'avatar' ? frameBounds(...(Object.values(bustBounds(bounds.min, bounds.max)) as [V3, V3])) : frameBounds(bounds.min, bounds.max);
-		const camera = new ArcRotateCamera('thumbnail-camera', -Math.PI / 2.3, Math.PI / 2.6, radius, Vector3.FromArray(target), stage.scene);
-		camera.fov = THUMBNAIL_FOV;
-		camera.minZ = radius / 100;
-		camera.maxZ = radius * 40;
+		// An author-placed Preview camera decides the framing; without one the object is framed automatically.
+		const authored = findPreviewCamera(tree);
+		let camera: FreeCamera | ArcRotateCamera;
+		if (authored) {
+			camera = cameraAt(stage.scene, authored);
+		} else {
+			const bounds = visibleBounds(stage.scene);
+			if (!bounds) return null;
+			const { target, radius } = kind === 'avatar' ? frameBounds(...(Object.values(bustBounds(bounds.min, bounds.max)) as [V3, V3])) : frameBounds(bounds.min, bounds.max);
+			const orbit = new ArcRotateCamera('thumbnail-camera', -Math.PI / 2.3, Math.PI / 2.6, radius, Vector3.FromArray(target), stage.scene);
+			orbit.fov = THUMBNAIL_FOV;
+			orbit.minZ = radius / 100;
+			orbit.maxZ = radius * 40;
+			camera = orbit;
+		}
 		stage.scene.activeCamera = camera;
 		// Drawn at twice the size and scaled down, for smooth edges.
 		const big = OBJECT_SIZE * 2;
@@ -206,7 +233,10 @@ export async function renderWorldPanorama(tree: SlotTree, options: RenderOptions
 	const stage = await buildStage(tree, options);
 	try {
 		if (options.signal?.cancelled) return null;
-		const position = new Vector3(WORLD_SPAWN.x, eyeHeightAtSpawn(stage), WORLD_SPAWN.z);
+		// From the author's Preview camera when there is one (its forward is the middle of the picture), else from the spawn.
+		const authored = findPreviewCamera(tree);
+		const frame = authored?.rotation ?? ([0, 0, 0, 1] as [number, number, number, number]);
+		const position = authored ? Vector3.FromArray(authored.position) : new Vector3(WORLD_SPAWN.x, eyeHeightAtSpawn(stage), WORLD_SPAWN.z);
 		const camera = new FreeCamera('panorama-camera', position, stage.scene);
 		camera.fov = Math.PI / 2;
 		camera.minZ = 0.05;
@@ -215,8 +245,8 @@ export async function renderWorldPanorama(tree: SlotTree, options: RenderOptions
 		const faces: Uint8Array[] = [];
 		for (const view of PANORAMA_VIEWS) {
 			if (options.signal?.cancelled) return null;
-			camera.upVector = Vector3.FromArray(view.up);
-			camera.setTarget(position.add(Vector3.FromArray(view.look)));
+			camera.upVector = Vector3.FromArray(rotateVector(frame, view.up));
+			camera.setTarget(position.add(Vector3.FromArray(rotateVector(frame, view.look))));
 			const pixels = await drawTopDown(stage.scene, camera, CUBE_FACE, options.signal);
 			if (!pixels) return null;
 			faces.push(pixels);

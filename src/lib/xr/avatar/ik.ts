@@ -85,6 +85,18 @@ export function updateStandingHeight(current: number, headHeight: number, dt: nu
 	return Math.max(clamped, current - 0.02 * dt);
 }
 
+/**
+ * How far a shoulder has to move along `forward` (a unit vector) for a target `toTarget` away to come within `reach`: 0 when
+ * it already is (or the target is behind, where moving forward would not help), Infinity when no move along that line does.
+ */
+export function stepToReach(toTarget: V3, forward: V3, reach: number): number {
+	const distance2 = dot(toTarget, toTarget);
+	const along = dot(toTarget, forward);
+	if (distance2 <= reach * reach || along <= 0) return 0;
+	const disc = along * along - distance2 + reach * reach;
+	return disc < 0 ? Infinity : along - Math.sqrt(disc);
+}
+
 export interface TwoBoneSolution {
 	/** The middle joint (elbow or knee). */
 	mid: V3;

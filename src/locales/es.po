@@ -160,9 +160,8 @@ msgstr ""
 #~ msgid "Desktop authoring studio for WebXR assets, scene graphs and code blocks."
 #~ msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Studio · WebXR Platform"
-msgstr ""
+#~ msgid "Studio · WebXR Platform"
+#~ msgstr ""
 
 #~ msgid "WebXR <0>Studio</0>"
 #~ msgstr ""
@@ -185,8 +184,9 @@ msgstr ""
 msgid "Library"
 msgstr ""
 
-#~ msgid "Preview"
-#~ msgstr ""
+#: src/lib/studio/components/PreviewCameraTools.svelte
+msgid "Preview"
+msgstr ""
 
 #~ msgid "Assets"
 #~ msgstr ""
@@ -289,8 +289,9 @@ msgstr ""
 #~ msgid "Select"
 #~ msgstr ""
 
-#~ msgid "Move"
-#~ msgstr ""
+#: src/lib/studio/ScenePreview.svelte
+msgid "Move"
+msgstr ""
 
 #: src/lib/studio/components/Inspector.svelte
 msgid "Scale"
@@ -732,9 +733,8 @@ msgstr ""
 msgid "Could not delete the folder"
 msgstr ""
 
-#: src/routes/studio/+page.svelte
-msgid "Create and edit worlds and objects for the WebXR platform."
-msgstr ""
+#~ msgid "Create and edit worlds and objects for the WebXR platform."
+#~ msgstr ""
 
 #: src/routes/+page.svelte
 #: src/routes/+page.svelte
@@ -1499,12 +1499,8 @@ msgstr ""
 msgid "Loading"
 msgstr ""
 
-#: src/lib/xr/XRLaunchOverlay.svelte
-#: src/lib/xr/XRLaunchOverlay.svelte
-#: src/routes/+page.svelte
-#: src/routes/+page.svelte
-msgid "WebXR Platform"
-msgstr ""
+#~ msgid "WebXR Platform"
+#~ msgstr ""
 
 #: src/lib/xr/XRLaunchOverlay.svelte
 msgid "Preparing your space"
@@ -2109,9 +2105,8 @@ msgstr ""
 msgid "Pick objects up by hand or with the laser, equip them from the radial menu, and jump into a session with friends in one click."
 msgstr ""
 
-#: src/routes/+page.svelte
-msgid "A peer-to-peer WebXR platform: host your own world from the browser and build what's in it with the Studio editor."
-msgstr ""
+#~ msgid "A peer-to-peer WebXR platform: host your own world from the browser and build what's in it with the Studio editor."
+#~ msgstr ""
 
 #: src/routes/+page.svelte
 msgid "Play now"
@@ -2141,9 +2136,8 @@ msgstr ""
 msgid "Features"
 msgstr ""
 
-#: src/routes/play/+page.svelte
-msgid "Play · WebXR Platform"
-msgstr ""
+#~ msgid "Play · WebXR Platform"
+#~ msgstr ""
 
 #: src/routes/+page.svelte
 #: src/routes/+page.svelte
@@ -2588,4 +2582,94 @@ msgstr ""
 #. 0: side === 'left' ? 'Left' \\: 'Right'; 1: capabilities.fingers[side]
 #: src/lib/studio/components/BoneMapEditor.svelte
 msgid "{0} fingers ({1}/5)"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "Preview camera"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+#: src/lib/studio/components/PreviewCameraTools.svelte
+#: src/lib/studio/state/document.svelte.ts
+msgid "Preview Camera"
+msgstr ""
+
+#: src/lib/studio/components/PreviewCameraTools.svelte
+msgid "The viewport is not ready yet."
+msgstr ""
+
+#: src/lib/studio/components/PreviewCameraTools.svelte
+msgid "Could not read the editor view"
+msgstr ""
+
+#: src/lib/studio/components/PreviewCameraTools.svelte
+msgid "Could not draw the preview"
+msgstr ""
+
+#: src/lib/studio/components/PreviewCameraTools.svelte
+msgid "Move this slot to where the editor camera is, looking the same way"
+msgstr ""
+
+#: src/lib/studio/components/PreviewCameraTools.svelte
+msgid "Drawing…"
+msgstr ""
+
+#: src/lib/studio/components/PreviewCameraTools.svelte
+msgid "Use editor view"
+msgstr ""
+
+#: src/lib/studio/components/PreviewCameraTools.svelte
+msgid "How the saved preview will look"
+msgstr ""
+
+#: src/lib/studio/components/PreviewCameraTools.svelte
+msgid "The saved preview is this 360° picture; lists show its middle."
+msgstr ""
+
+#: src/lib/studio/components/PreviewCameraTools.svelte
+msgid "Place the slot where the picture should be taken from. It looks along its forward direction (blue axis)."
+msgstr ""
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Preview camera handles"
+msgstr ""
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Rotate"
+msgstr ""
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Camera view"
+msgstr ""
+
+#: src/lib/studio/components/PreviewCameraTools.svelte
+msgid "This slot also holds an object, so moving the camera moves the object with it."
+msgstr ""
+
+#: src/lib/studio/components/PreviewCameraTools.svelte
+msgid "Move the camera to its own slot"
+msgstr ""
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "FreeCameraKeyboardMoveInput"
+msgstr ""
+
+#. 0: PLATFORM_NAME
+#: src/routes/+page.svelte
+msgid "{0}: host your own WebXR world from the browser and build what's in it with the Studio editor."
+msgstr ""
+
+#. 0: PLATFORM_NAME
+#: src/routes/studio/+page.svelte
+msgid "Create and edit worlds and objects for {0}."
+msgstr ""
+
+#. 0: PLATFORM_NAME
+#: src/routes/studio/+page.svelte
+msgid "Studio · {0}"
+msgstr ""
+
+#. 0: PLATFORM_NAME
+#: src/routes/play/+page.svelte
+msgid "Play · {0}"
 msgstr ""

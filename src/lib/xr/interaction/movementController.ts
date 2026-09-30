@@ -1,14 +1,18 @@
 import { Vector3, WebXRControllerComponent, type Scene, type WebXRDefaultExperience } from '@babylonjs/core';
 import { xrSettings } from '../settings';
-import { isHandLocked } from './handLock';
+import { isHandLocked, isStickYClaimed } from './handLock';
 import type { PlayerBody } from './playerBody';
 
 const DEADZONE = 0.15;
-const MOVE_SPEED = 1.4; // m/s
+const WALK_SPEED = 1.9; // m/s
+const RUN_SPEED = 3.4; // m/s
+/** How far both sticks must be pushed forward to run. */
+const RUN_PUSH = 0.6;
 
 /**
  * Smooth locomotion, driven by the LEFT hand's thumbstick (right hand turns,
- * see rotationController.ts). Babylon's own `WebXRControllerMovement`
+ * see rotationController.ts). Pushing the right stick forward as well, while
+ * walking forward, breaks into a run: turning only reads that stick sideways. Babylon's own `WebXRControllerMovement`
  * feature moves along the full camera/controller orientation (pitch
  * included), so looking up/down made the player fly — this only ever moves
  * on the horizontal plane, FPS-style, regardless of where you're looking.
@@ -16,9 +20,20 @@ const MOVE_SPEED = 1.4; // m/s
 export function setupMovementController(scene: Scene, xr: WebXRDefaultExperience, body?: PlayerBody): void {
 	let moveX = 0;
 	let moveY = 0;
+	let runY = 0;
 
 	xr.input.onControllerAddedObservable.add((controller) => {
-		if (controller.inputSource.handedness === 'right') return; // left hand drives movement
+		if (controller.inputSource.handedness === 'right') {
+			controller.onMotionControllerInitObservable.add((motionController) => {
+				motionController.getComponentOfType(WebXRControllerComponent.THUMBSTICK_TYPE)?.onAxisValueChangedObservable.add((axes) => {
+					runY = axes.y;
+				});
+			});
+			controller.onDisposeObservable.add(() => {
+				runY = 0;
+			});
+			return; // left hand drives movement
+		}
 
 		controller.onMotionControllerInitObservable.add((motionController) => {
 			const stick =
@@ -38,7 +53,9 @@ export function setupMovementController(scene: Scene, xr: WebXRDefaultExperience
 
 	scene.onBeforeRenderObservable.add(() => {
 		if (xrSettings.movementMode !== 'smooth' || isHandLocked('left')) return;
-		if (Math.abs(moveX) < DEADZONE && Math.abs(moveY) < DEADZONE) return;
+		// A stick pushing a laser-held object away or closer is not also walking or running.
+		const walkY = isStickYClaimed('left') ? 0 : moveY;
+		if (Math.abs(moveX) < DEADZONE && Math.abs(walkY) < DEADZONE) return;
 
 		const camera = xr.baseExperience.camera;
 		const rawForward = camera.getForwardRay().direction;
@@ -49,7 +66,9 @@ export function setupMovementController(scene: Scene, xr: WebXRDefaultExperience
 
 		const dt = scene.getEngine().getDeltaTime() / 1000;
 		// gamepad Y: pushing the stick forward/up reports a negative value
-		const delta = forward.scale(-moveY * MOVE_SPEED * dt).add(right.scale(moveX * MOVE_SPEED * dt));
+		const running = walkY < -RUN_PUSH && runY < -RUN_PUSH && !isHandLocked('right') && !isStickYClaimed('right');
+		const speed = running ? RUN_SPEED : WALK_SPEED;
+		const delta = forward.scale(-walkY * speed * dt).add(right.scale(moveX * speed * dt));
 		camera.position.addInPlace(body ? body.constrainMove(delta) : delta);
 	});
 }

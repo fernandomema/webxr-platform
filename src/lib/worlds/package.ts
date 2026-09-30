@@ -71,6 +71,7 @@ export function worldFromInventory(item: InventoryItem, adapterId: InventoryStor
 		name: item.name,
 		scene: copyScene(item.slotData),
 		defaultVisibility: 'private',
+		...(item.thumbnailAssetId ? { preview: item.thumbnailAssetId } : {}),
 		source: { kind: 'inventory', adapterId, itemId: item.id, ownerId, worldLineageId: item.worldLineageId, folderId: item.folderId, revisionNumber: item.revisionNumber }
 	};
 }
@@ -84,6 +85,8 @@ export function createWorldOrb(world: WorldPackage, position: Slot['position']):
 		components: [
 			{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'sphere' }, color: '#7c3aed' },
 			{ type: 'collider', shape: 'sphere' },
+			// An orb is something to pick up and carry (the trigger still opens its menu); it should not be resized by a two-handed grab.
+			{ type: 'grabbable', scalable: false },
 			{ type: 'worldPortal', world: JSON.parse(JSON.stringify(world)) as WorldPackage }
 		]
 	});
@@ -94,6 +97,7 @@ export function validateWorldPackage(value: unknown): asserts value is WorldPack
 	const world = value as Partial<WorldPackage>;
 	if (world.formatVersion !== 1 || typeof world.name !== 'string' || !world.name.trim() || world.name.length > 120 ||
 		!['solo', 'private', 'friends', 'friends-plus', 'public'].includes(world.defaultVisibility ?? '')) throw new Error('Unsupported world package');
+	if (world.preview != null && !isAssetId(world.preview)) throw new Error('Invalid world preview');
 	validateWorldScene(world.scene);
 }
 

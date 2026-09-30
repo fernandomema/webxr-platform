@@ -1,7 +1,5 @@
 import type { SlotTree } from '$lib/ecs/types';
 import { createSlot } from '$lib/ecs/types';
-import lobby from '$lib/xr/templates/lobby.json';
-import { cloneTree } from '../tree/ops';
 
 export interface StudioTemplate {
 	id: string;
@@ -26,14 +24,6 @@ export const TEMPLATES: StudioTemplate[] = [
 				components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'ground' }, color: '#4b5563' }, { type: 'collider', shape: 'box' }]
 			})
 		]
-	},
-	{
-		id: 'lobby',
-		label: 'Lobby',
-		description: 'The default lobby: a glowing spawn pad, a welcome sign and a paint brush.',
-		kind: 'world',
-		defaultName: 'My lobby',
-		build: () => cloneTree(lobby as SlotTree)
 	},
 	{
 		id: 'blank-object',

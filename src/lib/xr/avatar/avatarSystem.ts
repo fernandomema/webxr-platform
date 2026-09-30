@@ -3,13 +3,13 @@ import { findComponent, type AvatarComponent, type Vec3 } from '$lib/ecs/types';
 import type { SceneGraph } from '../sceneGraph';
 import type { HandPose, TransformPose } from './defaultAvatar';
 import { readHandPoses } from './localHands';
-import { defaultHandModel, holdingBends, solveGraspFull, type FingerModel, type HandModel } from './grasp';
+import { defaultHandModel, fingerJoints as fingerPoints, holdingBends, palmShift, shiftPrimitives, solveGraspFull, withSwing, type FingerModel, type HandModel } from './grasp';
 import { graspObstacles } from './graspShapes';
 import { FINGER_NAMES, OPEN_HAND, bendsFromCurls, conjugate, easeValues, handFrameFromKnuckles, parseBends, parseCurls, parseThumbDirections, rotateVector as rotateBy } from './fingers';
 import { detectHumanoidMap, fingerJoints, missingRequiredBones, pruneHumanoidMap, type HumanoidBone } from './humanoid';
 import { mirrorRenderHooks } from '../mirrorHooks';
 import { newFoot, smoothVelocity, stepFoot, type Foot } from './gait';
-import { arcBetween, followYaw, headYaw, restFacingYaw, solveTwoBone, updateStandingHeight, type Q4, type V3 } from './ik';
+import { arcBetween, followYaw, headYaw, restFacingYaw, solveTwoBone, stepToReach, updateStandingHeight, type Q4, type V3 } from './ik';
 
 /**
  * Drives every avatar slot from its owner's pose, like a puppet: the body stands under the head and
@@ -38,12 +38,20 @@ export interface AvatarSystemOptions {
 	getHeldSlots?(playerId: string): { left?: HeldItem | null; right?: HeldItem | null };
 }
 
-/** A grasp worked out for a hand: the finger angles, and how far the thumb turned across the palm to press on the object. */
+/**
+ * A grasp worked out for a hand: the finger angles, how far the thumb turned across the palm to press on the object, and
+ * how far the hand was moved (in its own frame) to rest its palm on the object. `model` is the hand it was solved for.
+ */
 interface Grasp {
 	key: string;
 	bends: number[];
 	thumbSwing: number;
+	shift: V3 | null;
+	model: HandModel;
 }
+
+/** How far a hand may be moved to rest on what it grabbed, in metres at the avatar's own size. */
+const PALM_REACH = 0.1;
 
 /** What a hand has hold of: the slot, and whether it is equipped in the hand or just grabbed. */
 export interface HeldItem {
@@ -73,16 +81,16 @@ interface Rig {
 	restHipsY: number;
 	skeletons: Skeleton[];
 	fingers: Record<'left' | 'right', FingerChain[]>;
-	/** The joint angles currently shown per hand (15: thumb to little, three joints each), eased towards the latest ones received. */
-	bends: Record<'left' | 'right', number[]>;
+	/** The knuckles each hand's frame is read from once the hand is posed, so fingers are placed in the frame they were measured in. */
+	knuckles: Record<'left' | 'right', { index: TransformNode; middle: TransformNode; little: TransformNode } | null>;
 	/** Where each foot is planted or swinging, so walking looks like steps instead of a body sliding over fixed feet. */
 	feet: { left?: Foot; right?: Foot };
 	/** Each hand's fingers as measured on this model (lengths in the root's own units), for closing them round an object. */
 	handModels: { left: HandModel; right: HandModel };
 	/** The last grasp worked out per hand, kept until the object moves in the hand. */
 	grasps: { left: Grasp | null; right: Grasp | null };
-	/** How far each thumb's curl plane is turned to reach what it grips, eased. */
-	thumbSwing: { left: number; right: number };
+	/** How far each hand is moved onto what it grabbed (in the hand's frame), eased. */
+	shift: { left: V3; right: V3 };
 	/** The body's horizontal velocity, eased, used to aim each step ahead. */
 	velocity: V3;
 	lastRoot: V3 | null;
@@ -145,6 +153,15 @@ const REST_TO_HAND: Record<'left' | 'right', Matrix> = {
 	right: orientationOfQuat(Quaternion.RotationAxis(UP, -Math.PI / 2))
 };
 
+/**
+ * How far the local player's own body is moved back from under their eyes, in metres at the avatar's size: a little when
+ * standing, more as they crouch (`crouch`, the share of standing eye height lost) and as they look down (`lookY`, the
+ * vertical part of where the head points, negative looking down).
+ */
+export function localBodyBehind(crouch: number, lookY: number): number {
+	return 0.08 + 0.3 * Math.min(0.6, Math.max(0, crouch)) + 0.08 * Math.max(0, -lookY);
+}
+
 export class AvatarSystem {
 	private poses = new Map<string, AvatarPose>();
 	private rigs = new Map<string, Rig>();
@@ -180,6 +197,28 @@ export class AvatarSystem {
 	removePlayer(playerId: string): void {
 		this.poses.delete(playerId);
 		this.driven.delete(playerId);
+	}
+
+	/**
+	 * Where the tip of the local player's index finger is, in the world, as their avatar shows it this frame: the end of
+	 * the finger's last bone, along the way that bone points. Null without an avatar (or one without that finger). What
+	 * the player touches things with, so it has to be where they see their fingertip.
+	 */
+	localIndexTip(side: 'left' | 'right'): Vector3 | null {
+		const rig = this.localRig;
+		const chain = rig?.fingers[side][1];
+		if (!rig || !chain || chain.bones.length < 3) return null;
+		const distal = chain.bones[2];
+		const parent = distal.parent as TransformNode | null;
+		if (!parent) return null;
+		for (const bone of chain.bones) bone.computeWorldMatrix(true);
+		// The bone's segment at rest, in its own space, turned as the bone is turned now, then into the world.
+		const inBone = chain.restDirections[2].applyRotationQuaternion(Quaternion.Inverse(chain.rest[2]));
+		const now = inBone.applyRotationQuaternion(distal.rotationQuaternion ?? Quaternion.FromEulerVector(distal.rotation));
+		const direction = Vector3.TransformNormal(now, parent.getWorldMatrix());
+		if (direction.lengthSquared() < 1e-12) return null;
+		const length = rig.handModels[side][1].lengths[2] * (rig.root.scaling.x || 1);
+		return distal.getAbsolutePosition().add(direction.normalize().scale(length));
 	}
 
 	/** True while this player's avatar model is loaded and being posed, so a stand-in can be hidden. */
@@ -314,11 +353,14 @@ export class AvatarSystem {
 			const middle = knuckle('Middle'), indexBone = knuckle('Index'), little = knuckle('Little');
 			let palm = new Vector3(0, -1, 0);
 			let along = new Vector3(side === 'left' ? -1 : 1, 0, 0);
+			// A thumb flexes across the palm towards the little finger, the plane the grasp solver closes it in.
+			let thumbCurl = palm.add(along.scale(0.7)).normalize();
 			if (middle && indexBone && little) {
 				const frame = handFrameFromKnuckles(position(wrist).asArray() as V3, position(middle).asArray() as V3, position(indexBone).asArray() as V3, position(little).asArray() as V3, side);
 				if (frame) {
 					palm = Vector3.FromArray(rotateBy(frame, [0, -1, 0]));
 					along = Vector3.FromArray(rotateBy(frame, [0, 0, 1]));
+					thumbCurl = Vector3.FromArray(rotateBy(frame, defaultHandModel(side)[0].palm));
 				}
 			}
 			const chains: FingerChain[] = [];
@@ -329,9 +371,7 @@ export class AvatarSystem {
 					if (!bone) break;
 					bones.push(bone);
 				}
-				const isThumb = finger === 'Thumb';
-				// A thumb closes across the palm, towards the fingers, rather than straight down.
-				const target = isThumb ? palm.add(along.scale(0.7)).normalize() : palm;
+				const target = finger === 'Thumb' ? thumbCurl : palm;
 				const points = bones.map(position);
 				const axes: Vector3[] = [];
 				const rest: Quaternion[] = [];
@@ -381,6 +421,10 @@ export class AvatarSystem {
 			});
 		}
 		const fingers = { left: buildFingers('left'), right: buildFingers('right') };
+		const knuckles = (side: 'left' | 'right') => {
+			const [index, middle, little] = (['Index', 'Middle', 'Little'] as const).map((finger) => node(fingerJoints(side, finger)[0]));
+			return index && middle && little ? { index, middle, little } : null;
+		};
 		const skeletons = new Set<Skeleton>();
 		for (const mesh of root.getChildMeshes(false)) {
 			const skeleton = (mesh as { skeleton?: Skeleton | null }).skeleton;
@@ -398,11 +442,11 @@ export class AvatarSystem {
 			restHipsY: hips?.position.y ?? 0,
 			skeletons: [...skeletons],
 			fingers,
-			bends: { left: anglesFromCurls(OPEN_HAND), right: anglesFromCurls(OPEN_HAND) },
+			knuckles: { left: knuckles('left'), right: knuckles('right') },
 			feet: {},
 			handModels: { left: measureHandModel('left'), right: measureHandModel('right') },
 			grasps: { left: null, right: null },
-			thumbSwing: { left: 0, right: 0 },
+			shift: { left: [0, 0, 0], right: [0, 0, 0] },
 			velocity: [0, 0, 0],
 			lastRoot: null,
 			legs,
@@ -442,13 +486,35 @@ export class AvatarSystem {
 		// Feet stay on the floor and the hips sink as the head does; a model with no legs to bend just drops whole.
 		const standingEye = eye * scale;
 		const drop = Math.min(Math.max(0, standingEye - (headPosition.y - floorY)), standingEye * 0.6);
+		// Your own body sits a little behind your eyes, and further back as you crouch or look down, so it does not fill the view below you.
+		const behind = isLocal ? localBodyBehind(drop / standingEye, rotateBy(pose.head.rotation as Q4, [0, 0, 1])[1]) * scale : 0;
+		const forward = new Vector3(0, 0, 1).applyRotationQuaternion(Quaternion.RotationAxis(UP, rig.yaw));
+		const back = forward.scale(-behind);
+		const x = headPosition.x - lean.x + back.x, z = headPosition.z - lean.z + back.z;
 		if (rig.hips) {
-			root.position.set(headPosition.x - lean.x, floorY, headPosition.z - lean.z);
+			root.position.set(x, floorY, z);
 			rig.hips.position.y = rig.restHipsY - drop / scale;
 		} else {
-			root.position.set(headPosition.x - lean.x, headPosition.y - standingEye, headPosition.z - lean.z);
+			root.position.set(x, headPosition.y - standingEye, z);
 		}
 		root.computeWorldMatrix(true);
+		// ...but never so far back that an arm can no longer reach its hand: the body comes forward as much as that needs.
+		if (behind > 0) {
+			let step = 0;
+			for (const side of ['left', 'right'] as const) {
+				const arm = rig.arms[side];
+				const hand = pose[side];
+				if (!arm || !hand) continue;
+				arm.upper.computeWorldMatrix(true);
+				const toTarget = Vector3.FromArray(hand.position).subtract(arm.upper.getAbsolutePosition());
+				const reach = (rig.lengths[side][0] + rig.lengths[side][1]) * scale * 0.98;
+				step = Math.max(step, stepToReach(toTarget.asArray() as V3, forward.asArray() as V3, reach));
+			}
+			if (step > 0) {
+				root.position.addInPlace(forward.scale(Math.min(step, behind)));
+				root.computeWorldMatrix(true);
+			}
+		}
 
 		const facingMatrix = orientationOfQuat(Quaternion.RotationAxis(UP, rig.facing));
 
@@ -463,39 +529,72 @@ export class AvatarSystem {
 
 		const bodyYaw = Quaternion.RotationAxis(UP, rig.yaw);
 		for (const side of ['left', 'right'] as const) {
-			const arm = rig.arms[side];
-			if (!arm) continue;
-			const sign = side === 'left' ? -1 : 1;
-			arm.upper.computeWorldMatrix(true);
-			const shoulder = arm.upper.getAbsolutePosition().clone();
-			const handPose = pose[side];
-			// Without a tracked hand the arm hangs relaxed at the side.
-			const target = handPose
-				? Vector3.FromArray(handPose.position)
-				: shoulder.add(new Vector3(sign * 0.12, -0.55, 0.05).scale(scale).applyRotationQuaternion(bodyYaw));
-			const pole = new Vector3(sign * 0.5, -1, -0.5).applyRotationQuaternion(bodyYaw);
-			const [upperLength, lowerLength] = rig.lengths[side];
-			const solution = solveTwoBone(shoulder.asArray() as V3, target.asArray() as V3, upperLength * scale, lowerLength * scale, pole.asArray() as V3);
-
-			this.aim(rig, arm.upper, arm.lower, Vector3.FromArray(solution.mid));
-			arm.lower.computeWorldMatrix(true);
-			this.aim(rig, arm.lower, arm.hand, Vector3.FromArray(solution.end));
-			if (handPose) {
-				arm.hand.computeWorldMatrix(true);
-				this.orient(rig, arm.hand, orientationOfQuat(toQuat(handPose.rotation)), facingMatrix, REST_TO_HAND[side]);
-			}
+			const hand = pose[side];
+			this.reachArm(rig, side, hand, null, scale, bodyYaw, facingMatrix);
+			// The grasp is solved, and the fingers placed, in the frame of the hand as it is now posed.
+			const frame = hand ? this.handFrame(rig, side, hand) : null;
+			const grasp = hand && frame ? this.graspFor(rig, side, ownerId, hand, frame) : null;
+			// A hand moved onto what it grabbed eases there instead of jumping.
+			rig.shift[side] = easeValues(rig.shift[side], grasp?.shift ?? [0, 0, 0], dt, 12) as V3;
+			if (hand && frame && Math.hypot(...rig.shift[side]) > 1e-4) this.reachArm(rig, side, hand, Vector3.FromArray(rotateBy(frame, rig.shift[side])), scale, bodyYaw, facingMatrix);
+			this.driveFingers(rig, side, hand, dt, grasp, frame);
 		}
-		for (const side of ['left', 'right'] as const) this.driveFingers(rig, side, pose[side], dt, this.graspBends(rig, side, ownerId, pose[side]));
 
 		if (rig.hips) this.driveLegs(rig, bodyYaw, facingMatrix, dt);
 	}
 
 	/**
-	 * The finger angles for a hand that holds an object with Auto grip (equipped, or grabbed): closed round the object's shape, and on a controller
-	 * the trigger still pulls the index finger further. A tracked hand keeps its own fingers.
+	 * Reaches the arm for the hand with two-bone IK and turns the hand the way it is held; without a tracked hand the arm
+	 * hangs relaxed at the side. `offset` moves the hand off where it is tracked (onto something it grabbed).
 	 */
-	private graspBends(rig: Rig, side: 'left' | 'right', ownerId: string, hand: HandPose | undefined): { bends: number[]; thumbSwing: number } | null {
-		if (!hand || parseBends(hand.bend)) return null;
+	private reachArm(rig: Rig, side: 'left' | 'right', handPose: HandPose | undefined, offset: Vector3 | null, scale: number, bodyYaw: Quaternion, facing: Matrix): void {
+		const arm = rig.arms[side];
+		if (!arm) return;
+		const sign = side === 'left' ? -1 : 1;
+		arm.upper.computeWorldMatrix(true);
+		const shoulder = arm.upper.getAbsolutePosition().clone();
+		const target = handPose
+			? Vector3.FromArray(handPose.position).addInPlace(offset ?? Vector3.Zero())
+			: shoulder.add(new Vector3(sign * 0.12, -0.55, 0.05).scale(scale).applyRotationQuaternion(bodyYaw));
+		const pole = new Vector3(sign * 0.5, -1, -0.5).applyRotationQuaternion(bodyYaw);
+		const [upperLength, lowerLength] = rig.lengths[side];
+		const solution = solveTwoBone(shoulder.asArray() as V3, target.asArray() as V3, upperLength * scale, lowerLength * scale, pole.asArray() as V3);
+
+		this.aim(rig, arm.upper, arm.lower, Vector3.FromArray(solution.mid));
+		arm.lower.computeWorldMatrix(true);
+		this.aim(rig, arm.lower, arm.hand, Vector3.FromArray(solution.end));
+		if (handPose) {
+			arm.hand.computeWorldMatrix(true);
+			this.orient(rig, arm.hand, orientationOfQuat(toQuat(handPose.rotation)), facing, REST_TO_HAND[side]);
+		}
+	}
+
+	/**
+	 * The posed hand's frame (fingers along +Z, back of the hand along +Y), read off its knuckles: the frame its fingers were
+	 * measured in, which a model's rest hand may have a little tilted from the tracked rotation. That rotation is the fallback.
+	 */
+	private handFrame(rig: Rig, side: 'left' | 'right', hand: HandPose): Q4 {
+		const wrist = rig.arms[side]?.hand;
+		const knuckles = rig.knuckles[side];
+		if (!wrist || !knuckles) return hand.rotation as Q4;
+		wrist.computeWorldMatrix(true);
+		const at = (bone: TransformNode): V3 => {
+			const chain: TransformNode[] = [];
+			for (let b: TransformNode | null = bone; b && b !== wrist; b = b.parent as TransformNode | null) chain.unshift(b);
+			for (const b of chain) b.computeWorldMatrix(true);
+			return bone.getAbsolutePosition().asArray() as V3;
+		};
+		return handFrameFromKnuckles(at(wrist), at(knuckles.middle), at(knuckles.index), at(knuckles.little), side) ?? (hand.rotation as Q4);
+	}
+
+	/**
+	 * The grasp for a hand that holds an object with Auto grip (equipped, or grabbed): closed round the object's shape. The
+	 * trigger does not pull the index any further, since the index already rests on the object and would sink into it.
+	 * A tracked hand keeps its own fingers. A grabbed object
+	 * stays where it was caught, so the hand is moved to rest on it; an equipped one sits where its author placed it.
+	 */
+	private graspFor(rig: Rig, side: 'left' | 'right', ownerId: string, hand: HandPose, frame: Q4): Grasp | null {
+		if (parseBends(hand.bend)) return null;
 		const held = this.options.getHeldSlots?.(ownerId)?.[side];
 		const slotId = held?.slotId;
 		const entry = slotId ? this.sceneGraph.getLive(slotId) : undefined;
@@ -505,62 +604,62 @@ export class AvatarSystem {
 			rig.grasps[side] = null;
 			return null;
 		}
-		const handWorld = Matrix.Compose(Vector3.One(), Quaternion.FromArray(hand.rotation), Vector3.FromArray(hand.position));
+		const handWorld = Matrix.Compose(Vector3.One(), Quaternion.FromArray(frame), Vector3.FromArray(hand.position));
 		const obstacles = graspObstacles(this.sceneGraph, slotId, handWorld);
 		const unit = rig.root.scaling.x || 1;
-		const key = `${unit.toFixed(2)}|${obstacles.map((shape) => `${shape.kind}:${[...shape.center, ...shape.rotation, ...shape.half].map((v) => Math.round(v * 200)).join(',')}`).join(';')}`;
+		const key = `${held!.via}|${unit.toFixed(2)}|${obstacles.map((shape) => `${shape.kind}:${[...shape.center, ...shape.rotation, ...shape.half].map((v) => Math.round(v * 200)).join(',')}`).join(';')}`;
 		let cached = rig.grasps[side];
 		if (!cached || cached.key !== key) {
-			const scaled = rig.handModels[side].map((f): FingerModel => ({
+			const model = rig.handModels[side].map((f): FingerModel => ({
 				...f,
 				base: [f.base[0] * unit, f.base[1] * unit, f.base[2] * unit],
 				lengths: [f.lengths[0] * unit, f.lengths[1] * unit, f.lengths[2] * unit],
 				radius: f.radius * unit
 			}));
-			cached = { key, ...solveGraspFull(scaled, obstacles, holdingBends()) };
+			const shift = held!.via === 'grab' ? palmShift(model, obstacles, PALM_REACH * unit) : null;
+			cached = { key, shift, model, ...solveGraspFull(model, shift ? shiftPrimitives(obstacles, shift) : obstacles, holdingBends()) };
 			rig.grasps[side] = cached;
 		}
-		const curl = parseCurls(hand.curl);
-		if (!curl || curl[1] <= 0.55) return cached;
-		const pulled = bendsFromCurls(curl).slice(3, 6);
-		return { thumbSwing: cached.thumbSwing, bends: cached.bends.map((angle, i) => (i >= 3 && i < 6 ? Math.max(angle, pulled[i - 3]) : angle)) };
+		return cached;
 	}
 
-	/** Curls each finger towards the palm by the amount its owner's hand is curled, easing between packets. */
-	private driveFingers(rig: Rig, side: 'left' | 'right', hand: HandPose | undefined, dt: number, grasp: { bends: number[]; thumbSwing: number } | null): void {
-		// A tracked hand sends the angle of every joint, which is shown as it is; a controller only knows how far each finger is curled.
+	/**
+	 * Poses the fingers, easing towards the latest pose so 20 Hz packets look smooth. A tracked hand sends the angle of every
+	 * joint; a controller only how far each finger is curled; a hand holding something with Auto grip takes the grasp
+	 * solver's pose, each bone aimed along the segment the solver placed, so what is drawn is exactly what was checked
+	 * against the object (the thumb included, however far it turned across the palm).
+	 */
+	private driveFingers(rig: Rig, side: 'left' | 'right', hand: HandPose | undefined, dt: number, grasp: Grasp | null, frame: Q4 | null): void {
+		const k = 1 - Math.exp(-dt * 18);
 		const curls = parseCurls(hand?.curl) ?? OPEN_HAND;
-		const target = (parseBends(hand?.bend) ?? grasp?.bends ?? anglesFromCurls(curls)).map((angle, i) => Math.min(angle, MAX_BEND[i % 3][Math.floor(i / 3)]));
-		rig.bends[side] = easeValues(rig.bends[side], target, dt);
-		rig.thumbSwing[side] = easeValues([rig.thumbSwing[side]], [grasp?.thumbSwing ?? 0], dt)[0];
+		const bends = (parseBends(hand?.bend) ?? anglesFromCurls(curls)).map((angle, i) => Math.min(angle, MAX_BEND[i % 3][Math.floor(i / 3)]));
 		const thumbDirections = parseThumbDirections(hand?.thumb);
 		rig.fingers[side].forEach((chain, finger) => {
 			if (finger === 0 && thumbDirections && hand) {
-				this.aimThumb(rig.fingers[side][0], thumbDirections, hand.rotation as Q4, dt);
+				this.aimChain(chain, thumbDirections.map((d) => rotateBy(hand.rotation as Q4, d)), k);
 				return;
 			}
-			// A thumb closing on an object turns across the palm as well as bending: its curl plane is swung about its own direction.
-			const swing = finger === 0 ? rig.thumbSwing[side] : 0;
+			if (grasp && frame) {
+				const model = finger === 0 ? withSwing(grasp.model[0], grasp.thumbSwing) : grasp.model[finger];
+				const p = fingerPoints(model, grasp.bends.slice(finger * 3, finger * 3 + 3));
+				this.aimChain(chain, [0, 1, 2].map((j) => rotateBy(frame, [p[j + 1][0] - p[j][0], p[j + 1][1] - p[j][1], p[j + 1][2] - p[j][2]])), k);
+				return;
+			}
 			chain.bones.forEach((bone, joint) => {
-				const axis = swing === 0 ? chain.axes[joint] : chain.axes[joint].clone().applyRotationQuaternion(Quaternion.RotationAxis(chain.restDirections[joint], swing));
-				bone.rotationQuaternion = Quaternion.RotationAxis(axis, rig.bends[side][finger * 3 + Math.min(joint, 2)]).multiply(chain.rest[joint]);
+				const target = Quaternion.RotationAxis(chain.axes[joint], bends[finger * 3 + Math.min(joint, 2)]).multiply(chain.rest[joint]);
+				bone.rotationQuaternion = Quaternion.Slerp(bone.rotationQuaternion ?? chain.rest[joint], target, k);
 			});
 		});
 	}
 
-	/**
-	 * A tracked thumb is pointed rather than bent: each of its bones is aimed along the direction the real segment points.
-	 * The directions arrive in the hand's frame, so the hand's own rotation turns them back into the world.
-	 */
-	private aimThumb(chain: FingerChain, directions: V3[], handRotation: Q4, dt: number): void {
-		const k = 1 - Math.exp(-dt * 18);
+	/** Points each bone of a finger along a direction in the world (base to tip), easing by `k`. */
+	private aimChain(chain: FingerChain, directions: V3[], k: number): void {
 		chain.bones.forEach((bone, joint) => {
 			const parent = bone.parent as TransformNode | null;
 			const direction = directions[Math.min(joint, 2)];
 			if (!parent || !direction) return;
 			parent.computeWorldMatrix(true);
-			const world = Vector3.FromArray(rotateBy(handRotation, direction));
-			const wanted = Vector3.TransformNormal(world, parent.getWorldMatrix().clone().invert());
+			const wanted = Vector3.TransformNormal(Vector3.FromArray(direction), parent.getWorldMatrix().clone().invert());
 			if (wanted.lengthSquared() < 1e-10) return;
 			const arc = Quaternion.FromArray(arcBetween(chain.restDirections[joint].asArray() as V3, wanted.asArray() as V3));
 			const target = arc.multiply(chain.rest[joint]);

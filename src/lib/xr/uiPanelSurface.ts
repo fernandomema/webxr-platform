@@ -8,10 +8,10 @@ import {
 	Rectangle,
 	ScrollViewer,
 	StackPanel,
-	TextBlock,
-	VirtualKeyboard
+	TextBlock
 } from '@babylonjs/gui';
 import { findComponent, type Slot, type UIElementComponent, type UIEvent, type UIPanelComponent } from '$lib/ecs/types';
+import { typeWithKeyboard } from './keyboard/guiInput';
 
 /** Playback state of a `video` element on this peer, as read by `ctx.ui.getMedia`. */
 export interface UIMediaState {
@@ -139,25 +139,6 @@ export function setupUIPanel(
 	background.background = panel.background ?? '#111827';
 	texture.addControl(background);
 
-	// One on-screen keyboard per panel, shown while any input is focused (there is no OS keyboard in XR).
-	const keyboard = new VirtualKeyboard('ui-panel-keyboard');
-	keyboard.defaultButtonWidth = '64px';
-	keyboard.defaultButtonHeight = '56px';
-	keyboard.defaultButtonPaddingLeft = keyboard.defaultButtonPaddingRight = '4px';
-	keyboard.defaultButtonPaddingTop = keyboard.defaultButtonPaddingBottom = '4px';
-	keyboard.defaultButtonColor = 'white';
-	keyboard.defaultButtonBackground = '#374151';
-	keyboard.background = '#0b1220';
-	// Same layout as VirtualKeyboard.CreateDefaultLayout, added after the sizing so every key is big enough to hit with a laser.
-	keyboard.addKeysRow(['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '\u2190']);
-	keyboard.addKeysRow(['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p']);
-	keyboard.addKeysRow(['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', "'", '\u21B5']);
-	keyboard.addKeysRow(['\u21E7', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/']);
-	keyboard.addKeysRow([' '], [{ width: '400px' }]);
-	keyboard.width = '100%';
-	keyboard.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-	keyboard.isVisible = false;
-	texture.addControl(keyboard);
 
 	const entries = new Map<string, Entry>();
 	const margins = new Map<string, MarginSpacers>();
@@ -166,7 +147,6 @@ export function setupUIPanel(
 	const changeTimers = new Map<string, ReturnType<typeof setTimeout>>();
 	let rootStack: StackPanel | null = null;
 	let knownShape = '';
-	let focusedInputs = 0;
 
 	function getUiSlots(): Slot[] {
 		return getSubtree().filter((slot) => findComponent(slot, 'uiElement'));
@@ -277,7 +257,8 @@ export function setupUIPanel(
 		input.placeholderText = component.placeholder ?? '';
 		input.placeholderColor = '#9ca3af';
 		input.disableMobilePrompt = true;
-		keyboard.connect(input);
+		// In a headset the field is typed with the in-world keyboard, brought up in front of this panel.
+		typeWithKeyboard(input, { near: () => mesh, onSubmit: () => flush('submit') });
 
 		const flush = (type: UIEvent['type']) => {
 			const pending = changeTimers.get(slot.id);
@@ -292,14 +273,6 @@ export function setupUIPanel(
 			changeTimers.set(slot.id, setTimeout(() => flush('change'), INPUT_CHANGE_DEBOUNCE_MS));
 		});
 		input.onSubmit = () => flush('submit');
-		input.onFocusObservable.add(() => {
-			focusedInputs++;
-			keyboard.isVisible = true;
-		});
-		input.onBlurObservable.add(() => {
-			focusedInputs = Math.max(0, focusedInputs - 1);
-			if (focusedInputs === 0) keyboard.isVisible = false;
-		});
 		return { control: input, appliedText: component.text ?? '' };
 	}
 
@@ -418,8 +391,6 @@ export function setupUIPanel(
 		for (const runtime of videos.values()) runtime.image = null;
 		entries.clear();
 		margins.clear();
-		focusedInputs = 0;
-		keyboard.isVisible = false;
 		const rootSlot = getSubtree()[0];
 		background.background = (rootSlot ? findComponent(rootSlot, 'uiPanel')?.background : undefined) ?? panel.background ?? '#111827';
 		rootStack = new StackPanel('ui-panel-layout');

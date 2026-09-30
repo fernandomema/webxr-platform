@@ -34,6 +34,7 @@
 		{ id: 'ui-input', label: 'UI text input', icon: 'layers', name: 'UI Input', position: [0, 0, 0], components: [{ type: 'uiElement', kind: 'input', placeholder: 'Type here', width: 880, height: 48, fontSize: 24 }] },
 		{ id: 'ui-image', label: 'UI image', icon: 'layers', name: 'UI Image', position: [0, 0, 0], components: [{ type: 'uiElement', kind: 'image', src: '', width: 320, height: 180 }] },
 		{ id: 'ui-video', label: 'UI video', icon: 'layers', name: 'UI Video', position: [0, 0, 0], components: [{ type: 'uiElement', kind: 'video', src: '', width: 640, height: 360, playing: false, loop: false, muted: false, volume: 1 }] },
+		{ id: 'preview-camera', label: 'Preview camera', icon: 'sliders', name: 'Preview Camera', position: [0, 1.2, -3], components: [{ type: 'previewCamera' }] },
 		{ id: 'group', label: 'Empty group', icon: 'folder', name: 'Group', position: [0, 0, 0], components: [] },
 		{ id: 'logic', label: 'Logic node', icon: 'code', name: 'Logic node', position: [0, 0, 0], components: [], advanced: true }
 	];

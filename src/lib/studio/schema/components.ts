@@ -262,6 +262,15 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		create: () => ({ type: 'insertable', tag: 'disc' })
 	},
 	{
+		type: 'previewCamera',
+		label: 'Preview Camera',
+		group: 'Render',
+		description: 'Where the preview picture of this object or avatar is taken from, looking along this slot’s forward direction. In a world it sets where the 360° preview is taken from.',
+		glyph: '◫',
+		fields: [{ key: 'fov', label: 'Field of view', kind: 'number', min: 15, max: 110, step: 1, unit: '°', optional: true, default: 46, help: 'How wide the picture is. Leave unset for the default. Worlds always show everything.' }],
+		create: () => ({ type: 'previewCamera' })
+	},
+	{
 		type: 'avatar',
 		label: 'Avatar',
 		group: 'Interaction',

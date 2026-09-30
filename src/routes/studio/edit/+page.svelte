@@ -13,6 +13,7 @@
 	import ScenePreview from '$lib/studio/ScenePreview.svelte';
 	import TopBar from '$lib/studio/components/TopBar.svelte';
 	import Hierarchy from '$lib/studio/components/Hierarchy.svelte';
+	import { quatToEuler, roundDisplay } from '$lib/math/euler';
 	import Inspector from '$lib/studio/components/Inspector.svelte';
 	import AiPanel from '$lib/studio/components/AiPanel.svelte';
 	import MarketplacePanel from '$lib/studio/components/MarketplacePanel.svelte';
@@ -278,7 +279,17 @@
 				{/if}
 				<!-- The 3D view stays mounted so switching tabs doesn't rebuild the scene. -->
 				<div class="view" hidden={centerView !== 'scene'}>
-					<ScenePreview bind:this={preview} tree={doc.tree} selectedId={doc.selectedId} onSelect={(id) => doc.select(id)} />
+					<ScenePreview
+						bind:this={preview}
+						tree={doc.tree}
+						selectedId={doc.selectedId}
+						onSelect={(id) => doc.select(id)}
+						cameraKind={doc.kind === 'world' ? 'world' : 'object'}
+						onMoveSlot={(id, position, rotation) => {
+							doc.setPosition(id, position);
+							doc.setRotationEuler(id, quatToEuler(rotation).map((value) => roundDisplay(value, 2)) as [number, number, number]);
+						}}
+					/>
 					<p class="hint">Drag to orbit · Scroll to zoom · Right-drag to pan · <span class="kbd">F</span> to focus</p>
 				</div>
 				{#if centerView === 'code'}<div class="view"><CodeView {doc} /></div>{/if}
@@ -294,7 +305,7 @@
 					{/if}
 				</div>
 				<div class="right-body">
-					<div class="right-view" hidden={rightTab !== 'inspector'}><Inspector {doc} {advanced} onOpenCode={openCode} /></div>
+					<div class="right-view" hidden={rightTab !== 'inspector'}><Inspector {doc} {advanced} onOpenCode={openCode} getViewPose={() => preview?.getViewPose() ?? null} /></div>
 					<div class="right-view" hidden={rightTab !== 'ai'}><AiPanel {doc} projectKey={project.key} /></div>
 					{#if doc.kind === 'object' && project.adapterId !== 'purchased'}
 						<div class="right-view" hidden={rightTab !== 'marketplace'}><MarketplacePanel {project} /></div>

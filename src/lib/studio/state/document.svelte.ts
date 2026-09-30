@@ -143,6 +143,13 @@ export class StudioDocument {
 	}
 
 	addComponent(id: string, type: ComponentType): void {
+		const slot = ops.getSlot(this.tree, id);
+		// A Preview camera is a point of view, not a property of what it looks at. On a slot that already is something (or holds
+		// something) it goes on a child of its own, so that moving the camera does not move the object.
+		if (type === 'previewCamera' && slot && (slot.components.length > 0 || ops.childrenOf(this.tree, id).length > 0)) {
+			this.addSlot({ name: 'Preview Camera', position: [0, 1.2, -3], components: [componentSchema(type).create()] }, id);
+			return;
+		}
 		this.commit(ops.addComponent(this.tree, id, componentSchema(type).create()));
 	}
 

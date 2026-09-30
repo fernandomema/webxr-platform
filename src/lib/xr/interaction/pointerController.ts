@@ -14,9 +14,26 @@ import type { SceneGraph } from '../sceneGraph';
 import type { GrabSystem } from './grabSystem';
 import type { EquipmentSystem } from './equipmentSystem';
 import type { EquipHand } from './equipmentRegistry';
+import { claimStickY, isHandLocked, releaseStickY } from './handLock';
+import { STICK_DEADZONE, pushedDistance } from './pushPull';
 
 const HAND_GRAB_RADIUS = 0.15;
 const LASER_MAX_LENGTH = 5;
+
+/**
+ * Takes a controller out of (or back into) Babylon's teleportation while its stick pushes a held object: in teleport
+ * mode, pushing the stick forward would otherwise also aim a teleport. Same private attach/detach as the pointer's.
+ */
+function setControllerTeleportEnabled(xr: WebXRDefaultExperience, controller: WebXRInputSource, enabled: boolean): void {
+	const feature = xr.teleportation as unknown as { attached?: boolean; _attachController?: (controller: WebXRInputSource) => void; _detachController?: (uniqueId: string) => void } | undefined;
+	if (!feature?.attached) return;
+	try {
+		if (enabled) feature._attachController?.(controller);
+		else feature._detachController?.(controller.uniqueId);
+	} catch (err) {
+		console.warn('[pointerController] could not toggle teleportation for a controller', err);
+	}
+}
 
 export interface PointerControllerNetworkHooks {
 	onGrab?(grabberId: string, slotId: string): void;
@@ -128,6 +145,44 @@ export function setupPointerAndGrabControllers(
 	const lastValueAt = new Map<string, number>();
 	/** How each hand's current grab began: only an object held by the HAND (not the laser) gets the trigger. */
 	const grabMode = new Map<string, 'hand' | 'laser'>();
+	/** Each controller's stick forward/back, and the hands whose stick is pushing a laser-held object. */
+	const stickY = new Map<string, number>();
+	const pushing = new Set<EquipHand>();
+	const pushRay = new Ray(Vector3.Zero(), Vector3.Forward());
+
+	/**
+	 * While a hand holds an object with its laser (and it alone), its stick brings the object closer (back) or pushes it
+	 * away (forward) along the laser, faster the further away it is.
+	 */
+	function pushOrPull(controller: WebXRInputSource, grabberId: string, dt: number): void {
+		const hand = handOf(grabberId);
+		if (!hand) return;
+		const slotId = grabSystem.getHeldSlot(grabberId);
+		const holding = Boolean(slotId && grabMode.get(grabberId) === 'laser' && grabSystem.getGrabbersForSlot(slotId).length === 1);
+		if (!holding) {
+			if (pushing.delete(hand)) {
+				releaseStickY(hand);
+				setControllerTeleportEnabled(xr, controller, true);
+			}
+			return;
+		}
+		if (!pushing.has(hand)) {
+			pushing.add(hand);
+			claimStickY(hand);
+			setControllerTeleportEnabled(xr, controller, false);
+		}
+		const y = stickY.get(grabberId) ?? 0;
+		// The radial menu uses the stick while it is open.
+		if (isHandLocked(hand) || Math.abs(y) < STICK_DEADZONE) return;
+		const node = slotId ? sceneGraph.getLive(slotId)?.node : undefined;
+		if (!node) return;
+		controller.getWorldPointerRayToRef(pushRay);
+		node.computeWorldMatrix(true);
+		const position = node.getAbsolutePosition().clone();
+		const along = Vector3.Dot(position.subtract(pushRay.origin), pushRay.direction);
+		const next = pushedDistance(along, y, dt);
+		node.setAbsolutePosition(position.add(pushRay.direction.scale(next - along)));
+	}
 
 	const handOf = (grabberId: string): EquipHand | null => (grabberId === 'left' || grabberId === 'right' ? grabberId : null);
 
@@ -199,6 +254,9 @@ export function setupPointerAndGrabControllers(
 		controller.onMotionControllerInitObservable.add((motionController) => {
 			const visual = createLaserVisual(scene, controller.pointer);
 			visuals.set(grabberId, visual);
+			motionController.getComponentOfType(WebXRControllerComponent.THUMBSTICK_TYPE)?.onAxisValueChangedObservable.add((axes) => {
+				stickY.set(grabberId, axes.y);
+			});
 
 			const trigger = motionController.getComponentOfType(WebXRControllerComponent.TRIGGER_TYPE);
 			const squeeze = motionController.getComponentOfType(WebXRControllerComponent.SQUEEZE_TYPE);
@@ -266,6 +324,8 @@ export function setupPointerAndGrabControllers(
 			}
 			controllers.delete(grabberId);
 			pointerDetached.delete(grabberId);
+			stickY.delete(grabberId);
+			if (hand && pushing.delete(hand)) releaseStickY(hand);
 			laserBeforeSuppress.delete(grabberId);
 			grabMode.delete(grabberId);
 			const releasedSlotId = grabSystem.getHeldSlot(grabberId) ?? undefined;
@@ -280,8 +340,10 @@ export function setupPointerAndGrabControllers(
 	});
 
 	scene.onBeforeRenderObservable.add(() => {
+		const dt = scene.getEngine().getDeltaTime() / 1000;
 		for (const controller of xr.input.controllers) {
 			const grabberId = grabberIdFor(controller);
+			pushOrPull(controller, grabberId, dt);
 			const visual = visuals.get(grabberId);
 			if (!visual) continue;
 

@@ -7,6 +7,9 @@ import { createRadialView } from './radialView';
 import { sourceLabel, validateWorldPackage } from '$lib/worlds/package';
 import type { WorldPackage } from '$lib/worlds/types';
 
+/** How long the orb's menu stays open when nobody uses it. */
+const MENU_AUTO_CLOSE_MS = 20_000;
+
 export function createWorldPortalMenu(
   scene: Scene,
   sceneGraph: SceneGraph,
@@ -97,7 +100,19 @@ export function createWorldPortalMenu(
     panel.setEnabled(true);
   }
 
+  /** The orb the menu is open for, and the timer that puts it away if nobody uses it. */
+  let openFor: string | null = null;
+  let autoClose: ReturnType<typeof setTimeout> | undefined;
+
+  function closeRadial() {
+    clearTimeout(autoClose);
+    openFor = null;
+    radial.close();
+  }
+
   function open(slotId: string) {
+    // Pressing the orb again puts its menu away.
+    if (radial.isOpen && openFor === slotId) return closeRadial();
     const entry = sceneGraph.getLive(slotId);
     const world = entry?.slot.components.find((component) => component.type === 'worldPortal')?.world;
     if (!entry || !world) return;
@@ -108,7 +123,13 @@ export function createWorldPortalMenu(
       { label: 'Custom session', isEnabled: () => true, onSelect: () => showCustom(world) },
       { label: 'Save a copy', isEnabled: () => true, onSelect: () => void saveCopy(world).catch((error) => { showCustom(world); status.text = error instanceof Error ? error.message : 'Could not save a copy'; }) }
     ]);
+    openFor = slotId;
+    // An unused menu does not hang in the air for ever.
+    clearTimeout(autoClose);
+    autoClose = setTimeout(() => {
+      if (openFor === slotId) closeRadial();
+    }, MENU_AUTO_CLOSE_MS);
   }
 
-  return { open, close: () => { radial.close(); panel.setEnabled(false); }, dispose: () => { radial.dispose(); texture.dispose(); material.dispose(); panel.dispose(); } };
+  return { open, close: () => { closeRadial(); panel.setEnabled(false); }, dispose: () => { clearTimeout(autoClose); radial.dispose(); texture.dispose(); material.dispose(); panel.dispose(); } };
 }

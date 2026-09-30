@@ -220,6 +220,9 @@ export class ModelLibrary {
 			const manifest = await this.store.getManifest(entry.id);
 			if (manifest?.type === 'model') entry.bounds = manifest.bounds;
 			const container = await LoadAssetContainerAsync(result.bytes, this.scene, { pluginExtension: '.glb', name: entry.id });
+			// The glTF loader starts a model's first clip, even in a container nothing shows: its nodes would keep animating,
+			// and every instance made later would be cloned mid-clip instead of in the model's own pose.
+			for (const group of container.animationGroups) group.stop();
 			if (controller.signal.aborted || this.disposed || entry.leases.size === 0) {
 				container.dispose();
 				return;
@@ -242,8 +245,10 @@ export class ModelLibrary {
 		const entry = this.entries.get(id);
 		if (!entry?.container) return null;
 		const created = entry.container.instantiateModelsToScene((source) => `${name}:${source}`, false);
-		// The app drives skeletons itself (avatars), so a clip baked into the file must not fight it.
+		// The app drives skeletons itself (avatars), so a clip baked into the file must not fight it, and every instance starts
+		// in the model's rest pose: an avatar's rig measures its bones from it, and a hand measured mid-clip ends up turned.
 		for (const group of created.animationGroups) group.stop();
+		for (const skeleton of created.skeletons) skeleton.returnToRest();
 		const root = new TransformNode(name, this.scene);
 		for (const node of created.rootNodes) node.parent = root;
 

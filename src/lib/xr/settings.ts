@@ -13,6 +13,8 @@ export interface XrSettings {
 	seatedMode: boolean;
 	/** Which buttons the Home tab of the personal menu shows, in order. */
 	dashboardLayout: DashboardItemId[];
+	/** The in-world keyboard's layout last typed with (see keyboard/layouts). Null picks the page's language. */
+	keyboardLayout: string | null;
 }
 
 export const xrSettings: XrSettings = {
@@ -20,7 +22,8 @@ export const xrSettings: XrSettings = {
 	rotationMode: 'snap-45',
 	defaultAvatar: null,
 	seatedMode: false,
-	dashboardLayout: [...DEFAULT_DASHBOARD_LAYOUT]
+	dashboardLayout: [...DEFAULT_DASHBOARD_LAYOUT],
+	keyboardLayout: null
 };
 
 const STORAGE_KEY = 'webxr-platform-settings';
@@ -36,6 +39,7 @@ export function loadSettings(): void {
 		if (Array.isArray(parsed.defaultAvatar)) xrSettings.defaultAvatar = parsed.defaultAvatar;
 		if (typeof parsed.seatedMode === 'boolean') xrSettings.seatedMode = parsed.seatedMode;
 		if (parsed.dashboardLayout !== undefined) xrSettings.dashboardLayout = normalizeDashboardLayout(parsed.dashboardLayout);
+		if (typeof parsed.keyboardLayout === 'string') xrSettings.keyboardLayout = parsed.keyboardLayout;
 	} catch {
 		// unavailable/malformed storage — keep defaults
 	}

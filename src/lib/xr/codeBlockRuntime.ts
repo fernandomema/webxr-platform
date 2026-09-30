@@ -14,6 +14,8 @@ export interface CodeBlockHost {
 	requestDelete(slotId: string): void;
 	/** Host/solo only — a guest's call is a documented no-op, corrected by the next broadcast anyway. */
 	setComponentField(slotId: string, componentType: string, field: string, value: unknown, broadcast?: boolean): void;
+	/** Records a slot's node transform (moved by a script) as its data and, when `broadcast`, sends it to guests. Host/solo only. */
+	commitTransform(slotId: string, broadcast?: boolean): void;
 	/** Every non-system Slot whose world position is within `radius` of `worldPos` — a generic spatial query for proximity/collision-style logic (hit detection, triggers, area effects), not tied to any one demo. O(live slot count) per call. */
 	findNear(worldPos: Vec3, radius: number): Slot[];
 	/** Casts a ray through the live scene — generic aiming/hit-testing for any tool (a laser, a thrown object, a spray), not tied to any one demo. `null` when nothing pickable is hit within `maxDistance`. */
@@ -254,6 +256,20 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 			/** `broadcast: false` updates this peer only (no snapshot to guests) — for per-frame updates, followed by a broadcasting call once in a while. */
 			setComponentField: (targetId: string, componentType: string, field: string, value: unknown, broadcast = true) =>
 				host.setComponentField(targetId, componentType, field, value, broadcast),
+			/**
+			 * Puts ANOTHER slot at a world position and/or rotation, keeping its scale — for tools that straighten, snap or
+			 * place objects. Host/solo only, like `setComponentField`. Refused (returns false) while a hand holds the slot
+			 * or it is equipped, so it never fights a player. `broadcast: false` moves it on this peer only.
+			 */
+			setWorldPose: (targetId: string, pose: { position?: Vec3; rotation?: Quat }, broadcast = true): boolean => {
+				if (!host.isHost()) return false;
+				const target = host.getNode(targetId);
+				if (!target || host.getGrabbers(targetId).length > 0 || host.getEquipHolder(targetId)) return false;
+				if (pose.position) setWorldPosition(target, pose.position);
+				if (pose.rotation) setWorldRotation(target, pose.rotation);
+				host.commitTransform(targetId, broadcast);
+				return true;
+			},
 			findNear: (worldPos: Vec3, radius: number) => host.findNear(worldPos, radius),
 			raycast: (origin: Vec3, direction: Vec3, maxDistance: number) => host.raycast(origin, direction, maxDistance),
 			getPlayer: (grabberId: string) => host.resolvePlayer(grabberId)

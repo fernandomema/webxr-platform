@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { rotateVector, headYaw, followYaw, restFacingYaw, yawQuat, updateStandingHeight, solveTwoBone, arcBetween } from '../src/lib/xr/avatar/ik.ts';
+import { rotateVector, headYaw, followYaw, restFacingYaw, yawQuat, updateStandingHeight, solveTwoBone, arcBetween, stepToReach } from '../src/lib/xr/avatar/ik.ts';
 
 const near = (a, b, eps = 1e-4) => assert.ok(a.every((v, i) => Math.abs(v - b[i]) < eps), `${a} vs ${b}`);
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
@@ -61,4 +61,13 @@ test('arcBetween rotates one direction onto another', () => {
 	near(rotateVector(q, [1, 0, 0]), [0, 1, 0]);
 	near(rotateVector(arcBetween([0, 0, 1], [0, 0, -1]), [0, 0, 1]), [0, 0, -1]);
 	near(arcBetween([0, 1, 0], [0, 1, 0]), [0, 0, 0, 1]);
+});
+
+test('stepToReach moves a shoulder forward just enough to reach a target, and not at all when it already can', () => {
+	assert.equal(stepToReach([0, 0, 0.4], [0, 0, 1], 0.5), 0);
+	assert.equal(stepToReach([0, 0, -0.8], [0, 0, 1], 0.5), 0, 'a target behind is not helped by moving forward');
+	const step = stepToReach([0.2, -0.3, 0.6], [0, 0, 1], 0.5);
+	assert.ok(step > 0);
+	assert.ok(Math.abs(Math.hypot(0.2, -0.3, 0.6 - step) - 0.5) < 1e-9, 'the target ends exactly at arm\'s length');
+	assert.equal(stepToReach([0, 0.9, 0.1], [0, 0, 1], 0.5), Infinity, 'too far above to reach by moving forward');
 });

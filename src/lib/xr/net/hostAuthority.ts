@@ -11,6 +11,9 @@ import { validateWorldPackage, MAX_SHARED_SCENE_BYTES } from '$lib/worlds/packag
 import { migrateSlotTree } from '$lib/assets/ref';
 import type { AvatarHooks } from '../avatar/avatarHooks';
 import { readHandPoses } from '../avatar/localHands';
+import { localKeyboardPresence } from '../keyboard/service';
+import { parseKeyboardPresence } from '../keyboard/presence';
+import { RemoteKeyboards } from '../keyboard/remoteKeyboards';
 import { AssetPeer } from '$lib/assets/p2p';
 import { announceAssetSourcesChanged, getLocalAssetStore } from '$lib/assets/store';
 
@@ -46,6 +49,8 @@ export class HostAuthority {
 	private lastTransforms = new Map<string, string>();
 	private presenceSequence = 0;
 	private avatars: AvatarHooks | null = null;
+	/** Stand-ins of the guests' keyboards while they type. */
+	private keyboards: RemoteKeyboards;
 
 	constructor(
 		private scene: Scene,
@@ -62,6 +67,7 @@ export class HostAuthority {
 			onRemoteStream?(guestId: string, stream: MediaStream, targetNode: TransformNode): void;
 		}
 	) {
+		this.keyboards = new RemoteKeyboards(scene);
 		this.signaling = new SignalingClient(roomCode, 'host');
 		this.signaling.onMessage((msg) => this.handleSignaling(msg));
 		this.presenceTimer = setInterval(() => this.broadcastOwnPresence(), PRESENCE_INTERVAL_MS);
@@ -101,13 +107,15 @@ export class HostAuthority {
 			rotation: (camera.rotationQuaternion?.asArray() ?? [0, 0, 0, 1]) as TransformPose['rotation']
 		};
 		const hands = readHandPoses(this.xr);
+		const keyboard = localKeyboardPresence();
 		return {
 			kind: 'presence',
 			player: this.localPlayer,
 			sequence: ++this.presenceSequence,
 			timestamp: Date.now(),
 			head,
-			hands
+			hands,
+			...(keyboard ? { keyboard } : {})
 		};
 	}
 
@@ -173,6 +181,7 @@ export class HostAuthority {
 		entry.headProxy.dispose();
 		for (const node of entry.handProxies.values()) node.dispose();
 		entry.ghost.dispose();
+		this.keyboards.remove(entry.player.playerId);
 		// Peers know a guest by the player id it announced, which is what owns its avatar.
 		this.avatars?.system.removePlayer(entry.player.playerId);
 		this.avatars?.players?.removePlayer(entry.player.playerId);
@@ -213,7 +222,10 @@ export class HostAuthority {
 			node.position = Vector3.FromArray(pose.position);
 			node.rotationQuaternion = Quaternion.FromArray(pose.rotation);
 		}
-		const normalized = { ...msg, player: entry.player } satisfies Extract<WorldStateMessage, { kind: 'presence' }>;
+		const keyboard = parseKeyboardPresence(msg.keyboard);
+		this.keyboards.update(entry.player.playerId, keyboard);
+		// Passed on to the other guests only as checked here.
+		const normalized = { ...msg, player: entry.player, keyboard } satisfies Extract<WorldStateMessage, { kind: 'presence' }>;
 		for (const [otherGuestId, other] of this.guests) {
 			if (otherGuestId !== guestId) other.link.sendState(normalized);
 		}
@@ -380,6 +392,7 @@ export class HostAuthority {
 		clearInterval(this.stateTimer);
 		clearInterval(this.correctionTimer);
 		for (const guestId of [...this.guests.keys()]) this.removeGuest(guestId);
+		this.keyboards.dispose();
 		this.signaling.close();
 	}
 }

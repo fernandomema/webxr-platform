@@ -331,6 +331,28 @@ export interface SocketComponent {
 	occupantId?: string;
 }
 
+/**
+ * Where the preview picture of an object, avatar or world is taken from. The slot's position is the camera and its forward
+ * direction (+Z) is where it looks; in a world, this replaces the spawn point that the 360° panorama is taken from.
+ */
+export interface PreviewCameraComponent {
+	type: 'previewCamera';
+	/** Vertical field of view in degrees for objects and avatars (a world's panorama always sees everything). */
+	fov?: number;
+}
+
+/**
+ * One key of the in-world keyboard (see xr/keyboard): what it types or does. The keyboard builds its keys from a layout
+ * and is the only thing that reads this; `variant` and `candidate` mark the extra keys it shows while a key is held down
+ * or while an input method offers candidates.
+ */
+export interface KeyboardKeyComponent {
+	type: 'keyboardKey';
+	key: import('../xr/keyboard/layout').KeyDef;
+	variant?: string;
+	candidate?: number;
+}
+
 /** Marks a grabbable object as something a `socket` can take. */
 export interface InsertableComponent {
 	type: 'insertable';
@@ -383,6 +405,8 @@ export type Component =
 	| ImpactSoundComponent
 	| SocketComponent
 	| InsertableComponent
+	| PreviewCameraComponent
+	| KeyboardKeyComponent
 	| AvatarComponent
 	| BoneAttachComponent
 	| TextDisplayComponent

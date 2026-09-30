@@ -1,0 +1,8210 @@
+[
+	{
+		"id": "workshop-skybox",
+		"parentId": null,
+		"name": "Skybox",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "skybox",
+				"topColor": "#1b2a4a",
+				"horizonColor": "#f2a65a",
+				"bottomColor": "#1f2328",
+				"stars": 0.3
+			}
+		]
+	},
+	{
+		"id": "floor",
+		"parentId": null,
+		"name": "Floor",
+		"position": [
+			0,
+			0,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.7,
+			1,
+			2.1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "ground"
+				},
+				"color": "#4b5058"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-building",
+		"parentId": null,
+		"name": "Building",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "workshop-wall-left",
+		"parentId": "workshop-building",
+		"name": "Wall Left",
+		"position": [
+			16,
+			2,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			4,
+			40.4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#cfc8b8"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-wall-right",
+		"parentId": "workshop-building",
+		"name": "Wall Right",
+		"position": [
+			-16,
+			2,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			4,
+			40.4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#cfc8b8"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-wall-back",
+		"parentId": "workshop-building",
+		"name": "Wall Back",
+		"position": [
+			0,
+			2,
+			-34
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			32.4,
+			4,
+			0.4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#cfc8b8"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-wall-front",
+		"parentId": "workshop-building",
+		"name": "Wall Entrance",
+		"position": [
+			0,
+			2,
+			6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			32.4,
+			4,
+			0.4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#cfc8b8"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-band-left",
+		"parentId": "workshop-building",
+		"name": "Upper Band Left",
+		"position": [
+			16,
+			6.8,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			0.8,
+			40.4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#3b4552"
+			}
+		]
+	},
+	{
+		"id": "workshop-band-right",
+		"parentId": "workshop-building",
+		"name": "Upper Band Right",
+		"position": [
+			-16,
+			6.8,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			0.8,
+			40.4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#3b4552"
+			}
+		]
+	},
+	{
+		"id": "workshop-band-back",
+		"parentId": "workshop-building",
+		"name": "Upper Band Back",
+		"position": [
+			0,
+			6.8,
+			-34
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			32.4,
+			0.8,
+			0.4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#3b4552"
+			}
+		]
+	},
+	{
+		"id": "workshop-band-front",
+		"parentId": "workshop-building",
+		"name": "Upper Band Entrance",
+		"position": [
+			0,
+			6.8,
+			6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			32.4,
+			0.8,
+			0.4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#3b4552"
+			}
+		]
+	},
+	{
+		"id": "workshop-wainscot-left",
+		"parentId": "workshop-building",
+		"name": "Wainscot Left",
+		"position": [
+			15.775,
+			0.6,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.05,
+			1.2,
+			39.6
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5a6472"
+			}
+		]
+	},
+	{
+		"id": "workshop-wainscot-right",
+		"parentId": "workshop-building",
+		"name": "Wainscot Right",
+		"position": [
+			-15.775,
+			0.6,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.05,
+			1.2,
+			39.6
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5a6472"
+			}
+		]
+	},
+	{
+		"id": "workshop-wainscot-back",
+		"parentId": "workshop-building",
+		"name": "Wainscot Back",
+		"position": [
+			0,
+			0.6,
+			-33.775
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			31.6,
+			1.2,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5a6472"
+			}
+		]
+	},
+	{
+		"id": "workshop-wainscot-front",
+		"parentId": "workshop-building",
+		"name": "Wainscot Entrance",
+		"position": [
+			0,
+			0.6,
+			5.775
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			31.6,
+			1.2,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5a6472"
+			}
+		]
+	},
+	{
+		"id": "workshop-door",
+		"parentId": "workshop-building",
+		"name": "Loading Door",
+		"position": [
+			-6,
+			1.9,
+			5.745
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			4.2,
+			3.8,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#475569"
+			}
+		]
+	},
+	{
+		"id": "workshop-structure",
+		"parentId": "workshop-building",
+		"name": "Columns and Roof",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "workshop-column-l0",
+		"parentId": "workshop-structure",
+		"name": "Column Left 1",
+		"position": [
+			16,
+			3.6,
+			6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7.2,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-column-r0",
+		"parentId": "workshop-structure",
+		"name": "Column Right 1",
+		"position": [
+			-16,
+			3.6,
+			6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7.2,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-truss-0",
+		"parentId": "workshop-structure",
+		"name": "Roof Truss 1",
+		"position": [
+			0,
+			7.45,
+			6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			32.8,
+			0.5,
+			0.35
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#334155"
+			}
+		]
+	},
+	{
+		"id": "workshop-column-l1",
+		"parentId": "workshop-structure",
+		"name": "Column Left 2",
+		"position": [
+			16,
+			3.6,
+			-2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7.2,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-column-r1",
+		"parentId": "workshop-structure",
+		"name": "Column Right 2",
+		"position": [
+			-16,
+			3.6,
+			-2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7.2,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-truss-1",
+		"parentId": "workshop-structure",
+		"name": "Roof Truss 2",
+		"position": [
+			0,
+			7.45,
+			-2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			32.8,
+			0.5,
+			0.35
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#334155"
+			}
+		]
+	},
+	{
+		"id": "workshop-column-l2",
+		"parentId": "workshop-structure",
+		"name": "Column Left 3",
+		"position": [
+			16,
+			3.6,
+			-10
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7.2,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-column-r2",
+		"parentId": "workshop-structure",
+		"name": "Column Right 3",
+		"position": [
+			-16,
+			3.6,
+			-10
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7.2,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-truss-2",
+		"parentId": "workshop-structure",
+		"name": "Roof Truss 3",
+		"position": [
+			0,
+			7.45,
+			-10
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			32.8,
+			0.5,
+			0.35
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#334155"
+			}
+		]
+	},
+	{
+		"id": "workshop-column-l3",
+		"parentId": "workshop-structure",
+		"name": "Column Left 4",
+		"position": [
+			16,
+			3.6,
+			-18
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7.2,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-column-r3",
+		"parentId": "workshop-structure",
+		"name": "Column Right 4",
+		"position": [
+			-16,
+			3.6,
+			-18
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7.2,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-truss-3",
+		"parentId": "workshop-structure",
+		"name": "Roof Truss 4",
+		"position": [
+			0,
+			7.45,
+			-18
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			32.8,
+			0.5,
+			0.35
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#334155"
+			}
+		]
+	},
+	{
+		"id": "workshop-column-l4",
+		"parentId": "workshop-structure",
+		"name": "Column Left 5",
+		"position": [
+			16,
+			3.6,
+			-26
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7.2,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-column-r4",
+		"parentId": "workshop-structure",
+		"name": "Column Right 5",
+		"position": [
+			-16,
+			3.6,
+			-26
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7.2,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-truss-4",
+		"parentId": "workshop-structure",
+		"name": "Roof Truss 5",
+		"position": [
+			0,
+			7.45,
+			-26
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			32.8,
+			0.5,
+			0.35
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#334155"
+			}
+		]
+	},
+	{
+		"id": "workshop-column-l5",
+		"parentId": "workshop-structure",
+		"name": "Column Left 6",
+		"position": [
+			16,
+			3.6,
+			-34
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7.2,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-column-r5",
+		"parentId": "workshop-structure",
+		"name": "Column Right 6",
+		"position": [
+			-16,
+			3.6,
+			-34
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7.2,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-truss-5",
+		"parentId": "workshop-structure",
+		"name": "Roof Truss 6",
+		"position": [
+			0,
+			7.45,
+			-34
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			32.8,
+			0.5,
+			0.35
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#334155"
+			}
+		]
+	},
+	{
+		"id": "workshop-column-b0",
+		"parentId": "workshop-structure",
+		"name": "Column Back 1",
+		"position": [
+			-8,
+			3.6,
+			-34
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7.2,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-column-f0",
+		"parentId": "workshop-structure",
+		"name": "Column Entrance 1",
+		"position": [
+			-8,
+			3.6,
+			6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7.2,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-purlin-0",
+		"parentId": "workshop-structure",
+		"name": "Roof Purlin 1",
+		"position": [
+			-8,
+			7.85,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.3,
+			0.3,
+			40.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#334155"
+			}
+		]
+	},
+	{
+		"id": "workshop-column-b1",
+		"parentId": "workshop-structure",
+		"name": "Column Back 2",
+		"position": [
+			0,
+			3.6,
+			-34
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7.2,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-column-f1",
+		"parentId": "workshop-structure",
+		"name": "Column Entrance 2",
+		"position": [
+			0,
+			3.6,
+			6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7.2,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-purlin-1",
+		"parentId": "workshop-structure",
+		"name": "Roof Purlin 2",
+		"position": [
+			0,
+			7.85,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.3,
+			0.3,
+			40.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#334155"
+			}
+		]
+	},
+	{
+		"id": "workshop-column-b2",
+		"parentId": "workshop-structure",
+		"name": "Column Back 3",
+		"position": [
+			8,
+			3.6,
+			-34
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7.2,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-column-f2",
+		"parentId": "workshop-structure",
+		"name": "Column Entrance 3",
+		"position": [
+			8,
+			3.6,
+			6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7.2,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-purlin-2",
+		"parentId": "workshop-structure",
+		"name": "Roof Purlin 3",
+		"position": [
+			8,
+			7.85,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.3,
+			0.3,
+			40.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#334155"
+			}
+		]
+	},
+	{
+		"id": "workshop-lighting",
+		"parentId": "workshop-building",
+		"name": "Lamps",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "workshop-lamp-0-cord",
+		"parentId": "workshop-lighting",
+		"name": "Lamp 1 Cord",
+		"position": [
+			-4,
+			6.15,
+			-6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.03,
+			2.1,
+			0.03
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#1f2937"
+			}
+		]
+	},
+	{
+		"id": "workshop-lamp-0",
+		"parentId": "workshop-lighting",
+		"name": "Lamp 1",
+		"position": [
+			-4,
+			5.1,
+			-6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9,
+			0.25,
+			0.9
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#fde68a"
+			}
+		]
+	},
+	{
+		"id": "workshop-lamp-1-cord",
+		"parentId": "workshop-lighting",
+		"name": "Lamp 2 Cord",
+		"position": [
+			4,
+			6.15,
+			-6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.03,
+			2.1,
+			0.03
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#1f2937"
+			}
+		]
+	},
+	{
+		"id": "workshop-lamp-1",
+		"parentId": "workshop-lighting",
+		"name": "Lamp 2",
+		"position": [
+			4,
+			5.1,
+			-6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9,
+			0.25,
+			0.9
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#fde68a"
+			}
+		]
+	},
+	{
+		"id": "workshop-lamp-2-cord",
+		"parentId": "workshop-lighting",
+		"name": "Lamp 3 Cord",
+		"position": [
+			-4,
+			6.15,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.03,
+			2.1,
+			0.03
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#1f2937"
+			}
+		]
+	},
+	{
+		"id": "workshop-lamp-2",
+		"parentId": "workshop-lighting",
+		"name": "Lamp 3",
+		"position": [
+			-4,
+			5.1,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9,
+			0.25,
+			0.9
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#fde68a"
+			}
+		]
+	},
+	{
+		"id": "workshop-lamp-3-cord",
+		"parentId": "workshop-lighting",
+		"name": "Lamp 4 Cord",
+		"position": [
+			4,
+			6.15,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.03,
+			2.1,
+			0.03
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#1f2937"
+			}
+		]
+	},
+	{
+		"id": "workshop-lamp-3",
+		"parentId": "workshop-lighting",
+		"name": "Lamp 4",
+		"position": [
+			4,
+			5.1,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9,
+			0.25,
+			0.9
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#fde68a"
+			}
+		]
+	},
+	{
+		"id": "workshop-lamp-4-cord",
+		"parentId": "workshop-lighting",
+		"name": "Lamp 5 Cord",
+		"position": [
+			-4,
+			6.15,
+			-22
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.03,
+			2.1,
+			0.03
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#1f2937"
+			}
+		]
+	},
+	{
+		"id": "workshop-lamp-4",
+		"parentId": "workshop-lighting",
+		"name": "Lamp 5",
+		"position": [
+			-4,
+			5.1,
+			-22
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9,
+			0.25,
+			0.9
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#fde68a"
+			}
+		]
+	},
+	{
+		"id": "workshop-lamp-5-cord",
+		"parentId": "workshop-lighting",
+		"name": "Lamp 6 Cord",
+		"position": [
+			4,
+			6.15,
+			-22
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.03,
+			2.1,
+			0.03
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#1f2937"
+			}
+		]
+	},
+	{
+		"id": "workshop-lamp-5",
+		"parentId": "workshop-lighting",
+		"name": "Lamp 6",
+		"position": [
+			4,
+			5.1,
+			-22
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9,
+			0.25,
+			0.9
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#fde68a"
+			}
+		]
+	},
+	{
+		"id": "workshop-entrance",
+		"parentId": null,
+		"name": "Entrance",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "workshop-pad-outer",
+		"parentId": "workshop-entrance",
+		"name": "Arrival Pad Ring",
+		"position": [
+			0,
+			0.015,
+			1.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			3.2,
+			0.03,
+			3.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#f59e0b"
+			}
+		]
+	},
+	{
+		"id": "workshop-pad-mid",
+		"parentId": "workshop-entrance",
+		"name": "Arrival Pad",
+		"position": [
+			0,
+			0.02,
+			1.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.9,
+			0.04,
+			2.9
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#1f2937"
+			}
+		]
+	},
+	{
+		"id": "workshop-pad-core",
+		"parentId": "workshop-entrance",
+		"name": "Arrival Pad Center",
+		"position": [
+			0,
+			0.025,
+			1.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			0.05,
+			0.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#f59e0b"
+			}
+		]
+	},
+	{
+		"id": "workshop-welcome-frame",
+		"parentId": "workshop-entrance",
+		"name": "Workshop Sign Frame",
+		"position": [
+			3.4,
+			1.75,
+			-1.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.72,
+			1.32,
+			0.04
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "workshop-welcome",
+		"parentId": "workshop-entrance",
+		"name": "Workshop Sign",
+		"position": [
+			3.4,
+			1.75,
+			-1.17
+		],
+		"rotation": [
+			0,
+			1,
+			0,
+			0
+		],
+		"scale": [
+			1.6,
+			1.2,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#111827"
+			},
+			{
+				"type": "textDisplay",
+				"title": "Workshop",
+				"lines": [
+					"A place to build in VR.",
+					"Each bay holds the tools",
+					"for one kind of work.",
+					"Build big on the floor ahead."
+				],
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "workshop-welcome-leg-l",
+		"parentId": "workshop-entrance",
+		"name": "Workshop Sign Leg",
+		"position": [
+			2.7,
+			0.545,
+			-1.23
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.07,
+			1.09,
+			0.07
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-welcome-leg-r",
+		"parentId": "workshop-entrance",
+		"name": "Workshop Sign Leg",
+		"position": [
+			4.1,
+			0.545,
+			-1.23
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.07,
+			1.09,
+			0.07
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-basics-frame",
+		"parentId": "workshop-entrance",
+		"name": "Using tools Sign Frame",
+		"position": [
+			5.4,
+			1.75,
+			-1.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.72,
+			1.32,
+			0.04
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-basics",
+		"parentId": "workshop-entrance",
+		"name": "Using tools Sign",
+		"position": [
+			5.4,
+			1.75,
+			-1.17
+		],
+		"rotation": [
+			0,
+			1,
+			0,
+			0
+		],
+		"scale": [
+			1.6,
+			1.2,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#111827"
+			},
+			{
+				"type": "textDisplay",
+				"title": "Using tools",
+				"lines": [
+					"Grip: pick a tool up",
+					"B or Y while holding: its menu",
+					"Menu > Equip: keep it in hand",
+					"Trigger: use it"
+				],
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-basics-leg-l",
+		"parentId": "workshop-entrance",
+		"name": "Using tools Sign Leg",
+		"position": [
+			4.7,
+			0.545,
+			-1.23
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.07,
+			1.09,
+			0.07
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-basics-leg-r",
+		"parentId": "workshop-entrance",
+		"name": "Using tools Sign Leg",
+		"position": [
+			6.1,
+			0.545,
+			-1.23
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.07,
+			1.09,
+			0.07
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-directory-frame",
+		"parentId": "workshop-entrance",
+		"name": "Directory Sign Frame",
+		"position": [
+			-3.4,
+			1.75,
+			-1.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.72,
+			1.32,
+			0.04
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "workshop-directory",
+		"parentId": "workshop-entrance",
+		"name": "Directory Sign",
+		"position": [
+			-3.4,
+			1.75,
+			-1.17
+		],
+		"rotation": [
+			0,
+			1,
+			0,
+			0
+		],
+		"scale": [
+			1.6,
+			1.2,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#111827"
+			},
+			{
+				"type": "textDisplay",
+				"title": "Directory",
+				"lines": [
+					"Left: Shapes, Measure & Align, Sound & Media",
+					"Right: Paint & Color, Logic & Scripts, Effects",
+					"Ahead: Build Floor",
+					"At the back: Showcase Stage"
+				],
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "workshop-directory-leg-l",
+		"parentId": "workshop-entrance",
+		"name": "Directory Sign Leg",
+		"position": [
+			-4.1,
+			0.545,
+			-1.23
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.07,
+			1.09,
+			0.07
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-directory-leg-r",
+		"parentId": "workshop-entrance",
+		"name": "Directory Sign Leg",
+		"position": [
+			-2.7,
+			0.545,
+			-1.23
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.07,
+			1.09,
+			0.07
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-mirror-frame",
+		"parentId": "workshop-entrance",
+		"name": "Mirror Frame",
+		"position": [
+			5,
+			1.3,
+			5.745
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.6,
+			2.4,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "workshop-mirror",
+		"parentId": "workshop-entrance",
+		"name": "Mirror",
+		"position": [
+			5,
+			1.3,
+			5.71
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.44,
+			2.24,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				}
+			},
+			{
+				"type": "mirror",
+				"resolution": 1024
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-shapes",
+		"parentId": null,
+		"name": "Bay: Shapes",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-shapes-floor",
+		"parentId": "workshop-bay-shapes",
+		"name": "Shapes Bay Floor",
+		"position": [
+			12.9,
+			0.006,
+			-6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			5.8,
+			0.01,
+			7.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#3c2e5c"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-shapes-edge",
+		"parentId": "workshop-bay-shapes",
+		"name": "Shapes Bay Edge",
+		"position": [
+			10,
+			0.009,
+			-6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.12,
+			0.012,
+			7.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#8b5cf6"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-shapes-pegboard",
+		"parentId": "workshop-bay-shapes",
+		"name": "Shapes Pegboard",
+		"position": [
+			15.77,
+			1.8,
+			-5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.05,
+			1.6,
+			4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#b08d57"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-shapes-bench-top",
+		"parentId": "workshop-bay-shapes",
+		"name": "Shapes Workbench Top",
+		"position": [
+			15.3,
+			0.87,
+			-5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9,
+			0.06,
+			4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#a0764a"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-shapes-bench-side-a",
+		"parentId": "workshop-bay-shapes",
+		"name": "Shapes Workbench Side",
+		"position": [
+			15.3,
+			0.42,
+			-6.95
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			0.84,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#374151"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-shapes-bench-side-b",
+		"parentId": "workshop-bay-shapes",
+		"name": "Shapes Workbench Side",
+		"position": [
+			15.3,
+			0.42,
+			-3.05
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			0.84,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#374151"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-shapes-bench-shelf",
+		"parentId": "workshop-bay-shapes",
+		"name": "Shapes Workbench Lower Shelf",
+		"position": [
+			15.3,
+			0.25,
+			-5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			0.04,
+			3.84
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#374151"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-shapes-rack-side-a",
+		"parentId": "workshop-bay-shapes",
+		"name": "Shapes Shelving Upright",
+		"position": [
+			15.55,
+			1.1,
+			-8.975
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			2.2,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-shapes-rack-side-b",
+		"parentId": "workshop-bay-shapes",
+		"name": "Shapes Shelving Upright",
+		"position": [
+			15.55,
+			1.1,
+			-7.425
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			2.2,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-shapes-rack-shelf-0",
+		"parentId": "workshop-bay-shapes",
+		"name": "Shapes Shelf 1",
+		"position": [
+			15.55,
+			0.4,
+			-8.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			0.04,
+			1.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#6b7280"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-shapes-rack-shelf-1",
+		"parentId": "workshop-bay-shapes",
+		"name": "Shapes Shelf 2",
+		"position": [
+			15.55,
+			1.1,
+			-8.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			0.04,
+			1.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#6b7280"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-shapes-rack-shelf-2",
+		"parentId": "workshop-bay-shapes",
+		"name": "Shapes Shelf 3",
+		"position": [
+			15.55,
+			1.8,
+			-8.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			0.04,
+			1.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#6b7280"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-shapes-sign-frame",
+		"parentId": "workshop-bay-shapes",
+		"name": "Shapes Sign Frame",
+		"position": [
+			15.75,
+			3.25,
+			-5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.04,
+			1.32,
+			1.72
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#8b5cf6"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-shapes-sign",
+		"parentId": "workshop-bay-shapes",
+		"name": "Shapes Sign",
+		"position": [
+			15.72,
+			3.25,
+			-5
+		],
+		"rotation": [
+			0,
+			0.7071,
+			0,
+			0.7071
+		],
+		"scale": [
+			1.6,
+			1.2,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#111827"
+			},
+			{
+				"type": "textDisplay",
+				"title": "Shapes",
+				"lines": [
+					"Boxes, spheres, cylinders",
+					"and building blocks"
+				],
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-shape-maker",
+		"parentId": "workshop-bay-shapes",
+		"name": "Shape Maker",
+		"position": [
+			15.35,
+			0.925,
+			-6.25
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "equippable",
+				"left": {
+					"position": [
+						0,
+						0,
+						0.04
+					],
+					"rotation": [
+						15,
+						0,
+						0
+					]
+				},
+				"right": {
+					"position": [
+						0,
+						0,
+						0.04
+					],
+					"rotation": [
+						15,
+						0,
+						0
+					]
+				},
+				"autoGrip": true
+			},
+			{
+				"type": "codeBlock",
+				"code": "\nconst SELF = ctx.self.id;\nconst has = (slot, type) => !!slot && slot.components.some((c) => c.type === type);\n// Parts are looked up among this tool's own children: several tools use the same part names.\nfunction part(name) { return ctx.hierarchy.getChildren(SELF).find((c) => c.name === name) || null; }\nfunction partPose(name) { const p = part(name); return p ? ctx.hierarchy.getWorldPose(p.id) : null; }\nconst PALETTE = [\n  ['Red', '#ef4444'], ['Orange', '#f97316'], ['Yellow', '#facc15'], ['Lime', '#84cc16'], ['Green', '#22c55e'], ['Teal', '#14b8a6'],\n  ['Cyan', '#06b6d4'], ['Blue', '#3b82f6'], ['Purple', '#a855f7'], ['Pink', '#ec4899'], ['White', '#f8fafc'], ['Black', '#111827']\n];\n// The whole object a slot belongs to: its outermost grabbable ancestor. The building itself belongs to none.\nfunction objectOf(slotId) {\n  let found = null;\n  for (let slot = ctx.hierarchy.getSlot(slotId), hops = 0; slot && hops < 64; hops++) {\n    if (has(slot, 'grabbable')) found = slot;\n    slot = slot.parentId ? ctx.hierarchy.getSlot(slot.parentId) : null;\n  }\n  return found;\n}\n// Tools and avatars are never changed by another tool; everything else that can be picked up is fair game.\nconst editable = (object) => !!object && !has(object, 'equippable') && !has(object, 'avatar');\nconst REACH = 12;\n// Where the working end points, and what it hits (null when nothing is within reach).\nfunction aim() {\n  const muzzle = partPose('Muzzle');\n  if (!muzzle) return null;\n  const hit = ctx.world.raycast(muzzle.position, muzzle.forward, REACH);\n  return { from: muzzle.position, forward: muzzle.forward, hit, end: hit ? hit.point : ctx.math.vecAdd(muzzle.position, ctx.math.vecScale(muzzle.forward, 2)) };\n}\nconst round3 = (v) => Math.round(v * 1000) / 1000;\n// A thin line from the tool to what it points at, while aiming. Guests see it refreshed a few times a second.\nlet beamId = null;\nlet beamSynced = 0;\nfunction showBeam(from, to, color) {\n  const points = [...from, ...to].map(round3);\n  if (!beamId) {\n    beamId = crypto.randomUUID();\n    ctx.world.spawn({ id: beamId, name: 'Tool Beam', components: [{ type: 'stroke', points, color, width: 0.005 }] });\n    beamSynced = Date.now();\n    return;\n  }\n  const now = Date.now();\n  const broadcast = now - beamSynced > 120;\n  if (broadcast) beamSynced = now;\n  ctx.world.setComponentField(beamId, 'stroke', 'points', points, broadcast);\n}\nfunction setBeamColor(color) { if (beamId) ctx.world.setComponentField(beamId, 'stroke', 'color', color); }\nfunction hideBeam() { if (beamId) ctx.world.deleteSlot(beamId); beamId = null; }\nfunction flash(point, color) {\n  ctx.world.spawn({ name: 'Tool Flash', position: point, components: [{ type: 'particleBurst', color, count: 24, durationMs: 500 }, { type: 'expires', expiresAt: Date.now() + 500 }] });\n}\nconst beep = (frequency) => ctx.audio.play({ frequency, durationMs: 90, volume: 0.35 });\nconst buzz = () => ctx.audio.play({ frequency: 140, noiseMix: 0.4, durationMs: 160, volume: 0.3 });\n// A yaw about world up that turns +Z towards the horizontal part of 'forward'.\nfunction yawTowards(forward) { return ctx.math.quatFromAxisAngle([0, 1, 0], Math.atan2(forward[0], forward[2])); }\n\n// A tool that started on a Workshop bench finds its way back there when it has been left lying somewhere for a while.\n// One taken into another world (saved to an inventory) has no bench, and stays wherever it is put down.\nconst RETURN_AFTER_S = 45;\nlet home = null;\nlet idle = 0;\nlet wasInHand = false;\nfunction returnHome() {\n  if (home && ctx.world.setWorldPose(SELF, home)) idle = 0;\n}\nfunction withBench(tool) {\n  return {\n    ...tool,\n    onSpawn() {\n      const bench = ctx.hierarchy.getParent(SELF);\n      if (bench && bench.name.startsWith('Bay: ')) home = { position: ctx.self.getWorldPosition(), rotation: ctx.self.getWorldRotation() };\n      if (tool.onSpawn) tool.onSpawn();\n    },\n    onUnequip(e) {\n      hideBeam();\n      if (tool.onUnequip) tool.onUnequip(e);\n    },\n    tick(dt) {\n      const inHand = ctx.grab.isHeld() || ctx.equip.isEquipped();\n      // Put down mid-use (the trigger's release never comes): whatever it was doing stops.\n      if (wasInHand && !inHand) {\n        hideBeam();\n        if (tool.onDrop) tool.onDrop();\n      }\n      wasInHand = inHand;\n      if (inHand) {\n        idle = 0;\n        if (tool.tick) tool.tick(dt);\n        return;\n      }\n      if (!ctx.world.isHost() || !home) return;\n      const away = ctx.math.vecLength(ctx.math.vecSub(ctx.self.getWorldPosition(), home.position)) > 0.05;\n      idle = away ? idle + dt : 0;\n      if (idle > RETURN_AFTER_S) returnHome();\n    }\n  };\n}\n\n// name, mesh, proportions (times the size), collider\nconst SHAPES = [\n  ['Box', 'box', [1, 1, 1], 'box'], ['Sphere', 'sphere', [1, 1, 1], 'sphere'], ['Cylinder', 'cylinder', [1, 1, 1], 'box'],\n  ['Plank', 'box', [2, 0.15, 0.5], 'box'], ['Pillar', 'cylinder', [0.4, 2, 0.4], 'box'], ['Tile', 'box', [1, 0.1, 1], 'box']\n];\nconst SIZES = [['Small', 0.1], ['Medium', 0.25], ['Large', 0.5]];\nlet shape = 0, size = 1, color = 7;\n\nfunction showColor() { const p = part('Preview'); if (p) ctx.world.setComponentField(p.id, 'meshRenderer', 'color', PALETTE[color][1]); }\n\nconst tool = {\n  onSpawn() { showColor(); },\n  onTrigger(e) {\n    if (e.phase !== 'press') return true;\n    const muzzle = partPose('Muzzle');\n    if (!muzzle) return true;\n    const [name, mesh, proportions, collider] = SHAPES[shape];\n    const scale = proportions.map((p) => round3(p * SIZES[size][1]));\n    // Far enough ahead that the new shape does not start inside the tool.\n    const ahead = 0.06 + Math.max(...scale) / 2;\n    const position = ctx.math.vecAdd(muzzle.position, ctx.math.vecScale(muzzle.forward, ahead)).map(round3);\n    ctx.world.spawn({\n      name,\n      position,\n      rotation: yawTowards(muzzle.forward),\n      scale,\n      components: [\n        { type: 'meshRenderer', meshRef: { kind: 'builtin', id: mesh }, color: PALETTE[color][1] },\n        { type: 'collider', shape: collider },\n        { type: 'grabbable', scalable: true }\n      ]\n    });\n    flash(position, PALETTE[color][1]);\n    beep(520 + shape * 60);\n    return true;\n  },\n  getRadialItems() {\n    return [\n      { label: 'Shape: ' + SHAPES[shape][0], isEnabled: () => true, onSelect: () => { shape = (shape + 1) % SHAPES.length; } },\n      { label: 'Size: ' + SIZES[size][0], isEnabled: () => true, onSelect: () => { size = (size + 1) % SIZES.length; } },\n      { label: 'Color: ' + PALETTE[color][0], isEnabled: () => true, onSelect: () => { color = (color + 1) % PALETTE.length; showColor(); } }\n    ];\n  }\n};\nreturn withBench(tool);\n"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-shape-maker-part-0",
+		"parentId": "workshop-tool-shape-maker",
+		"name": "Handle",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.03,
+			0.03,
+			0.16
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#374151"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-shape-maker-part-1",
+		"parentId": "workshop-tool-shape-maker",
+		"name": "Barrel",
+		"position": [
+			0,
+			0,
+			0.12
+		],
+		"rotation": [
+			0.7071,
+			0,
+			0,
+			0.7071
+		],
+		"scale": [
+			0.045,
+			0.09,
+			0.045
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#8b5cf6"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-shape-maker-part-2",
+		"parentId": "workshop-tool-shape-maker",
+		"name": "Preview",
+		"position": [
+			0,
+			0.035,
+			0.03
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.04,
+			0.04,
+			0.04
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#3b82f6"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-shape-maker-part-3",
+		"parentId": "workshop-tool-shape-maker",
+		"name": "Muzzle",
+		"position": [
+			0,
+			0,
+			0.17
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": []
+	},
+	{
+		"id": "workshop-tool-shape-maker-tip-frame",
+		"parentId": "workshop-bay-shapes",
+		"name": "Shape Maker Sign Frame",
+		"position": [
+			15.72,
+			1.5,
+			-6.25
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.04,
+			0.87,
+			1.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#8b5cf6"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-shape-maker-tip",
+		"parentId": "workshop-bay-shapes",
+		"name": "Shape Maker Sign",
+		"position": [
+			15.69,
+			1.5,
+			-6.25
+		],
+		"rotation": [
+			0,
+			0.7071,
+			0,
+			0.7071
+		],
+		"scale": [
+			1,
+			0.75,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#111827"
+			},
+			{
+				"type": "textDisplay",
+				"title": "Shape Maker",
+				"lines": [
+					"Trigger: make a shape",
+					"Menu: shape, size, color",
+					"Grab shapes with both hands",
+					"to scale them"
+				],
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-copier",
+		"parentId": "workshop-bay-shapes",
+		"name": "Copier",
+		"position": [
+			15.35,
+			0.925,
+			-5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "equippable",
+				"left": {
+					"position": [
+						0,
+						0,
+						0.04
+					],
+					"rotation": [
+						15,
+						0,
+						0
+					]
+				},
+				"right": {
+					"position": [
+						0,
+						0,
+						0.04
+					],
+					"rotation": [
+						15,
+						0,
+						0
+					]
+				},
+				"autoGrip": true
+			},
+			{
+				"type": "codeBlock",
+				"code": "\nconst SELF = ctx.self.id;\nconst has = (slot, type) => !!slot && slot.components.some((c) => c.type === type);\n// Parts are looked up among this tool's own children: several tools use the same part names.\nfunction part(name) { return ctx.hierarchy.getChildren(SELF).find((c) => c.name === name) || null; }\nfunction partPose(name) { const p = part(name); return p ? ctx.hierarchy.getWorldPose(p.id) : null; }\nconst PALETTE = [\n  ['Red', '#ef4444'], ['Orange', '#f97316'], ['Yellow', '#facc15'], ['Lime', '#84cc16'], ['Green', '#22c55e'], ['Teal', '#14b8a6'],\n  ['Cyan', '#06b6d4'], ['Blue', '#3b82f6'], ['Purple', '#a855f7'], ['Pink', '#ec4899'], ['White', '#f8fafc'], ['Black', '#111827']\n];\n// The whole object a slot belongs to: its outermost grabbable ancestor. The building itself belongs to none.\nfunction objectOf(slotId) {\n  let found = null;\n  for (let slot = ctx.hierarchy.getSlot(slotId), hops = 0; slot && hops < 64; hops++) {\n    if (has(slot, 'grabbable')) found = slot;\n    slot = slot.parentId ? ctx.hierarchy.getSlot(slot.parentId) : null;\n  }\n  return found;\n}\n// Tools and avatars are never changed by another tool; everything else that can be picked up is fair game.\nconst editable = (object) => !!object && !has(object, 'equippable') && !has(object, 'avatar');\nconst REACH = 12;\n// Where the working end points, and what it hits (null when nothing is within reach).\nfunction aim() {\n  const muzzle = partPose('Muzzle');\n  if (!muzzle) return null;\n  const hit = ctx.world.raycast(muzzle.position, muzzle.forward, REACH);\n  return { from: muzzle.position, forward: muzzle.forward, hit, end: hit ? hit.point : ctx.math.vecAdd(muzzle.position, ctx.math.vecScale(muzzle.forward, 2)) };\n}\nconst round3 = (v) => Math.round(v * 1000) / 1000;\n// A thin line from the tool to what it points at, while aiming. Guests see it refreshed a few times a second.\nlet beamId = null;\nlet beamSynced = 0;\nfunction showBeam(from, to, color) {\n  const points = [...from, ...to].map(round3);\n  if (!beamId) {\n    beamId = crypto.randomUUID();\n    ctx.world.spawn({ id: beamId, name: 'Tool Beam', components: [{ type: 'stroke', points, color, width: 0.005 }] });\n    beamSynced = Date.now();\n    return;\n  }\n  const now = Date.now();\n  const broadcast = now - beamSynced > 120;\n  if (broadcast) beamSynced = now;\n  ctx.world.setComponentField(beamId, 'stroke', 'points', points, broadcast);\n}\nfunction setBeamColor(color) { if (beamId) ctx.world.setComponentField(beamId, 'stroke', 'color', color); }\nfunction hideBeam() { if (beamId) ctx.world.deleteSlot(beamId); beamId = null; }\nfunction flash(point, color) {\n  ctx.world.spawn({ name: 'Tool Flash', position: point, components: [{ type: 'particleBurst', color, count: 24, durationMs: 500 }, { type: 'expires', expiresAt: Date.now() + 500 }] });\n}\nconst beep = (frequency) => ctx.audio.play({ frequency, durationMs: 90, volume: 0.35 });\nconst buzz = () => ctx.audio.play({ frequency: 140, noiseMix: 0.4, durationMs: 160, volume: 0.3 });\n// A yaw about world up that turns +Z towards the horizontal part of 'forward'.\nfunction yawTowards(forward) { return ctx.math.quatFromAxisAngle([0, 1, 0], Math.atan2(forward[0], forward[2])); }\n\n// A tool that started on a Workshop bench finds its way back there when it has been left lying somewhere for a while.\n// One taken into another world (saved to an inventory) has no bench, and stays wherever it is put down.\nconst RETURN_AFTER_S = 45;\nlet home = null;\nlet idle = 0;\nlet wasInHand = false;\nfunction returnHome() {\n  if (home && ctx.world.setWorldPose(SELF, home)) idle = 0;\n}\nfunction withBench(tool) {\n  return {\n    ...tool,\n    onSpawn() {\n      const bench = ctx.hierarchy.getParent(SELF);\n      if (bench && bench.name.startsWith('Bay: ')) home = { position: ctx.self.getWorldPosition(), rotation: ctx.self.getWorldRotation() };\n      if (tool.onSpawn) tool.onSpawn();\n    },\n    onUnequip(e) {\n      hideBeam();\n      if (tool.onUnequip) tool.onUnequip(e);\n    },\n    tick(dt) {\n      const inHand = ctx.grab.isHeld() || ctx.equip.isEquipped();\n      // Put down mid-use (the trigger's release never comes): whatever it was doing stops.\n      if (wasInHand && !inHand) {\n        hideBeam();\n        if (tool.onDrop) tool.onDrop();\n      }\n      wasInHand = inHand;\n      if (inHand) {\n        idle = 0;\n        if (tool.tick) tool.tick(dt);\n        return;\n      }\n      if (!ctx.world.isHost() || !home) return;\n      const away = ctx.math.vecLength(ctx.math.vecSub(ctx.self.getWorldPosition(), home.position)) > 0.05;\n      idle = away ? idle + dt : 0;\n      if (idle > RETURN_AFTER_S) returnHome();\n    }\n  };\n}\n\nlet aiming = false;\nconst BEAM = '#22d3ee';\n\n// Every slot of an object, parents before children.\nfunction subtree(rootId) {\n  const out = [];\n  const queue = [ctx.hierarchy.getSlot(rootId)];\n  while (queue.length) {\n    const slot = queue.shift();\n    if (!slot) continue;\n    out.push(slot);\n    queue.push(...ctx.hierarchy.getChildren(slot.id));\n  }\n  return out;\n}\n\nfunction copy(object, towards) {\n  const pose = ctx.hierarchy.getWorldPose(object.id);\n  if (!pose) return null;\n  const ids = new Map();\n  const slots = subtree(object.id);\n  for (const slot of slots) ids.set(slot.id, crypto.randomUUID());\n  // The copy comes out a little towards the tool, so it does not sit inside the original.\n  const position = ctx.math.vecAdd(pose.position, ctx.math.vecScale(towards, -0.25)).map(round3);\n  for (const slot of slots) {\n    const components = JSON.parse(JSON.stringify(slot.components));\n    for (const c of components) if (c.type === 'socket') delete c.occupantId;\n    const root = slot.id === object.id;\n    ctx.world.spawn({\n      id: ids.get(slot.id),\n      parentId: root ? null : ids.get(slot.parentId),\n      name: slot.name,\n      position: root ? position : slot.position,\n      rotation: root ? pose.rotation : slot.rotation,\n      scale: slot.scale,\n      components\n    });\n  }\n  return position;\n}\n\nconst tool = {\n  onDrop() { aiming = false; },\n  onTrigger(e) {\n    if (e.phase === 'press') aiming = true;\n    if (e.phase !== 'release' || !aiming) return true;\n    aiming = false;\n    const shot = aim();\n    hideBeam();\n    const object = shot && shot.hit ? objectOf(shot.hit.slotId) : null;\n    if (!editable(object)) { buzz(); return true; }\n    const at = copy(object, shot.forward);\n    if (at) { flash(at, BEAM); beep(660); }\n    return true;\n  },\n  tick() {\n    if (!aiming || !ctx.world.isHost()) return;\n    const shot = aim();\n    if (shot) showBeam(shot.from, shot.end, BEAM);\n  }\n};\nreturn withBench(tool);\n"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-copier-part-0",
+		"parentId": "workshop-tool-copier",
+		"name": "Handle",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.03,
+			0.03,
+			0.16
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#374151"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-copier-part-1",
+		"parentId": "workshop-tool-copier",
+		"name": "Head",
+		"position": [
+			0,
+			0,
+			0.11
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.06,
+			0.04,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#22d3ee"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-copier-part-2",
+		"parentId": "workshop-tool-copier",
+		"name": "Muzzle",
+		"position": [
+			0,
+			0,
+			0.15
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": []
+	},
+	{
+		"id": "workshop-tool-copier-tip-frame",
+		"parentId": "workshop-bay-shapes",
+		"name": "Copier Sign Frame",
+		"position": [
+			15.72,
+			1.5,
+			-5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.04,
+			0.87,
+			1.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#8b5cf6"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-copier-tip",
+		"parentId": "workshop-bay-shapes",
+		"name": "Copier Sign",
+		"position": [
+			15.69,
+			1.5,
+			-5
+		],
+		"rotation": [
+			0,
+			0.7071,
+			0,
+			0.7071
+		],
+		"scale": [
+			1,
+			0.75,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#111827"
+			},
+			{
+				"type": "textDisplay",
+				"title": "Copier",
+				"lines": [
+					"Hold trigger: aim",
+					"Release: copy the object",
+					"The copy appears in front",
+					"of the original"
+				],
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-eraser",
+		"parentId": "workshop-bay-shapes",
+		"name": "Eraser",
+		"position": [
+			15.35,
+			0.925,
+			-3.75
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "equippable",
+				"left": {
+					"position": [
+						0,
+						0,
+						0.04
+					],
+					"rotation": [
+						15,
+						0,
+						0
+					]
+				},
+				"right": {
+					"position": [
+						0,
+						0,
+						0.04
+					],
+					"rotation": [
+						15,
+						0,
+						0
+					]
+				},
+				"autoGrip": true
+			},
+			{
+				"type": "codeBlock",
+				"code": "\nconst SELF = ctx.self.id;\nconst has = (slot, type) => !!slot && slot.components.some((c) => c.type === type);\n// Parts are looked up among this tool's own children: several tools use the same part names.\nfunction part(name) { return ctx.hierarchy.getChildren(SELF).find((c) => c.name === name) || null; }\nfunction partPose(name) { const p = part(name); return p ? ctx.hierarchy.getWorldPose(p.id) : null; }\nconst PALETTE = [\n  ['Red', '#ef4444'], ['Orange', '#f97316'], ['Yellow', '#facc15'], ['Lime', '#84cc16'], ['Green', '#22c55e'], ['Teal', '#14b8a6'],\n  ['Cyan', '#06b6d4'], ['Blue', '#3b82f6'], ['Purple', '#a855f7'], ['Pink', '#ec4899'], ['White', '#f8fafc'], ['Black', '#111827']\n];\n// The whole object a slot belongs to: its outermost grabbable ancestor. The building itself belongs to none.\nfunction objectOf(slotId) {\n  let found = null;\n  for (let slot = ctx.hierarchy.getSlot(slotId), hops = 0; slot && hops < 64; hops++) {\n    if (has(slot, 'grabbable')) found = slot;\n    slot = slot.parentId ? ctx.hierarchy.getSlot(slot.parentId) : null;\n  }\n  return found;\n}\n// Tools and avatars are never changed by another tool; everything else that can be picked up is fair game.\nconst editable = (object) => !!object && !has(object, 'equippable') && !has(object, 'avatar');\nconst REACH = 12;\n// Where the working end points, and what it hits (null when nothing is within reach).\nfunction aim() {\n  const muzzle = partPose('Muzzle');\n  if (!muzzle) return null;\n  const hit = ctx.world.raycast(muzzle.position, muzzle.forward, REACH);\n  return { from: muzzle.position, forward: muzzle.forward, hit, end: hit ? hit.point : ctx.math.vecAdd(muzzle.position, ctx.math.vecScale(muzzle.forward, 2)) };\n}\nconst round3 = (v) => Math.round(v * 1000) / 1000;\n// A thin line from the tool to what it points at, while aiming. Guests see it refreshed a few times a second.\nlet beamId = null;\nlet beamSynced = 0;\nfunction showBeam(from, to, color) {\n  const points = [...from, ...to].map(round3);\n  if (!beamId) {\n    beamId = crypto.randomUUID();\n    ctx.world.spawn({ id: beamId, name: 'Tool Beam', components: [{ type: 'stroke', points, color, width: 0.005 }] });\n    beamSynced = Date.now();\n    return;\n  }\n  const now = Date.now();\n  const broadcast = now - beamSynced > 120;\n  if (broadcast) beamSynced = now;\n  ctx.world.setComponentField(beamId, 'stroke', 'points', points, broadcast);\n}\nfunction setBeamColor(color) { if (beamId) ctx.world.setComponentField(beamId, 'stroke', 'color', color); }\nfunction hideBeam() { if (beamId) ctx.world.deleteSlot(beamId); beamId = null; }\nfunction flash(point, color) {\n  ctx.world.spawn({ name: 'Tool Flash', position: point, components: [{ type: 'particleBurst', color, count: 24, durationMs: 500 }, { type: 'expires', expiresAt: Date.now() + 500 }] });\n}\nconst beep = (frequency) => ctx.audio.play({ frequency, durationMs: 90, volume: 0.35 });\nconst buzz = () => ctx.audio.play({ frequency: 140, noiseMix: 0.4, durationMs: 160, volume: 0.3 });\n// A yaw about world up that turns +Z towards the horizontal part of 'forward'.\nfunction yawTowards(forward) { return ctx.math.quatFromAxisAngle([0, 1, 0], Math.atan2(forward[0], forward[2])); }\n\n// A tool that started on a Workshop bench finds its way back there when it has been left lying somewhere for a while.\n// One taken into another world (saved to an inventory) has no bench, and stays wherever it is put down.\nconst RETURN_AFTER_S = 45;\nlet home = null;\nlet idle = 0;\nlet wasInHand = false;\nfunction returnHome() {\n  if (home && ctx.world.setWorldPose(SELF, home)) idle = 0;\n}\nfunction withBench(tool) {\n  return {\n    ...tool,\n    onSpawn() {\n      const bench = ctx.hierarchy.getParent(SELF);\n      if (bench && bench.name.startsWith('Bay: ')) home = { position: ctx.self.getWorldPosition(), rotation: ctx.self.getWorldRotation() };\n      if (tool.onSpawn) tool.onSpawn();\n    },\n    onUnequip(e) {\n      hideBeam();\n      if (tool.onUnequip) tool.onUnequip(e);\n    },\n    tick(dt) {\n      const inHand = ctx.grab.isHeld() || ctx.equip.isEquipped();\n      // Put down mid-use (the trigger's release never comes): whatever it was doing stops.\n      if (wasInHand && !inHand) {\n        hideBeam();\n        if (tool.onDrop) tool.onDrop();\n      }\n      wasInHand = inHand;\n      if (inHand) {\n        idle = 0;\n        if (tool.tick) tool.tick(dt);\n        return;\n      }\n      if (!ctx.world.isHost() || !home) return;\n      const away = ctx.math.vecLength(ctx.math.vecSub(ctx.self.getWorldPosition(), home.position)) > 0.05;\n      idle = away ? idle + dt : 0;\n      if (idle > RETURN_AFTER_S) returnHome();\n    }\n  };\n}\n\nconst MODES = ['Objects', 'Drawings'];\nlet mode = 0;\nlet pressed = false;\nlet rubbed = 0;\nconst BEAM = '#f43f5e';\nconst TOUCH = 0.05;\n\n// Strokes are drawn lines: erased by touching them with the tip, not by aiming (a line is too thin to point at).\nfunction eraseTouchedStrokes() {\n  const tip = partPose('Tip');\n  if (!tip) return;\n  const [x, y, z] = tip.position;\n  for (const slot of ctx.hierarchy.getChildren(null)) {\n    const stroke = slot.components.find((c) => c.type === 'stroke');\n    if (!stroke || slot.name === 'Tool Beam') continue;\n    const reach = TOUCH + (stroke.width || 0) / 2;\n    const p = stroke.points;\n    for (let i = 0; i + 2 < p.length; i += 3) {\n      const dx = p[i] - x, dy = p[i + 1] - y, dz = p[i + 2] - z;\n      if (dx * dx + dy * dy + dz * dz <= reach * reach) {\n        ctx.world.deleteSlot(slot.id);\n        flash(tip.position, BEAM);\n        break;\n      }\n    }\n  }\n}\n\nconst tool = {\n  onDrop() { pressed = false; },\n  onTrigger(e) {\n    if (e.phase === 'press') { pressed = true; return true; }\n    if (e.phase !== 'release' || !pressed) return true;\n    pressed = false;\n    if (MODES[mode] !== 'Objects') return true;\n    const shot = aim();\n    hideBeam();\n    const object = shot && shot.hit ? objectOf(shot.hit.slotId) : null;\n    if (!editable(object)) { buzz(); return true; }\n    ctx.world.deleteSlot(object.id);\n    flash(shot.hit.point, BEAM);\n    beep(300);\n    return true;\n  },\n  tick(dt) {\n    if (!pressed || !ctx.world.isHost()) return;\n    if (MODES[mode] === 'Objects') {\n      const shot = aim();\n      if (shot) showBeam(shot.from, shot.end, BEAM);\n      return;\n    }\n    rubbed += dt;\n    if (rubbed < 0.1) return;\n    rubbed = 0;\n    eraseTouchedStrokes();\n  },\n  getRadialItems() {\n    return [{ label: 'Erase: ' + MODES[mode], isEnabled: () => true, onSelect: () => { mode = (mode + 1) % MODES.length; hideBeam(); } }];\n  }\n};\nreturn withBench(tool);\n"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-eraser-part-0",
+		"parentId": "workshop-tool-eraser",
+		"name": "Handle",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.03,
+			0.03,
+			0.16
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#374151"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-eraser-part-1",
+		"parentId": "workshop-tool-eraser",
+		"name": "Tip",
+		"position": [
+			0,
+			0,
+			0.11
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.05,
+			0.035,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f472b6"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-eraser-part-2",
+		"parentId": "workshop-tool-eraser",
+		"name": "Muzzle",
+		"position": [
+			0,
+			0,
+			0.15
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": []
+	},
+	{
+		"id": "workshop-tool-eraser-tip-frame",
+		"parentId": "workshop-bay-shapes",
+		"name": "Eraser Sign Frame",
+		"position": [
+			15.72,
+			1.5,
+			-3.75
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.04,
+			0.87,
+			1.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#8b5cf6"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-eraser-tip",
+		"parentId": "workshop-bay-shapes",
+		"name": "Eraser Sign",
+		"position": [
+			15.69,
+			1.5,
+			-3.75
+		],
+		"rotation": [
+			0,
+			0.7071,
+			0,
+			0.7071
+		],
+		"scale": [
+			1,
+			0.75,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#111827"
+			},
+			{
+				"type": "textDisplay",
+				"title": "Eraser",
+				"lines": [
+					"Objects: aim, release",
+					"to delete",
+					"Drawings: hold trigger and",
+					"rub the tip over a line"
+				],
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-paint",
+		"parentId": null,
+		"name": "Bay: Paint & Color",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-paint-floor",
+		"parentId": "workshop-bay-paint",
+		"name": "Paint & Color Bay Floor",
+		"position": [
+			-12.9,
+			0.006,
+			-6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			5.8,
+			0.01,
+			7.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5d3519"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-paint-edge",
+		"parentId": "workshop-bay-paint",
+		"name": "Paint & Color Bay Edge",
+		"position": [
+			-10,
+			0.009,
+			-6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.12,
+			0.012,
+			7.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f97316"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-paint-pegboard",
+		"parentId": "workshop-bay-paint",
+		"name": "Paint & Color Pegboard",
+		"position": [
+			-15.77,
+			1.8,
+			-5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.05,
+			1.6,
+			4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#b08d57"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-paint-bench-top",
+		"parentId": "workshop-bay-paint",
+		"name": "Paint & Color Workbench Top",
+		"position": [
+			-15.3,
+			0.87,
+			-5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9,
+			0.06,
+			4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#a0764a"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-paint-bench-side-a",
+		"parentId": "workshop-bay-paint",
+		"name": "Paint & Color Workbench Side",
+		"position": [
+			-15.3,
+			0.42,
+			-6.95
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			0.84,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#374151"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-paint-bench-side-b",
+		"parentId": "workshop-bay-paint",
+		"name": "Paint & Color Workbench Side",
+		"position": [
+			-15.3,
+			0.42,
+			-3.05
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			0.84,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#374151"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-paint-bench-shelf",
+		"parentId": "workshop-bay-paint",
+		"name": "Paint & Color Workbench Lower Shelf",
+		"position": [
+			-15.3,
+			0.25,
+			-5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			0.04,
+			3.84
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#374151"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-paint-rack-side-a",
+		"parentId": "workshop-bay-paint",
+		"name": "Paint & Color Shelving Upright",
+		"position": [
+			-15.55,
+			1.1,
+			-8.975
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			2.2,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-paint-rack-side-b",
+		"parentId": "workshop-bay-paint",
+		"name": "Paint & Color Shelving Upright",
+		"position": [
+			-15.55,
+			1.1,
+			-7.425
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			2.2,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-paint-rack-shelf-0",
+		"parentId": "workshop-bay-paint",
+		"name": "Paint & Color Shelf 1",
+		"position": [
+			-15.55,
+			0.4,
+			-8.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			0.04,
+			1.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#6b7280"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-paint-rack-shelf-1",
+		"parentId": "workshop-bay-paint",
+		"name": "Paint & Color Shelf 2",
+		"position": [
+			-15.55,
+			1.1,
+			-8.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			0.04,
+			1.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#6b7280"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-paint-rack-shelf-2",
+		"parentId": "workshop-bay-paint",
+		"name": "Paint & Color Shelf 3",
+		"position": [
+			-15.55,
+			1.8,
+			-8.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			0.04,
+			1.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#6b7280"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-paint-sign-frame",
+		"parentId": "workshop-bay-paint",
+		"name": "Paint & Color Sign Frame",
+		"position": [
+			-15.75,
+			3.25,
+			-5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.04,
+			1.32,
+			1.72
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f97316"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-paint-sign",
+		"parentId": "workshop-bay-paint",
+		"name": "Paint & Color Sign",
+		"position": [
+			-15.72,
+			3.25,
+			-5
+		],
+		"rotation": [
+			0,
+			-0.7071,
+			0,
+			0.7071
+		],
+		"scale": [
+			1.6,
+			1.2,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#111827"
+			},
+			{
+				"type": "textDisplay",
+				"title": "Paint & Color",
+				"lines": [
+					"Brushes, colors",
+					"and surface coatings"
+				],
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-paint-brush",
+		"parentId": "workshop-bay-paint",
+		"name": "Paint Brush",
+		"position": [
+			-15.35,
+			0.925,
+			-5.625
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "equippable",
+				"left": {
+					"position": [
+						0,
+						0,
+						0.04
+					],
+					"rotation": [
+						15,
+						0,
+						0
+					]
+				},
+				"right": {
+					"position": [
+						0,
+						0,
+						0.04
+					],
+					"rotation": [
+						15,
+						0,
+						0
+					]
+				},
+				"autoGrip": true
+			},
+			{
+				"type": "codeBlock",
+				"code": "\nconst SELF = ctx.self.id;\nconst has = (slot, type) => !!slot && slot.components.some((c) => c.type === type);\n// Parts are looked up among this tool's own children: several tools use the same part names.\nfunction part(name) { return ctx.hierarchy.getChildren(SELF).find((c) => c.name === name) || null; }\nfunction partPose(name) { const p = part(name); return p ? ctx.hierarchy.getWorldPose(p.id) : null; }\nconst PALETTE = [\n  ['Red', '#ef4444'], ['Orange', '#f97316'], ['Yellow', '#facc15'], ['Lime', '#84cc16'], ['Green', '#22c55e'], ['Teal', '#14b8a6'],\n  ['Cyan', '#06b6d4'], ['Blue', '#3b82f6'], ['Purple', '#a855f7'], ['Pink', '#ec4899'], ['White', '#f8fafc'], ['Black', '#111827']\n];\n// The whole object a slot belongs to: its outermost grabbable ancestor. The building itself belongs to none.\nfunction objectOf(slotId) {\n  let found = null;\n  for (let slot = ctx.hierarchy.getSlot(slotId), hops = 0; slot && hops < 64; hops++) {\n    if (has(slot, 'grabbable')) found = slot;\n    slot = slot.parentId ? ctx.hierarchy.getSlot(slot.parentId) : null;\n  }\n  return found;\n}\n// Tools and avatars are never changed by another tool; everything else that can be picked up is fair game.\nconst editable = (object) => !!object && !has(object, 'equippable') && !has(object, 'avatar');\nconst REACH = 12;\n// Where the working end points, and what it hits (null when nothing is within reach).\nfunction aim() {\n  const muzzle = partPose('Muzzle');\n  if (!muzzle) return null;\n  const hit = ctx.world.raycast(muzzle.position, muzzle.forward, REACH);\n  return { from: muzzle.position, forward: muzzle.forward, hit, end: hit ? hit.point : ctx.math.vecAdd(muzzle.position, ctx.math.vecScale(muzzle.forward, 2)) };\n}\nconst round3 = (v) => Math.round(v * 1000) / 1000;\n// A thin line from the tool to what it points at, while aiming. Guests see it refreshed a few times a second.\nlet beamId = null;\nlet beamSynced = 0;\nfunction showBeam(from, to, color) {\n  const points = [...from, ...to].map(round3);\n  if (!beamId) {\n    beamId = crypto.randomUUID();\n    ctx.world.spawn({ id: beamId, name: 'Tool Beam', components: [{ type: 'stroke', points, color, width: 0.005 }] });\n    beamSynced = Date.now();\n    return;\n  }\n  const now = Date.now();\n  const broadcast = now - beamSynced > 120;\n  if (broadcast) beamSynced = now;\n  ctx.world.setComponentField(beamId, 'stroke', 'points', points, broadcast);\n}\nfunction setBeamColor(color) { if (beamId) ctx.world.setComponentField(beamId, 'stroke', 'color', color); }\nfunction hideBeam() { if (beamId) ctx.world.deleteSlot(beamId); beamId = null; }\nfunction flash(point, color) {\n  ctx.world.spawn({ name: 'Tool Flash', position: point, components: [{ type: 'particleBurst', color, count: 24, durationMs: 500 }, { type: 'expires', expiresAt: Date.now() + 500 }] });\n}\nconst beep = (frequency) => ctx.audio.play({ frequency, durationMs: 90, volume: 0.35 });\nconst buzz = () => ctx.audio.play({ frequency: 140, noiseMix: 0.4, durationMs: 160, volume: 0.3 });\n// A yaw about world up that turns +Z towards the horizontal part of 'forward'.\nfunction yawTowards(forward) { return ctx.math.quatFromAxisAngle([0, 1, 0], Math.atan2(forward[0], forward[2])); }\n\n// A tool that started on a Workshop bench finds its way back there when it has been left lying somewhere for a while.\n// One taken into another world (saved to an inventory) has no bench, and stays wherever it is put down.\nconst RETURN_AFTER_S = 45;\nlet home = null;\nlet idle = 0;\nlet wasInHand = false;\nfunction returnHome() {\n  if (home && ctx.world.setWorldPose(SELF, home)) idle = 0;\n}\nfunction withBench(tool) {\n  return {\n    ...tool,\n    onSpawn() {\n      const bench = ctx.hierarchy.getParent(SELF);\n      if (bench && bench.name.startsWith('Bay: ')) home = { position: ctx.self.getWorldPosition(), rotation: ctx.self.getWorldRotation() };\n      if (tool.onSpawn) tool.onSpawn();\n    },\n    onUnequip(e) {\n      hideBeam();\n      if (tool.onUnequip) tool.onUnequip(e);\n    },\n    tick(dt) {\n      const inHand = ctx.grab.isHeld() || ctx.equip.isEquipped();\n      // Put down mid-use (the trigger's release never comes): whatever it was doing stops.\n      if (wasInHand && !inHand) {\n        hideBeam();\n        if (tool.onDrop) tool.onDrop();\n      }\n      wasInHand = inHand;\n      if (inHand) {\n        idle = 0;\n        if (tool.tick) tool.tick(dt);\n        return;\n      }\n      if (!ctx.world.isHost() || !home) return;\n      const away = ctx.math.vecLength(ctx.math.vecSub(ctx.self.getWorldPosition(), home.position)) > 0.05;\n      idle = away ? idle + dt : 0;\n      if (idle > RETURN_AFTER_S) returnHome();\n    }\n  };\n}\n\nconst SIZES = [['Fine', 0.008], ['Medium', 0.018], ['Thick', 0.035]];\nconst MIN_STEP = 0.012;          // meters between recorded points\nconst SYNC_MS = 150;             // how often guests get the growing stroke\nconst MAX_STROKE_POINTS = 1200;  // a longer line continues in a new stroke\nconst MAX_TOTAL_POINTS = 8000;   // oldest strokes are erased past this\nlet color = 0;\nlet size = 1;\nlet drawing = false;\nlet strokeId = null;\nlet points = [];\nlet lastSync = 0;\nconst strokes = [];              // { id, count } oldest first\n\nfunction tipPosition() { const pose = partPose('Brush Tip'); return pose ? pose.position : null; }\nfunction paintTip() { const tip = part('Brush Tip'); if (tip) ctx.world.setComponentField(tip.id, 'meshRenderer', 'color', PALETTE[color][1]); }\nconst totalPoints = () => strokes.reduce((sum, s) => sum + s.count, 0);\n\nfunction beginStroke(p) {\n  strokeId = crypto.randomUUID();\n  points = p.map(round3);\n  strokes.push({ id: strokeId, count: 1 });\n  ctx.world.spawn({ id: strokeId, name: 'Brush Stroke', components: [{ type: 'stroke', points: points.slice(), color: PALETTE[color][1], width: SIZES[size][1] }] });\n  lastSync = Date.now();\n  while (totalPoints() > MAX_TOTAL_POINTS && strokes.length > 1) ctx.world.deleteSlot(strokes.shift().id);\n}\n\n// Updates this peer every time; guests only every SYNC_MS (or when forced).\nfunction pushPoints(force) {\n  if (!strokeId) return;\n  const now = Date.now();\n  const broadcast = force || now - lastSync >= SYNC_MS;\n  if (broadcast) lastSync = now;\n  ctx.world.setComponentField(strokeId, 'stroke', 'points', points.slice(), broadcast);\n  strokes[strokes.length - 1].count = points.length / 3;\n}\n\nfunction endStroke() {\n  if (strokeId) pushPoints(true);\n  drawing = false;\n  strokeId = null;\n  points = [];\n}\n\nconst tool = {\n  onSpawn() { paintTip(); },\n  onEquip() { paintTip(); },\n  onUnequip() { endStroke(); },\n  onDrop() { endStroke(); },\n  onTrigger(e) {\n    if (e.phase === 'press') {\n      const p = tipPosition();\n      if (!p) return true;\n      drawing = true;\n      beginStroke(p);\n    } else if (e.phase === 'release') {\n      endStroke();\n    }\n    return true;\n  },\n  tick() {\n    if (!drawing || !ctx.world.isHost()) return;\n    if (!ctx.equip.isEquipped() && !ctx.grab.isHeld()) { endStroke(); return; }\n    const p = tipPosition();\n    if (!p || !strokeId) return;\n    const n = points.length;\n    const from = [points[n - 3], points[n - 2], points[n - 1]];\n    if (ctx.math.vecLength(ctx.math.vecSub(p, from)) < MIN_STEP) { pushPoints(false); return; }\n    points.push(...p.map(round3));\n    if (points.length / 3 >= MAX_STROKE_POINTS) { pushPoints(true); beginStroke(p); return; }\n    pushPoints(false);\n  },\n  getRadialItems() {\n    return [\n      { label: 'Color: ' + PALETTE[color][0], isEnabled: () => true, onSelect: () => { color = (color + 1) % PALETTE.length; paintTip(); } },\n      { label: 'Size: ' + SIZES[size][0], isEnabled: () => true, onSelect: () => { size = (size + 1) % SIZES.length; } },\n      { label: 'Clear my strokes', isEnabled: () => strokes.length > 0, onSelect: () => { while (strokes.length) ctx.world.deleteSlot(strokes.pop().id); strokeId = null; points = []; } }\n    ];\n  }\n};\nreturn withBench(tool);\n"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-paint-brush-part-0",
+		"parentId": "workshop-tool-paint-brush",
+		"name": "Handle",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.022,
+			0.022,
+			0.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#8b5a2b"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-paint-brush-part-1",
+		"parentId": "workshop-tool-paint-brush",
+		"name": "Brush Tip",
+		"position": [
+			0,
+			0,
+			0.11
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.04,
+			0.04,
+			0.04
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#ef4444"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-paint-brush-tip-frame",
+		"parentId": "workshop-bay-paint",
+		"name": "Paint Brush Sign Frame",
+		"position": [
+			-15.72,
+			1.5,
+			-5.625
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.04,
+			0.87,
+			1.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f97316"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-paint-brush-tip",
+		"parentId": "workshop-bay-paint",
+		"name": "Paint Brush Sign",
+		"position": [
+			-15.69,
+			1.5,
+			-5.625
+		],
+		"rotation": [
+			0,
+			-0.7071,
+			0,
+			0.7071
+		],
+		"scale": [
+			1,
+			0.75,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#111827"
+			},
+			{
+				"type": "textDisplay",
+				"title": "Paint Brush",
+				"lines": [
+					"Hold trigger: draw in the air",
+					"Menu: color, size",
+					"Erase lines with the Eraser"
+				],
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-color-sprayer",
+		"parentId": "workshop-bay-paint",
+		"name": "Color Sprayer",
+		"position": [
+			-15.35,
+			0.925,
+			-4.375
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "equippable",
+				"left": {
+					"position": [
+						0,
+						0,
+						0.04
+					],
+					"rotation": [
+						15,
+						0,
+						0
+					]
+				},
+				"right": {
+					"position": [
+						0,
+						0,
+						0.04
+					],
+					"rotation": [
+						15,
+						0,
+						0
+					]
+				},
+				"autoGrip": true
+			},
+			{
+				"type": "codeBlock",
+				"code": "\nconst SELF = ctx.self.id;\nconst has = (slot, type) => !!slot && slot.components.some((c) => c.type === type);\n// Parts are looked up among this tool's own children: several tools use the same part names.\nfunction part(name) { return ctx.hierarchy.getChildren(SELF).find((c) => c.name === name) || null; }\nfunction partPose(name) { const p = part(name); return p ? ctx.hierarchy.getWorldPose(p.id) : null; }\nconst PALETTE = [\n  ['Red', '#ef4444'], ['Orange', '#f97316'], ['Yellow', '#facc15'], ['Lime', '#84cc16'], ['Green', '#22c55e'], ['Teal', '#14b8a6'],\n  ['Cyan', '#06b6d4'], ['Blue', '#3b82f6'], ['Purple', '#a855f7'], ['Pink', '#ec4899'], ['White', '#f8fafc'], ['Black', '#111827']\n];\n// The whole object a slot belongs to: its outermost grabbable ancestor. The building itself belongs to none.\nfunction objectOf(slotId) {\n  let found = null;\n  for (let slot = ctx.hierarchy.getSlot(slotId), hops = 0; slot && hops < 64; hops++) {\n    if (has(slot, 'grabbable')) found = slot;\n    slot = slot.parentId ? ctx.hierarchy.getSlot(slot.parentId) : null;\n  }\n  return found;\n}\n// Tools and avatars are never changed by another tool; everything else that can be picked up is fair game.\nconst editable = (object) => !!object && !has(object, 'equippable') && !has(object, 'avatar');\nconst REACH = 12;\n// Where the working end points, and what it hits (null when nothing is within reach).\nfunction aim() {\n  const muzzle = partPose('Muzzle');\n  if (!muzzle) return null;\n  const hit = ctx.world.raycast(muzzle.position, muzzle.forward, REACH);\n  return { from: muzzle.position, forward: muzzle.forward, hit, end: hit ? hit.point : ctx.math.vecAdd(muzzle.position, ctx.math.vecScale(muzzle.forward, 2)) };\n}\nconst round3 = (v) => Math.round(v * 1000) / 1000;\n// A thin line from the tool to what it points at, while aiming. Guests see it refreshed a few times a second.\nlet beamId = null;\nlet beamSynced = 0;\nfunction showBeam(from, to, color) {\n  const points = [...from, ...to].map(round3);\n  if (!beamId) {\n    beamId = crypto.randomUUID();\n    ctx.world.spawn({ id: beamId, name: 'Tool Beam', components: [{ type: 'stroke', points, color, width: 0.005 }] });\n    beamSynced = Date.now();\n    return;\n  }\n  const now = Date.now();\n  const broadcast = now - beamSynced > 120;\n  if (broadcast) beamSynced = now;\n  ctx.world.setComponentField(beamId, 'stroke', 'points', points, broadcast);\n}\nfunction setBeamColor(color) { if (beamId) ctx.world.setComponentField(beamId, 'stroke', 'color', color); }\nfunction hideBeam() { if (beamId) ctx.world.deleteSlot(beamId); beamId = null; }\nfunction flash(point, color) {\n  ctx.world.spawn({ name: 'Tool Flash', position: point, components: [{ type: 'particleBurst', color, count: 24, durationMs: 500 }, { type: 'expires', expiresAt: Date.now() + 500 }] });\n}\nconst beep = (frequency) => ctx.audio.play({ frequency, durationMs: 90, volume: 0.35 });\nconst buzz = () => ctx.audio.play({ frequency: 140, noiseMix: 0.4, durationMs: 160, volume: 0.3 });\n// A yaw about world up that turns +Z towards the horizontal part of 'forward'.\nfunction yawTowards(forward) { return ctx.math.quatFromAxisAngle([0, 1, 0], Math.atan2(forward[0], forward[2])); }\n\n// A tool that started on a Workshop bench finds its way back there when it has been left lying somewhere for a while.\n// One taken into another world (saved to an inventory) has no bench, and stays wherever it is put down.\nconst RETURN_AFTER_S = 45;\nlet home = null;\nlet idle = 0;\nlet wasInHand = false;\nfunction returnHome() {\n  if (home && ctx.world.setWorldPose(SELF, home)) idle = 0;\n}\nfunction withBench(tool) {\n  return {\n    ...tool,\n    onSpawn() {\n      const bench = ctx.hierarchy.getParent(SELF);\n      if (bench && bench.name.startsWith('Bay: ')) home = { position: ctx.self.getWorldPosition(), rotation: ctx.self.getWorldRotation() };\n      if (tool.onSpawn) tool.onSpawn();\n    },\n    onUnequip(e) {\n      hideBeam();\n      if (tool.onUnequip) tool.onUnequip(e);\n    },\n    tick(dt) {\n      const inHand = ctx.grab.isHeld() || ctx.equip.isEquipped();\n      // Put down mid-use (the trigger's release never comes): whatever it was doing stops.\n      if (wasInHand && !inHand) {\n        hideBeam();\n        if (tool.onDrop) tool.onDrop();\n      }\n      wasInHand = inHand;\n      if (inHand) {\n        idle = 0;\n        if (tool.tick) tool.tick(dt);\n        return;\n      }\n      if (!ctx.world.isHost() || !home) return;\n      const away = ctx.math.vecLength(ctx.math.vecSub(ctx.self.getWorldPosition(), home.position)) > 0.05;\n      idle = away ? idle + dt : 0;\n      if (idle > RETURN_AFTER_S) returnHome();\n    }\n  };\n}\n\nconst MODES = ['Paint', 'Pick color'];\nlet mode = 0;\nlet color = PALETTE[0][1];\nlet paletteIndex = 0;\nlet aiming = false;\n\nfunction showColor() { const tank = part('Tank'); if (tank) ctx.world.setComponentField(tank.id, 'meshRenderer', 'color', color); setBeamColor(color); }\nconst colorName = () => (PALETTE.find((entry) => entry[1] === color) || ['Custom'])[0];\n\nconst tool = {\n  onSpawn() { showColor(); },\n  onDrop() { aiming = false; },\n  onTrigger(e) {\n    if (e.phase === 'press') aiming = true;\n    if (e.phase !== 'release' || !aiming) return true;\n    aiming = false;\n    const shot = aim();\n    hideBeam();\n    const hit = shot && shot.hit;\n    const target = hit ? ctx.hierarchy.getSlot(hit.slotId) : null;\n    const renderer = target && target.components.find((c) => c.type === 'meshRenderer');\n    // Only the parts of loose objects: the building and the tools keep their colours.\n    if (!renderer || !editable(objectOf(target.id))) { buzz(); return true; }\n    if (MODES[mode] === 'Paint') {\n      ctx.world.setComponentField(target.id, 'meshRenderer', 'color', color);\n      flash(hit.point, color);\n      beep(700);\n    } else if (renderer.color) {\n      color = renderer.color;\n      showColor();\n      beep(880);\n    }\n    return true;\n  },\n  tick() {\n    if (!aiming || !ctx.world.isHost()) return;\n    const shot = aim();\n    if (shot) showBeam(shot.from, shot.end, MODES[mode] === 'Paint' ? color : '#f8fafc');\n  },\n  getRadialItems() {\n    return [\n      { label: 'Color: ' + colorName(), isEnabled: () => true, onSelect: () => { paletteIndex = (paletteIndex + 1) % PALETTE.length; color = PALETTE[paletteIndex][1]; showColor(); } },\n      { label: 'Mode: ' + MODES[mode], isEnabled: () => true, onSelect: () => { mode = (mode + 1) % MODES.length; } }\n    ];\n  }\n};\nreturn withBench(tool);\n"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-color-sprayer-part-0",
+		"parentId": "workshop-tool-color-sprayer",
+		"name": "Handle",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.03,
+			0.03,
+			0.16
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#374151"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-color-sprayer-part-1",
+		"parentId": "workshop-tool-color-sprayer",
+		"name": "Tank",
+		"position": [
+			0,
+			0.045,
+			-0.01
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.05,
+			0.07,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#ef4444"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-color-sprayer-part-2",
+		"parentId": "workshop-tool-color-sprayer",
+		"name": "Nozzle",
+		"position": [
+			0,
+			0,
+			0.1
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.025,
+			0.025,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9ca3af"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-color-sprayer-part-3",
+		"parentId": "workshop-tool-color-sprayer",
+		"name": "Muzzle",
+		"position": [
+			0,
+			0,
+			0.13
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": []
+	},
+	{
+		"id": "workshop-tool-color-sprayer-tip-frame",
+		"parentId": "workshop-bay-paint",
+		"name": "Color Sprayer Sign Frame",
+		"position": [
+			-15.72,
+			1.5,
+			-4.375
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.04,
+			0.87,
+			1.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f97316"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-color-sprayer-tip",
+		"parentId": "workshop-bay-paint",
+		"name": "Color Sprayer Sign",
+		"position": [
+			-15.69,
+			1.5,
+			-4.375
+		],
+		"rotation": [
+			0,
+			-0.7071,
+			0,
+			0.7071
+		],
+		"scale": [
+			1,
+			0.75,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#111827"
+			},
+			{
+				"type": "textDisplay",
+				"title": "Color Sprayer",
+				"lines": [
+					"Hold trigger: aim",
+					"Release: paint that part",
+					"Menu: color, or Pick color",
+					"to copy a color you aim at"
+				],
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-measure",
+		"parentId": null,
+		"name": "Bay: Measure & Align",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-measure-floor",
+		"parentId": "workshop-bay-measure",
+		"name": "Measure & Align Bay Floor",
+		"position": [
+			12.9,
+			0.006,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			5.8,
+			0.01,
+			7.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#584815"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-measure-edge",
+		"parentId": "workshop-bay-measure",
+		"name": "Measure & Align Bay Edge",
+		"position": [
+			10,
+			0.009,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.12,
+			0.012,
+			7.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#eab308"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-measure-pegboard",
+		"parentId": "workshop-bay-measure",
+		"name": "Measure & Align Pegboard",
+		"position": [
+			15.77,
+			1.8,
+			-13
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.05,
+			1.6,
+			4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#b08d57"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-measure-bench-top",
+		"parentId": "workshop-bay-measure",
+		"name": "Measure & Align Workbench Top",
+		"position": [
+			15.3,
+			0.87,
+			-13
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9,
+			0.06,
+			4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#a0764a"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-measure-bench-side-a",
+		"parentId": "workshop-bay-measure",
+		"name": "Measure & Align Workbench Side",
+		"position": [
+			15.3,
+			0.42,
+			-14.95
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			0.84,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#374151"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-measure-bench-side-b",
+		"parentId": "workshop-bay-measure",
+		"name": "Measure & Align Workbench Side",
+		"position": [
+			15.3,
+			0.42,
+			-11.05
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			0.84,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#374151"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-measure-bench-shelf",
+		"parentId": "workshop-bay-measure",
+		"name": "Measure & Align Workbench Lower Shelf",
+		"position": [
+			15.3,
+			0.25,
+			-13
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			0.04,
+			3.84
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#374151"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-measure-rack-side-a",
+		"parentId": "workshop-bay-measure",
+		"name": "Measure & Align Shelving Upright",
+		"position": [
+			15.55,
+			1.1,
+			-16.975
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			2.2,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-measure-rack-side-b",
+		"parentId": "workshop-bay-measure",
+		"name": "Measure & Align Shelving Upright",
+		"position": [
+			15.55,
+			1.1,
+			-15.425
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			2.2,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-measure-rack-shelf-0",
+		"parentId": "workshop-bay-measure",
+		"name": "Measure & Align Shelf 1",
+		"position": [
+			15.55,
+			0.4,
+			-16.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			0.04,
+			1.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#6b7280"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-measure-rack-shelf-1",
+		"parentId": "workshop-bay-measure",
+		"name": "Measure & Align Shelf 2",
+		"position": [
+			15.55,
+			1.1,
+			-16.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			0.04,
+			1.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#6b7280"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-measure-rack-shelf-2",
+		"parentId": "workshop-bay-measure",
+		"name": "Measure & Align Shelf 3",
+		"position": [
+			15.55,
+			1.8,
+			-16.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			0.04,
+			1.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#6b7280"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-measure-sign-frame",
+		"parentId": "workshop-bay-measure",
+		"name": "Measure & Align Sign Frame",
+		"position": [
+			15.75,
+			3.25,
+			-13
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.04,
+			1.32,
+			1.72
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#eab308"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-measure-sign",
+		"parentId": "workshop-bay-measure",
+		"name": "Measure & Align Sign",
+		"position": [
+			15.72,
+			3.25,
+			-13
+		],
+		"rotation": [
+			0,
+			0.7071,
+			0,
+			0.7071
+		],
+		"scale": [
+			1.6,
+			1.2,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#111827"
+			},
+			{
+				"type": "textDisplay",
+				"title": "Measure & Align",
+				"lines": [
+					"Rulers, grids",
+					"and alignment guides"
+				],
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-tape-measure",
+		"parentId": "workshop-bay-measure",
+		"name": "Tape Measure",
+		"position": [
+			15.35,
+			0.925,
+			-13.625
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "equippable",
+				"left": {
+					"position": [
+						0,
+						0,
+						0.04
+					],
+					"rotation": [
+						15,
+						0,
+						0
+					]
+				},
+				"right": {
+					"position": [
+						0,
+						0,
+						0.04
+					],
+					"rotation": [
+						15,
+						0,
+						0
+					]
+				},
+				"autoGrip": true
+			},
+			{
+				"type": "codeBlock",
+				"code": "\nconst SELF = ctx.self.id;\nconst has = (slot, type) => !!slot && slot.components.some((c) => c.type === type);\n// Parts are looked up among this tool's own children: several tools use the same part names.\nfunction part(name) { return ctx.hierarchy.getChildren(SELF).find((c) => c.name === name) || null; }\nfunction partPose(name) { const p = part(name); return p ? ctx.hierarchy.getWorldPose(p.id) : null; }\nconst PALETTE = [\n  ['Red', '#ef4444'], ['Orange', '#f97316'], ['Yellow', '#facc15'], ['Lime', '#84cc16'], ['Green', '#22c55e'], ['Teal', '#14b8a6'],\n  ['Cyan', '#06b6d4'], ['Blue', '#3b82f6'], ['Purple', '#a855f7'], ['Pink', '#ec4899'], ['White', '#f8fafc'], ['Black', '#111827']\n];\n// The whole object a slot belongs to: its outermost grabbable ancestor. The building itself belongs to none.\nfunction objectOf(slotId) {\n  let found = null;\n  for (let slot = ctx.hierarchy.getSlot(slotId), hops = 0; slot && hops < 64; hops++) {\n    if (has(slot, 'grabbable')) found = slot;\n    slot = slot.parentId ? ctx.hierarchy.getSlot(slot.parentId) : null;\n  }\n  return found;\n}\n// Tools and avatars are never changed by another tool; everything else that can be picked up is fair game.\nconst editable = (object) => !!object && !has(object, 'equippable') && !has(object, 'avatar');\nconst REACH = 12;\n// Where the working end points, and what it hits (null when nothing is within reach).\nfunction aim() {\n  const muzzle = partPose('Muzzle');\n  if (!muzzle) return null;\n  const hit = ctx.world.raycast(muzzle.position, muzzle.forward, REACH);\n  return { from: muzzle.position, forward: muzzle.forward, hit, end: hit ? hit.point : ctx.math.vecAdd(muzzle.position, ctx.math.vecScale(muzzle.forward, 2)) };\n}\nconst round3 = (v) => Math.round(v * 1000) / 1000;\n// A thin line from the tool to what it points at, while aiming. Guests see it refreshed a few times a second.\nlet beamId = null;\nlet beamSynced = 0;\nfunction showBeam(from, to, color) {\n  const points = [...from, ...to].map(round3);\n  if (!beamId) {\n    beamId = crypto.randomUUID();\n    ctx.world.spawn({ id: beamId, name: 'Tool Beam', components: [{ type: 'stroke', points, color, width: 0.005 }] });\n    beamSynced = Date.now();\n    return;\n  }\n  const now = Date.now();\n  const broadcast = now - beamSynced > 120;\n  if (broadcast) beamSynced = now;\n  ctx.world.setComponentField(beamId, 'stroke', 'points', points, broadcast);\n}\nfunction setBeamColor(color) { if (beamId) ctx.world.setComponentField(beamId, 'stroke', 'color', color); }\nfunction hideBeam() { if (beamId) ctx.world.deleteSlot(beamId); beamId = null; }\nfunction flash(point, color) {\n  ctx.world.spawn({ name: 'Tool Flash', position: point, components: [{ type: 'particleBurst', color, count: 24, durationMs: 500 }, { type: 'expires', expiresAt: Date.now() + 500 }] });\n}\nconst beep = (frequency) => ctx.audio.play({ frequency, durationMs: 90, volume: 0.35 });\nconst buzz = () => ctx.audio.play({ frequency: 140, noiseMix: 0.4, durationMs: 160, volume: 0.3 });\n// A yaw about world up that turns +Z towards the horizontal part of 'forward'.\nfunction yawTowards(forward) { return ctx.math.quatFromAxisAngle([0, 1, 0], Math.atan2(forward[0], forward[2])); }\n\n// A tool that started on a Workshop bench finds its way back there when it has been left lying somewhere for a while.\n// One taken into another world (saved to an inventory) has no bench, and stays wherever it is put down.\nconst RETURN_AFTER_S = 45;\nlet home = null;\nlet idle = 0;\nlet wasInHand = false;\nfunction returnHome() {\n  if (home && ctx.world.setWorldPose(SELF, home)) idle = 0;\n}\nfunction withBench(tool) {\n  return {\n    ...tool,\n    onSpawn() {\n      const bench = ctx.hierarchy.getParent(SELF);\n      if (bench && bench.name.startsWith('Bay: ')) home = { position: ctx.self.getWorldPosition(), rotation: ctx.self.getWorldRotation() };\n      if (tool.onSpawn) tool.onSpawn();\n    },\n    onUnequip(e) {\n      hideBeam();\n      if (tool.onUnequip) tool.onUnequip(e);\n    },\n    tick(dt) {\n      const inHand = ctx.grab.isHeld() || ctx.equip.isEquipped();\n      // Put down mid-use (the trigger's release never comes): whatever it was doing stops.\n      if (wasInHand && !inHand) {\n        hideBeam();\n        if (tool.onDrop) tool.onDrop();\n      }\n      wasInHand = inHand;\n      if (inHand) {\n        idle = 0;\n        if (tool.tick) tool.tick(dt);\n        return;\n      }\n      if (!ctx.world.isHost() || !home) return;\n      const away = ctx.math.vecLength(ctx.math.vecSub(ctx.self.getWorldPosition(), home.position)) > 0.05;\n      idle = away ? idle + dt : 0;\n      if (idle > RETURN_AFTER_S) returnHome();\n    }\n  };\n}\n\nconst UNITS = [['m', 1, 2], ['cm', 100, 1]];\nlet unit = 0;\nlet start = null;\nlet lineId = null;\nlet lineSynced = 0;\nlet shown = 0;\nconst measurements = [];         // ids of every line and label left behind\nconst LINE = '#facc15';\n\n// A measurement left half-way (the tool was put down) is removed.\nfunction cancel() { if (lineId && start) ctx.world.deleteSlot(lineId); lineId = null; start = null; }\nfunction format(meters) { const [name, factor, digits] = UNITS[unit]; return (meters * factor).toFixed(digits) + ' ' + name; }\nfunction readout(text) { const r = part('Readout'); if (r) ctx.world.setComponentField(r.id, 'textDisplay', 'title', text, false); }\n\nfunction drawLine(a, b, broadcast) {\n  const points = [...a, ...b].map(round3);\n  if (!lineId) {\n    lineId = crypto.randomUUID();\n    ctx.world.spawn({ id: lineId, name: 'Measure Line', components: [{ type: 'stroke', points, color: LINE, width: 0.006 }] });\n    return;\n  }\n  ctx.world.setComponentField(lineId, 'stroke', 'points', points, broadcast);\n}\n\n// A label at the middle of the line, turned to face whoever measured.\nfunction label(a, b, viewer) {\n  const mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + 0.07, (a[2] + b[2]) / 2].map(round3);\n  const dx = viewer[0] - mid[0], dz = viewer[2] - mid[2];\n  const yaw = Math.atan2(-dx, -dz);\n  const id = crypto.randomUUID();\n  ctx.world.spawn({\n    id,\n    name: 'Measure Label',\n    position: mid,\n    rotation: [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)],\n    scale: [0.3, 0.15, 1],\n    components: [\n      { type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'plane' }, color: '#111827' },\n      { type: 'textDisplay', title: format(ctx.math.vecLength(ctx.math.vecSub(b, a))), lines: [], color: '#111827' }\n    ]\n  });\n  return id;\n}\n\nconst tool = {\n  onSpawn() { readout('Tape Measure'); },\n  onUnequip() { cancel(); },\n  onDrop() { cancel(); },\n  onTrigger(e) {\n    const shot = aim();\n    if (!shot) return true;\n    if (e.phase === 'press') {\n      start = shot.end;\n      lineId = null;\n      drawLine(start, start, true);\n      beep(600);\n      return true;\n    }\n    if (e.phase !== 'release' || !start) return true;\n    const end = shot.end;\n    const length = ctx.math.vecLength(ctx.math.vecSub(end, start));\n    if (length < 0.01) {\n      if (lineId) ctx.world.deleteSlot(lineId);\n    } else {\n      drawLine(start, end, true);\n      measurements.push(lineId, label(start, end, shot.from));\n      readout(format(length));\n      beep(800);\n    }\n    lineId = null;\n    start = null;\n    return true;\n  },\n  tick() {\n    if (!start || !ctx.world.isHost()) return;\n    const shot = aim();\n    if (!shot) return;\n    const now = Date.now();\n    const broadcast = now - lineSynced > 120;\n    if (broadcast) lineSynced = now;\n    drawLine(start, shot.end, broadcast);\n    if (now - shown > 100) { shown = now; readout(format(ctx.math.vecLength(ctx.math.vecSub(shot.end, start)))); }\n  },\n  getRadialItems() {\n    return [\n      { label: 'Units: ' + UNITS[unit][0], isEnabled: () => true, onSelect: () => { unit = (unit + 1) % UNITS.length; } },\n      { label: 'Clear measurements', isEnabled: () => measurements.length > 0, onSelect: () => { while (measurements.length) ctx.world.deleteSlot(measurements.pop()); readout('Tape Measure'); } }\n    ];\n  }\n};\nreturn withBench(tool);\n"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-tape-measure-part-0",
+		"parentId": "workshop-tool-tape-measure",
+		"name": "Handle",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.03,
+			0.03,
+			0.16
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#1f2937"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-tape-measure-part-1",
+		"parentId": "workshop-tool-tape-measure",
+		"name": "Case",
+		"position": [
+			0,
+			0,
+			0.1
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.06,
+			0.06,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#facc15"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-tape-measure-part-2",
+		"parentId": "workshop-tool-tape-measure",
+		"name": "Readout",
+		"position": [
+			0,
+			0.06,
+			-0.03
+		],
+		"rotation": [
+			0.2588,
+			0,
+			0,
+			0.9659
+		],
+		"scale": [
+			0.2,
+			0.1,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#111827"
+			},
+			{
+				"type": "textDisplay",
+				"title": "Tape Measure",
+				"lines": [],
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-tape-measure-part-3",
+		"parentId": "workshop-tool-tape-measure",
+		"name": "Muzzle",
+		"position": [
+			0,
+			0,
+			0.13
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": []
+	},
+	{
+		"id": "workshop-tool-tape-measure-tip-frame",
+		"parentId": "workshop-bay-measure",
+		"name": "Tape Measure Sign Frame",
+		"position": [
+			15.72,
+			1.5,
+			-13.625
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.04,
+			0.87,
+			1.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#eab308"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-tape-measure-tip",
+		"parentId": "workshop-bay-measure",
+		"name": "Tape Measure Sign",
+		"position": [
+			15.69,
+			1.5,
+			-13.625
+		],
+		"rotation": [
+			0,
+			0.7071,
+			0,
+			0.7071
+		],
+		"scale": [
+			1,
+			0.75,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#111827"
+			},
+			{
+				"type": "textDisplay",
+				"title": "Tape Measure",
+				"lines": [
+					"Press at one point,",
+					"release at another",
+					"The distance stays on a label",
+					"Menu: units, clear"
+				],
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-aligner",
+		"parentId": "workshop-bay-measure",
+		"name": "Aligner",
+		"position": [
+			15.35,
+			0.925,
+			-12.375
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			},
+			{
+				"type": "grabbable",
+				"scalable": false
+			},
+			{
+				"type": "equippable",
+				"left": {
+					"position": [
+						0,
+						0,
+						0.04
+					],
+					"rotation": [
+						15,
+						0,
+						0
+					]
+				},
+				"right": {
+					"position": [
+						0,
+						0,
+						0.04
+					],
+					"rotation": [
+						15,
+						0,
+						0
+					]
+				},
+				"autoGrip": true
+			},
+			{
+				"type": "codeBlock",
+				"code": "\nconst SELF = ctx.self.id;\nconst has = (slot, type) => !!slot && slot.components.some((c) => c.type === type);\n// Parts are looked up among this tool's own children: several tools use the same part names.\nfunction part(name) { return ctx.hierarchy.getChildren(SELF).find((c) => c.name === name) || null; }\nfunction partPose(name) { const p = part(name); return p ? ctx.hierarchy.getWorldPose(p.id) : null; }\nconst PALETTE = [\n  ['Red', '#ef4444'], ['Orange', '#f97316'], ['Yellow', '#facc15'], ['Lime', '#84cc16'], ['Green', '#22c55e'], ['Teal', '#14b8a6'],\n  ['Cyan', '#06b6d4'], ['Blue', '#3b82f6'], ['Purple', '#a855f7'], ['Pink', '#ec4899'], ['White', '#f8fafc'], ['Black', '#111827']\n];\n// The whole object a slot belongs to: its outermost grabbable ancestor. The building itself belongs to none.\nfunction objectOf(slotId) {\n  let found = null;\n  for (let slot = ctx.hierarchy.getSlot(slotId), hops = 0; slot && hops < 64; hops++) {\n    if (has(slot, 'grabbable')) found = slot;\n    slot = slot.parentId ? ctx.hierarchy.getSlot(slot.parentId) : null;\n  }\n  return found;\n}\n// Tools and avatars are never changed by another tool; everything else that can be picked up is fair game.\nconst editable = (object) => !!object && !has(object, 'equippable') && !has(object, 'avatar');\nconst REACH = 12;\n// Where the working end points, and what it hits (null when nothing is within reach).\nfunction aim() {\n  const muzzle = partPose('Muzzle');\n  if (!muzzle) return null;\n  const hit = ctx.world.raycast(muzzle.position, muzzle.forward, REACH);\n  return { from: muzzle.position, forward: muzzle.forward, hit, end: hit ? hit.point : ctx.math.vecAdd(muzzle.position, ctx.math.vecScale(muzzle.forward, 2)) };\n}\nconst round3 = (v) => Math.round(v * 1000) / 1000;\n// A thin line from the tool to what it points at, while aiming. Guests see it refreshed a few times a second.\nlet beamId = null;\nlet beamSynced = 0;\nfunction showBeam(from, to, color) {\n  const points = [...from, ...to].map(round3);\n  if (!beamId) {\n    beamId = crypto.randomUUID();\n    ctx.world.spawn({ id: beamId, name: 'Tool Beam', components: [{ type: 'stroke', points, color, width: 0.005 }] });\n    beamSynced = Date.now();\n    return;\n  }\n  const now = Date.now();\n  const broadcast = now - beamSynced > 120;\n  if (broadcast) beamSynced = now;\n  ctx.world.setComponentField(beamId, 'stroke', 'points', points, broadcast);\n}\nfunction setBeamColor(color) { if (beamId) ctx.world.setComponentField(beamId, 'stroke', 'color', color); }\nfunction hideBeam() { if (beamId) ctx.world.deleteSlot(beamId); beamId = null; }\nfunction flash(point, color) {\n  ctx.world.spawn({ name: 'Tool Flash', position: point, components: [{ type: 'particleBurst', color, count: 24, durationMs: 500 }, { type: 'expires', expiresAt: Date.now() + 500 }] });\n}\nconst beep = (frequency) => ctx.audio.play({ frequency, durationMs: 90, volume: 0.35 });\nconst buzz = () => ctx.audio.play({ frequency: 140, noiseMix: 0.4, durationMs: 160, volume: 0.3 });\n// A yaw about world up that turns +Z towards the horizontal part of 'forward'.\nfunction yawTowards(forward) { return ctx.math.quatFromAxisAngle([0, 1, 0], Math.atan2(forward[0], forward[2])); }\n\n// A tool that started on a Workshop bench finds its way back there when it has been left lying somewhere for a while.\n// One taken into another world (saved to an inventory) has no bench, and stays wherever it is put down.\nconst RETURN_AFTER_S = 45;\nlet home = null;\nlet idle = 0;\nlet wasInHand = false;\nfunction returnHome() {\n  if (home && ctx.world.setWorldPose(SELF, home)) idle = 0;\n}\nfunction withBench(tool) {\n  return {\n    ...tool,\n    onSpawn() {\n      const bench = ctx.hierarchy.getParent(SELF);\n      if (bench && bench.name.startsWith('Bay: ')) home = { position: ctx.self.getWorldPosition(), rotation: ctx.self.getWorldRotation() };\n      if (tool.onSpawn) tool.onSpawn();\n    },\n    onUnequip(e) {\n      hideBeam();\n      if (tool.onUnequip) tool.onUnequip(e);\n    },\n    tick(dt) {\n      const inHand = ctx.grab.isHeld() || ctx.equip.isEquipped();\n      // Put down mid-use (the trigger's release never comes): whatever it was doing stops.\n      if (wasInHand && !inHand) {\n        hideBeam();\n        if (tool.onDrop) tool.onDrop();\n      }\n      wasInHand = inHand;\n      if (inHand) {\n        idle = 0;\n        if (tool.tick) tool.tick(dt);\n        return;\n      }\n      if (!ctx.world.isHost() || !home) return;\n      const away = ctx.math.vecLength(ctx.math.vecSub(ctx.self.getWorldPosition(), home.position)) > 0.05;\n      idle = away ? idle + dt : 0;\n      if (idle > RETURN_AFTER_S) returnHome();\n    }\n  };\n}\n\nconst ANGLES = [['90°', 90], ['45°', 45], ['15°', 15]];\nconst GRIDS = [['Off', 0], ['5 cm', 0.05], ['10 cm', 0.1], ['25 cm', 0.25]];\nlet angle = 0, grid = 0;\nlet aiming = false;\nconst BEAM = '#4ade80';\nconst m = ctx.math;\n\n// The object's own axes, in both directions: the one pointing most nearly up is made to point straight up.\nfunction mostUpright(pose) {\n  let best = null, bestDot = -2;\n  for (const axis of [pose.up, pose.forward, pose.right]) {\n    for (const sign of [1, -1]) {\n      const v = m.vecScale(axis, sign);\n      if (v[1] > bestDot) { bestDot = v[1]; best = v; }\n    }\n  }\n  return best;\n}\n\n// Stands the object on its most upright axis, then turns it about the vertical to the nearest step of the chosen angle.\nfunction straightened(pose) {\n  const upright = mostUpright(pose);\n  let rotation = pose.rotation;\n  const axis = m.vecCross(upright, [0, 1, 0]);\n  const sin = m.vecLength(axis);\n  if (sin > 1e-6) rotation = m.quatMultiply(m.quatFromAxisAngle(axis, Math.atan2(sin, upright[1])), rotation);\n  else if (upright[1] < 0) rotation = m.quatMultiply(m.quatFromAxisAngle([1, 0, 0], Math.PI), rotation);\n  // A horizontal axis of the upright object, to read its turn about the vertical from.\n  let across = m.rotateVec(rotation, [0, 0, 1]);\n  if (Math.abs(across[1]) > 0.9) across = m.rotateVec(rotation, [1, 0, 0]);\n  const yaw = Math.atan2(across[0], across[2]);\n  const step = ANGLES[angle][1] * Math.PI / 180;\n  const snapped = Math.round(yaw / step) * step;\n  return m.quatMultiply(m.quatFromAxisAngle([0, 1, 0], snapped - yaw), rotation);\n}\n\nconst tool = {\n  onDrop() { aiming = false; },\n  onTrigger(e) {\n    if (e.phase === 'press') aiming = true;\n    if (e.phase !== 'release' || !aiming) return true;\n    aiming = false;\n    const shot = aim();\n    hideBeam();\n    const object = shot && shot.hit ? objectOf(shot.hit.slotId) : null;\n    const pose = editable(object) ? ctx.hierarchy.getWorldPose(object.id) : null;\n    if (!pose) { buzz(); return true; }\n    const size = GRIDS[grid][1];\n    const position = size ? pose.position.map((v) => round3(Math.round(v / size) * size)) : undefined;\n    if (!ctx.world.setWorldPose(object.id, { rotation: straightened(pose), position })) { buzz(); return true; }\n    flash(pose.position, BEAM);\n    beep(760);\n    return true;\n  },\n  tick() {\n    if (!aiming || !ctx.world.isHost()) return;\n    const shot = aim();\n    if (shot) showBeam(shot.from, shot.end, BEAM);\n  },\n  getRadialItems() {\n    return [\n      { label: 'Turn to: ' + ANGLES[angle][0], isEnabled: () => true, onSelect: () => { angle = (angle + 1) % ANGLES.length; } },\n      { label: 'Grid: ' + GRIDS[grid][0], isEnabled: () => true, onSelect: () => { grid = (grid + 1) % GRIDS.length; } }\n    ];\n  }\n};\nreturn withBench(tool);\n"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-aligner-part-0",
+		"parentId": "workshop-tool-aligner",
+		"name": "Handle",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.03,
+			0.03,
+			0.16
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#374151"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-aligner-part-1",
+		"parentId": "workshop-tool-aligner",
+		"name": "Head",
+		"position": [
+			0,
+			0,
+			0.11
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.07,
+			0.03,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#4ade80"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-aligner-part-2",
+		"parentId": "workshop-tool-aligner",
+		"name": "Bubble",
+		"position": [
+			0,
+			0.02,
+			0.11
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.02,
+			0.02,
+			0.02
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-aligner-part-3",
+		"parentId": "workshop-tool-aligner",
+		"name": "Muzzle",
+		"position": [
+			0,
+			0,
+			0.15
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": []
+	},
+	{
+		"id": "workshop-tool-aligner-tip-frame",
+		"parentId": "workshop-bay-measure",
+		"name": "Aligner Sign Frame",
+		"position": [
+			15.72,
+			1.5,
+			-12.375
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.04,
+			0.87,
+			1.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#eab308"
+			}
+		]
+	},
+	{
+		"id": "workshop-tool-aligner-tip",
+		"parentId": "workshop-bay-measure",
+		"name": "Aligner Sign",
+		"position": [
+			15.69,
+			1.5,
+			-12.375
+		],
+		"rotation": [
+			0,
+			0.7071,
+			0,
+			0.7071
+		],
+		"scale": [
+			1,
+			0.75,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#111827"
+			},
+			{
+				"type": "textDisplay",
+				"title": "Aligner",
+				"lines": [
+					"Aim at an object, release:",
+					"it stands upright and square",
+					"Menu: angle step,",
+					"snap to a grid"
+				],
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-logic",
+		"parentId": null,
+		"name": "Bay: Logic & Scripts",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-logic-floor",
+		"parentId": "workshop-bay-logic",
+		"name": "Logic & Scripts Bay Floor",
+		"position": [
+			-12.9,
+			0.006,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			5.8,
+			0.01,
+			7.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#1c4d2e"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-logic-edge",
+		"parentId": "workshop-bay-logic",
+		"name": "Logic & Scripts Bay Edge",
+		"position": [
+			-10,
+			0.009,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.12,
+			0.012,
+			7.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#22c55e"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-logic-pegboard",
+		"parentId": "workshop-bay-logic",
+		"name": "Logic & Scripts Pegboard",
+		"position": [
+			-15.77,
+			1.8,
+			-13
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.05,
+			1.6,
+			4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#b08d57"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-logic-bench-top",
+		"parentId": "workshop-bay-logic",
+		"name": "Logic & Scripts Workbench Top",
+		"position": [
+			-15.3,
+			0.87,
+			-13
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9,
+			0.06,
+			4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#a0764a"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-logic-bench-side-a",
+		"parentId": "workshop-bay-logic",
+		"name": "Logic & Scripts Workbench Side",
+		"position": [
+			-15.3,
+			0.42,
+			-14.95
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			0.84,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#374151"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-logic-bench-side-b",
+		"parentId": "workshop-bay-logic",
+		"name": "Logic & Scripts Workbench Side",
+		"position": [
+			-15.3,
+			0.42,
+			-11.05
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			0.84,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#374151"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-logic-bench-shelf",
+		"parentId": "workshop-bay-logic",
+		"name": "Logic & Scripts Workbench Lower Shelf",
+		"position": [
+			-15.3,
+			0.25,
+			-13
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			0.04,
+			3.84
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#374151"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-logic-rack-side-a",
+		"parentId": "workshop-bay-logic",
+		"name": "Logic & Scripts Shelving Upright",
+		"position": [
+			-15.55,
+			1.1,
+			-16.975
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			2.2,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-logic-rack-side-b",
+		"parentId": "workshop-bay-logic",
+		"name": "Logic & Scripts Shelving Upright",
+		"position": [
+			-15.55,
+			1.1,
+			-15.425
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			2.2,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-logic-rack-shelf-0",
+		"parentId": "workshop-bay-logic",
+		"name": "Logic & Scripts Shelf 1",
+		"position": [
+			-15.55,
+			0.4,
+			-16.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			0.04,
+			1.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#6b7280"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-logic-rack-shelf-1",
+		"parentId": "workshop-bay-logic",
+		"name": "Logic & Scripts Shelf 2",
+		"position": [
+			-15.55,
+			1.1,
+			-16.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			0.04,
+			1.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#6b7280"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-logic-rack-shelf-2",
+		"parentId": "workshop-bay-logic",
+		"name": "Logic & Scripts Shelf 3",
+		"position": [
+			-15.55,
+			1.8,
+			-16.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			0.04,
+			1.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#6b7280"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-logic-sign-frame",
+		"parentId": "workshop-bay-logic",
+		"name": "Logic & Scripts Sign Frame",
+		"position": [
+			-15.75,
+			3.25,
+			-13
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.04,
+			1.32,
+			1.72
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#22c55e"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-logic-sign",
+		"parentId": "workshop-bay-logic",
+		"name": "Logic & Scripts Sign",
+		"position": [
+			-15.72,
+			3.25,
+			-13
+		],
+		"rotation": [
+			0,
+			-0.7071,
+			0,
+			0.7071
+		],
+		"scale": [
+			1.6,
+			1.2,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#111827"
+			},
+			{
+				"type": "textDisplay",
+				"title": "Logic & Scripts",
+				"lines": [
+					"Buttons, scripts",
+					"and interactions"
+				],
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-media",
+		"parentId": null,
+		"name": "Bay: Sound & Media",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-media-floor",
+		"parentId": "workshop-bay-media",
+		"name": "Sound & Media Bay Floor",
+		"position": [
+			12.9,
+			0.006,
+			-22
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			5.8,
+			0.01,
+			7.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#144952"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-media-edge",
+		"parentId": "workshop-bay-media",
+		"name": "Sound & Media Bay Edge",
+		"position": [
+			10,
+			0.009,
+			-22
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.12,
+			0.012,
+			7.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#06b6d4"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-media-pegboard",
+		"parentId": "workshop-bay-media",
+		"name": "Sound & Media Pegboard",
+		"position": [
+			15.77,
+			1.8,
+			-21
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.05,
+			1.6,
+			4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#b08d57"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-media-bench-top",
+		"parentId": "workshop-bay-media",
+		"name": "Sound & Media Workbench Top",
+		"position": [
+			15.3,
+			0.87,
+			-21
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9,
+			0.06,
+			4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#a0764a"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-media-bench-side-a",
+		"parentId": "workshop-bay-media",
+		"name": "Sound & Media Workbench Side",
+		"position": [
+			15.3,
+			0.42,
+			-22.95
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			0.84,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#374151"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-media-bench-side-b",
+		"parentId": "workshop-bay-media",
+		"name": "Sound & Media Workbench Side",
+		"position": [
+			15.3,
+			0.42,
+			-19.05
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			0.84,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#374151"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-media-bench-shelf",
+		"parentId": "workshop-bay-media",
+		"name": "Sound & Media Workbench Lower Shelf",
+		"position": [
+			15.3,
+			0.25,
+			-21
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			0.04,
+			3.84
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#374151"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-media-rack-side-a",
+		"parentId": "workshop-bay-media",
+		"name": "Sound & Media Shelving Upright",
+		"position": [
+			15.55,
+			1.1,
+			-24.975
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			2.2,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-media-rack-side-b",
+		"parentId": "workshop-bay-media",
+		"name": "Sound & Media Shelving Upright",
+		"position": [
+			15.55,
+			1.1,
+			-23.425
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			2.2,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-media-rack-shelf-0",
+		"parentId": "workshop-bay-media",
+		"name": "Sound & Media Shelf 1",
+		"position": [
+			15.55,
+			0.4,
+			-24.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			0.04,
+			1.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#6b7280"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-media-rack-shelf-1",
+		"parentId": "workshop-bay-media",
+		"name": "Sound & Media Shelf 2",
+		"position": [
+			15.55,
+			1.1,
+			-24.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			0.04,
+			1.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#6b7280"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-media-rack-shelf-2",
+		"parentId": "workshop-bay-media",
+		"name": "Sound & Media Shelf 3",
+		"position": [
+			15.55,
+			1.8,
+			-24.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			0.04,
+			1.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#6b7280"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-media-sign-frame",
+		"parentId": "workshop-bay-media",
+		"name": "Sound & Media Sign Frame",
+		"position": [
+			15.75,
+			3.25,
+			-21
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.04,
+			1.32,
+			1.72
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#06b6d4"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-media-sign",
+		"parentId": "workshop-bay-media",
+		"name": "Sound & Media Sign",
+		"position": [
+			15.72,
+			3.25,
+			-21
+		],
+		"rotation": [
+			0,
+			0.7071,
+			0,
+			0.7071
+		],
+		"scale": [
+			1.6,
+			1.2,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#111827"
+			},
+			{
+				"type": "textDisplay",
+				"title": "Sound & Media",
+				"lines": [
+					"Audio, screens",
+					"and text displays"
+				],
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-effects",
+		"parentId": null,
+		"name": "Bay: Effects",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-effects-floor",
+		"parentId": "workshop-bay-effects",
+		"name": "Effects Bay Floor",
+		"position": [
+			-12.9,
+			0.006,
+			-22
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			5.8,
+			0.01,
+			7.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#592840"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-effects-edge",
+		"parentId": "workshop-bay-effects",
+		"name": "Effects Bay Edge",
+		"position": [
+			-10,
+			0.009,
+			-22
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.12,
+			0.012,
+			7.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#ec4899"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-effects-pegboard",
+		"parentId": "workshop-bay-effects",
+		"name": "Effects Pegboard",
+		"position": [
+			-15.77,
+			1.8,
+			-21
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.05,
+			1.6,
+			4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#b08d57"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-effects-bench-top",
+		"parentId": "workshop-bay-effects",
+		"name": "Effects Workbench Top",
+		"position": [
+			-15.3,
+			0.87,
+			-21
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9,
+			0.06,
+			4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#a0764a"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-effects-bench-side-a",
+		"parentId": "workshop-bay-effects",
+		"name": "Effects Workbench Side",
+		"position": [
+			-15.3,
+			0.42,
+			-22.95
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			0.84,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#374151"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-effects-bench-side-b",
+		"parentId": "workshop-bay-effects",
+		"name": "Effects Workbench Side",
+		"position": [
+			-15.3,
+			0.42,
+			-19.05
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			0.84,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#374151"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-effects-bench-shelf",
+		"parentId": "workshop-bay-effects",
+		"name": "Effects Workbench Lower Shelf",
+		"position": [
+			-15.3,
+			0.25,
+			-21
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			0.04,
+			3.84
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#374151"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-effects-rack-side-a",
+		"parentId": "workshop-bay-effects",
+		"name": "Effects Shelving Upright",
+		"position": [
+			-15.55,
+			1.1,
+			-24.975
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			2.2,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-effects-rack-side-b",
+		"parentId": "workshop-bay-effects",
+		"name": "Effects Shelving Upright",
+		"position": [
+			-15.55,
+			1.1,
+			-23.425
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			2.2,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2c3440"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-effects-rack-shelf-0",
+		"parentId": "workshop-bay-effects",
+		"name": "Effects Shelf 1",
+		"position": [
+			-15.55,
+			0.4,
+			-24.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			0.04,
+			1.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#6b7280"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-effects-rack-shelf-1",
+		"parentId": "workshop-bay-effects",
+		"name": "Effects Shelf 2",
+		"position": [
+			-15.55,
+			1.1,
+			-24.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			0.04,
+			1.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#6b7280"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-effects-rack-shelf-2",
+		"parentId": "workshop-bay-effects",
+		"name": "Effects Shelf 3",
+		"position": [
+			-15.55,
+			1.8,
+			-24.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			0.04,
+			1.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#6b7280"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-effects-sign-frame",
+		"parentId": "workshop-bay-effects",
+		"name": "Effects Sign Frame",
+		"position": [
+			-15.75,
+			3.25,
+			-21
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.04,
+			1.32,
+			1.72
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#ec4899"
+			}
+		]
+	},
+	{
+		"id": "workshop-bay-effects-sign",
+		"parentId": "workshop-bay-effects",
+		"name": "Effects Sign",
+		"position": [
+			-15.72,
+			3.25,
+			-21
+		],
+		"rotation": [
+			0,
+			-0.7071,
+			0,
+			0.7071
+		],
+		"scale": [
+			1.6,
+			1.2,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#111827"
+			},
+			{
+				"type": "textDisplay",
+				"title": "Effects",
+				"lines": [
+					"Particles, motion",
+					"and skies"
+				],
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "workshop-partition-r0",
+		"parentId": "workshop-building",
+		"name": "Bay Partition Right 1",
+		"position": [
+			-13.9,
+			0.7,
+			-10
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			3.8,
+			1.4,
+			0.1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5a6472"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-partition-r1",
+		"parentId": "workshop-building",
+		"name": "Bay Partition Right 2",
+		"position": [
+			-13.9,
+			0.7,
+			-18
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			3.8,
+			1.4,
+			0.1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5a6472"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-partition-l0",
+		"parentId": "workshop-building",
+		"name": "Bay Partition Left 1",
+		"position": [
+			13.9,
+			0.7,
+			-10
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			3.8,
+			1.4,
+			0.1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5a6472"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-partition-l1",
+		"parentId": "workshop-building",
+		"name": "Bay Partition Left 2",
+		"position": [
+			13.9,
+			0.7,
+			-18
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			3.8,
+			1.4,
+			0.1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5a6472"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-build-floor",
+		"parentId": null,
+		"name": "Build Floor",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "workshop-build-surface",
+		"parentId": "workshop-build-floor",
+		"name": "Build Floor Surface",
+		"position": [
+			0,
+			0.006,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			14,
+			0.01,
+			20
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2b3038"
+			}
+		]
+	},
+	{
+		"id": "workshop-grid-x-5",
+		"parentId": "workshop-build-floor",
+		"name": "Grid Line X -5",
+		"position": [
+			-5,
+			0.013,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.03,
+			0.004,
+			20
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5b6574"
+			}
+		]
+	},
+	{
+		"id": "workshop-grid-x-3",
+		"parentId": "workshop-build-floor",
+		"name": "Grid Line X -3",
+		"position": [
+			-3,
+			0.013,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.03,
+			0.004,
+			20
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5b6574"
+			}
+		]
+	},
+	{
+		"id": "workshop-grid-x-1",
+		"parentId": "workshop-build-floor",
+		"name": "Grid Line X -1",
+		"position": [
+			-1,
+			0.013,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.03,
+			0.004,
+			20
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5b6574"
+			}
+		]
+	},
+	{
+		"id": "workshop-grid-x1",
+		"parentId": "workshop-build-floor",
+		"name": "Grid Line X 1",
+		"position": [
+			1,
+			0.013,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.03,
+			0.004,
+			20
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5b6574"
+			}
+		]
+	},
+	{
+		"id": "workshop-grid-x3",
+		"parentId": "workshop-build-floor",
+		"name": "Grid Line X 3",
+		"position": [
+			3,
+			0.013,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.03,
+			0.004,
+			20
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5b6574"
+			}
+		]
+	},
+	{
+		"id": "workshop-grid-x5",
+		"parentId": "workshop-build-floor",
+		"name": "Grid Line X 5",
+		"position": [
+			5,
+			0.013,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.03,
+			0.004,
+			20
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5b6574"
+			}
+		]
+	},
+	{
+		"id": "workshop-grid-z22",
+		"parentId": "workshop-build-floor",
+		"name": "Grid Line Z -22",
+		"position": [
+			0,
+			0.013,
+			-22
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			14,
+			0.004,
+			0.03
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5b6574"
+			}
+		]
+	},
+	{
+		"id": "workshop-grid-z20",
+		"parentId": "workshop-build-floor",
+		"name": "Grid Line Z -20",
+		"position": [
+			0,
+			0.013,
+			-20
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			14,
+			0.004,
+			0.03
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5b6574"
+			}
+		]
+	},
+	{
+		"id": "workshop-grid-z18",
+		"parentId": "workshop-build-floor",
+		"name": "Grid Line Z -18",
+		"position": [
+			0,
+			0.013,
+			-18
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			14,
+			0.004,
+			0.03
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5b6574"
+			}
+		]
+	},
+	{
+		"id": "workshop-grid-z16",
+		"parentId": "workshop-build-floor",
+		"name": "Grid Line Z -16",
+		"position": [
+			0,
+			0.013,
+			-16
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			14,
+			0.004,
+			0.03
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5b6574"
+			}
+		]
+	},
+	{
+		"id": "workshop-grid-z14",
+		"parentId": "workshop-build-floor",
+		"name": "Grid Line Z -14",
+		"position": [
+			0,
+			0.013,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			14,
+			0.004,
+			0.03
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5b6574"
+			}
+		]
+	},
+	{
+		"id": "workshop-grid-z12",
+		"parentId": "workshop-build-floor",
+		"name": "Grid Line Z -12",
+		"position": [
+			0,
+			0.013,
+			-12
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			14,
+			0.004,
+			0.03
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5b6574"
+			}
+		]
+	},
+	{
+		"id": "workshop-grid-z10",
+		"parentId": "workshop-build-floor",
+		"name": "Grid Line Z -10",
+		"position": [
+			0,
+			0.013,
+			-10
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			14,
+			0.004,
+			0.03
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5b6574"
+			}
+		]
+	},
+	{
+		"id": "workshop-grid-z8",
+		"parentId": "workshop-build-floor",
+		"name": "Grid Line Z -8",
+		"position": [
+			0,
+			0.013,
+			-8
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			14,
+			0.004,
+			0.03
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5b6574"
+			}
+		]
+	},
+	{
+		"id": "workshop-grid-z6",
+		"parentId": "workshop-build-floor",
+		"name": "Grid Line Z -6",
+		"position": [
+			0,
+			0.013,
+			-6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			14,
+			0.004,
+			0.03
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5b6574"
+			}
+		]
+	},
+	{
+		"id": "workshop-build-border-n",
+		"parentId": "workshop-build-floor",
+		"name": "Build Floor Border",
+		"position": [
+			0,
+			0.014,
+			-4
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			14.1,
+			0.006,
+			0.1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f59e0b"
+			}
+		]
+	},
+	{
+		"id": "workshop-build-border-s",
+		"parentId": "workshop-build-floor",
+		"name": "Build Floor Border",
+		"position": [
+			0,
+			0.014,
+			-24
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			14.1,
+			0.006,
+			0.1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f59e0b"
+			}
+		]
+	},
+	{
+		"id": "workshop-build-border-w",
+		"parentId": "workshop-build-floor",
+		"name": "Build Floor Border",
+		"position": [
+			-7,
+			0.014,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.1,
+			0.006,
+			20.1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f59e0b"
+			}
+		]
+	},
+	{
+		"id": "workshop-build-border-e",
+		"parentId": "workshop-build-floor",
+		"name": "Build Floor Border",
+		"position": [
+			7,
+			0.014,
+			-14
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.1,
+			0.006,
+			20.1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f59e0b"
+			}
+		]
+	},
+	{
+		"id": "workshop-stage",
+		"parentId": null,
+		"name": "Showcase Stage",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "workshop-stage-body",
+		"parentId": "workshop-stage",
+		"name": "Stage",
+		"position": [
+			0,
+			0.15,
+			-30.4
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			14,
+			0.3,
+			6.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#1f2937"
+			}
+		]
+	},
+	{
+		"id": "workshop-stage-floor",
+		"parentId": "workshop-stage",
+		"name": "Stage Floor",
+		"position": [
+			0,
+			0.301,
+			-30.4
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			1,
+			0.34
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "ground"
+				},
+				"color": "#374151"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-stage-step",
+		"parentId": "workshop-stage",
+		"name": "Stage Step",
+		"position": [
+			0,
+			0.075,
+			-26.7
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			14,
+			0.15,
+			0.6
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#1f2937"
+			}
+		]
+	},
+	{
+		"id": "workshop-stage-step-floor",
+		"parentId": "workshop-stage",
+		"name": "Stage Step Floor",
+		"position": [
+			0,
+			0.151,
+			-26.7
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			1,
+			0.03
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "ground"
+				},
+				"color": "#374151"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-stage-trim",
+		"parentId": "workshop-stage",
+		"name": "Stage Edge",
+		"position": [
+			0,
+			0.304,
+			-27.04
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			14,
+			0.008,
+			0.08
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f59e0b"
+			}
+		]
+	},
+	{
+		"id": "workshop-plinth-0",
+		"parentId": "workshop-stage",
+		"name": "Display Plinth 1",
+		"position": [
+			-4,
+			0.8,
+			-30.9
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			1,
+			0.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#e5e7eb"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-plinth-1",
+		"parentId": "workshop-stage",
+		"name": "Display Plinth 2",
+		"position": [
+			0,
+			0.8,
+			-30.9
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			1,
+			0.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#e5e7eb"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-plinth-2",
+		"parentId": "workshop-stage",
+		"name": "Display Plinth 3",
+		"position": [
+			4,
+			0.8,
+			-30.9
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8,
+			1,
+			0.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#e5e7eb"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "workshop-stage-sign-frame",
+		"parentId": "workshop-stage",
+		"name": "Showcase Sign Frame",
+		"position": [
+			0,
+			2.9,
+			-33.745
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.72,
+			2.12,
+			0.04
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f59e0b"
+			}
+		]
+	},
+	{
+		"id": "workshop-stage-sign",
+		"parentId": "workshop-stage",
+		"name": "Showcase Sign",
+		"position": [
+			0,
+			2.9,
+			-33.715
+		],
+		"rotation": [
+			0,
+			1,
+			0,
+			0
+		],
+		"scale": [
+			2.6,
+			2,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#111827"
+			},
+			{
+				"type": "textDisplay",
+				"title": "Showcase",
+				"lines": [
+					"Put what you made on show"
+				],
+				"color": "#111827"
+			}
+		]
+	}
+]

@@ -2,6 +2,7 @@ import type { SlotTree } from '$lib/ecs/types';
 import type { InventoryStorageAdapterId } from '$lib/inventory/types';
 import type { WorldVisibility } from '$lib/worldVisibility';
 import type { AssetSummary } from '$lib/assets/manifest';
+import type { AssetId } from '$lib/assets/ref';
 
 /** Provenance is informational. A portable portal always carries its own immutable scene. */
 export type WorldSource =
@@ -16,4 +17,6 @@ export interface WorldPackage {
 	source?: WorldSource;
 	/** Sizes and bounds of the models this scene uses (including inside nested portals), so placeholders can be sized before any download. */
 	assets?: AssetSummary[];
+	/** The world's 360° preview image (an `image` asset). Its orb shows it on the inside of a glass globe. Cosmetic: a world loads without it. */
+	preview?: AssetId | null;
 }
