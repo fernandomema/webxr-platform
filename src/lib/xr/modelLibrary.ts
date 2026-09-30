@@ -21,7 +21,14 @@ export interface ModelInstance {
 	root: TransformNode;
 	/** Extents of the normalised model. */
 	extents: Vec3;
+	/** Bone name (as written in the file) to the transform node that drives it. Empty for models without a skin. */
+	boneNodes: Map<string, TransformNode>;
 	dispose(): void;
+}
+
+export interface InstantiateOptions {
+	/** Scale and centre the model like a built-in shape (default). Avatars turn this off to keep real-world metres. */
+	normalize?: boolean;
 }
 
 interface Entry {
@@ -81,8 +88,8 @@ export class ModelLease {
 		this.priority = priority;
 	}
 
-	instantiate(name: string): ModelInstance | null {
-		return this.library.instantiate(this.entry.id, name);
+	instantiate(name: string, options?: InstantiateOptions): ModelInstance | null {
+		return this.library.instantiate(this.entry.id, name, options);
 	}
 
 	release(): void {
@@ -231,10 +238,12 @@ export class ModelLibrary {
 		}
 	}
 
-	instantiate(id: AssetId, name: string): ModelInstance | null {
+	instantiate(id: AssetId, name: string, options: InstantiateOptions = {}): ModelInstance | null {
 		const entry = this.entries.get(id);
 		if (!entry?.container) return null;
 		const created = entry.container.instantiateModelsToScene((source) => `${name}:${source}`, false);
+		// The app drives skeletons itself (avatars), so a clip baked into the file must not fight it.
+		for (const group of created.animationGroups) group.stop();
 		const root = new TransformNode(name, this.scene);
 		for (const node of created.rootNodes) node.parent = root;
 
@@ -255,13 +264,25 @@ export class ModelLibrary {
 			return null;
 		}
 		const bounds = { min: min.asArray() as Vec3, max: max.asArray() as Vec3 };
-		const { scale, offset } = normalizationTransform(bounds);
-		root.scaling.setAll(scale);
-		root.position.set(...offset);
+		const normalize = options.normalize !== false;
+		if (normalize) {
+			const { scale, offset } = normalizationTransform(bounds);
+			root.scaling.setAll(scale);
+			root.position.set(...offset);
+		}
+
+		const boneNodes = new Map<string, TransformNode>();
+		for (const skeleton of created.skeletons) {
+			for (const bone of skeleton.bones) {
+				const node = bone.getTransformNode();
+				if (node && !boneNodes.has(bone.name)) boneNodes.set(bone.name, node);
+			}
+		}
 
 		return {
 			root,
-			extents: normalizedExtents(bounds),
+			extents: normalize ? normalizedExtents(bounds) : (max.subtract(min).asArray() as Vec3),
+			boneNodes,
 			dispose: () => {
 				created.dispose();
 				root.dispose();

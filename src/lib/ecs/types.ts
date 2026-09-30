@@ -7,6 +7,7 @@
  */
 
 import type { MeshRef, SourceRef } from '../assets/ref';
+import type { HumanoidMap } from '../xr/avatar/humanoid';
 
 export type Vec3 = [number, number, number];
 export type Quat = [number, number, number, number];
@@ -27,6 +28,8 @@ export interface GrabbableComponent {
 	type: 'grabbable';
 	/** Whether a two-point grab (two hands / two lasers / one of each) is allowed to scale this slot. */
 	scalable: boolean;
+	/** The fingers of an avatar grabbing it close round its shape. On unless set to `false`. */
+	autoGrip?: boolean;
 }
 
 /** Where an equipped object sits relative to the controller grip, in the grip's local space. */
@@ -46,6 +49,8 @@ export interface EquippableComponent {
 	type: 'equippable';
 	left: EquipPose;
 	right: EquipPose;
+	/** The fingers of an avatar holding it close around its shape, instead of taking a fixed grip. */
+	autoGrip?: boolean;
 }
 
 export interface AudioSourceComponent {
@@ -333,6 +338,29 @@ export interface InsertableComponent {
 	tag: string;
 }
 
+/**
+ * Marks a slot with a skinned model as a player avatar. Everything else about it
+ * is an ordinary slot: children are attached to it (optionally to a bone, see
+ * `boneAttach`) and travel with the snapshot. The pose is never stored; each
+ * client derives it from the owner's presence.
+ */
+export interface AvatarComponent {
+	type: 'avatar';
+	/** Standing eye height in metres, used to scale the body to the player's real height. */
+	height: number;
+	/** Humanoid role to bone name in the model. Filled by detection, editable by hand. */
+	bones: HumanoidMap;
+	/** Player this avatar currently represents. Set by the host on spawn; never authored or saved. */
+	ownerId?: string;
+}
+
+/** Puts a slot under a bone of its parent's skinned model instead of under the parent's root, so it follows that bone. */
+export interface BoneAttachComponent {
+	type: 'boneAttach';
+	/** Bone name as written in the parent's model. */
+	bone: string;
+}
+
 export type Component =
 	| MeshRendererComponent
 	| ColliderComponent
@@ -355,6 +383,8 @@ export type Component =
 	| ImpactSoundComponent
 	| SocketComponent
 	| InsertableComponent
+	| AvatarComponent
+	| BoneAttachComponent
 	| TextDisplayComponent
 	| ScoreboardComponent
 	| UIPanelComponent

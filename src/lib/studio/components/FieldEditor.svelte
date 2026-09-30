@@ -6,6 +6,8 @@
 	import type { EquipPose } from '$lib/ecs/types';
 	import { assetMesh, assetSource, BUILTIN_MESH_IDS, isAssetId, normalizeMeshRef, normalizeSourceRef, urlSource, type BuiltinMeshId } from '$lib/assets/ref';
 	import { studioAssets, studioModels } from '../state/models.svelte';
+	import BoneMapEditor from './BoneMapEditor.svelte';
+	import type { HumanoidMap } from '../../xr/avatar/humanoid';
 
 	interface Props {
 		field: FieldDef;
@@ -13,9 +15,11 @@
 		/** `undefined` clears an optional field. */
 		onchange: (value: unknown) => void;
 		onOpenCode?: () => void;
+		/** The bones of the model this field belongs to, for the bone editors. */
+		joints?: readonly string[];
 	}
 
-	let { field, value, onchange, onOpenCode }: Props = $props();
+	let { field, value, onchange, onOpenCode, joints = [] }: Props = $props();
 
 	const id = $props.id();
 	let jsonDraft = $state<string | null>(null);
@@ -63,7 +67,7 @@
 	}
 </script>
 
-<div class="field" class:wide={field.kind === 'pose'}>
+<div class="field" class:wide={field.kind === 'pose' || field.kind === 'boneMap'}>
 	<label class="label" for={id}>
 		{field.label}
 		{#if field.help}<span class="help" title={field.help}>?</span>{/if}
@@ -85,7 +89,7 @@
 		{:else if field.kind === 'url'}
 			<input class="input" {id} type="url" placeholder="https://…" value={String(value ?? '')} oninput={(event) => onchange(event.currentTarget.value)} />
 		{:else if field.kind === 'bool'}
-			<input {id} type="checkbox" checked={Boolean(value)} onchange={(event) => onchange(event.currentTarget.checked)} />
+			<input {id} type="checkbox" checked={Boolean(value ?? fallback)} onchange={(event) => onchange(event.currentTarget.checked)} />
 		{:else if field.kind === 'color'}
 			<input class="input" {id} type="color" value={String(value ?? '#ffffff')} oninput={(event) => onchange(event.currentTarget.value)} />
 			<span class="unit mono">{String(value ?? '')}</span>
@@ -177,6 +181,19 @@
 		{:else if field.kind === 'code'}
 			<button class="btn sm" onclick={() => onOpenCode?.()} disabled={!onOpenCode}><Icon name="code" size={12} />Edit code</button>
 			<span class="unit">{String(value ?? '').split('\n').length} lines</span>
+		{:else if field.kind === 'boneMap'}
+			<BoneMapEditor value={(value ?? {}) as HumanoidMap} {joints} onchange={(map) => onchange(map)} />
+		{:else if field.kind === 'bone'}
+			{#if joints.length}
+				<select class="select" {id} value={String(value ?? '')} onchange={(event) => onchange(event.currentTarget.value)}>
+					<option value="">— choose a bone —</option>
+					{#if value && !joints.includes(String(value))}<option value={String(value)}>{String(value)} (not in model)</option>{/if}
+					{#each joints as joint (joint)}<option value={joint}>{joint}</option>{/each}
+				</select>
+			{:else}
+				<input class="input" {id} value={String(value ?? '')} placeholder="Bone name" oninput={(event) => onchange(event.currentTarget.value)} />
+				<span class="unit">parent model has no bones on this device</span>
+			{/if}
 		{:else if field.kind === 'json'}
 			<textarea class="input" {id} rows="4" aria-invalid={jsonError ? 'true' : undefined} value={jsonDraft ?? JSON.stringify(value ?? null, null, 2)} oninput={(event) => commitJson(event.currentTarget.value)} onblur={() => { if (!jsonError) jsonDraft = null; }}></textarea>
 		{/if}

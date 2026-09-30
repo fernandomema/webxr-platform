@@ -95,3 +95,19 @@ test('an invalid file is never stored', async () => {
   assert.equal((await store.usage()).count, 0);
   assert.equal(modelNameFromFile('.glb'), 'Model');
 });
+
+test('skin joints are reported by name, deduplicated, and absent without a skin', () => {
+  const nodes = [{ mesh: 0, children: [1] }, { name: 'Hips', children: [2, 3] }, { name: 'Head' }, { name: 'Hips' }, {}];
+  const skinned = parseGlb(buildGlb({ nodes, extra: { skins: [{ joints: [1, 2, 3, 4] }, { joints: [2] }] } }), limits);
+  assert.deepEqual(skinned.skeleton, { joints: ['Hips', 'Head'] });
+  assert.equal(parseGlb(buildGlb(), limits).skeleton, undefined);
+});
+
+test('importing a skinned model keeps its bone names in the manifest', async () => {
+  const nodes = [{ mesh: 0, children: [1] }, { name: 'Hips', children: [2] }, { name: 'Head' }];
+  const store = new MemoryAssetStore();
+  const { manifest } = await importGlb(buildGlb({ nodes, extra: { skins: [{ joints: [1, 2] }] } }), 'Bot.glb', store, limits);
+  assert.deepEqual(manifest.skeleton, { joints: ['Hips', 'Head'] });
+  const plain = await importGlb(buildGlb(), 'Box.glb', store, limits);
+  assert.equal(plain.manifest.skeleton, undefined);
+});

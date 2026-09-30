@@ -22,6 +22,9 @@
 	import { cloneTree } from './tree/ops';
 	import { eulerToQuat } from '$lib/math/euler';
 	import { handPreview } from './state/handPreview.svelte';
+	import { createStudioHand, type StudioHand } from './studioHand';
+	import { defaultHandModel, holdingBends, solveGraspFull } from '../xr/avatar/grasp';
+	import { graspObstacles } from '../xr/avatar/graspShapes';
 
 	interface ScenePreviewProps {
 		tree: SlotTree;
@@ -46,6 +49,8 @@
 	let highlighted: AbstractMesh | null = null;
 	/** Stand-in for a controller grip, shown while adjusting an equippable object's hand pose. */
 	let handNode: TransformNode | null = null;
+	/** The simulated hands worn on that grip: only the one being previewed shows. */
+	let hands: Record<'left' | 'right', StudioHand> | null = null;
 	let previewingHand: string | null = null;
 	let knownIds = new Set<string>();
 	let knownSignatures = new Map<string, string>();
@@ -102,6 +107,11 @@
 		ring.parent = handNode;
 		ring.material = handleMaterial;
 		ring.isPickable = false;
+		hands = { left: createStudioHand(scene, 'left', handNode), right: createStudioHand(scene, 'right', handNode) };
+		for (const hand of Object.values(hands)) {
+			hand.setBends(holdingBends());
+			hand.setVisible(false);
+		}
 		handNode.setEnabled(false);
 
 		// A plain click (not a camera drag) picks whatever mesh is under the pointer.
@@ -205,6 +215,17 @@
 			}
 			handNode.setEnabled(true);
 			previewingHand = `${id}:${hand}`;
+			// The simulated hand: closed round the object when Auto grip is on, and just holding otherwise.
+			if (hands) {
+				hands.left.setVisible(hand === 'left');
+				hands.right.setVisible(hand === 'right');
+				const active = hands[hand];
+				handNode.computeWorldMatrix(true);
+				active.frame.computeWorldMatrix(true);
+				const obstacles = equippable.autoGrip ? graspObstacles(sceneGraph, id!, active.frame.getWorldMatrix()) : [];
+				const grasp = solveGraspFull(defaultHandModel(hand), obstacles, holdingBends());
+				active.setBends(grasp.bends, grasp.thumbSwing);
+			}
 		} else {
 			handNode.setEnabled(false);
 			if (previewingHand) {
@@ -216,6 +237,7 @@
 
 	onDestroy(() => {
 		clearTimeout(rebuildTimer);
+		for (const hand of Object.values(hands ?? {})) hand.dispose();
 		sceneGraph?.dispose();
 		models?.dispose();
 		mediaAssets?.dispose();

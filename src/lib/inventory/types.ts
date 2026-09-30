@@ -6,12 +6,15 @@ export interface InventoryFolder {
 	parentId: string | null;
 }
 
+/** `avatar` items are objects that can be worn: a skinned model with an `avatar` component. */
+export type InventoryKind = 'object' | 'world' | 'avatar';
+
 export interface InventoryItem {
 	id: string;
 	folderId: string | null;
 	name: string;
 	slotData: SlotTree;
-	kind?: 'object' | 'world';
+	kind?: InventoryKind;
 	worldLineageId?: string | null;
 	revisionNumber?: number | null;
 	thumbnailUrl?: string | null;
@@ -42,7 +45,7 @@ export interface InventoryAdapter {
 	createFolder?(ctx: InventoryContext, parentId: string | null, name: string): Promise<InventoryFolder>;
 	deleteFolder?(ctx: InventoryContext, folderId: string): Promise<void>;
 	listItems(ctx: InventoryContext, folderId: string | null): Promise<InventoryItem[]>;
-	saveItem?(ctx: InventoryContext, folderId: string | null, name: string, slotData: SlotTree, kind?: 'object' | 'world', worldLineageId?: string): Promise<InventoryItem>;
+	saveItem?(ctx: InventoryContext, folderId: string | null, name: string, slotData: SlotTree, kind?: InventoryKind, worldLineageId?: string): Promise<InventoryItem>;
 	updateItem?(ctx: InventoryContext, itemId: string, folderId: string | null, name: string, slotData: SlotTree): Promise<InventoryItem>;
 	setMarketplaceItemId?(ctx: InventoryContext, itemId: string, marketplaceItemId: string): Promise<void>;
 	deleteItem?(ctx: InventoryContext, itemId: string): Promise<void>;

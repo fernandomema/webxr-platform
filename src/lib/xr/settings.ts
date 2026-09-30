@@ -1,14 +1,26 @@
+import type { SlotTree } from '$lib/ecs/types';
+import { DEFAULT_DASHBOARD_LAYOUT, normalizeDashboardLayout, type DashboardItemId } from './dashboardLayout';
+
 export type MovementMode = 'teleport' | 'smooth';
 export type RotationMode = 'smooth' | 'snap-45' | 'snap-90';
 
 export interface XrSettings {
 	movementMode: MovementMode;
 	rotationMode: RotationMode;
+	/** The avatar worn on entering any world, as a copy of the inventory item chosen. Null uses the built-in one. */
+	defaultAvatar: SlotTree | null;
+	/** Sitting down: the head is lifted to standing height (1.7 m) so the avatar and the world behave as if you stood. */
+	seatedMode: boolean;
+	/** Which buttons the Home tab of the personal menu shows, in order. */
+	dashboardLayout: DashboardItemId[];
 }
 
 export const xrSettings: XrSettings = {
 	movementMode: 'teleport',
-	rotationMode: 'snap-45'
+	rotationMode: 'snap-45',
+	defaultAvatar: null,
+	seatedMode: false,
+	dashboardLayout: [...DEFAULT_DASHBOARD_LAYOUT]
 };
 
 const STORAGE_KEY = 'webxr-platform-settings';
@@ -21,6 +33,9 @@ export function loadSettings(): void {
 		const parsed = JSON.parse(raw) as Partial<XrSettings>;
 		if (parsed.movementMode) xrSettings.movementMode = parsed.movementMode;
 		if (parsed.rotationMode) xrSettings.rotationMode = parsed.rotationMode;
+		if (Array.isArray(parsed.defaultAvatar)) xrSettings.defaultAvatar = parsed.defaultAvatar;
+		if (typeof parsed.seatedMode === 'boolean') xrSettings.seatedMode = parsed.seatedMode;
+		if (parsed.dashboardLayout !== undefined) xrSettings.dashboardLayout = normalizeDashboardLayout(parsed.dashboardLayout);
 	} catch {
 		// unavailable/malformed storage — keep defaults
 	}

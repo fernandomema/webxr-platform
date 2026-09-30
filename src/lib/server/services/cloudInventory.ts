@@ -45,7 +45,7 @@ export async function saveCloudItem(
 	folderId: string | null,
 	name: string,
 	slotData: SlotTree,
-	kind: 'object' | 'world' = 'object',
+	kind: 'object' | 'world' | 'avatar' = 'object',
 	worldLineageId?: string
 ) {
 	if (!user) throw new UnauthorizedError();

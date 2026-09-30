@@ -5,6 +5,9 @@ import type { AssetId } from './ref';
 export const assetStoreChanges = new EventTarget();
 const announcePut = () => assetStoreChanges.dispatchEvent(new Event('put'));
 
+/** Something new can now supply assets (a peer connected), so models that were missing should look again. */
+export const announceAssetSourcesChanged = announcePut;
+
 export type AssetListing = AssetManifest & {
 	importedAt: number;
 	lastUsedAt: number;

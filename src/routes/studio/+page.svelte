@@ -9,6 +9,10 @@
 	import { toasts } from '$lib/studio/state/toasts.svelte';
 	import { TEMPLATES } from '$lib/studio/templates';
 	import Icon from '$lib/studio/ui/Icon.svelte';
+	import AvatarWizard from '$lib/studio/components/AvatarWizard.svelte';
+	import { studioModels } from '$lib/studio/state/models.svelte';
+	import { handOverNewAvatar } from '$lib/studio/state/newAvatar';
+	import type { SlotTree } from '$lib/ecs/types';
 
 	const library = new Library(studioSession.context);
 	let loadedFor = $state<string | null>(null);
@@ -30,6 +34,20 @@
 
 	function startFromTemplate(id: string) {
 		void goto(editUrl({ template: id, draft: crypto.randomUUID() }));
+	}
+
+	let wizardOpen = $state(false);
+
+	function openWizard() {
+		void studioModels.refresh();
+		wizardOpen = true;
+	}
+
+	function startAvatar(tree: SlotTree, name: string) {
+		const draft = crypto.randomUUID();
+		handOverNewAvatar(draft, tree, name);
+		wizardOpen = false;
+		void goto(editUrl({ template: 'avatar', draft }));
 	}
 
 	function openItem(item: InventoryItem) {
@@ -105,6 +123,14 @@
 						<span class="badge {template.kind === 'world' ? 'accent' : ''}">{template.kind === 'world' ? 'World' : 'Object'}</span>
 					</button>
 				{/each}
+				<button class="template" onclick={openWizard}>
+					<span class="template-icon"><Icon name="user" size={22} /></span>
+					<span class="template-text">
+						<strong>New avatar</strong>
+						<span class="muted">A guided wizard that turns a rigged .glb model into a player avatar.</span>
+					</span>
+					<span class="badge">Avatar</span>
+				</button>
 			</div>
 		</section>
 
@@ -163,13 +189,13 @@
 					{#each library.visibleItems as item (item.id)}
 						<li class="card">
 							<button class="card-main" onclick={() => openItem(item)}>
-								<span class="card-icon"><Icon name={item.kind === 'world' ? 'world' : 'cube'} size={20} /></span>
+								<span class="card-icon"><Icon name={item.kind === 'world' ? 'world' : item.kind === 'avatar' ? 'user' : 'cube'} size={20} /></span>
 								<span class="card-text">
 									<strong>{item.name}</strong>
 									<span class="muted">{dateLabel(item.createdAt)}{item.kind === 'world' && item.revisionNumber ? ` · revision ${item.revisionNumber}` : ''}</span>
 								</span>
 							</button>
-							<span class="badge {item.kind === 'world' ? 'accent' : ''}">{item.kind === 'world' ? 'World' : 'Object'}</span>
+							<span class="badge {item.kind === 'world' ? 'accent' : ''}">{item.kind === 'world' ? 'World' : item.kind === 'avatar' ? 'Avatar' : 'Object'}</span>
 							<button class="icon-btn danger" aria-label={`Delete ${item.name}`} onclick={() => removeItem(item)}><Icon name="trash" size={14} /></button>
 						</li>
 					{/each}
@@ -178,6 +204,10 @@
 		</section>
 	</main>
 </div>
+
+{#if wizardOpen}
+	<AvatarWizard models={studioModels.items.filter((item) => item.type === 'model')} canCreate={true} oncreate={startAvatar} onclose={() => (wizardOpen = false)} />
+{/if}
 
 <style>
 	.page { max-width: 1040px; margin: 0 auto; padding: 0 16px 64px; }

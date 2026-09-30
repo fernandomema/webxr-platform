@@ -7,6 +7,7 @@ import {
 	Vector3,
 	type Scene
 } from '@babylonjs/core';
+import { mirrorRenderHooks } from './mirrorHooks';
 
 export function setupMirrorSurface(
 	scene: Scene,
@@ -15,6 +16,8 @@ export function setupMirrorSurface(
 ): () => void {
 	const mirrorTexture = new MirrorTexture(`${mesh.name}-reflection`, resolution, scene, true);
 	mirrorTexture.level = 1;
+	mirrorTexture.onBeforeRenderObservable.add(() => mirrorRenderHooks.before.notifyObservers());
+	mirrorTexture.onAfterRenderObservable.add(() => mirrorRenderHooks.after.notifyObservers());
 
 	const material = new StandardMaterial(`${mesh.name}-mirror-material`, scene);
 	material.diffuseColor = new Color3(0.82, 0.88, 0.94);

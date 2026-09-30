@@ -47,7 +47,7 @@ export async function saveWorldItem(
 	folderId: string | null,
 	name: string,
 	slotData: SlotTree,
-	kind: 'object' | 'world' = 'object',
+	kind: 'object' | 'world' | 'avatar' = 'object',
 	worldLineageId?: string
 ) {
 	await assertHost(user, worldId);

@@ -122,7 +122,7 @@ export class SceneGraph {
 		for (const slot of tree) this.spawnNode(slot);
 		for (const slot of tree) {
 			if (!slot.parentId) continue;
-			const parent = this.live.get(slot.parentId)?.node;
+			const parent = this.parentNodeFor(slot);
 			const self = this.live.get(slot.id)?.node;
 			if (parent && self) self.parent = parent;
 		}
@@ -140,7 +140,7 @@ export class SceneGraph {
 			if (entry) entry.system = true;
 		}
 		if (slot.parentId) {
-			const parent = this.live.get(slot.parentId)?.node;
+			const parent = this.parentNodeFor(slot);
 			if (parent) node.parent = parent;
 		}
 		this.activateCodeBlock(slot, node);
@@ -242,10 +242,37 @@ export class SceneGraph {
 		if (!entry || entry.system || parentId === slotId) return false;
 		if (parentId && (!this.live.has(parentId) || this.isDescendantOf(this.live.get(parentId)!.slot, slotId))) return false;
 
-		entry.node.setParent(parentId ? this.live.get(parentId)!.node : null);
+		// A bone attachment only means something under the model it names; moving on drops it.
+		if (entry.slot.parentId !== parentId && findComponent(entry.slot, 'boneAttach')) {
+			entry.slot.components = entry.slot.components.filter((component) => component.type !== 'boneAttach');
+		}
 		entry.slot.parentId = parentId;
+		entry.node.setParent(this.parentNodeFor(entry.slot));
 		this.syncSlotTransform(entry);
 		return true;
+	}
+
+	/**
+	 * The node a slot hangs from: its parent slot's node, or, for a `boneAttach` slot whose parent's
+	 * skinned model has loaded, the named bone. Until the model loads it falls back to the parent's
+	 * node, and `syncModel` re-binds once the bones exist.
+	 */
+	private parentNodeFor(slot: Slot): TransformNode | null {
+		if (!slot.parentId) return null;
+		const parent = this.live.get(slot.parentId);
+		if (!parent) return null;
+		const attach = findComponent(slot, 'boneAttach');
+		const bone = attach?.bone ? parent.model?.instance?.boneNodes.get(attach.bone) : undefined;
+		return bone ?? parent.node;
+	}
+
+	/** Once a skinned model is ready, moves its `boneAttach` children from the model root onto their bones. */
+	private bindBoneChildren(parentId: string): void {
+		for (const entry of this.live.values()) {
+			if (entry.slot.parentId !== parentId || !findComponent(entry.slot, 'boneAttach')) continue;
+			const target = this.parentNodeFor(entry.slot);
+			if (target && entry.node.parent !== target && entry.node.parent === this.live.get(parentId)?.node) entry.node.parent = target;
+		}
 	}
 
 	/** Puts a slot at a pose in its parent's space, keeping the slot data in step with the node. */
@@ -314,15 +341,22 @@ export class SceneGraph {
 		return [...this.live.values()];
 	}
 
-	/** Current world state as a fresh SlotTree (ids/parentId unchanged, transforms live). System nodes (UI panels) are excluded. */
-	serialize(): SlotTree {
+	/**
+	 * Current world state as a fresh SlotTree (ids/parentId unchanged, transforms live). System nodes (UI panels) are excluded.
+	 * Avatars belong to the session, not the world, so anything saved or re-hosted asks for `withoutAvatars`.
+	 */
+	serialize(options: { withoutAvatars?: boolean } = {}): SlotTree {
+		const avatarIds = options.withoutAvatars
+			? [...this.live.values()].filter((entry) => findComponent(entry.slot, 'avatar')).map((entry) => entry.slot.id)
+			: [];
 		return [...this.live.values()]
 			.filter((entry) => !entry.system)
+			.filter((entry) => !avatarIds.some((id) => entry.slot.id === id || this.isDescendantOf(entry.slot, id)))
 			.map(({ slot, node }) => {
 				// A grabbed node is temporarily parented to a hand. Serialize it in
 				// its Slot parent space so remote peers receive the same world pose,
 				// without breaking the live grab relationship.
-				const expectedParent = slot.parentId ? this.live.get(slot.parentId)?.node ?? null : null;
+				const expectedParent = this.parentNodeFor(slot);
 				const transientParent = node.parent;
 				if (transientParent !== expectedParent) node.setParent(expectedParent);
 				const serialized = {
@@ -376,7 +410,7 @@ export class SceneGraph {
 			const entry = this.live.get(slot.id);
 			if (!entry || entry.system) continue;
 			const node = entry.node;
-			node.parent = slot.parentId ? this.live.get(slot.parentId)?.node ?? null : null;
+			node.parent = this.parentNodeFor(slot);
 		}
 		this.syncUIPanels();
 	}
@@ -764,13 +798,16 @@ export class SceneGraph {
 		model.placeholder.scaling.set(...extents);
 
 		if (state === 'ready' && !model.instance) {
-			const instance = model.lease.instantiate(`${slotId}-model`);
+			// Avatars keep real-world metres so bones, height and attached items line up with the player.
+			const instance = model.lease.instantiate(`${slotId}-model`, { normalize: !findComponent(entry.slot, 'avatar') });
 			if (instance) {
 				instance.root.parent = entry.node;
 				for (const mesh of instance.root.getChildMeshes(false)) mesh.metadata = { ...(mesh.metadata ?? {}), slotId };
 				model.instance = instance;
 				model.placeholder.setEnabled(false);
 				model.proxy.scaling.set(...instance.extents);
+				if (findComponent(entry.slot, 'avatar')) model.proxy.isPickable = false;
+				this.bindBoneChildren(slotId);
 			} else {
 				model.placeholder.material = this.placeholderMaterial('error');
 				entry.assetState = 'error';

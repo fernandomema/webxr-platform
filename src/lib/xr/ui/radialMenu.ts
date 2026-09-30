@@ -8,6 +8,7 @@ import type { EquipmentSystem } from '../interaction/equipmentSystem';
 import type { SceneGraph } from '../sceneGraph';
 import { lockHand, unlockHand, type Hand } from '../interaction/handLock';
 import { createRadialView, type RadialItem } from './radialView';
+import { forInventory } from '../avatar/build';
 
 export interface RadialMenuNetworkHooks {
 	onDelete?(slotId: string): void;
@@ -71,7 +72,9 @@ export function setupRadialMenuForHand(
 					const adapter = gameState.currentInventoryAdapterId ? getInventoryAdapter(gameState.currentInventoryAdapterId) : undefined;
 					if (!adapter?.saveItem) return;
 					const subtree = extractSubtree(sceneGraph.serialize(), slotId);
-					if (subtree.length) await adapter.saveItem(getInventoryContext(), gameState.currentInventoryFolderId, subtree[0].name, subtree);
+					if (!subtree.length) return;
+					const { tree, kind } = forInventory(subtree);
+					await adapter.saveItem(getInventoryContext(), gameState.currentInventoryFolderId, tree[0].name, tree, kind);
 				}
 			},
 			{

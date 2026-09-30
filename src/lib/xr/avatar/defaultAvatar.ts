@@ -5,7 +5,18 @@ export interface GhostRig {
 	leftHand: Mesh;
 	rightHand: Mesh;
 	setPose(pose: { head: TransformPose; leftHand: TransformPose; rightHand: TransformPose }): void;
+	/** Hidden while a real avatar is standing in for it; it keeps following the pose so anything reading it stays right. */
+	setVisible(visible: boolean): void;
 	dispose(): void;
+}
+
+/** A hand: where the wrist is, which way the hand faces, and how curled each finger is (thumb to little, 0 open to 1 closed). */
+export interface HandPose extends TransformPose {
+	curl?: number[];
+	/** Measured joint angles when the hand is tracked (15: thumb to little, base joint to tip), which say more than `curl`. */
+	bend?: number[];
+	/** Where the thumb's three segments point, in the hand's own frame (9 numbers). A thumb turns and spreads as well as bends, so its joints alone are not enough. */
+	thumb?: number[];
 }
 
 export interface TransformPose {
@@ -41,6 +52,9 @@ export function createGhostRig(scene: Scene, color = '#38bdf8'): GhostRig {
 			leftHand.rotationQuaternion = Quaternion.FromArray(l.rotation);
 			rightHand.position = Vector3.FromArray(r.position);
 			rightHand.rotationQuaternion = Quaternion.FromArray(r.rotation);
+		},
+		setVisible(visible) {
+			for (const mesh of [head, leftHand, rightHand]) mesh.setEnabled(visible);
 		},
 		dispose() {
 			head.dispose();

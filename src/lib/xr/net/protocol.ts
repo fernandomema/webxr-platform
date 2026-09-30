@@ -1,5 +1,5 @@
 import type { MediaControlAction, Slot, SlotTree, UIEvent } from '$lib/ecs/types';
-import type { TransformPose } from '../avatar/defaultAvatar';
+import type { HandPose, TransformPose } from '../avatar/defaultAvatar';
 
 export type SlotTransform = Pick<Slot, 'id' | 'position' | 'rotation' | 'scale'>;
 
@@ -17,6 +17,8 @@ export type WorldSyncMessage =
 	| { kind: 'scene-snapshot'; revision: number; tree: SlotTree; players: PlayerInfo[]; equipped?: EquippedEntry[] }
 	| { kind: 'transform-correction'; revision: number; transforms: SlotTransform[] }
 	| { kind: 'player-hello'; player: PlayerInfo }
+	/** A guest's chosen avatar. The host validates and rebuilds it; it is never applied as sent. */
+	| { kind: 'avatar-set-request'; slots: SlotTree }
 	| { kind: 'player-left'; playerId: string }
 	| { kind: 'snapshot-ack'; revision: number }
 	| { kind: 'resync-request'; haveRevision: number }
@@ -41,5 +43,5 @@ export type WorldStateMessage =
 		sequence: number;
 		timestamp: number;
 		head: TransformPose;
-		hands: Partial<Record<'left' | 'right', TransformPose>>;
+		hands: Partial<Record<'left' | 'right', HandPose>>;
 	};

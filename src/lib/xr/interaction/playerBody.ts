@@ -9,6 +9,13 @@ const STEP_UP = 0.4; // tallest ledge walked onto
 const BODY_RADIUS = 0.3;
 const VOID_Y = -20; // below this the player is put back at the spawn point
 const CACHE_MS = 500;
+/** Head height that seated mode pretends the player has. */
+export const SEATED_HEAD_HEIGHT = 1.7;
+
+/** How far to raise a head that is really `realHeadHeight` above the floor so it sits at standing height. Never lowers. */
+export function seatedLift(realHeadHeight: number): number {
+	return Math.max(0, SEATED_HEAD_HEIGHT - realHeadHeight);
+}
 
 /** Round or flat surfaces you stand on (and can teleport to). */
 export const isFloorSlot = (slot: Slot): boolean =>
@@ -21,6 +28,11 @@ export const isSolidSlot = (slot: Slot): boolean =>
 export interface PlayerBody {
 	/** Limits a horizontal step (XR smooth locomotion) so it slides along walls instead of passing through them. */
 	constrainMove(delta: Vector3): Vector3;
+	/**
+	 * Seated mode: lifts the player so their head is at `SEATED_HEAD_HEIGHT` above the floor whatever their real posture, as if they stood.
+	 * The lift is measured when the mode is turned on (or when the headset first reports a height), so leaning does not fight it.
+	 */
+	setSeated(seated: boolean): void;
 	/** Gravity, standing on the floor, and putting the player back if they fall out of the world. Call every frame. */
 	update(dt: number): void;
 }
@@ -79,10 +91,22 @@ export function setupPlayerBody(
 
 	refreshSets();
 	const inXr = () => Boolean(xr && xr.baseExperience.state === WebXRState.IN_XR);
+	// How far the whole rig is raised for seated mode. `null` while turned on but not measured yet (no head height reported).
+	let seated = false;
+	let lift: number | null = 0;
+	/** The floor the body stands on, ignoring the seated lift, so gravity and steps behave the same as when standing. */
 	const feetY = () => {
 		const camera = xr!.baseExperience.camera;
-		return camera.position.y - camera.realWorldHeight;
+		return camera.position.y - camera.realWorldHeight - (lift ?? 0);
 	};
+	/** Measures the lift once a real head height is known, and raises the rig by it. */
+	function calibrateSeated(): void {
+		if (!seated || lift !== null) return;
+		const camera = xr!.baseExperience.camera;
+		if (!(camera.realWorldHeight > 0.3)) return;
+		lift = seatedLift(camera.realWorldHeight);
+		camera.position.y += lift;
+	}
 	let verticalSpeed = 0;
 
 	function floorHeightBelow(x: number, y: number, z: number): number | null {
@@ -92,6 +116,7 @@ export function setupPlayerBody(
 
 	function updateXr(dt: number): void {
 		const camera = xr!.baseExperience.camera;
+		calibrateSeated();
 		const feet = feetY();
 		const ground = floorHeightBelow(camera.position.x, feet + STEP_UP, camera.position.z);
 		if (ground !== null && feet <= ground + 0.02) {
@@ -111,7 +136,7 @@ export function setupPlayerBody(
 			verticalSpeed = 0;
 			camera.position.x = spawn.x;
 			camera.position.z = spawn.z;
-			camera.position.y = camera.realWorldHeight;
+			camera.position.y = camera.realWorldHeight + (lift ?? 0);
 		}
 	}
 
@@ -120,6 +145,21 @@ export function setupPlayerBody(
 	}
 
 	return {
+		setSeated(enabled) {
+			if (enabled === seated) return;
+			seated = enabled;
+			if (!xr || !inXr()) {
+				lift = enabled ? null : 0; // measured later, when a headset is on
+				return;
+			}
+			if (enabled) {
+				lift = null;
+				calibrateSeated();
+			} else {
+				xr.baseExperience.camera.position.y -= lift ?? 0;
+				lift = 0;
+			}
+		},
 		constrainMove(delta) {
 			if (!inXr() || delta.lengthSquared() === 0) return delta;
 			refreshSets();
@@ -148,7 +188,11 @@ export function setupPlayerBody(
 		update(dt) {
 			refreshSets();
 			if (inXr()) updateXr(dt);
-			else updateDesktop();
+			else {
+				// A new headset session starts from a fresh origin, so the lift has to be measured again.
+				if (seated) lift = null;
+				updateDesktop();
+			}
 		}
 	};
 }

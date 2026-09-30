@@ -9,6 +9,10 @@ import type { PlayerInfo, SlotTransform, WorldStateMessage, WorldSyncMessage } f
 import { createGhostRig, type GhostRig, type TransformPose } from '../avatar/defaultAvatar';
 import { validateWorldPackage, MAX_SHARED_SCENE_BYTES } from '$lib/worlds/package';
 import { migrateSlotTree } from '$lib/assets/ref';
+import type { AvatarHooks } from '../avatar/avatarHooks';
+import { readHandPoses } from '../avatar/localHands';
+import { AssetPeer } from '$lib/assets/p2p';
+import { announceAssetSourcesChanged, getLocalAssetStore } from '$lib/assets/store';
 
 const PRESENCE_INTERVAL_MS = 50;
 const STATE_INTERVAL_MS = 50;
@@ -21,6 +25,9 @@ interface GuestEntry {
 	player: PlayerInfo;
 	lastPresenceSequence: number;
 	lastTriggerValueAt: number;
+	lastAvatarAt: number;
+	/** This guest as a source of assets, and a customer for ours. */
+	assets: AssetPeer;
 }
 
 /**
@@ -38,6 +45,7 @@ export class HostAuthority {
 	private revision = 0;
 	private lastTransforms = new Map<string, string>();
 	private presenceSequence = 0;
+	private avatars: AvatarHooks | null = null;
 
 	constructor(
 		private scene: Scene,
@@ -61,6 +69,21 @@ export class HostAuthority {
 		this.correctionTimer = setInterval(() => this.sendCorrections(), 1_000);
 	}
 
+	setAvatarHooks(hooks: AvatarHooks): void {
+		this.avatars = hooks;
+	}
+
+	/** The id the equipment registry uses for a player: a guest's connection id, or the host's own id. */
+	equipmentKeyFor(playerId: string): string {
+		for (const [guestId, entry] of this.guests) if (entry.player.playerId === playerId) return guestId;
+		return playerId;
+	}
+
+	/** Connected guests whose asset channel is open: places to ask for a model only they have. */
+	getAssetPeers(): AssetPeer[] {
+		return [...this.guests.values()].filter((entry) => entry.link.assetChannelOpen).map((entry) => entry.assets);
+	}
+
 	private getPlayers(): PlayerInfo[] {
 		return [this.localPlayer, ...[...this.guests.values()].map((entry) => entry.player)];
 	}
@@ -77,15 +100,7 @@ export class HostAuthority {
 			position: camera.globalPosition.asArray() as TransformPose['position'],
 			rotation: (camera.rotationQuaternion?.asArray() ?? [0, 0, 0, 1]) as TransformPose['rotation']
 		};
-		const hands: Partial<Record<'left' | 'right', TransformPose>> = {};
-		for (const controller of this.xr?.input.controllers ?? []) {
-			if (controller.inputSource.handedness === 'none') continue;
-			const node = controller.grip ?? controller.pointer;
-			hands[controller.inputSource.handedness] = {
-				position: node.absolutePosition.asArray() as TransformPose['position'],
-				rotation: (node.rotationQuaternion?.asArray() ?? [0, 0, 0, 1]) as TransformPose['rotation']
-			};
-		}
+		const hands = readHandPoses(this.xr);
 		return {
 			kind: 'presence',
 			player: this.localPlayer,
@@ -116,10 +131,13 @@ export class HostAuthority {
 		const headProxy = new TransformNode(`guest-${guestId}-head`, this.scene);
 		const player: PlayerInfo = { playerId: guestId, displayName: 'Guest', role: 'guest' };
 
+		const assets = new AssetPeer((data) => link.sendBinary(data), getLocalAssetStore(), `guest ${guestId.slice(0, 6)}`);
 		const link = new PeerLink(
 			{
 				iceServers: this.iceServers,
 				onData: (data, channel) => this.handleData(guestId, data, channel),
+				onBinary: (data) => assets.handle(data),
+				onAssetChannelOpen: announceAssetSourcesChanged,
 				onOpen: () => {
 					this.sendSnapshotToGuest(guestId);
 				},
@@ -137,7 +155,7 @@ export class HostAuthority {
 		});
 		if (this.voice?.localTrack) link.addLocalAudioTrack(this.voice.localTrack.track, this.voice.localTrack.stream);
 
-		this.guests.set(guestId, { link, headProxy, handProxies: new Map(), ghost, player, lastPresenceSequence: 0, lastTriggerValueAt: 0 });
+		this.guests.set(guestId, { link, headProxy, handProxies: new Map(), ghost, player, lastPresenceSequence: 0, lastTriggerValueAt: 0, lastAvatarAt: 0, assets });
 		const offer = await link.createOffer();
 		this.signaling.send({ type: 'offer', roomCode: this.roomCode, targetId: guestId, payload: offer });
 	}
@@ -150,10 +168,14 @@ export class HostAuthority {
 		this.grabSystem.release(`${guestId}:right`);
 		// Whatever they had equipped goes back into the world at its current pose.
 		this.equipment.releasePlayer(guestId);
+		entry.assets.close();
 		entry.link.close();
 		entry.headProxy.dispose();
 		for (const node of entry.handProxies.values()) node.dispose();
 		entry.ghost.dispose();
+		// Peers know a guest by the player id it announced, which is what owns its avatar.
+		this.avatars?.system.removePlayer(entry.player.playerId);
+		this.avatars?.players?.removePlayer(entry.player.playerId);
 		for (const { link } of this.guests.values()) link.send({ kind: 'player-left', playerId: entry.player.playerId });
 		this.broadcastSnapshot();
 	}
@@ -172,7 +194,7 @@ export class HostAuthority {
 		const entry = this.guests.get(guestId);
 		if (!entry || msg.sequence <= entry.lastPresenceSequence) return;
 		entry.lastPresenceSequence = msg.sequence;
-		entry.player = { ...msg.player, role: 'guest' };
+		entry.player = { ...msg.player, playerId: entry.player.playerId, role: 'guest' };
 		entry.headProxy.position = Vector3.FromArray(msg.head.position);
 		entry.headProxy.rotationQuaternion = Quaternion.FromArray(msg.head.rotation);
 		entry.ghost.setPose({
@@ -180,6 +202,10 @@ export class HostAuthority {
 			leftHand: msg.hands.left ?? msg.head,
 			rightHand: msg.hands.right ?? msg.head
 		});
+		if (this.avatars) {
+			this.avatars.system.setRemotePose(entry.player.playerId, { head: msg.head, left: msg.hands.left, right: msg.hands.right });
+			entry.ghost.setVisible(!this.avatars.system.isDriving(entry.player.playerId));
+		}
 		for (const hand of ['left', 'right'] as const) {
 			const pose = msg.hands[hand];
 			if (!pose) continue;
@@ -204,11 +230,26 @@ export class HostAuthority {
 		const entry = this.guests.get(guestId);
 		if (!entry) return;
 		switch (msg.kind) {
-			case 'player-hello':
-				entry.player = { ...msg.player, role: 'guest' };
+			case 'player-hello': {
+				// A player id is what owns an avatar, so one that is already taken cannot be claimed.
+				const taken = msg.player.playerId === this.localPlayer.playerId || [...this.guests.entries()].some(([id, other]) => id !== guestId && other.player.playerId === msg.player.playerId);
+				entry.player = { ...msg.player, playerId: taken ? guestId : msg.player.playerId, role: 'guest' };
 				this.sendSnapshotToGuest(guestId);
 				this.broadcastSnapshot();
 				break;
+			}
+			case 'avatar-set-request': {
+				const now = Date.now();
+				if (!this.avatars?.players || now - entry.lastAvatarAt < 1_000) break; // changing avatar is rate limited
+				entry.lastAvatarAt = now;
+				try {
+					this.avatars.players.setAvatar(entry.player.playerId, msg.slots);
+				} catch (error) {
+					console.warn('[avatar] rejected a guest avatar', error);
+				}
+				this.broadcastSnapshot();
+				break;
+			}
 			case 'snapshot-ack':
 				break;
 			case 'resync-request':
@@ -284,8 +325,10 @@ export class HostAuthority {
 	private broadcastStateIfChanged(): void {
 		const changed: SlotTransform[] = [];
 		const seen = new Set<string>();
-		for (const { id, position, rotation, scale } of this.sceneGraph.serialize()) {
+		for (const { id, position, rotation, scale, components } of this.sceneGraph.serialize()) {
 			seen.add(id);
+			// An avatar's body is posed locally by every peer from presence; streaming it as well would double the traffic.
+			if (components.some((component) => component.type === 'avatar')) continue;
 			const transform = { id, position, rotation, scale };
 			const signature = JSON.stringify(transform);
 			if (this.lastTransforms.get(id) === signature) continue;

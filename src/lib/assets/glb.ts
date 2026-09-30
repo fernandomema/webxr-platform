@@ -26,6 +26,8 @@ export interface GlbStats {
 	materials: number;
 	textures: number;
 	images: number;
+	/** Joint (bone) names of the model's skins, deduplicated. Absent when the model has no skin. */
+	skeleton?: { joints: string[] };
 }
 
 export interface GlbLimits {
@@ -59,7 +61,8 @@ interface Gltf {
 	extensionsRequired?: string[];
 	scene?: number;
 	scenes?: { nodes?: number[] }[];
-	nodes?: { children?: number[]; mesh?: number; matrix?: number[]; translation?: number[]; rotation?: number[]; scale?: number[] }[];
+	nodes?: { name?: string; children?: number[]; mesh?: number; matrix?: number[]; translation?: number[]; rotation?: number[]; scale?: number[] }[];
+	skins?: { joints?: number[] }[];
 	meshes?: { primitives?: { attributes?: Record<string, number>; indices?: number; mode?: number }[] }[];
 	accessors?: { count?: number; min?: number[]; max?: number[] }[];
 	materials?: unknown[];
@@ -117,14 +120,33 @@ export function parseGlb(bytes: Uint8Array, limits: GlbLimits = ASSET_LIMITS): G
 	if (images > limits.maxImages) throw new GlbError('too-many-images', `The model has ${images} images; the limit is ${limits.maxImages}.`);
 
 	const { bounds, triangles } = measure(json, limits);
+	const joints = jointNames(json);
 	return {
 		bounds,
 		triangles,
 		meshes: json.meshes?.length ?? 0,
 		materials: json.materials?.length ?? 0,
 		textures: json.textures?.length ?? 0,
-		images
+		images,
+		...(joints.length ? { skeleton: { joints } } : {})
 	};
+}
+
+const MAX_JOINTS = 512;
+
+function jointNames(json: Gltf): string[] {
+	const names: string[] = [];
+	const seen = new Set<string>();
+	for (const skin of json.skins ?? []) {
+		for (const index of skin.joints ?? []) {
+			const name = json.nodes?.[index]?.name;
+			if (typeof name !== 'string' || !name || seen.has(name)) continue;
+			seen.add(name);
+			names.push(name.slice(0, 128));
+			if (names.length >= MAX_JOINTS) return names;
+		}
+	}
+	return names;
 }
 
 // --- geometry measurement ---------------------------------------------------

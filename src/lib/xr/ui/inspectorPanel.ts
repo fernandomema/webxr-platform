@@ -8,6 +8,7 @@ import { getInventoryContext, gameState } from '../gameState';
 import { createScrollPanel, clearContainer, sectionLabel, row, stepButton, numberStepper, toggleRow, createWrapPanel } from './inspector/guiKit';
 import { createHierarchyTree } from './inspector/hierarchyTree';
 import { getComponentDetailRenderer } from './inspector/componentDetails';
+import { forInventory } from '../avatar/build';
 
 const COMPONENT_LABELS: Record<Component['type'], string> = {
 	meshRenderer: 'Mesh',
@@ -35,7 +36,9 @@ const COMPONENT_LABELS: Record<Component['type'], string> = {
 	pressableButton: 'Pressable Button',
 	impactSound: 'Impact Sound',
 	socket: 'Socket',
-	insertable: 'Insertable'
+	insertable: 'Insertable',
+	avatar: 'Avatar',
+	boneAttach: 'Bone Attach'
 };
 
 const TREE_COLUMN_WIDTH = 290;
@@ -212,7 +215,8 @@ export function createInspectorPanel(
 		const rootSlot = subtree[0];
 		// only reuse the Dash's current "pwd" if it belongs to THIS adapter — otherwise save to that adapter's root
 		const folderId = gameState.currentInventoryAdapterId === adapterId ? gameState.currentInventoryFolderId : null;
-		await adapter.saveItem(getInventoryContext(), folderId, rootSlot.name, subtree);
+		const { tree: toSave, kind } = forInventory(subtree);
+		await adapter.saveItem(getInventoryContext(), folderId, rootSlot.name, toSave, kind);
 	}
 
 	function showDetail(slotId: string) {

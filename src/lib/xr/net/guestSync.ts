@@ -8,6 +8,11 @@ import { PeerLink } from './peerConnection';
 import type { PlayerInfo, WorldStateMessage, WorldSyncMessage } from './protocol';
 import { migrateSlotTree } from '$lib/assets/ref';
 import { createGhostRig, type GhostRig, type TransformPose } from '../avatar/defaultAvatar';
+import type { AvatarHooks } from '../avatar/avatarHooks';
+import { readHandPoses } from '../avatar/localHands';
+import { AssetPeer } from '$lib/assets/p2p';
+import { announceAssetSourcesChanged, getLocalAssetStore } from '$lib/assets/store';
+import type { SlotTree } from '$lib/ecs/types';
 
 const PRESENCE_INTERVAL_MS = 50;
 
@@ -26,6 +31,8 @@ export class GuestSync {
 	private transformRevision = -1;
 	private latestTransforms: Extract<WorldStateMessage, { kind: 'scene-state' }> | null = null;
 	private disposed = false;
+	private avatars: AvatarHooks | null = null;
+	private assetPeer: AssetPeer | null = null;
 	readonly hostProxy: TransformNode;
 
 	constructor(
@@ -43,7 +50,8 @@ export class GuestSync {
 			onRemoteStream?(stream: MediaStream, targetNode: TransformNode): void;
 		},
 		private onSessionEnded?: () => void,
-		private onSceneChanged?: () => void
+		private onSceneChanged?: () => void,
+		private onConnected?: () => void
 	) {
 		this.hostProxy = new TransformNode('host-proxy', scene);
 		this.signaling = new SignalingClient(roomCode, 'join');
@@ -69,13 +77,22 @@ export class GuestSync {
 		this.onSessionEnded?.();
 	}
 
+	/** The host as a source of assets, once the link to it is up. */
+	getAssetPeer(): AssetPeer | null {
+		return this.link?.assetChannelOpen ? this.assetPeer : null;
+	}
+
 	private async acceptOffer(offer: RTCSessionDescriptionInit): Promise<void> {
+		this.assetPeer = new AssetPeer((data) => this.link?.sendBinary(data) ?? Promise.resolve(), getLocalAssetStore(), 'host');
 		this.link = new PeerLink(
 			{
 				iceServers: this.iceServers,
 				onData: (data, channel) => this.handleData(data, channel),
+				onBinary: (data) => this.assetPeer?.handle(data),
+				onAssetChannelOpen: announceAssetSourcesChanged,
 				onOpen: () => {
 					this.link?.send({ kind: 'player-hello', player: this.localPlayer });
+					this.onConnected?.();
 				},
 				onConnectionStateChange: (state) => {
 					if (state === 'failed' || state === 'closed') this.endSession();
@@ -115,7 +132,17 @@ export class GuestSync {
 		for (const player of players) this.ensureAvatar(player);
 	}
 
+	setAvatarHooks(hooks: AvatarHooks): void {
+		this.avatars = hooks;
+	}
+
+	/** Tells the host which avatar this player wears. The host rebuilds it after checking it. */
+	sendAvatar(slots: SlotTree): void {
+		this.link?.send({ kind: 'avatar-set-request', slots });
+	}
+
 	private removeAvatar(playerId: string): void {
+		this.avatars?.system.removePlayer(playerId);
 		this.remoteAvatars.get(playerId)?.dispose();
 		this.remoteAvatars.delete(playerId);
 		this.players.delete(playerId);
@@ -134,6 +161,10 @@ export class GuestSync {
 			leftHand: msg.hands.left ?? msg.head,
 			rightHand: msg.hands.right ?? msg.head
 		});
+		if (this.avatars) {
+			this.avatars.system.setRemotePose(msg.player.playerId, { head: msg.head, left: msg.hands.left, right: msg.hands.right });
+			avatar.setVisible(!this.avatars.system.isDriving(msg.player.playerId));
+		}
 		if (msg.player.role === 'host') {
 			this.hostProxy.position.set(...msg.head.position);
 			this.hostProxy.rotationQuaternion = avatar.head.rotationQuaternion?.clone() ?? null;
@@ -192,15 +223,7 @@ export class GuestSync {
 			position: camera.globalPosition.asArray() as TransformPose['position'],
 			rotation: (camera.rotationQuaternion?.asArray() ?? [0, 0, 0, 1]) as TransformPose['rotation']
 		};
-		const hands: Partial<Record<'left' | 'right', TransformPose>> = {};
-		for (const controller of this.xr?.input.controllers ?? []) {
-			if (controller.inputSource.handedness === 'none') continue;
-			const node = controller.grip ?? controller.pointer;
-			hands[controller.inputSource.handedness] = {
-				position: node.absolutePosition.asArray() as TransformPose['position'],
-				rotation: (node.rotationQuaternion?.asArray() ?? [0, 0, 0, 1]) as TransformPose['rotation']
-			};
-		}
+		const hands = readHandPoses(this.xr);
 		this.link.sendState({
 			kind: 'presence',
 			player: this.localPlayer,
@@ -257,6 +280,7 @@ export class GuestSync {
 		this.disposed = true;
 		if (this.presenceTimer) clearInterval(this.presenceTimer);
 		this.equipment.releaseAll(); // nothing stays equipped once the session is gone
+		this.assetPeer?.close();
 		this.link?.close();
 		this.signaling.close();
 		for (const avatar of this.remoteAvatars.values()) avatar.dispose();

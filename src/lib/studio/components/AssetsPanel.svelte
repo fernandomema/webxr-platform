@@ -11,6 +11,9 @@
 	type AudioListing = Extract<AssetListing, { type: 'audio' }>;
 	import Icon from '../ui/Icon.svelte';
 	import { adapterLabel } from '../ui/adapters';
+	import AvatarWizard from './AvatarWizard.svelte';
+	import type { AssetId } from '$lib/assets/ref';
+	import type { SlotTree } from '$lib/ecs/types';
 
 	interface Props {
 		doc: StudioDocument;
@@ -52,6 +55,14 @@
 			components: [{ type: 'meshRenderer', meshRef: assetMesh(model.assetId) }, { type: 'collider', shape: 'box' }]
 		});
 		toasts.success(`Added “${model.name}”`);
+	}
+
+	/** The avatar wizard: `null` is closed, `''` starts at the model picker, an asset id starts at the bones step. */
+	let wizard = $state<AssetId | '' | null>(null);
+
+	function addAvatar(tree: SlotTree, name: string) {
+		wizard = null;
+		if (doc.insertFragment(tree, null)) toasts.success(`Created avatar “${name}”. Save it as an object to wear it.`);
 	}
 
 	function addAudio(audio: AudioListing) {
@@ -107,6 +118,7 @@
 	<section class="models" aria-label="Models">
 		<div class="models-head">
 			<strong>Models</strong>
+			<button class="btn sm" title="Turn a rigged model into a player avatar" onclick={() => (wizard = '')}>New avatar…</button>
 			<button class="btn sm" disabled={studioModels.importing} onclick={() => studioModels.pickAndImport()}>
 				<Icon name="plus" size={12} />{studioModels.importing ? 'Importing…' : 'Import .glb'}
 			</button>
@@ -120,6 +132,9 @@
 							<span>{model.name}</span>
 							<small class="muted">{model.triangles.toLocaleString('en-US')} tris · {formatBytes(model.byteSize)}</small>
 						</button>
+						{#if model.skeleton?.joints.length}
+							<button class="btn sm" title="Use this rigged model as a player avatar" onclick={() => (wizard = model.assetId)}>Avatar</button>
+						{/if}
 						<button class="icon-btn danger" aria-label={`Remove ${model.name} from this device`} onclick={() => removeModel(model)}><Icon name="trash" size={13} /></button>
 					</li>
 				{/each}
@@ -180,6 +195,16 @@
 		{/if}
 	</ul>
 </div>
+
+{#if wizard !== null}
+	<AvatarWizard
+		models={studioModels.items}
+		initialAssetId={wizard || undefined}
+		canCreate={doc.kind === 'object'}
+		oncreate={addAvatar}
+		onclose={() => (wizard = null)}
+	/>
+{/if}
 
 <style>
 	.assets { display: flex; flex-direction: column; height: 100%; min-height: 0; }

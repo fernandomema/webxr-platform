@@ -99,7 +99,7 @@ test('euler <-> quaternion round trips', () => {
 
 test('every component type has a schema and a valid blank instance', () => {
   const types = COMPONENT_SCHEMAS.map((s) => s.type);
-  assert.equal(new Set(types).size, 26);
+  assert.equal(new Set(types).size, 28);
   for (const schema of COMPONENT_SCHEMAS) {
     assert.equal(componentSchema(schema.type), schema);
     if (schema.type === 'worldPortal') continue; // created from the world library, not blank

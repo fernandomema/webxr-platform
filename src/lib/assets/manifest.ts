@@ -26,6 +26,8 @@ export interface ModelManifest extends AssetManifestBase {
 	meshes: number;
 	materials: number;
 	textures: number;
+	/** Bone names of the model's skin, when it has one. Older manifests lack it; read the skeleton from the loaded model instead. */
+	skeleton?: { joints: string[] };
 }
 
 export interface AudioManifest extends AssetManifestBase {

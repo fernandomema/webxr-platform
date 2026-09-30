@@ -8,6 +8,8 @@ import { getTemplate } from '../templates';
 import { cloneTree } from '../tree/ops';
 import { deleteDraft, loadDraft, saveDraft, type Draft } from './autosave';
 import { StudioDocument } from './document.svelte';
+import { isAvatarTree } from '../../xr/avatar/build';
+import { takeNewAvatar } from './newAvatar';
 
 export interface SaveTarget {
 	adapterId: string;
@@ -71,9 +73,13 @@ export class StudioProject {
 			const itemId = params.get('item');
 			if (itemId) await this.openItem(params.get('source') ?? 'local', params.get('folder'), itemId);
 			else {
-				const template = getTemplate(templateId) ?? getTemplate('blank-world')!;
 				this.newDraftId = params.get('draft') ?? this.newDraftId;
-				this.doc.load(template.build(), template.defaultName, template.kind);
+				const handedOver = templateId === 'avatar' ? takeNewAvatar(this.newDraftId) : null;
+				if (handedOver) this.doc.load(handedOver.tree, handedOver.name, 'object');
+				else {
+					const template = getTemplate(templateId) ?? getTemplate('blank-world')!;
+					this.doc.load(template.build(), template.defaultName, template.kind);
+				}
 			}
 			await this.checkDraft();
 			this.status = 'ready';
@@ -134,11 +140,13 @@ export class StudioProject {
 		try {
 			if (adapterId === 'cloud') await this.sendModels(tree);
 			const sameLocation = this.item !== null && adapterId === this.adapterId;
+			// A single body with an avatar component is saved as an avatar, so it shows up as one in the game's inventory.
+			const kind = this.doc.kind === 'object' && isAvatarTree(tree) ? 'avatar' : this.doc.kind;
 			const saved =
-				this.doc.kind === 'object' && sameLocation && adapter.updateItem
+				this.doc.kind === 'object' && kind === (this.item?.kind ?? 'object') && sameLocation && adapter.updateItem
 					? await adapter.updateItem(this.context, this.item!.id, folderId, name, tree)
 					: await (adapter.saveItem
-						? adapter.saveItem(this.context, folderId, name, tree, this.doc.kind, this.doc.kind === 'world' && sameLocation ? (this.item?.worldLineageId ?? undefined) : undefined)
+						? adapter.saveItem(this.context, folderId, name, tree, kind, this.doc.kind === 'world' && sameLocation ? (this.item?.worldLineageId ?? undefined) : undefined)
 						: Promise.reject(new Error('This inventory is read-only.')));
 			this.adapterId = adapterId;
 			this.folderId = saved.folderId;

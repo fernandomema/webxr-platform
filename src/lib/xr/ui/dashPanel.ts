@@ -22,9 +22,10 @@ import { getLocalAssetStore } from '$lib/assets/store';
 import type { WorldPackage } from '$lib/worlds/types';
 import { gameState, getInventoryContext } from '../gameState';
 import { xrSettings, saveSettings, type MovementMode, type RotationMode } from '../settings';
+import { dashboardEditorOrder, dashboardItemLabel, moveDashboardItem, toggleDashboardItem, type DashboardItemId } from '../dashboardLayout';
 import { WORLD_VISIBILITY_INFO, type HostedWorldVisibility } from '$lib/worldVisibility';
 
-const TABS = ['Session', 'Worlds', 'Inventory', 'Settings', 'Account'] as const;
+const TABS = ['Home', 'Session', 'Worlds', 'Inventory', 'Settings', 'Account'] as const;
 type Tab = (typeof TABS)[number];
 
 export interface DashPanelCallbacks {
@@ -35,9 +36,13 @@ export interface DashPanelCallbacks {
 	onSpawnWorldOrb(item: InventoryItem, adapterId: InventoryStorageAdapterId): void;
 	onSpawnPublishedWorld(world: WorldPackage): void;
 	onLaunchWorldItem(item: InventoryItem, adapterId: InventoryStorageAdapterId): Promise<void>;
+	/** Makes an avatar item the one worn from now on, here and in every world joined later. Rejects with a readable message if it cannot be worn. */
+	onSetDefaultAvatar(item: InventoryItem): Promise<void>;
 	onLocomotionSettingsChanged(): void;
 	onExitVr(): Promise<void>;
 	onToggleInspector(): void;
+	/** Seated mode was switched on or off (`xrSettings.seatedMode` already holds the new value). */
+	onSeatedModeChanged(): void;
 }
 
 export interface DashPanelHandle {
@@ -76,51 +81,23 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	tabsBar.top = '-284px';
 	background.addControl(tabsBar);
 
-	// Always-visible, regardless of active tab.
-	const exitVrBtn = Button.CreateSimpleButton('exit-vr-btn', 'Salir de VR');
-	exitVrBtn.width = '150px';
-	exitVrBtn.height = '48px';
-	exitVrBtn.color = 'white';
-	exitVrBtn.background = '#991b1b';
-	exitVrBtn.cornerRadius = 8;
-	exitVrBtn.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-	exitVrBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-	exitVrBtn.top = '16px';
-	exitVrBtn.left = '-16px';
-	exitVrBtn.onPointerClickObservable.add(() => {
-		void callbacks.onExitVr();
-	});
-	background.addControl(exitVrBtn);
-
-	const inspectorBtn = Button.CreateSimpleButton('inspector-btn', 'Inspector');
-	inspectorBtn.width = '150px';
-	inspectorBtn.height = '48px';
-	inspectorBtn.color = 'white';
-	inspectorBtn.background = '#374151';
-	inspectorBtn.cornerRadius = 8;
-	inspectorBtn.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-	inspectorBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-	inspectorBtn.top = '16px';
-	inspectorBtn.left = '16px';
-	inspectorBtn.onPointerClickObservable.add(() => callbacks.onToggleInspector());
-	background.addControl(inspectorBtn);
-
 	const contentByTab: Record<Tab, Rectangle> = {} as Record<Tab, Rectangle>;
-	let activeTab: Tab = 'Session';
+	let activeTab: Tab = 'Home';
 
 	function showTab(tab: Tab) {
 		activeTab = tab;
 		for (const t of TABS) contentByTab[t].isVisible = t === tab;
+		if (tab === 'Home') refreshHomeTab();
 		if (tab === 'Session' || tab === 'Worlds') refreshWorldsTab();
 		if (tab === 'Inventory') refreshInventoryTab();
 	}
 
 	for (const tab of TABS) {
 		const btn = Button.CreateSimpleButton(`tab-${tab}`, tab);
-		btn.width = '180px';
+		btn.width = '150px';
 		btn.height = '60px';
 		btn.color = 'white';
-		btn.fontSize = 22;
+		btn.fontSize = 20;
 		btn.background = '#374151';
 		btn.cornerRadius = 8;
 		btn.thickness = 0;
@@ -138,6 +115,96 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		background.addControl(panel);
 		contentByTab[tab] = panel;
 	}
+
+	// --- Home tab: the player's own shortcuts ---
+	const homePanel = new StackPanel('home-panel');
+	homePanel.width = 0.85;
+	homePanel.top = '10px';
+	contentByTab.Home.addControl(homePanel);
+	let customisingHome = false;
+
+	function setSeatedMode(enabled: boolean) {
+		xrSettings.seatedMode = enabled;
+		saveSettings();
+		callbacks.onSeatedModeChanged();
+		refreshHomeTab();
+		refreshSettingsTab();
+	}
+
+	function homeText(text: string, color: string, fontSize: number, height: number): TextBlock {
+		const block = new TextBlock(`home-${text.slice(0, 12)}`, text);
+		block.color = color;
+		block.fontSize = fontSize;
+		block.height = `${height}px`;
+		block.textWrapping = true;
+		return block;
+	}
+
+	function homeButton(key: string, text: string, background: string, width: number, onClick: () => void): Button {
+		const btn = Button.CreateSimpleButton(key, text);
+		btn.width = `${width}px`;
+		btn.height = '56px';
+		btn.color = 'white';
+		btn.fontSize = 22;
+		btn.cornerRadius = 8;
+		btn.background = background;
+		btn.paddingBottom = '8px';
+		btn.onPointerClickObservable.add(onClick);
+		return btn;
+	}
+
+	/** What each shortcut looks like and does. Adding one is a new id in `dashboardLayout.ts` plus an entry here. */
+	const HOME_ACTIONS: Record<DashboardItemId, () => { text: string; background: string; run: () => void }> = {
+		seated: () => ({
+			text: `Seated mode: ${xrSettings.seatedMode ? 'On' : 'Off'}`,
+			background: xrSettings.seatedMode ? '#2563eb' : '#374151',
+			run: () => setSeatedMode(!xrSettings.seatedMode)
+		}),
+		inspector: () => ({ text: 'Inspector', background: '#374151', run: () => callbacks.onToggleInspector() }),
+		'exit-vr': () => ({ text: 'Exit VR', background: '#991b1b', run: () => void callbacks.onExitVr() })
+	};
+
+	function setHomeLayout(layout: DashboardItemId[]) {
+		xrSettings.dashboardLayout = layout;
+		saveSettings();
+		refreshHomeTab();
+	}
+
+	function refreshHomeTab() {
+		for (const child of [...homePanel.children]) homePanel.removeControl(child);
+		homePanel.addControl(homeText('Home', 'white', 26, 44));
+
+		if (!customisingHome) {
+			const layout = xrSettings.dashboardLayout;
+			if (layout.length === 0) homePanel.addControl(homeText('Nothing here yet. Use Customise to add your shortcuts.', '#9ca3af', 20, 60));
+			for (const id of layout) {
+				const action = HOME_ACTIONS[id]();
+				homePanel.addControl(homeButton(`home-${id}`, action.text, action.background, 420, action.run));
+			}
+			homePanel.addControl(homeButton('home-customise', 'Customise', '#1f2937', 220, () => { customisingHome = true; refreshHomeTab(); }));
+			return;
+		}
+
+		homePanel.addControl(homeText('Choose the shortcuts you want here, and their order.', '#9ca3af', 20, 40));
+		const layout = xrSettings.dashboardLayout;
+		for (const { id, shown } of dashboardEditorOrder(layout)) {
+			const row = new StackPanel(`home-edit-${id}`);
+			row.isVertical = false;
+			row.height = '60px';
+			const name = homeText(dashboardItemLabel(id), shown ? 'white' : '#6b7280', 22, 52);
+			name.width = '260px';
+			name.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+			row.addControl(name);
+			row.addControl(homeButton(`home-toggle-${id}`, shown ? 'Shown' : 'Hidden', shown ? '#2563eb' : '#374151', 130, () => setHomeLayout(toggleDashboardItem(layout, id))));
+			if (shown) {
+				row.addControl(homeButton(`home-up-${id}`, '▲', '#374151', 60, () => setHomeLayout(moveDashboardItem(layout, id, -1))));
+				row.addControl(homeButton(`home-down-${id}`, '▼', '#374151', 60, () => setHomeLayout(moveDashboardItem(layout, id, 1))));
+			}
+			homePanel.addControl(row);
+		}
+		homePanel.addControl(homeButton('home-done', 'Done', '#16a34a', 200, () => { customisingHome = false; refreshHomeTab(); }));
+	}
+	refreshHomeTab();
 
 	// --- Session tab (current session / hosting) ---
 	const sessionScroll = new ScrollViewer('session-scroll');
@@ -308,7 +375,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		const name = worldNameInput.text.trim() || 'My World';
 		saveWorldBtn.isEnabled = saveAsNewBtn.isEnabled = false;
 		try {
-			const snapshot = sceneGraph.serialize();
+			const snapshot = sceneGraph.serialize({ withoutAvatars: true });
 			validateWorldScene(snapshot);
 			const lineage = loaded && loaded.adapterId === adapter.id ? loaded.worldLineageId : undefined;
 			if (!adapter.saveItem || adapter.id === 'purchased') throw new Error('This inventory is read-only');
@@ -476,7 +543,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 					update.width = '250px'; update.height = '52px'; update.color = 'white'; update.background = '#7c3aed'; update.cornerRadius = 8;
 					update.onPointerClickObservable.add(async () => {
 						try {
-							const snapshot = sceneGraph.serialize(); validateWorldScene(snapshot);
+							const snapshot = sceneGraph.serialize({ withoutAvatars: true }); validateWorldScene(snapshot);
 							const res = await fetch(`/api/published-worlds/${publication.id}/revisions`, {
 								method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ scene: snapshot })
 							});
@@ -713,9 +780,18 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			if (adapter.id === 'purchased') return;
 			callbacks.onSpawnWorldOrb(entry.item, adapter.id);
 			showMessage(`Placed “${entry.name}” as a world orb`, 'ok');
+		} else if (entry.item.kind === 'avatar') {
+			void setDefaultAvatar(entry.item);
 		} else {
 			callbacks.onSpawnItem(entry.item.slotData);
 		}
+	}
+
+	async function setDefaultAvatar(item: InventoryItem) {
+		try {
+			await callbacks.onSetDefaultAvatar(item);
+			showMessage(`Now wearing “${item.name}”`, 'ok');
+		} catch (error) { showMessage(error instanceof Error ? error.message : 'Could not use this avatar', 'error'); }
 	}
 
 	function refreshToolbar() {
@@ -738,7 +814,9 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		} else {
 			const item = entry.item;
 			const isWorld = item.kind === 'world';
-			inventoryToolbar.addControl(actionButton('tb-spawn', isWorld ? 'Place orb' : 'Spawn', INV.accent, isWorld ? 116 : 94, () => activate(entry)));
+			const isAvatar = item.kind === 'avatar';
+			if (isAvatar) inventoryToolbar.addControl(actionButton('tb-set-avatar', 'Set as default', INV.accent, 150, () => activate(entry)));
+			else inventoryToolbar.addControl(actionButton('tb-spawn', isWorld ? 'Place orb' : 'Spawn', INV.accent, isWorld ? 116 : 94, () => activate(entry)));
 			if (!isWorld && gameState.userId && (adapter.id !== 'world' || gameState.role === 'host')) {
 				inventoryToolbar.addControl(actionButton('tb-marketplace', item.marketplaceItemId ? 'Update Marketplace' : 'Publish', '#7c3aed', 160, async () => {
 					try {
@@ -1086,10 +1164,12 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 
 	const movementRow = settingsSection('Movimiento');
 	const rotationRow = settingsSection('Giro');
+	const seatedRow = settingsSection('Seated mode');
 
 	function refreshSettingsTab() {
 		for (const child of [...movementRow.children]) movementRow.removeControl(child);
 		for (const child of [...rotationRow.children]) rotationRow.removeControl(child);
+		for (const child of [...seatedRow.children]) seatedRow.removeControl(child);
 
 		const movementOptions: [MovementMode, string][] = [
 			['teleport', 'Teleport'],
@@ -1126,6 +1206,10 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 					callbacks.onLocomotionSettingsChanged();
 				}
 			);
+		}
+
+		for (const [enabled, label] of [[false, 'Standing'], [true, 'Seated (head at 1.7 m)']] as const) {
+			optionButton(seatedRow, `seated-${enabled}`, label, () => xrSettings.seatedMode === enabled, () => setSeatedMode(enabled));
 		}
 	}
 	refreshSettingsTab();
@@ -1269,7 +1353,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	}
 	void refreshSession();
 
-	showTab('Session');
+	showTab('Home');
 
 	return {
 		root: node,

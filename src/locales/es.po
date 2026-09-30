@@ -46,6 +46,7 @@ msgstr "Email"
 msgid "Sign-up failed"
 msgstr "Error al registrarse"
 
+#: src/lib/studio/components/AvatarWizard.svelte
 #: src/lib/studio/components/Inspector.svelte
 #: src/lib/studio/components/SaveDialog.svelte
 #: src/routes/register/+page.svelte
@@ -565,6 +566,7 @@ msgstr ""
 
 #: src/lib/studio/components/AddComponentMenu.svelte
 #: src/lib/studio/components/AddObjectMenu.svelte
+#: src/lib/studio/components/AvatarWizard.svelte
 #: src/lib/studio/components/CommandPalette.svelte
 #: src/lib/studio/components/PublishDialog.svelte
 #: src/lib/studio/components/SaveDialog.svelte
@@ -572,6 +574,7 @@ msgstr ""
 msgid "Escape"
 msgstr ""
 
+#: src/lib/studio/components/AvatarWizard.svelte
 #: src/lib/studio/components/PublishDialog.svelte
 #: src/lib/studio/components/SaveDialog.svelte
 #: src/lib/studio/ui/DialogHost.svelte
@@ -1832,10 +1835,12 @@ msgstr ""
 
 #: src/lib/studio/components/AssetsPanel.svelte
 #: src/lib/studio/components/AssetsPanel.svelte
+#: src/lib/studio/components/AvatarWizard.svelte
 msgid "Importing…"
 msgstr ""
 
 #: src/lib/studio/components/AssetsPanel.svelte
+#: src/lib/studio/components/AvatarWizard.svelte
 msgid "Import .glb"
 msgstr ""
 
@@ -2183,3 +2188,405 @@ msgstr "No se pudieron leer los assets de este dispositivo"
 #: src/lib/studio/state/models.svelte.ts
 msgid "Could not remove the asset"
 msgstr "No se pudo eliminar el asset"
+
+#. 0: name
+#: src/lib/studio/components/AssetsPanel.svelte
+msgid "Created avatar “{0}”. Save it as an object to wear it."
+msgstr ""
+
+#: src/lib/studio/components/AssetsPanel.svelte
+msgid "Use this rigged model as a player avatar"
+msgstr ""
+
+#: src/lib/studio/components/AssetsPanel.svelte
+#: src/routes/studio/+page.svelte
+#: src/routes/studio/+page.svelte
+msgid "Avatar"
+msgstr ""
+
+#: src/lib/studio/components/AssetsPanel.svelte
+msgid "Turn a rigged model into a player avatar"
+msgstr ""
+
+#: src/lib/studio/components/AssetsPanel.svelte
+msgid "New avatar…"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Hips"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Spine"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Chest"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Neck"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Head"
+msgstr ""
+
+#~ msgid "Left shoulder"
+#~ msgstr ""
+
+#~ msgid "Left upper arm"
+#~ msgstr ""
+
+#~ msgid "Left forearm"
+#~ msgstr ""
+
+#~ msgid "Left hand"
+#~ msgstr ""
+
+#~ msgid "Right shoulder"
+#~ msgstr ""
+
+#~ msgid "Right upper arm"
+#~ msgstr ""
+
+#~ msgid "Right forearm"
+#~ msgstr ""
+
+#~ msgid "Right hand"
+#~ msgstr ""
+
+#~ msgid "Left thigh"
+#~ msgstr ""
+
+#~ msgid "Left shin"
+#~ msgstr ""
+
+#~ msgid "Left foot"
+#~ msgstr ""
+
+#~ msgid "Right thigh"
+#~ msgstr ""
+
+#~ msgid "Right shin"
+#~ msgstr ""
+
+#~ msgid "Right foot"
+#~ msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Body"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Left arm"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Right arm"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Legs"
+msgstr ""
+
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "This model has no skeleton, so it cannot be worn. Export it with a rig (a skinned .glb)."
+msgstr ""
+
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "The model could not be read."
+msgstr ""
+
+#: src/lib/studio/components/AvatarWizard.svelte
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "Create avatar"
+msgstr ""
+
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "Progress"
+msgstr ""
+
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "1 · Model"
+msgstr ""
+
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "2 · Bones"
+msgstr ""
+
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "3 · Create"
+msgstr ""
+
+#. 0: listing.triangles.toLocaleString('en-US'); 1: listing.skeleton ? ` · ${listing.skeleton.joints.length} bones` \\: ''
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "{0} tris{1}"
+msgstr ""
+
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "No models on this device yet."
+msgstr ""
+
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "Choose a rigged model"
+msgstr ""
+
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "An avatar is a skinned .glb with a skeleton. Import one from the Library panel first if it is not listed."
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "— none —"
+msgstr ""
+
+#. 0: missing.map((role) => ROLE_NAMES[role] ?? role).join(', ')
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "Still needed: {0}."
+msgstr ""
+
+#: src/lib/studio/components/AvatarWizard.svelte
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "Back"
+msgstr ""
+
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "Next"
+msgstr ""
+
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "Match the bones"
+msgstr ""
+
+#~ msgid "Found {0} of {1} bones in “{2}”. Head and both hands are required; the rest make the body move more naturally."
+#~ msgstr ""
+
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "Eye height (m)"
+msgstr ""
+
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "The body is scaled so the model’s eyes meet the player’s real height."
+msgstr ""
+
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "Carrying spots"
+msgstr ""
+
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "<0/> Shoulder socket — a place to keep an item within reach"
+msgstr ""
+
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "<0/> Hip socket"
+msgstr ""
+
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "What this avatar can do"
+msgstr ""
+
+#. 0: mark(capabilities.wearable)
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "Head {0}"
+msgstr ""
+
+#. 0: mark(capabilities.arms.left)
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "Left arm {0}"
+msgstr ""
+
+#. 0: mark(capabilities.arms.right)
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "Right arm {0}"
+msgstr ""
+
+#. 0: mark(capabilities.legs.left && capabilities.legs.right)
+#. 0: mark(capabilities.legs.left && capabilities.legs.right)
+#: src/lib/studio/components/AvatarWizard.svelte
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Legs {0}"
+msgstr ""
+
+#. 0: mark(capabilities.crouch)
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "Crouch {0}"
+msgstr ""
+
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "This project is a world. Open or create an object project to build an avatar in."
+msgstr ""
+
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "Finish"
+msgstr ""
+
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "The avatar is added to this project. Save it as an object, then choose “Set as default” from your inventory in the game."
+msgstr ""
+
+#: src/routes/studio/+page.svelte
+msgid "New avatar"
+msgstr ""
+
+#: src/routes/studio/+page.svelte
+msgid "A guided wizard that turns a rigged .glb model into a player avatar."
+msgstr ""
+
+#. 0: detected; 1: BODY_BONES.length; 2: model?.name
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "Found {0} of {1} body bones in “{2}”. Head and both hands are required; the rest make the body move more naturally."
+msgstr ""
+
+#. 0: capabilities.fingers.left; 1: capabilities.fingers.right
+#: src/lib/studio/components/AvatarWizard.svelte
+msgid "Fingers L {0}/5 · R {1}/5"
+msgstr ""
+
+#. 0: current
+#. 0: current
+#. 0: String(value)
+#: src/lib/studio/components/BoneMapEditor.svelte
+#: src/lib/studio/components/BoneMapEditor.svelte
+#: src/lib/studio/components/FieldEditor.svelte
+msgid "{0} (not in model)"
+msgstr ""
+
+#: src/lib/studio/components/FieldEditor.svelte
+msgid "— choose a bone —"
+msgstr ""
+
+#: src/lib/studio/components/FieldEditor.svelte
+msgid "Bone name"
+msgstr ""
+
+#: src/lib/studio/components/FieldEditor.svelte
+msgid "parent model has no bones on this device"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Shoulder"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Upper arm"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Forearm"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Hand"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Thigh"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Shin"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Foot"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Thumb"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Index"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Middle"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Ring"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Little"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "This avatar’s model is not on this device, so its bones cannot be listed. Import the model (Library → Models) to edit them."
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "What this bone map allows"
+msgstr ""
+
+#. 0: mark(capabilities.wearable)
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Wearable {0}"
+msgstr ""
+
+#. 0: mark(capabilities.arms.left && capabilities.arms.right)
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Arms {0}"
+msgstr ""
+
+#. 0: capabilities.fingers.left + capabilities.fingers.right
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Fingers {0}/10"
+msgstr ""
+
+#. 0: missing.join(', ')
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Still needed to wear it: {0}."
+msgstr ""
+
+#. 0: stale; 1: stale === 1 ? 'bone is' \\: 'bones are'
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "{0} mapped {1} not in this model any more (marked in red)."
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Fill empty roles from the model’s bone names and drop the ones it no longer has"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Throw the map away and detect it again from the model"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Fix & fill"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Detect again"
+msgstr ""
+
+#. 0: mappedBody; 1: BODY_BONES.length
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "{0}/{1} body bones"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Left"
+msgstr ""
+
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "Right"
+msgstr ""
+
+#. 0: side; 1: finger; 2: index + 1
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "{0} {1} joint {2}"
+msgstr ""
+
+#. 0: side === 'left' ? 'Left' \\: 'Right'; 1: capabilities.fingers[side]
+#: src/lib/studio/components/BoneMapEditor.svelte
+msgid "{0} fingers ({1}/5)"
+msgstr ""

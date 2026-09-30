@@ -26,13 +26,18 @@ export const modelKind: AssetKindDef<ModelManifest> = {
 			triangles: stats.triangles,
 			meshes: stats.meshes,
 			materials: stats.materials,
-			textures: stats.textures
+			textures: stats.textures,
+			...(stats.skeleton ? { skeleton: stats.skeleton } : {})
 		};
 	},
 	validate(m) {
 		if (!m.bounds || !isVec(m.bounds.min) || !isVec(m.bounds.max)) throw new Error('Invalid model bounds');
 		for (const key of ['triangles', 'meshes', 'materials', 'textures'] as const) {
 			if (!Number.isInteger(m[key]) || (m[key] as number) < 0) throw new Error(`Invalid model ${key}`);
+		}
+		if (m.skeleton !== undefined) {
+			const joints = m.skeleton.joints;
+			if (!Array.isArray(joints) || joints.length > 512 || joints.some((j) => typeof j !== 'string')) throw new Error('Invalid model skeleton');
 		}
 		if ((m.triangles as number) > ASSET_LIMITS.maxTriangles) throw new Error('The model has too many triangles');
 	},

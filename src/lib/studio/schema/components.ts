@@ -30,6 +30,10 @@ export type FieldDef = FieldBase &
 		| { kind: 'lines' }
 		| { kind: 'code' }
 		| { kind: 'json' }
+		/** Humanoid role to bone name, edited against the bones of the model. */
+		| { kind: 'boneMap' }
+		/** One bone of the parent slot's model. */
+		| { kind: 'bone' }
 	);
 
 export interface ComponentSchema {
@@ -182,7 +186,10 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		group: 'Interaction',
 		description: 'Let people pick this object up in XR.',
 		glyph: '✦',
-		fields: [{ key: 'scalable', label: 'Can be scaled', kind: 'bool', help: 'Allow two-handed grabs to resize it.' }],
+		fields: [
+			{ key: 'scalable', label: 'Can be scaled', kind: 'bool', help: 'Allow two-handed grabs to resize it.' },
+			{ key: 'autoGrip', label: 'Auto grip', kind: 'bool', default: true, help: 'The fingers close round the object’s shape, wherever it is taken from.' }
+		],
 		create: () => ({ type: 'grabbable', scalable: true })
 	},
 	{
@@ -193,7 +200,8 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		glyph: '✋',
 		fields: [
 			{ key: 'right', label: 'Right hand', kind: 'pose', help: 'Position (m) and rotation (°) relative to the controller grip.' },
-			{ key: 'left', label: 'Left hand', kind: 'pose', help: 'Position (m) and rotation (°) relative to the controller grip.' }
+			{ key: 'left', label: 'Left hand', kind: 'pose', help: 'Position (m) and rotation (°) relative to the controller grip.' },
+			{ key: 'autoGrip', label: 'Auto grip', kind: 'bool', optional: true, default: true, help: 'The fingers close around the object’s shape, stopping where they touch it. The pose above only has to put the object in the right place.' }
 		],
 		create: () => ({
 			type: 'equippable',
@@ -252,6 +260,27 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		glyph: '⇩',
 		fields: [{ key: 'tag', label: 'Tag', kind: 'text', suggestions: ['disc'], help: 'Sockets that accept this tag will take the object.' }],
 		create: () => ({ type: 'insertable', tag: 'disc' })
+	},
+	{
+		type: 'avatar',
+		label: 'Avatar',
+		group: 'Interaction',
+		description: 'Makes this skinned model a player avatar. Its head and hands follow the player; anything attached to its bones goes with it.',
+		glyph: '☺',
+		fields: [
+			{ key: 'height', label: 'Eye height', kind: 'number', min: 0.3, max: 3, step: 0.01, unit: 'm', help: 'Standing eye height of the model. The body is scaled to the player’s real height.' },
+			{ key: 'bones', label: 'Bones', kind: 'boneMap', help: 'Which bone of the model is the head, the hands, the legs and each finger. Detected automatically; correct it here.' }
+		],
+		create: () => ({ type: 'avatar', height: 1.6, bones: {} })
+	},
+	{
+		type: 'boneAttach',
+		label: 'Bone Attach',
+		group: 'Interaction',
+		description: 'Keeps this slot on a bone of its parent’s skinned model, so it follows that bone when the model moves.',
+		glyph: '⚓',
+		fields: [{ key: 'bone', label: 'Bone', kind: 'bone', help: 'The bone of the parent’s model this slot follows.' }],
+		create: () => ({ type: 'boneAttach', bone: '' })
 	},
 	{
 		type: 'audioSource',

@@ -6,6 +6,9 @@
 	import ComponentCard from './ComponentCard.svelte';
 	import NumberInput from './NumberInput.svelte';
 	import Icon from '../ui/Icon.svelte';
+	import { skeletons } from '../state/skeletons.svelte';
+	import { normalizeMeshRef, type AssetId } from '$lib/assets/ref';
+	import type { Component, Slot } from '$lib/ecs/types';
 
 	interface Props {
 		doc: StudioDocument;
@@ -16,6 +19,31 @@
 	let { doc, advanced, onOpenCode }: Props = $props();
 
 	let showAdd = $state(false);
+
+	/** The asset id of the model a slot shows, if it shows one. */
+	function modelOf(candidate: Slot | undefined): AssetId | null {
+		const mesh = candidate?.components.find((component) => component.type === 'meshRenderer');
+		if (!mesh || mesh.type !== 'meshRenderer') return null;
+		const ref = normalizeMeshRef(mesh.meshRef);
+		return ref.kind === 'asset' ? ref.assetId : null;
+	}
+	/** The model whose bones a component refers to: an avatar's own, or for a bone attachment the nearest ancestor's. */
+	function boneModelFor(component: Component): AssetId | null {
+		if (!slot) return null;
+		if (component.type === 'avatar') return modelOf(slot);
+		if (component.type !== 'boneAttach') return null;
+		for (let parent = slot.parentId ? doc.tree.find((s) => s.id === slot.parentId) : undefined; parent; parent = parent.parentId ? doc.tree.find((s) => s.id === parent!.parentId) : undefined) {
+			const model = modelOf(parent);
+			if (model) return model;
+		}
+		return null;
+	}
+	$effect(() => {
+		for (const component of slot?.components ?? []) {
+			const model = boneModelFor(component);
+			if (model) void skeletons.ensure(model);
+		}
+	});
 	const slot = $derived(doc.selected);
 	const euler = $derived(slot ? (quatToEuler(slot.rotation).map((value) => roundDisplay(value, 2)) as Vec3) : ([0, 0, 0] as Vec3));
 
@@ -92,6 +120,7 @@
 						onfield={(key, value) => doc.setField(slot.id, index, key, value)}
 						onremove={() => doc.removeComponent(slot.id, index)}
 						{onOpenCode}
+						joints={skeletons.get(boneModelFor(component)) ?? []}
 					/>
 				{:else}
 					<div class="empty small">No components yet. This object is just a group and a position.</div>

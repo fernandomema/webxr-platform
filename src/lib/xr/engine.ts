@@ -19,6 +19,7 @@ import { instantiate } from '$lib/ecs/serialize';
 import { isBuiltinMesh, migrateSlotTree } from '$lib/assets/ref';
 import type { AssetResolver } from '$lib/assets/resolve';
 import { CloudResolver } from '$lib/assets/cloud';
+import { PeerResolver } from '$lib/assets/p2p';
 import { getLocalAssetStore } from '$lib/assets/store';
 import { BlobAssetLibrary } from './blobAssetLibrary';
 import { ModelLibrary } from './modelLibrary';
@@ -37,7 +38,12 @@ import { setupHandControllerSwitch } from './interaction/handControllerSwitch';
 import { createDashPanel } from './ui/dashPanel';
 import { createInspectorPanel } from './ui/inspectorPanel';
 import { setupRadialMenuForHand } from './ui/radialMenu';
-import { loadSettings } from './settings';
+import { loadSettings, saveSettings, xrSettings } from './settings';
+import { sanitizeAvatarTree } from './avatar/sanitize';
+import { AvatarSystem } from './avatar/avatarSystem';
+import { PlayerAvatars } from './avatar/playerAvatars';
+import { loadBaseAvatar } from './avatar/baseAvatar';
+import type { AvatarHooks } from './avatar/avatarHooks';
 import { HostAuthority } from './net/hostAuthority';
 import { GuestSync } from './net/guestSync';
 import { ProximityVoice } from './net/voice';
@@ -89,7 +95,11 @@ export async function mountGame(
 	let hostAuthority: HostAuthority | null = null;
 	let guestSync: GuestSync | null = null;
 	// Models are found on this device first; the cloud and the session host are added to this list as they become available.
-	const assetResolvers: AssetResolver[] = [new CloudResolver()];
+	// The cloud first, then the other end(s) of the session: a model that only exists on someone's device travels peer to peer.
+	const assetResolvers: AssetResolver[] = [
+		new CloudResolver(),
+		new PeerResolver(() => [...(hostAuthority?.getAssetPeers() ?? []), ...(guestSync?.getAssetPeer() ? [guestSync.getAssetPeer()!] : [])])
+	];
 	const models = new ModelLibrary(scene, { store: getLocalAssetStore(), getResolvers: () => assetResolvers });
 	const mediaAssets = new BlobAssetLibrary({ store: getLocalAssetStore(), getResolvers: () => assetResolvers });
 	let viewerCamera: () => { globalPosition: Vector3 } = () => desktopCamera;
@@ -188,6 +198,27 @@ export async function mountGame(
 
 	loadSettings();
 	const grabSystem = new GrabSystem(scene, sceneGraph);
+	// Bodies for every player: the host (or a solo player) owns the avatar slots, everyone poses them from presence.
+	const avatarSystem = new AvatarSystem(scene, sceneGraph, {
+		getLocalPlayerId: () => localPlayerId,
+		getCamera: () => getActiveCamera(),
+		getXr: () => xr,
+		getHeldSlots: (playerId) => {
+			// Equipment is kept under the id the host knows a guest by, which is not always the one it announced.
+			const key = hostAuthority?.equipmentKeyFor(playerId) ?? playerId;
+			const held = (hand: 'left' | 'right') => {
+				const equipped = equipment.registry.getSlot(key, hand);
+				if (equipped) return { slotId: equipped, via: 'equip' as const };
+				// Grabs are kept per hand: the local player's are just 'left' and 'right', a guest's are prefixed with its id.
+				const grabbed = grabSystem.getHeldSlot(playerId === localPlayerId ? hand : `${key}:${hand}`);
+				return grabbed ? { slotId: grabbed, via: 'grab' as const } : null;
+			};
+			return { left: held('left'), right: held('right') };
+		}
+	});
+	const playerAvatars = new PlayerAvatars(sceneGraph);
+	const hostAvatarHooks: AvatarHooks = { system: avatarSystem, players: playerAvatars };
+	const guestAvatarHooks: AvatarHooks = { system: avatarSystem };
 	sceneGraph.setGrabQuery(grabSystem);
 	// Objects let go near a socket settle into it (host/solo decide; guests get the result in the snapshot).
 	new SocketSystem(sceneGraph, grabSystem, () => gameState.role !== 'guest');
@@ -207,6 +238,7 @@ export async function mountGame(
 	// pressable button reacts identically to hand-tracking and controllers.
 	let locomotion: ReturnType<typeof setupLocomotion> | null = null;
 	const playerBody = setupPlayerBody(scene, sceneGraph, xr, desktopCamera, { x: desktopCamera.position.x, z: desktopCamera.position.z });
+	playerBody.setSeated(xrSettings.seatedMode);
 	let refreshTeleportFloors = () => {};
 	if (xr) {
 		new PressableButtonSystem(scene, sceneGraph, () => xr.input.controllers.map((c) => c.grip ?? c.pointer));
@@ -268,7 +300,28 @@ export async function mountGame(
 		gameState.role = 'solo';
 	}
 
+	/** Puts the player's chosen avatar (or the built-in one) into the world: the host places it, a guest asks the host to. */
+	async function applyLocalAvatar(): Promise<void> {
+		const chosen = xrSettings.defaultAvatar;
+		const tree = chosen ?? (await loadBaseAvatar());
+		if (!tree) return;
+		if (gameState.role === 'guest') {
+			guestSync?.sendAvatar(tree);
+			return;
+		}
+		try {
+			playerAvatars.setAvatar(localPlayerId, tree);
+		} catch (error) {
+			console.warn('[avatar] the chosen avatar cannot be used; falling back to the built-in one', error);
+			const base = await loadBaseAvatar();
+			if (!base) return;
+			playerAvatars.setAvatar(localPlayerId, base);
+		}
+		hostAuthority?.broadcastSnapshot();
+	}
+
 	async function leaveCurrentSession(): Promise<void> {
+		const wasGuest = guestSync !== null;
 		equipment.releaseAll(); // nothing stays equipped across worlds
 		if (hostAuthority && gameState.worldId) {
 			const res = await fetch(`/api/worlds/${gameState.worldId}/host`, { method: 'DELETE' });
@@ -279,6 +332,11 @@ export async function mountGame(
 		guestSync?.dispose();
 		guestSync = null;
 		resetSessionState();
+		if (wasGuest) {
+			// The other players' avatars belonged to that session; ours is placed again by this device.
+			playerAvatars.clearAll();
+			void applyLocalAvatar();
+		}
 	}
 
 	async function launchScene(name: string, snapshot: SlotTree, visibility: HostedWorldVisibility | 'solo', loaded: LoadedWorld | null = null): Promise<void> {
@@ -312,6 +370,7 @@ export async function mountGame(
 			gameState.loadedWorld = loaded;
 			sceneGraph.reconcile(copyScene(snapshot));
 			refreshTeleportFloors();
+			void applyLocalAvatar();
 			if (visibility === 'solo') { refreshWorldsTab(); return; }
 			gameState.worldId = worldId;
 			gameState.worldName = name;
@@ -324,6 +383,7 @@ export async function mountGame(
 				{ playerId: localPlayerId, displayName: gameState.userName ?? 'Host', role: 'host' } satisfies PlayerInfo,
 				{ localTrack: track, onRemoteStream: (guestId, stream, targetNode) => voice.addPeer(guestId, stream, targetNode) }
 			);
+			hostAuthority.setAvatarHooks(hostAvatarHooks);
 			refreshWorldsTab();
 		} catch (error) {
 			if (didLeave) {
@@ -339,7 +399,7 @@ export async function mountGame(
 	}
 
 	async function hostCurrentWorld(visibility: HostedWorldVisibility): Promise<void> {
-		await launchScene(gameState.worldName ?? 'My Lobby', sceneGraph.serialize(), visibility, gameState.loadedWorld);
+		await launchScene(gameState.worldName ?? 'My Lobby', sceneGraph.serialize({ withoutAvatars: true }), visibility, gameState.loadedWorld);
 	}
 
 	async function stopHostingWorld(): Promise<void> {
@@ -397,10 +457,14 @@ export async function mountGame(
 			() => {
 				guestSync = null;
 				resetSessionState();
+				playerAvatars.clearAll();
+				void applyLocalAvatar();
 				refreshWorldsTab();
 			},
-			refreshTeleportFloors
+			refreshTeleportFloors,
+			() => void applyLocalAvatar()
 		);
+		guestSync.setAvatarHooks(guestAvatarHooks);
 	}
 
 	function spawnFromInventory(slotData: SlotTree): void {
@@ -440,6 +504,13 @@ export async function mountGame(
 		onStopHosting: stopHostingWorld,
 		onJoinWorld: joinWorld,
 		onSpawnItem: spawnFromInventory,
+		onSetDefaultAvatar: async (item) => {
+			// Rebuilt exactly as the host will rebuild it, so a bad avatar is refused here with a reason instead of silently ignored there.
+			const tree = sanitizeAvatarTree(item.slotData);
+			xrSettings.defaultAvatar = tree;
+			saveSettings();
+			await applyLocalAvatar();
+		},
 		onSpawnWorldOrb: spawnWorldOrb,
 		onSpawnPublishedWorld: spawnWorldOrbPackage,
 		onLaunchWorldItem: async (item, adapterId: InventoryStorageAdapterId) => {
@@ -448,7 +519,8 @@ export async function mountGame(
 		},
 		onLocomotionSettingsChanged: async () => { await locomotion?.applySettings(); },
 		onExitVr: async () => { await xr?.baseExperience.exitXRAsync(); },
-		onToggleInspector: () => inspector.root.setEnabled(!inspector.root.isEnabled())
+		onToggleInspector: () => inspector.root.setEnabled(!inspector.root.isEnabled()),
+		onSeatedModeChanged: () => playerBody.setSeated(xrSettings.seatedMode)
 	});
 	refreshWorldsTab = dash.refreshWorldsTab;
 
@@ -536,6 +608,10 @@ export async function mountGame(
 		})();
 	}
 
+	void applyLocalAvatar();
+	// Lets a developer inspect the live scene from the browser console.
+	if (import.meta.env.DEV) (window as unknown as { __game?: unknown }).__game = { scene, sceneGraph, avatarSystem, playerAvatars, hostCurrentWorld, joinWorld, applyLocalAvatar, xrSettings };
+
 	engine.runRenderLoop(() => scene.render());
 	const onResize = () => engine.resize();
 	window.addEventListener('resize', onResize);
@@ -548,6 +624,7 @@ export async function mountGame(
 		},
 		dispose() {
 			window.removeEventListener('resize', onResize);
+			avatarSystem.dispose();
 			hostAuthority?.dispose();
 			guestSync?.dispose();
 			worldPortalMenu.dispose();
