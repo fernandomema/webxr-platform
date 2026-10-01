@@ -86,6 +86,7 @@ msgstr "Email or username"
 
 #: src/lib/studio/components/MarketplacePanel.svelte
 #: src/lib/studio/components/PublishDialog.svelte
+#: src/lib/studio/components/PublishPanel.svelte
 #: src/routes/login/+page.svelte
 #: src/routes/login/+page.svelte
 #: src/routes/studio/+page.svelte
@@ -291,9 +292,11 @@ msgstr "Diagnostics"
 
 #: src/lib/studio/ScenePreview.svelte
 #: src/lib/studio/ScenePreview.svelte
+#: src/lib/studio/ScenePreview.svelte
 msgid "Move"
 msgstr "Move"
 
+#: src/lib/studio/ScenePreview.svelte
 #: src/lib/studio/ScenePreview.svelte
 #: src/lib/studio/components/Inspector.svelte
 msgid "Scale"
@@ -815,6 +818,7 @@ msgstr "Try again"
 
 #: src/lib/studio/components/MarketplacePanel.svelte
 #: src/lib/studio/components/PublishDialog.svelte
+#: src/lib/studio/components/PublishPanel.svelte
 #: src/routes/studio/+page.svelte
 msgid "Loading…"
 msgstr "Loading…"
@@ -1121,7 +1125,7 @@ msgid "Save (Ctrl+S)"
 msgstr "Save (Ctrl+S)"
 
 #: src/lib/studio/components/PublishDialog.svelte
-#: src/lib/studio/components/TopBar.svelte
+#: src/lib/studio/components/PublishPanel.svelte
 msgid "Publish"
 msgstr "Publish"
 
@@ -1303,10 +1307,12 @@ msgid "Choose a name and where to keep it."
 msgstr "Choose a name and where to keep it."
 
 #: src/lib/studio/components/PublishDialog.svelte
+#: src/lib/studio/components/PublishPanel.svelte
 msgid "Could not load your published worlds"
 msgstr "Could not load your published worlds"
 
 #: src/lib/studio/components/PublishDialog.svelte
+#: src/lib/studio/components/PublishPanel.svelte
 msgid "Could not publish this world"
 msgstr "Could not publish this world"
 
@@ -1319,50 +1325,64 @@ msgid "Close"
 msgstr "Close"
 
 #: src/lib/studio/components/PublishDialog.svelte
+#: src/lib/studio/components/PublishPanel.svelte
 msgid "You need to sign in to publish worlds."
 msgstr "You need to sign in to publish worlds."
 
 #: src/lib/studio/components/PublishDialog.svelte
+#: src/lib/studio/components/PublishPanel.svelte
 msgid "Publish as a new world"
 msgstr "Publish as a new world"
 
 #: src/lib/studio/components/PublishDialog.svelte
+#: src/lib/studio/components/PublishPanel.svelte
 msgid "Starts at revision 1."
 msgstr "Starts at revision 1."
 
 #: src/lib/studio/components/PublishDialog.svelte
+#: src/lib/studio/components/PublishPanel.svelte
 msgid "World to update"
 msgstr "World to update"
 
 #. 0: publication.name; 1: publication.latestRevision
+#. 0: publication.name; 1: publication.latestRevision
 #: src/lib/studio/components/PublishDialog.svelte
+#: src/lib/studio/components/PublishPanel.svelte
 msgid "{0} (revision {1})"
 msgstr "{0} (revision {1})"
 
 #: src/lib/studio/components/PublishDialog.svelte
+#: src/lib/studio/components/PublishPanel.svelte
 msgid "You haven’t published a world yet."
 msgstr "You haven’t published a world yet."
 
 #: src/lib/studio/components/PublishDialog.svelte
+#: src/lib/studio/components/PublishPanel.svelte
 msgid "Add a revision to an existing world"
 msgstr "Add a revision to an existing world"
 
 #. 0: chosen.latestRevision + 1
+#. 0: chosen.latestRevision + 1
 #: src/lib/studio/components/PublishDialog.svelte
+#: src/lib/studio/components/PublishPanel.svelte
 msgid "This will create revision {0}."
 msgstr "This will create revision {0}."
 
 #: src/lib/studio/components/MarketplacePanel.svelte
 #: src/lib/studio/components/PublishDialog.svelte
+#: src/lib/studio/components/PublishPanel.svelte
 msgid "Publishing…"
 msgstr "Publishing…"
 
 #: src/lib/studio/components/PublishDialog.svelte
+#: src/lib/studio/components/PublishPanel.svelte
 msgid "Publishing snapshots the world as it is right now. Each publish is an immutable revision."
 msgstr "Publishing snapshots the world as it is right now. Each publish is an immutable revision."
 
 #. 0: project.doc.name
+#. 0: project.doc.name
 #: src/lib/studio/components/PublishDialog.svelte
+#: src/lib/studio/components/PublishPanel.svelte
 msgid "Publish “{0}”"
 msgstr "Publish “{0}”"
 
@@ -1891,7 +1911,9 @@ msgid "Drop a .glb file here, or import one. Models are stored on this device."
 msgstr "Drop a .glb file here, or import one. Models are stored on this device."
 
 #. 0: project.assetProgress.done + 1; 1: project.assetProgress.total
+#. 0: project.assetProgress.done + 1; 1: project.assetProgress.total
 #: src/lib/studio/components/PublishDialog.svelte
+#: src/lib/studio/components/PublishPanel.svelte
 msgid "Uploading models {0}/{1}…"
 msgstr "Uploading models {0}/{1}…"
 
@@ -2640,6 +2662,7 @@ msgstr "Place the slot where the picture should be taken from. It looks along it
 msgid "Preview camera handles"
 msgstr "Preview camera handles"
 
+#: src/lib/studio/ScenePreview.svelte
 #: src/lib/studio/ScenePreview.svelte
 #: src/lib/studio/ScenePreview.svelte
 msgid "Rotate"
@@ -4108,3 +4131,20 @@ msgstr "Where recovery backups are maintained, our retention limit is 30 days fr
 #: src/routes/privacy/+page.svelte
 msgid "Bytehosting reports hosting infrastructure in Germany, within the European Economic Area (EEA). Google services, Discord, Meta, the AI provider you choose and participants in other countries may process information outside the EEA. The countries involved depend on the provider and the participants you connect to. For transfers for which Kithin is responsible, an applicable European Commission adequacy decision or appropriate safeguards, such as standard contractual clauses, are required unless a specific lawful exception applies. Contact us to request the arrangements and a copy of the safeguards applicable to a particular transfer. This policy does not mean that every external service processes information only in Europe."
 msgstr "Bytehosting reports hosting infrastructure in Germany, within the European Economic Area (EEA). Google services, Discord, Meta, the AI provider you choose and participants in other countries may process information outside the EEA. The countries involved depend on the provider and the participants you connect to. For transfers for which Kithin is responsible, an applicable European Commission adequacy decision or appropriate safeguards, such as standard contractual clauses, are required unless a specific lawful exception applies. Contact us to request the arrangements and a copy of the safeguards applicable to a particular transfer. This policy does not mean that every external service processes information only in Europe."
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Object transform handles"
+msgstr "Object transform handles"
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Snap precision"
+msgstr "Snap precision"
+
+#. 0: precision
+#: src/lib/studio/ScenePreview.svelte
+msgid "{0} snap: hold Shift to use"
+msgstr "{0} snap: hold Shift to use"
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Snap"
+msgstr "Snap"

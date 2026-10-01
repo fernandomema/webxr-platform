@@ -5,11 +5,10 @@
 
 	interface Props {
 		project: StudioProject;
-		onclose: () => void;
 		ondone: (result: PublishResult) => void;
 	}
 
-	let { project, onclose, ondone }: Props = $props();
+	let { project, ondone }: Props = $props();
 
 	let publications = $state<PublicationSummary[]>([]);
 	let loading = $state(true);
@@ -45,7 +44,14 @@
 		publishing = true;
 		error = '';
 		try {
-			ondone(await project.publish(mode === 'revision' ? target : undefined));
+			const result = await project.publish(mode === 'revision' ? target : undefined);
+			publications = [
+				{ id: result.id, name: result.name, ownerId: studioSession.userId ?? '', latestRevision: result.revision },
+				...publications.filter((publication) => publication.id !== result.id)
+			];
+			mode = 'revision';
+			target = result.id;
+			ondone(result);
 		} catch (cause) {
 			error = cause instanceof Error ? cause.message : 'Could not publish this world';
 		} finally {
@@ -54,15 +60,11 @@
 	}
 </script>
 
-<svelte:window onkeydown={(event) => event.key === 'Escape' && onclose()} />
-
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-<div class="studio-backdrop" onclick={(event) => event.target === event.currentTarget && onclose()}>
-	<div class="studio-modal" role="dialog" aria-modal="true" aria-label="Publish world">
+<div class="publish-panel">
 		<h2>Publish “{project.doc.name}”</h2>
 		{#if !signedIn}
 			<p>You need to sign in to publish worlds.</p>
-			<div class="actions"><button class="btn" onclick={onclose}>Close</button><a class="btn primary" href="/login">Sign in</a></div>
+			<div class="actions"><a class="btn primary" href="/login">Sign in</a></div>
 		{:else}
 			<p>Publishing snapshots the world as it is right now. Each publish is an immutable revision.</p>
 			{#if loading}
@@ -89,16 +91,17 @@
 			{/if}
 			{#if error}<p class="error" role="alert">{error}</p>{/if}
 			<div class="actions">
-				<button class="btn" onclick={onclose}>Cancel</button>
 				<button class="btn primary" disabled={publishing || loading || (mode === 'revision' && !target)} onclick={publish}>
 					{project.assetProgress ? `Uploading models ${project.assetProgress.done + 1}/${project.assetProgress.total}…` : publishing ? 'Publishing…' : 'Publish'}
 				</button>
 			</div>
 		{/if}
-	</div>
 </div>
 
 <style>
+	.publish-panel { height: 100%; box-sizing: border-box; overflow-y: auto; padding: 10px; font-size: 12px; }
+	h2 { font-size: 14px; margin: 0 0 10px; }
+	.actions { display: flex; gap: 8px; margin-top: 12px; }
 	.choice { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 6px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; }
 	.choice:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
 	.choice.disabled { opacity: 0.55; cursor: not-allowed; }

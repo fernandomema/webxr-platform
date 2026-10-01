@@ -11,6 +11,7 @@ import {
 } from '@babylonjs/core';
 import { boxLines, floorCross, type Polyline } from './dropZoneGeometry';
 import { EDITOR_ONLY } from './previewCameraHelper';
+import { bindTransformSnapping, type SnapPrecision } from './transformSnapping';
 
 /**
  * How the Studio shows and edits a "Drop zone" slot: its box drawn in the viewport (with a cross on the floor things rest on),
@@ -38,6 +39,7 @@ export class DropZoneHelper {
 	private lastDragEnd = 0;
 	private dragging = false;
 	private readonly gizmos: GizmoManager;
+	private readonly disposeSnapping: () => void;
 	private readonly observer;
 	private wired = new Set<unknown>();
 
@@ -46,12 +48,14 @@ export class DropZoneHelper {
 		private canvas: HTMLCanvasElement,
 		private orbit: Camera,
 		private options: {
-			getNode(slotId: string): TransformNode | undefined;
+			getSnapPrecision?: () => SnapPrecision;
+		getNode(slotId: string): TransformNode | undefined;
 			onChanged(slotId: string, position: [number, number, number], rotation: [number, number, number, number], scale: [number, number, number]): void;
 		}
 	) {
 		this.gizmos = new GizmoManager(scene);
 		this.gizmos.usePointerToAttachGizmos = false;
+		this.disposeSnapping = bindTransformSnapping(scene, this.gizmos, undefined, this.options.getSnapPrecision);
 		this.observer = scene.onBeforeRenderObservable.add(() => this.frame());
 	}
 
@@ -170,6 +174,7 @@ export class DropZoneHelper {
 	}
 
 	dispose(): void {
+		this.disposeSnapping();
 		this.scene.onBeforeRenderObservable.remove(this.observer);
 		this.gizmos.dispose();
 		for (const entry of this.entries.values()) this.disposeEntry(entry);

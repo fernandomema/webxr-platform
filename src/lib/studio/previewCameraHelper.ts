@@ -15,6 +15,7 @@ import {
 	type Scene
 } from '@babylonjs/core';
 import { INSET_MARGIN, cameraBodyLines, frustumLines, insetPixels, type Polyline } from './previewCameraGeometry';
+import { bindTransformSnapping, type SnapPrecision } from './transformSnapping';
 
 /**
  * How the Studio shows and edits a "Preview camera" slot, the way an engine editor does for its cameras: the frustum drawn in
@@ -52,6 +53,7 @@ export class PreviewCameraHelper {
 	private lastDragEnd = 0;
 	private dragging = false;
 	private readonly gizmos: GizmoManager;
+	private readonly disposeSnapping: () => void;
 	private readonly liveCamera: FreeCamera;
 	private readonly target: RenderTargetTexture;
 	/** A screen-sized square stuck to the editor camera that shows the live view. */
@@ -65,7 +67,8 @@ export class PreviewCameraHelper {
 		private canvas: HTMLCanvasElement,
 		private orbit: Camera,
 		private options: {
-			getNode(slotId: string): TransformNode | undefined;
+			getSnapPrecision?: () => SnapPrecision;
+		getNode(slotId: string): TransformNode | undefined;
 			onMoved(slotId: string, position: [number, number, number], rotation: [number, number, number, number]): void;
 		}
 	) {
@@ -97,6 +100,7 @@ export class PreviewCameraHelper {
 
 		this.gizmos = new GizmoManager(scene);
 		this.gizmos.usePointerToAttachGizmos = false;
+		this.disposeSnapping = bindTransformSnapping(scene, this.gizmos, undefined, this.options.getSnapPrecision);
 		this.observer = scene.onBeforeRenderObservable.add(() => this.frame());
 	}
 
@@ -244,6 +248,7 @@ export class PreviewCameraHelper {
 	}
 
 	dispose(): void {
+		this.disposeSnapping();
 		this.scene.onBeforeRenderObservable.remove(this.observer);
 		const targets = this.scene.customRenderTargets;
 		if (targets.includes(this.target)) targets.splice(targets.indexOf(this.target), 1);

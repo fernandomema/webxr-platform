@@ -27,6 +27,8 @@
 	import { DEFAULT_PREVIEW_FOV_DEG, lookRotation } from '../xr/thumbnail/cameraPose';
 	import { EDITOR_ONLY, PreviewCameraHelper, type GizmoMode } from './previewCameraHelper';
 	import { DropZoneHelper, type ZoneGizmoMode } from './dropZoneHelper';
+	import { SelectionTransformHelper, type TransformMode } from './selectionTransformHelper';
+	import { SNAP_PRECISIONS, type SnapPrecision } from './transformSnapping';
 	import { INSET_MARGIN, insetPixels } from './previewCameraGeometry';
 	import { createStudioHand, type StudioHand } from './studioHand';
 	import { defaultHandModel, holdingBends, solveGraspFull } from '../xr/avatar/grasp';
@@ -40,7 +42,7 @@
 		cameraKind?: 'object' | 'world';
 		/** A Preview camera was moved or turned with the handles; these are its new local position and rotation. */
 		onMoveSlot?: (slotId: string, position: [number, number, number], rotation: [number, number, number, number]) => void;
-		/** A Drop zone was moved, turned or resized with the handles; these are its new local position, rotation and scale. */
+		/** A slot was moved, turned or resized with the handles; these are its new local position, rotation and scale. */
 		onTransformSlot?: (slotId: string, position: [number, number, number], rotation: [number, number, number, number], scale: [number, number, number]) => void;
 	}
 
@@ -61,6 +63,10 @@
 	let highlighted: AbstractMesh | null = null;
 	let cameraHelper: PreviewCameraHelper | null = null;
 	let zoneHelper: DropZoneHelper | null = null;
+	let transformHelper: SelectionTransformHelper | null = null;
+	let snapPrecision = $state<SnapPrecision>('medium');
+	let transformMode = $state<TransformMode>('move');
+	let transformSelected = $state(false);
 	let zoneMode = $state<ZoneGizmoMode>('move');
 	/** A Drop zone is selected: its handles are showing. */
 	let zoneSelected = $state(false);
@@ -109,7 +115,7 @@
 		camera.setTarget(new Vector3(0, 0.6, 0));
 		camera.inputs.removeByType('FreeCameraKeyboardMoveInput');
 		camera.attachControl(canvas, true);
-		const mouseInput = camera.inputs.attached.mouse;
+		const mouseInput = camera.inputs.attached.mouse as { buttons?: number[] } | undefined;
 		if (mouseInput) mouseInput.buttons = [2];
 		const onKeyDown = (event: KeyboardEvent) => {
 			const key = event.key.toLowerCase();
@@ -142,13 +148,21 @@
 		mediaAssets = new BlobAssetLibrary({ getResolvers: () => [cloudResolver] });
 		sceneGraph = new SceneGraph(scene, { models, mediaAssets, getViewerPosition: () => camera?.position ?? null });
 		cameraHelper = new PreviewCameraHelper(scene, canvas, camera, {
+			getSnapPrecision: () => snapPrecision,
 			getNode: (slotId) => sceneGraph?.getLive(slotId)?.node,
 			onMoved: (slotId, position, rotation) => onMoveSlot(slotId, position, rotation)
 		});
 
 		zoneHelper = new DropZoneHelper(scene, canvas, camera, {
+			getSnapPrecision: () => snapPrecision,
 			getNode: (slotId) => sceneGraph?.getLive(slotId)?.node,
 			onChanged: (slotId, position, rotation, scale) => onTransformSlot(slotId, position, rotation, scale)
+		});
+
+		transformHelper = new SelectionTransformHelper(scene, canvas, camera, {
+			getSnapPrecision: () => snapPrecision,
+			getNode: (id) => sceneGraph?.getLive(id)?.node,
+			onChanged: (id, position, rotation, scale) => onTransformSlot(id, position, rotation, scale)
 		});
 
 		handNode = new TransformNode('studio-hand', scene);
@@ -190,7 +204,7 @@
 			const dy = event.clientY - panPointer.y;
 			panPointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
 			// Dragging a handle is not dragging the view.
-			if (cameraHelper?.isDragging() || zoneHelper?.isDragging()) return;
+			if (cameraHelper?.isDragging() || zoneHelper?.isDragging() || transformHelper?.isDragging()) return;
 			const right = camera.getDirection(Axis.X);
 			const up = camera.getDirection(Axis.Y);
 			camera.position.addInPlace(right.scale(-dx * 0.004)).addInPlace(up.scale(dy * 0.004));
@@ -204,7 +218,7 @@
 			const elapsed = performance.now() - pointerDownAt.time;
 			pointerDownAt = null;
 			if (event.button !== 0 || !scene || !sceneGraph) return;
-			if (moved > 6 || elapsed > 500 || cameraHelper?.recentlyDragged() || zoneHelper?.recentlyDragged()) return;
+			if (moved > 6 || elapsed > 500 || cameraHelper?.recentlyDragged() || zoneHelper?.recentlyDragged() || transformHelper?.recentlyDragged()) return;
 			const slotId = sceneGraph.getSlotIdForNode(scene.pick(scene.pointerX, scene.pointerY)?.pickedMesh);
 			if (slotId) onSelect(slotId);
 		};
@@ -330,6 +344,19 @@
 		zoneSelected = id !== null && zones.includes(id);
 	});
 
+	// Ordinary slots use the same three transform tools as drop zones.
+	$effect(() => {
+		void rebuilds;
+		const slot = tree.find((candidate) => candidate.id === selectedId);
+		const mode = transformMode;
+		const specialised = slot?.components.some((component) => component.type === 'previewCamera' || component.type === 'dropZone');
+		const handPose = Boolean(handPreview.hand && slot?.components.some((component) => component.type === 'equippable'));
+		if (!ready || !transformHelper) return;
+		const id = slot && !specialised && !handPose ? slot.id : null;
+		transformHelper.update(id, mode);
+		transformSelected = Boolean(id);
+	});
+
 	// Shows the selected equippable object in a stand-in controller, using the pose being edited.
 	$effect(() => {
 		void rebuilds;
@@ -374,6 +401,7 @@
 		clearTimeout(rebuildTimer);
 		cameraHelper?.dispose();
 		zoneHelper?.dispose();
+		transformHelper?.dispose();
 		for (const hand of Object.values(hands ?? {})) hand.dispose();
 		sceneGraph?.dispose();
 		models?.dispose();
@@ -383,19 +411,38 @@
 	});
 </script>
 
+{#snippet snapOptions(mode: 'move' | 'rotate' | 'scale')}
+	<div class="snap-tools" role="group" aria-label="Snap precision">
+		<span class="snap-label">Snap</span>
+		{#each Object.entries(SNAP_PRECISIONS) as [precision, steps]}
+			<button class="btn sm" aria-pressed={snapPrecision === precision} title={`${precision} snap: hold Shift to use`} onclick={() => (snapPrecision = precision as SnapPrecision)}>{steps[mode]}{mode === 'rotate' ? '°' : mode === 'move' ? ' m' : ''}</button>
+		{/each}
+	</div>
+{/snippet}
+
 <div class="viewport">
 	<canvas bind:this={canvas} tabindex="0" aria-label="3D preview. Use WASD to move, Shift to move faster, left-drag to pan, right-drag to look, scroll to move forward or backward."></canvas>
+	{#if transformSelected}
+		<div class="camera-tools" role="toolbar" aria-label="Object transform handles">
+			<button class="btn sm" aria-pressed={transformMode === 'move'} onclick={() => (transformMode = 'move')}>Move</button>
+			<button class="btn sm" aria-pressed={transformMode === 'rotate'} onclick={() => (transformMode = 'rotate')}>Rotate</button>
+			<button class="btn sm" aria-pressed={transformMode === 'scale'} onclick={() => (transformMode = 'scale')}>Scale</button>
+			{@render snapOptions(transformMode)}
+		</div>
+	{/if}
 	{#if zoneSelected}
 		<div class="camera-tools" role="toolbar" aria-label="Drop zone handles">
 			<button class="btn sm" aria-pressed={zoneMode === 'move'} onclick={() => (zoneMode = 'move')}>Move</button>
 			<button class="btn sm" aria-pressed={zoneMode === 'rotate'} onclick={() => (zoneMode = 'rotate')}>Rotate</button>
 			<button class="btn sm" aria-pressed={zoneMode === 'scale'} onclick={() => (zoneMode = 'scale')}>Scale</button>
+			{@render snapOptions(zoneMode)}
 		</div>
 	{/if}
 	{#if cameraSelected}
 		<div class="camera-tools" role="toolbar" aria-label="Preview camera handles">
 			<button class="btn sm" aria-pressed={gizmoMode === 'move'} onclick={() => (gizmoMode = 'move')}>Move</button>
 			<button class="btn sm" aria-pressed={gizmoMode === 'rotate'} onclick={() => (gizmoMode = 'rotate')}>Rotate</button>
+			{@render snapOptions(gizmoMode)}
 		</div>
 		{@const side = insetPixels(viewSize.width || 600, viewSize.height || 400)}
 		<div class="live-frame" style="width:{side}px;height:{side}px;right:{INSET_MARGIN}px;bottom:{INSET_MARGIN}px" aria-hidden="true">
@@ -406,7 +453,9 @@
 
 <style>
 	.viewport { position: relative; width: 100%; height: 100%; }
-	.camera-tools { position: absolute; top: 10px; left: 10px; display: flex; gap: 4px; padding: 4px; border-radius: 10px; background: color-mix(in srgb, var(--panel, #12141b) 88%, transparent); border: 1px solid var(--border, #2a2f3d); }
+	.snap-tools { display: flex; align-items: center; gap: 4px; margin-left: 6px; padding-left: 10px; border-left: 1px solid var(--border, #2a2f3d); }
+	.snap-label { font-size: 11px; color: var(--muted, #94a3b8); margin-right: 2px; }
+	.camera-tools { position: absolute; top: 10px; left: 10px; right: 10px; width: fit-content; max-width: calc(100% - 20px); box-sizing: border-box; flex-wrap: wrap; display: flex; gap: 4px; padding: 4px; border-radius: 10px; background: color-mix(in srgb, var(--panel, #12141b) 88%, transparent); border: 1px solid var(--border, #2a2f3d); }
 	.camera-tools :global(.btn[aria-pressed='true']) { border-color: var(--accent, #7c6cf6); background: var(--accent-soft, rgb(124 108 246 / 0.18)); }
 	.live-frame { position: absolute; pointer-events: none; box-sizing: border-box; border: 2px solid #38bdf8; border-radius: 4px; }
 	.live-frame span { position: absolute; top: 4px; left: 6px; font-size: 11px; color: #bae6fd; text-shadow: 0 1px 2px #000; }

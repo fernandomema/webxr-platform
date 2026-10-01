@@ -136,6 +136,12 @@ export class StudioDocument implements InspectorDocument {
 		this.apply({ op: 'rename', id, name });
 	}
 
+	/** Commits one gizmo drag as a single undo step, preserving quaternion precision. */
+	setTransform(id: string, position: Vec3, rotation: Slot['rotation'], scale: Vec3): void {
+		if (!ops.getSlot(this.tree, id)) return;
+		this.commit(ops.updateSlot(this.tree, id, { position: [...position], rotation: [...rotation], scale: [...scale] }));
+	}
+
 	setPosition(id: string, position: Vec3): void {
 		this.apply({ op: 'setPosition', id, position });
 	}

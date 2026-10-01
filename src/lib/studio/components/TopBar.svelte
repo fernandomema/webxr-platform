@@ -8,12 +8,11 @@
 		onmode: (advanced: boolean) => void;
 		onback: () => void;
 		onsave: () => void;
-		onpublish: () => void;
 		onplay: () => void;
 		onpalette: () => void;
 	}
 
-	let { project, advanced, onmode, onback, onsave, onpublish, onplay, onpalette }: Props = $props();
+	let { project, advanced, onmode, onback, onsave, onplay, onpalette }: Props = $props();
 
 	const doc = $derived(project.doc);
 	const state = $derived(project.saving ? 'saving' : !project.isSaved ? 'new' : doc.dirty ? 'dirty' : 'saved');
@@ -45,9 +44,6 @@
 	<button class="icon-btn" aria-label="Command palette" title="Commands (Ctrl+K)" onclick={onpalette}><Icon name="command" /></button>
 	<button class="btn" title="Try it in the game" onclick={onplay}><Icon name="play" size={14} /><span class="hide-sm">Play</span></button>
 	<button class="btn" title="Save (Ctrl+S)" disabled={project.saving} onclick={onsave}><Icon name="save" size={14} /><span class="hide-sm">Save</span></button>
-	{#if doc.kind === 'world'}
-		<button class="btn primary" onclick={onpublish}><Icon name="publish" size={14} /><span class="hide-sm">Publish</span></button>
-	{/if}
 </header>
 
 <style>

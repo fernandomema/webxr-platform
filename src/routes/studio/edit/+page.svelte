@@ -21,7 +21,7 @@
 	import AssetsPanel from '$lib/studio/components/AssetsPanel.svelte';
 	import AddObjectMenu, { type ObjectPreset } from '$lib/studio/components/AddObjectMenu.svelte';
 	import SaveDialog from '$lib/studio/components/SaveDialog.svelte';
-	import PublishDialog from '$lib/studio/components/PublishDialog.svelte';
+	import PublishPanel from '$lib/studio/components/PublishPanel.svelte';
 	import CommandPalette, { type Command } from '$lib/studio/components/CommandPalette.svelte';
 	import CodeView from '$lib/studio/views/CodeView.svelte';
 	import JsonView from '$lib/studio/views/JsonView.svelte';
@@ -35,7 +35,7 @@
 	let leftTab = $state<'hierarchy' | 'assets'>('hierarchy');
 	let rightTab = $state<'inspector' | 'ai' | 'marketplace'>('inspector');
 	let mobilePanel = $state<'left' | 'center' | 'right'>('center');
-	let dialog = $state<'save' | 'publish' | 'palette' | null>(null);
+	let dialog = $state<'save' | 'palette' | null>(null);
 	let showAddObject = $state(false);
 	let preview = $state<ScenePreview>();
 	let bypassGuard = false;
@@ -190,7 +190,6 @@
 	}
 
 	function onPublished(result: { revision: number; name: string }) {
-		dialog = null;
 		toasts.success(`Published “${result.name}” as revision ${result.revision}`);
 	}
 
@@ -204,7 +203,7 @@
 		{ id: 'focus', label: 'Focus camera on selection', shortcut: 'F', enabled: Boolean(doc.selectedId), run: () => preview?.focusSelected() },
 		{ id: 'import-model', label: 'Import model (.glb)…', run: () => void studioModels.pickAndImport() },
 		{ id: 'play', label: 'Play in the game', run: play },
-		{ id: 'publish', label: 'Publish world…', enabled: doc.kind === 'world', run: () => (dialog = 'publish') },
+		{ id: 'publish', label: 'Publish world…', enabled: doc.kind === 'world', run: openMarketplace },
 		{ id: 'marketplace', label: 'Marketplace…', enabled: doc.kind === 'object' && !isReadOnlyAdapter(project.adapterId), run: openMarketplace },
 		{ id: 'mode', label: advanced ? 'Switch to Simple mode' : 'Switch to Advanced mode', run: () => setAdvanced(!advanced) },
 		{ id: 'assets', label: 'Show asset library', run: () => { leftTab = 'assets'; mobilePanel = 'left'; } },
@@ -271,7 +270,7 @@
 	</div>
 {:else}
 	<div class="editor" data-panel={mobilePanel}>
-		<TopBar {project} {advanced} onmode={setAdvanced} onback={back} onsave={() => void save()} onpublish={() => (dialog = 'publish')} onplay={play} onpalette={() => (dialog = 'palette')} />
+		<TopBar {project} {advanced} onmode={setAdvanced} onback={back} onsave={() => void save()} onplay={play} onpalette={() => (dialog = 'palette')} />
 
 		{#if project.pendingDraft}
 			<div class="banner" role="status">
@@ -318,11 +317,7 @@
 							doc.setPosition(id, position);
 							doc.setRotationEuler(id, quatToEuler(rotation).map((value) => roundDisplay(value, 2)) as [number, number, number]);
 						}}
-						onTransformSlot={(id, position, rotation, scale) => {
-							doc.setPosition(id, position);
-							doc.setRotationEuler(id, quatToEuler(rotation).map((value) => roundDisplay(value, 2)) as [number, number, number]);
-							doc.setScale(id, scale);
-						}}
+						onTransformSlot={(id, position, rotation, scale) => doc.setTransform(id, position, rotation, scale)}
 					/>
 					<p class="hint">Drag to orbit · Scroll to zoom · Right-drag to pan · <span class="kbd">F</span> to focus</p>
 				</div>
@@ -334,15 +329,21 @@
 				<div class="tabs" role="tablist">
 					<button class="tab" role="tab" aria-selected={rightTab === 'inspector'} onclick={() => (rightTab = 'inspector')}><Icon name="sliders" size={14} />Inspector</button>
 					<button class="tab" role="tab" aria-selected={rightTab === 'ai'} onclick={() => (rightTab = 'ai')}>AI</button>
-					{#if doc.kind === 'object' && !isReadOnlyAdapter(project.adapterId)}
+					{#if doc.kind === 'world' || !isReadOnlyAdapter(project.adapterId)}
 						<button class="tab" role="tab" aria-selected={rightTab === 'marketplace'} onclick={openMarketplace}><Icon name="publish" size={14} />Marketplace</button>
 					{/if}
 				</div>
 				<div class="right-body">
 					<div class="right-view" hidden={rightTab !== 'inspector'}><Inspector {doc} {advanced} onOpenCode={openCode} onGenerateProbe={generateProbe} getViewPose={() => preview?.getViewPose() ?? null} /></div>
 					<div class="right-view" hidden={rightTab !== 'ai'}><AiPanel {doc} projectKey={project.key} /></div>
-					{#if doc.kind === 'object' && !isReadOnlyAdapter(project.adapterId)}
-						<div class="right-view" hidden={rightTab !== 'marketplace'}><MarketplacePanel {project} /></div>
+					{#if doc.kind === 'world' || !isReadOnlyAdapter(project.adapterId)}
+						<div class="right-view" hidden={rightTab !== 'marketplace'}>
+							{#if doc.kind === 'world'}
+								<PublishPanel {project} ondone={onPublished} />
+							{:else}
+								<MarketplacePanel {project} />
+							{/if}
+						</div>
 					{/if}
 				</div>
 			</section>
@@ -357,8 +358,6 @@
 
 	{#if dialog === 'save'}
 		<SaveDialog defaultName={doc.name} kind={doc.kind} adapters={studioSession.adapters} signedIn={Boolean(studioSession.userId)} onsave={(target) => void persist(target)} onclose={() => (dialog = null)} />
-	{:else if dialog === 'publish'}
-		<PublishDialog {project} onclose={() => (dialog = null)} ondone={onPublished} />
 	{:else if dialog === 'palette'}
 		<CommandPalette {commands} onclose={() => (dialog = null)} />
 	{/if}
