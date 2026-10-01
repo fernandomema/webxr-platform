@@ -9,7 +9,7 @@
 	import { studioSession } from '$lib/studio/state/session.svelte';
 	import { dialogs } from '$lib/studio/state/dialogs.svelte';
 	import { toasts } from '$lib/studio/state/toasts.svelte';
-	import { studioModels } from '$lib/studio/state/models.svelte';
+	import { studioModels, studioAssets } from '$lib/studio/state/models.svelte';
 	import { canRemoveSlot } from '$lib/studio/tree/ops';
 	import ScenePreview from '$lib/studio/ScenePreview.svelte';
 	import TopBar from '$lib/studio/components/TopBar.svelte';
@@ -153,7 +153,7 @@
 
 	function addObject(preset: ObjectPreset) {
 		showAddObject = false;
-		doc.addSlot({ name: preset.name, position: preset.position, components: structuredClone(preset.components) });
+		doc.addSlot({ name: preset.name, position: preset.position, ...(preset.scale ? { scale: preset.scale } : {}), components: structuredClone(preset.components) });
 		if (preset.id === 'logic') doc.addComponent(doc.selectedId!, 'codeBlock');
 	}
 
@@ -173,6 +173,20 @@
 		} catch (error) {
 			toasts.error(error, 'This scene cannot be played yet');
 		}
+	}
+
+	async function generateProbe(slotId: string): Promise<void> {
+		try {
+			const faces = await preview?.bakeProbe(slotId);
+			if (!faces) throw new Error('Scene preview is not ready.');
+			const slot = doc.tree.find((candidate) => candidate.id === slotId);
+			const index = slot?.components.findIndex((component) => component.type === 'skybox') ?? -1;
+			if (index < 0) throw new Error('The selected object has no skybox.');
+			for (const [face, assetId] of Object.entries(faces)) doc.setField(slotId, index, `reflection${face}`, { kind: 'asset', assetId });
+			doc.setField(slotId, index, 'reflectionCapture', undefined);
+			await studioAssets.refresh();
+			toasts.success('Reflection probe generated and saved as six image assets.');
+		} catch (error) { toasts.error(error, 'Could not generate reflection probe'); }
 	}
 
 	function onPublished(result: { revision: number; name: string }) {
@@ -304,6 +318,11 @@
 							doc.setPosition(id, position);
 							doc.setRotationEuler(id, quatToEuler(rotation).map((value) => roundDisplay(value, 2)) as [number, number, number]);
 						}}
+						onTransformSlot={(id, position, rotation, scale) => {
+							doc.setPosition(id, position);
+							doc.setRotationEuler(id, quatToEuler(rotation).map((value) => roundDisplay(value, 2)) as [number, number, number]);
+							doc.setScale(id, scale);
+						}}
 					/>
 					<p class="hint">Drag to orbit · Scroll to zoom · Right-drag to pan · <span class="kbd">F</span> to focus</p>
 				</div>
@@ -320,7 +339,7 @@
 					{/if}
 				</div>
 				<div class="right-body">
-					<div class="right-view" hidden={rightTab !== 'inspector'}><Inspector {doc} {advanced} onOpenCode={openCode} getViewPose={() => preview?.getViewPose() ?? null} /></div>
+					<div class="right-view" hidden={rightTab !== 'inspector'}><Inspector {doc} {advanced} onOpenCode={openCode} onGenerateProbe={generateProbe} getViewPose={() => preview?.getViewPose() ?? null} /></div>
 					<div class="right-view" hidden={rightTab !== 'ai'}><AiPanel {doc} projectKey={project.key} /></div>
 					{#if doc.kind === 'object' && project.adapterId !== 'purchased'}
 						<div class="right-view" hidden={rightTab !== 'marketplace'}><MarketplacePanel {project} /></div>

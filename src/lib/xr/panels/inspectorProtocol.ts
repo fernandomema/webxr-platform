@@ -45,6 +45,7 @@ export type FrameToHost =
 	| { type: 'select'; id: string | null }
 	| { type: 'action'; action: 'saveToInventory'; slotId: string; adapterId: string }
 	| { type: 'action'; action: 'createContainer' }
+	| { type: 'action'; action: 'generateReflectionProbe'; slotId: string }
 	| { type: 'requestViewPose'; requestId: number }
 	| { type: 'close' };
 

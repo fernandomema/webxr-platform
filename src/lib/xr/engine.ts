@@ -27,6 +27,7 @@ import { BlobAssetLibrary } from './blobAssetLibrary';
 import { ModelLibrary } from './modelLibrary';
 import { SceneGraph } from './sceneGraph';
 import { SocketSystem } from './interaction/socketSystem';
+import { DropZoneSystem } from './interaction/dropZoneSystem';
 import { GrabSystem } from './interaction/grabSystem';
 import { EquipmentSystem } from './interaction/equipmentSystem';
 import { PressableButtonSystem } from './interaction/pressableButtonSystem';
@@ -39,6 +40,7 @@ import { setupLocomotion } from './locomotion';
 import { setupHandControllerSwitch } from './interaction/handControllerSwitch';
 import { createDashPanel } from './ui/dashPanel';
 import { createInspectorHost } from './ui/inspectorHost';
+import { createDropZoneOutline } from './ui/dropZoneOutline';
 import { forwardKeyTo } from './keyForwarding';
 import { setupRadialMenuForHand } from './ui/radialMenu';
 import { KeyboardSystem } from './keyboard/keyboardSystem';
@@ -79,6 +81,8 @@ export interface MountedGame {
 
 export interface MountGameOptions {
 	onXRStateChange?: (state: 'in-xr' | 'not-in-xr') => void;
+	/** A published world to open straight away, on its own (the world played as an app). */
+	initialWorld?: WorldPackage;
 }
 
 /** Boots the whole game (the "juego base" — works with zero login, zero network). */
@@ -268,6 +272,8 @@ export async function mountGame(
 	sceneGraph.setGrabQuery(grabSystem);
 	// Objects let go near a socket settle into it (host/solo decide; guests get the result in the snapshot).
 	new SocketSystem(sceneGraph, grabSystem, () => gameState.role !== 'guest');
+	// Objects let go inside a drop zone turn upright and settle on its floor (after the sockets have had their pick).
+	new DropZoneSystem(sceneGraph, grabSystem, () => gameState.role !== 'guest');
 	// Objects held in a hand until unequipped. Registered right after GrabSystem so a
 	// guest hand's proxy follows presence before equipped scripts read their pose.
 	const equipment = new EquipmentSystem(
@@ -570,6 +576,8 @@ export async function mountGame(
 			return { position: camera.globalPosition.asArray() as [number, number, number], rotation: camera.absoluteRotation.asArray() as [number, number, number, number] };
 		}
 	});
+	// A drop zone has no mesh of its own: its box is drawn while the inspector has it marked, so it can be seen and adjusted there.
+	createDropZoneOutline(scene, sceneGraph, () => inspector.selectedSlotId());
 
 	/**
 	 * The display refresh rates the headset offers, known once a session has started (the last session's otherwise).
@@ -724,10 +732,14 @@ export async function mountGame(
 	});
 
 	if (initialRoomCode) void joinWorld(initialRoomCode);
+	else if (options.initialWorld) {
+		const world = options.initialWorld;
+		void launchWorldPackage(world, 'solo').catch((error) => console.error('Could not open the world', error));
+	}
 
 	// "Play" in the Studio hands its scene over through localStorage and opens `/play?studioPlay=<key>`.
 	const studioPlayKey = new URLSearchParams(window.location.search).get('studioPlay');
-	if (studioPlayKey && !initialRoomCode) {
+	if (studioPlayKey && !initialRoomCode && !options.initialWorld) {
 		void (async () => {
 			const storageKey = `studio:play:${studioPlayKey}`;
 			try {

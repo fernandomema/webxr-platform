@@ -50,6 +50,7 @@ export class PreviewCameraHelper {
 	private selectedId: string | null = null;
 	private mode: GizmoMode = 'move';
 	private lastDragEnd = 0;
+	private dragging = false;
 	private readonly gizmos: GizmoManager;
 	private readonly liveCamera: FreeCamera;
 	private readonly target: RenderTargetTexture;
@@ -102,6 +103,11 @@ export class PreviewCameraHelper {
 	setMode(mode: GizmoMode): void {
 		this.mode = mode;
 		this.applySelection();
+	}
+
+	/** True while a handle is being dragged: the viewport's own drag-to-pan must stand still meanwhile. */
+	isDragging(): boolean {
+		return this.dragging;
 	}
 
 	/** True for a moment after a handle was let go, so the click that ends a drag is not taken as a selection. */
@@ -186,8 +192,12 @@ export class PreviewCameraHelper {
 	private wire(gizmo: { onDragStartObservable: { add(f: () => void): unknown }; onDragEndObservable: { add(f: () => void): unknown } } | null | undefined): void {
 		if (!gizmo || this.wired.has(gizmo)) return;
 		this.wired.add(gizmo);
-		gizmo.onDragStartObservable.add(() => this.orbit.detachControl());
+		gizmo.onDragStartObservable.add(() => {
+			this.dragging = true;
+			this.orbit.detachControl();
+		});
 		gizmo.onDragEndObservable.add(() => {
+			this.dragging = false;
 			this.orbit.attachControl(this.canvas, true);
 			this.lastDragEnd = performance.now();
 			const id = this.selectedId;

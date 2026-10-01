@@ -60,6 +60,19 @@ function fullCoverageMask(resolution: number): string {
 
 export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 	{
+		type: 'pointLight',
+		label: 'Point Light',
+		group: 'Render',
+		description: 'Illuminate nearby surfaces from this slot.',
+		glyph: '☼',
+		fields: [
+			{ key: 'color', label: 'Color', kind: 'color', default: '#ffffff' },
+			{ key: 'intensity', label: 'Intensity', kind: 'number', min: 0, max: 20, step: 0.1 },
+			{ key: 'range', label: 'Range', kind: 'number', min: 0.1, max: 100, step: 0.5, unit: 'm' }
+		],
+		create: () => ({ type: 'pointLight', color: '#ffffff', intensity: 2, range: 8 })
+	},
+	{
 		type: 'meshRenderer',
 		label: 'Mesh Renderer',
 		group: 'Render',
@@ -263,6 +276,22 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		create: () => ({ type: 'insertable', tag: 'disc' })
 	},
 	{
+		type: 'dropZone',
+		label: 'Drop Zone',
+		group: 'Interaction',
+		description: 'A box that sets down what is let go inside it: the object turns upright and settles on the box’s floor, like something put on a table top. The slot’s position, rotation and scale are the box’s centre, direction and size.',
+		glyph: '▭',
+		fields: [
+			{ key: 'align', label: 'Landing', kind: 'enum', options: [
+				{ value: 'upright', label: 'Upright (own up points up)' },
+				{ value: 'nearest', label: 'Nearest face down' },
+				{ value: 'keep', label: 'Keep rotation' }
+			], optional: true, default: 'upright', help: 'How the object turns when it lands.' },
+			{ key: 'yawStep', label: 'Turn snap', kind: 'number', min: 0, max: 180, step: 5, unit: '°', optional: true, default: 0, help: 'Snap its turn around the vertical to steps of this many degrees, from the box’s forward. 0 leaves it free.' }
+		],
+		create: () => ({ type: 'dropZone' })
+	},
+	{
 		type: 'previewCamera',
 		label: 'Preview Camera',
 		group: 'Render',
@@ -390,9 +419,33 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 			{ key: 'topColor', label: 'Top', kind: 'color', default: '#0b1030' },
 			{ key: 'horizonColor', label: 'Horizon', kind: 'color', default: '#7c3aed' },
 			{ key: 'bottomColor', label: 'Ground', kind: 'color', default: '#0f172a' },
-			{ key: 'stars', label: 'Stars', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 0.8 }
+			{ key: 'stars', label: 'Stars', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 0.8 },
+			{ key: 'ambientIntensity', label: 'Ambient intensity', kind: 'number', min: 0, max: 3, step: 0.05, optional: true, default: 1 },
+			{ key: 'reflectionCapture', label: 'Capture reflections here', kind: 'bool', optional: true, default: true, help: 'Render the world from this slot into a reflection cubemap while it runs. Leave off when using six imported faces.' },
+			{ key: 'reflectionPx', advanced: true, label: 'Right (+X)', kind: 'asset', assetType: 'image', optional: true },
+			{ key: 'reflectionNx', advanced: true, label: 'Left (-X)', kind: 'asset', assetType: 'image', optional: true },
+			{ key: 'reflectionPy', advanced: true, label: 'Up (+Y)', kind: 'asset', assetType: 'image', optional: true },
+			{ key: 'reflectionNy', advanced: true, label: 'Down (-Y)', kind: 'asset', assetType: 'image', optional: true },
+			{ key: 'reflectionPz', advanced: true, label: 'Front (+Z)', kind: 'asset', assetType: 'image', optional: true },
+			{ key: 'reflectionNz', advanced: true, label: 'Back (-Z)', kind: 'asset', assetType: 'image', optional: true }
 		],
 		create: () => ({ type: 'skybox', topColor: '#0b1030', horizonColor: '#7c3aed', bottomColor: '#0f172a', stars: 0.8 })
+	},
+	{
+		type: 'appInfo',
+		label: 'App info',
+		group: 'World',
+		description: 'Name, description and icon this world uses when it is installed as its own app.',
+		glyph: '▣',
+		fields: [
+			{ key: 'name', label: 'App name', kind: 'text', optional: true, default: '' },
+			{ key: 'shortName', label: 'Short name', kind: 'text', optional: true, default: '' },
+			{ key: 'description', label: 'Description', kind: 'text', multiline: true, optional: true, default: '' },
+			{ key: 'icon', label: 'Icon', kind: 'asset', assetType: 'image', optional: true },
+			{ key: 'themeColor', label: 'Theme color', kind: 'color', optional: true, default: '#0b1030' },
+			{ key: 'backgroundColor', label: 'Background color', kind: 'color', optional: true, default: '#0b1030' }
+		],
+		create: () => ({ type: 'appInfo' })
 	},
 	{
 		type: 'stroke',

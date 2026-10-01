@@ -290,9 +290,11 @@ msgstr ""
 #~ msgstr ""
 
 #: src/lib/studio/ScenePreview.svelte
+#: src/lib/studio/ScenePreview.svelte
 msgid "Move"
 msgstr ""
 
+#: src/lib/studio/ScenePreview.svelte
 #: src/lib/studio/components/Inspector.svelte
 msgid "Scale"
 msgstr ""
@@ -1515,7 +1517,7 @@ msgstr ""
 msgid "Combine two rotations."
 msgstr ""
 
-#: src/routes/play/+page.svelte
+#: src/lib/xr/PlayShell.svelte
 #: src/routes/w/[code]/+page.svelte
 msgid "Could not enter VR"
 msgstr ""
@@ -1525,7 +1527,7 @@ msgid "Loading"
 msgstr ""
 
 #~ msgid "WebXR Platform"
-#~ msgstr ""
+#~ msgstr "WebXR Platform"
 
 #: src/lib/xr/XRLaunchOverlay.svelte
 msgid "Preparing your space"
@@ -2354,8 +2356,9 @@ msgid "Back"
 msgstr ""
 
 #: src/lib/studio/components/AvatarWizard.svelte
+#: src/routes/wiki/[...slug]/+page.svelte
 msgid "Next"
-msgstr ""
+msgstr "Siguiente"
 
 #: src/lib/studio/components/AvatarWizard.svelte
 msgid "Match the bones"
@@ -2637,6 +2640,7 @@ msgstr ""
 msgid "Preview camera handles"
 msgstr ""
 
+#: src/lib/studio/ScenePreview.svelte
 #: src/lib/studio/ScenePreview.svelte
 msgid "Rotate"
 msgstr ""
@@ -3790,4 +3794,77 @@ msgstr ""
 
 #: src/lib/landing/Touch.svelte
 msgid "sami"
+msgstr ""
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Drop zone handles"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "Drop zone"
+msgstr ""
+
+#: src/lib/studio/components/AddObjectMenu.svelte
+msgid "Drop Zone"
+msgstr ""
+
+#: src/routes/wiki/[...slug]/+page.ts
+msgid "Wiki page not found"
+msgstr "Página de la wiki no encontrada"
+
+#: src/routes/wiki/+layout.svelte
+#: src/routes/wiki/+layout.svelte
+msgid "Wiki"
+msgstr "Wiki"
+
+#~ msgid "{0} · WebXR Platform Wiki"
+#~ msgstr "{0} · Wiki de WebXR Platform"
+
+#: src/routes/wiki/+layout.svelte
+msgid "Menu"
+msgstr "Menú"
+
+#: src/routes/wiki/+layout.svelte
+msgid "Back to site"
+msgstr "Volver al sitio"
+
+#: src/routes/wiki/[...slug]/+page.svelte
+msgid "Pagination"
+msgstr "Paginación"
+
+#: src/routes/wiki/[...slug]/+page.svelte
+msgid "Previous"
+msgstr "Anterior"
+
+#: src/routes/wiki/[...slug]/+page.svelte
+msgid "On this page"
+msgstr "En esta página"
+
+#: src/routes/wiki/[...slug]/+page.svelte
+msgid "Edit this page on GitHub ↗"
+msgstr "Editar esta página en GitHub ↗"
+
+#. 0: pageTitle(data.page); 1: PLATFORM_NAME
+#: src/routes/wiki/[...slug]/+page.svelte
+msgid "{0} · {1} Wiki"
+msgstr "{0} · Wiki de {1}"
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Reflection probe generated and saved as six image assets."
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Could not generate reflection probe"
+msgstr ""
+
+#: src/lib/studio/components/Inspector.svelte
+msgid "Capturing…"
+msgstr ""
+
+#: src/lib/studio/components/Inspector.svelte
+msgid "Generate reflection probe"
+msgstr ""
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Reflection probe"
 msgstr ""

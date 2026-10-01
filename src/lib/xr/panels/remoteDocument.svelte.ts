@@ -137,6 +137,10 @@ export class RemoteDocument implements InspectorDocument {
 		return result;
 	}
 
+	generateReflectionProbe(slotId: string): void {
+		if (!this.readonly) this.post({ type: 'action', action: 'generateReflectionProbe', slotId });
+	}
+
 	select(id: string | null): void {
 		this.selectedId = id && getSlot(this.tree, id) ? id : null;
 		this.post({ type: 'select', id: this.selectedId });

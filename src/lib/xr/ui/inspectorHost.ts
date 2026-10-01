@@ -7,6 +7,7 @@ import type { SceneGraph } from '../sceneGraph';
 import { getInventoryContext, gameState } from '../gameState';
 import { forInventory } from '../avatar/build';
 import { saveWithPreview } from '../inventorySave';
+import { bakeReflectionProbe } from '../bakeReflectionProbe';
 import { envelope, openEnvelope, INSPECTOR_PANEL_PATH, type FrameToHost, type HostToFrame, type ViewPose } from '../panels/inspectorProtocol';
 
 const PANEL_ID = 'inspector-panel';
@@ -43,7 +44,7 @@ function contentSignature(slot: Slot): string {
  *
  * The page is only loaded the first time the panel is opened.
  */
-export function createInspectorHost(scene: Scene, sceneGraph: SceneGraph, callbacks: InspectorCallbacks = {}): { root: TransformNode; select(slotId: string): boolean } {
+export function createInspectorHost(scene: Scene, sceneGraph: SceneGraph, callbacks: InspectorCallbacks = {}): { root: TransformNode; select(slotId: string): boolean; /** The slot marked in the panel while it is open, else null. */ selectedSlotId(): string | null } {
 	const slot = createSlot({
 		id: PANEL_ID,
 		name: 'Inspector',
@@ -248,6 +249,27 @@ export function createInspectorHost(scene: Scene, sceneGraph: SceneGraph, callba
 		}
 	}
 
+	async function generateReflectionProbe(slotId: string): Promise<void> {
+		if (!canEdit()) return;
+		const live = sceneGraph.getLive(slotId);
+		if (!live || !findComponent(live.slot, 'skybox')) return;
+		try {
+			const faces = await bakeReflectionProbe(scene, live.node.getAbsolutePosition(), live.slot.name || 'Reflection probe');
+			const current = sceneGraph.getLive(slotId)?.slot;
+			if (!current || !canEdit()) return;
+			const next = structuredClone(current);
+			const skybox = findComponent(next, 'skybox');
+			if (!skybox) return;
+			for (const [face, assetId] of Object.entries(faces)) (skybox as unknown as Record<string, unknown>)[`reflection${face}`] = { kind: 'asset', assetId };
+			delete skybox.reflectionCapture;
+			sceneGraph.applySlotEdit(slotId, next);
+			scheduleBroadcast();
+			post({ type: 'notice', level: 'info', message: 'Reflection probe generated and saved as six image assets.' });
+		} catch (error) {
+			post({ type: 'notice', level: 'error', message: error instanceof Error ? error.message : 'Could not generate reflection probe.' });
+		}
+	}
+
 	// --- the conversation --------------------------------------------------------------------------------------------
 
 	function sendSelectionState(): void {
@@ -274,6 +296,7 @@ export function createInspectorHost(scene: Scene, sceneGraph: SceneGraph, callba
 				break;
 			case 'action':
 				if (message.action === 'createContainer') createContainer();
+				else if (message.action === 'generateReflectionProbe') void generateReflectionProbe(message.slotId);
 				else void saveToInventory(message.slotId, message.adapterId);
 				break;
 			case 'requestViewPose':
@@ -331,6 +354,7 @@ export function createInspectorHost(scene: Scene, sceneGraph: SceneGraph, callba
 
 	return {
 		root: node,
+		selectedSlotId: () => (mesh.isEnabled() ? selectedId : null),
 		select(slotId) {
 			if (!mesh.isEnabled() || !worldTree().some((entry) => entry.id === slotId)) return false;
 			selectedId = slotId;

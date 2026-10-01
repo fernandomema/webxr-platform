@@ -16,15 +16,22 @@
 		doc: InspectorDocument;
 		advanced: boolean;
 		onOpenCode: () => void;
+		onGenerateProbe?: (slotId: string) => Promise<void>;
 		/** The editor camera's pose in the world, for setting a Preview camera from the current view. May answer later (the XR panel asks the game). */
 		getViewPose?: () => { position: Vec3; rotation: [number, number, number, number] } | null | Promise<{ position: Vec3; rotation: [number, number, number, number] } | null>;
 		/** Extra content after the components (the in-game actions and debug log). */
 		footer?: Snippet<[Slot]>;
 	}
 
-	let { doc, advanced, onOpenCode, getViewPose = () => null, footer }: Props = $props();
+	let { doc, advanced, onOpenCode, onGenerateProbe, getViewPose = () => null, footer }: Props = $props();
 
 	let showAdd = $state(false);
+	let bakingProbe = $state(false);
+	async function generateProbe(slotId: string) {
+		if (!onGenerateProbe || bakingProbe) return;
+		bakingProbe = true;
+		try { await onGenerateProbe(slotId); } finally { bakingProbe = false; }
+	}
 
 	/** The asset id of the model a slot shows, if it shows one. */
 	function modelOf(candidate: Slot | undefined): AssetId | null {
@@ -131,6 +138,7 @@
 						joints={skeletons.get(boneModelFor(component)) ?? []}
 					/>
 					{#if component.type === 'previewCamera'}<PreviewCameraTools {doc} {slot} {getViewPose} />{/if}
+					{#if component.type === 'skybox' && onGenerateProbe}<button class="btn sm" disabled={bakingProbe || doc.readonly} onclick={() => void generateProbe(slot.id)}>{bakingProbe ? 'Capturing…' : 'Generate reflection probe'}</button>{/if}
 				{:else}
 					<div class="empty small">No components yet. This object is just a group and a position.</div>
 				{/each}

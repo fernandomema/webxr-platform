@@ -36,7 +36,7 @@ export class GrabSystem {
 	private twoPoint = new Map<string, TwoPointState>();
 	private originalParent = new Map<string, TransformNode | null>();
 	private guard: GrabGuard | null = null;
-	private listener: GrabListener | null = null;
+	private listeners: GrabListener[] = [];
 
 	constructor(
 		scene: Scene,
@@ -49,8 +49,9 @@ export class GrabSystem {
 		this.guard = guard;
 	}
 
-	setListener(listener: GrabListener): void {
-		this.listener = listener;
+	/** Listeners run in the order they were added: one that takes the object over (a socket) goes before one that only tidies it up. */
+	addListener(listener: GrabListener): void {
+		this.listeners.push(listener);
 	}
 
 	/** Where a slot goes when let go, if not where it was when grabbed (for example, taken out of a socket). */
@@ -123,7 +124,7 @@ export class GrabSystem {
 			} catch (err) {
 				console.error(`[grabSystem] onGrab threw for ${effectiveTargetId}`, err);
 			}
-			this.listener?.onGrab(effectiveTargetId);
+			for (const listener of this.listeners) listener.onGrab(effectiveTargetId);
 		}
 	}
 
@@ -166,7 +167,7 @@ export class GrabSystem {
 		} catch (err) {
 			console.error(`[grabSystem] onRelease threw for ${slotId}`, err);
 		}
-		this.listener?.onRelease(slotId);
+		for (const listener of this.listeners) listener.onRelease(slotId);
 	}
 
 	/** Release every grabber holding anything (e.g. controller disconnected). */

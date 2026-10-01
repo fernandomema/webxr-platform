@@ -2,6 +2,7 @@
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 
 	let { children } = $props();
 
@@ -31,5 +32,9 @@
 	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&amp;family=Inter:wght@300;400;500;600&amp;display=swap" />
 	<link rel="icon" type="image/svg+xml" sizes="any" href={favicon} />
 	<link rel="shortcut icon" type="image/svg+xml" href={favicon} />
+	<!-- A world played as its own app (/play/<id>) supplies its own manifest and colour through its page data. -->
+	<link rel="manifest" href={(page.data as { app?: { manifestHref?: string } }).app?.manifestHref ?? '/manifest.webmanifest'} />
+	<meta name="theme-color" content={(page.data as { app?: { themeColor?: string } }).app?.themeColor ?? '#07070c'} />
+	<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
 </svelte:head>
 {@render children()}

@@ -1,0 +1,26 @@
+---
+title: Writing wiki pages
+order: 1
+description: How to add pages and use Svelte components in them.
+---
+
+<script>
+	import Callout from '$lib/wiki/components/Callout.svelte';
+	let count = $state(0);
+</script>
+
+## Adding a page
+
+Every page has an **Edit this page on GitHub** link at the bottom. To add a new one, create a `.md` or `.mdx` file under `src/content/wiki/<locale>`. Folders become sidebar sections and `index.md` is a folder's landing page. Frontmatter supports `title`, `description`, `order` and `draft`. The page title is rendered from the frontmatter, so start the body with `##`.
+
+<Callout type="tip">Svelte components work inside the page — import them at the top of the page.</Callout>
+
+## Translations
+
+Every locale has its own folder (`en`, `es`). A page missing in the active locale falls back to English.
+
+## Interactive example
+
+<button class="rounded bg-ember px-3 py-1 text-ink" onclick={() => count++}>Clicked {count} times</button>
+
+<Callout type="warning">Set `draft: true` in the frontmatter to hide a page.</Callout>

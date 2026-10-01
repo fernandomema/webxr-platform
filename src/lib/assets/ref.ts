@@ -130,6 +130,14 @@ const ASSET_REFERENCES: Record<string, (component: LooseComponent) => AssetId[]>
 	audioPlayer: (component) => {
 		const source = normalizeSourceRef(component.source, component.url);
 		return source.kind === 'asset' ? [source.assetId] : [];
+	},
+	skybox: (component) => ['reflectionPx', 'reflectionNx', 'reflectionPy', 'reflectionNy', 'reflectionPz', 'reflectionNz'].flatMap((key) => {
+		const ref = component[key] as SourceRef | undefined;
+		return ref?.kind === 'asset' && isAssetId(ref.assetId) ? [ref.assetId] : [];
+	}),
+	appInfo: (component) => {
+		const icon = component.icon as SourceRef | undefined;
+		return icon?.kind === 'asset' ? [icon.assetId] : [];
 	}
 };
 

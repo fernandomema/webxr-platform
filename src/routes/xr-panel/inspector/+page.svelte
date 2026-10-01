@@ -94,7 +94,7 @@
 						<textarea class="input" aria-label="Code" spellcheck="false" bind:value={draft}></textarea>
 					</div>
 				{:else}
-					<Inspector {doc} {advanced} onOpenCode={openCode} getViewPose={() => doc.viewPose()}>
+					<Inspector {doc} {advanced} onOpenCode={openCode} onGenerateProbe={async (slotId) => doc.generateReflectionProbe(slotId)} getViewPose={() => doc.viewPose()}>
 						{#snippet footer(selected)}
 							<WorldObjectActions
 								{doc}

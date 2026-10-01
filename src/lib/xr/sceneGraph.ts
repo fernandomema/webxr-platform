@@ -5,6 +5,7 @@ import {
 	StandardMaterial,
 	Color3,
 	Color4,
+	PointLight,
 	Vector3,
 	Quaternion,
 	Ray,
@@ -657,8 +658,20 @@ export class SceneGraph {
 			);
 			entry.runtime = { dispose };
 		}
+		const pointLight = findComponent(slot, 'pointLight');
+		if (pointLight) {
+			const light = new PointLight(`${slot.id}-light`, Vector3.Zero(), this.scene);
+			light.parent = node;
+			const apply = (value: typeof pointLight) => {
+				light.diffuse = Color3.FromHexString(value.color);
+				light.intensity = Math.max(0, value.intensity);
+				light.range = Math.max(0.1, value.range);
+			};
+			apply(pointLight);
+			entry.runtime = { dispose: () => light.dispose(), sync: (currentSlot) => { const next = findComponent(currentSlot, 'pointLight'); if (next) apply(next); } };
+		}
 		const skybox = findComponent(slot, 'skybox');
-		if (skybox) entry.runtime = setupSkybox(this.scene, node, skybox);
+		if (skybox) entry.runtime = setupSkybox(this.scene, node, skybox, this.options.mediaAssets);
 		const stroke = findComponent(slot, 'stroke');
 		if (stroke) entry.runtime = setupStroke(this.scene, node, stroke);
 		const impactSound = findComponent(slot, 'impactSound');
@@ -926,7 +939,9 @@ export class SceneGraph {
 		const proxy = MeshBuilder.CreateBox(`${slotId}-hit`, { size: 1 }, this.scene);
 		proxy.parent = root;
 		proxy.visibility = 0; // not drawn, but still visible/pickable to rays
-		proxy.isPickable = true;
+		// Use the actual triangles for large mesh colliders; a bounding proxy blocks rays from inside.
+		const meshCollider = findComponent(entry.slot, 'collider')?.shape === 'mesh';
+		proxy.isPickable = !meshCollider;
 		proxy.metadata = { slotId };
 		const placeholder = MeshBuilder.CreateBox(`${slotId}-placeholder`, { size: 1 }, this.scene);
 		placeholder.parent = root;
@@ -961,7 +976,10 @@ export class SceneGraph {
 			const instance = model.lease.instantiate(`${slotId}-model`, { normalize: !findComponent(entry.slot, 'avatar') });
 			if (instance) {
 				instance.root.parent = entry.node;
-				for (const mesh of instance.root.getChildMeshes(false)) mesh.metadata = { ...(mesh.metadata ?? {}), slotId };
+				for (const mesh of instance.root.getChildMeshes(false)) {
+					mesh.metadata = { ...(mesh.metadata ?? {}), slotId };
+					if (findComponent(entry.slot, 'collider')?.shape === 'mesh') mesh.isPickable = true;
+				}
 				model.instance = instance;
 				model.placeholder.setEnabled(false);
 				model.proxy.scaling.set(...instance.extents);

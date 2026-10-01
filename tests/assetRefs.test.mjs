@@ -65,3 +65,8 @@ test('portal nesting is capped so a hostile package cannot recurse forever', () 
 test('meshRefKey distinguishes builtin from asset', () => {
   assert.notEqual(meshRefKey(builtinMesh('box')), meshRefKey({ kind: 'asset', assetId: A }));
 });
+
+test('skybox reflection images are collected with the world assets', () => {
+  const tree = [slot('sky', [{ type: 'skybox', reflectionPx: { kind: 'asset', assetId: A }, reflectionNy: { kind: 'asset', assetId: B }, reflectionPz: { kind: 'url', url: 'https://example.com/face.png' } }])];
+  assert.deepEqual([...collectAssetIds(tree)].sort(), [A, B]);
+});

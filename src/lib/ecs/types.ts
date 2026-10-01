@@ -174,6 +174,14 @@ export interface SurfaceMaskComponent {
 	mask: string;
 }
 
+/** A light attached to a slot, measured in metres in the scene. */
+export interface PointLightComponent {
+	type: 'pointLight';
+	color: string;
+	intensity: number;
+	range: number;
+}
+
 /** A gradient sky with optional stars, drawn behind everything and following the camera. Use one per scene. */
 export interface SkyboxComponent {
 	type: 'skybox';
@@ -182,6 +190,36 @@ export interface SkyboxComponent {
 	bottomColor: string;
 	/** Star density, 0 (none) to 1 (dense). */
 	stars?: number;
+	/** Global diffuse light level while this skybox is active. */
+	ambientIntensity?: number;
+	/** Six images of a reflection cubemap, ordered by their world-space directions. */
+	reflectionPx?: SourceRef;
+	reflectionNx?: SourceRef;
+	reflectionPy?: SourceRef;
+	reflectionNy?: SourceRef;
+	reflectionPz?: SourceRef;
+	reflectionNz?: SourceRef;
+	/** Capture the scene from this slot to provide live environment reflections. */
+	reflectionCapture?: boolean;
+	/** Legacy built-in preset, kept for saved Polygon Quest worlds. */
+	reflectionPreset?: 'polygon-quest';
+	/** Apply ACES tone mapping while this world is active. */
+	toneMapping?: 'aces';
+}
+
+/**
+ * How a published world presents itself when installed as its own app: name, description, icon and colours of its
+ * web app manifest (see `$lib/worlds/appManifest`). Use one per scene.
+ */
+export interface AppInfoComponent {
+	type: 'appInfo';
+	name?: string;
+	shortName?: string;
+	description?: string;
+	/** An image asset used as the app icon; the world's thumbnail is used when empty. */
+	icon?: SourceRef;
+	themeColor?: string;
+	backgroundColor?: string;
 }
 
 export interface VelocityComponent {
@@ -348,6 +386,20 @@ export interface PreviewCameraComponent {
 }
 
 /**
+ * A box that tidies up what is let go inside it, like a table top that sets things down on itself. The box is the slot's own
+ * unit cube, so the slot's position, rotation and scale are the box's centre, orientation and size. When a grabbed object
+ * is released with its middle inside the box, it turns to sit upright against the box's up direction and drops (or rises)
+ * until its lowest point rests on the box's floor. Only the host decides, like sockets.
+ */
+export interface DropZoneComponent {
+	type: 'dropZone';
+	/** How the object turns when it lands: `upright` stands it on its own up (the default), `nearest` rests it on whichever face is closest to down, `keep` leaves its rotation alone. */
+	align?: 'upright' | 'nearest' | 'keep';
+	/** Snaps the object's turn around the vertical to steps of this many degrees, from the box's own forward. 0 or unset leaves it free. */
+	yawStep?: number;
+}
+
+/**
  * One key of the in-world keyboard (see xr/keyboard): what it types or does. The keyboard builds its keys from a layout
  * and is the only thing that reads this; `variant` and `candidate` mark the extra keys it shows while a key is held down
  * or while an input method offers candidates.
@@ -406,12 +458,15 @@ export type Component =
 	| StrokeComponent
 	| SurfaceMaskComponent
 	| SkyboxComponent
+	| AppInfoComponent
+	| PointLightComponent
 	| VelocityComponent
 	| PressableButtonComponent
 	| ImpactSoundComponent
 	| SocketComponent
 	| InsertableComponent
 	| PreviewCameraComponent
+	| DropZoneComponent
 	| KeyboardKeyComponent
 	| AvatarComponent
 	| BoneAttachComponent

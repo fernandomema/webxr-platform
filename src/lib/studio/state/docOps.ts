@@ -76,6 +76,12 @@ export function reduceDocOp(tree: SlotTree, op: DocOp): DocOpResult | null {
 				const result = ops.addSlot(tree, op.id, { name: 'Preview Camera', position: [0, 1.2, -3], components: [component] }, idsFrom(op.nonce));
 				return { tree: result.tree, selectId: result.id };
 			}
+			// A Drop zone is a box of its own, sized by its slot's scale: on a slot that is already something it would scale (and move)
+			// what is on it, so it goes on a child slot of its own too, starting as a flat slab above the origin.
+			if (op.type === 'dropZone' && (slot.components.length > 0 || ops.childrenOf(tree, op.id).length > 0)) {
+				const result = ops.addSlot(tree, op.id, { name: 'Drop Zone', position: [0, 0.5, 0], scale: [0.6, 0.3, 0.6], components: [component] }, idsFrom(op.nonce));
+				return { tree: result.tree, selectId: result.id };
+			}
 			return { tree: ops.addComponent(tree, op.id, component) };
 		}
 		case 'addRawComponent':

@@ -2,6 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import adapter from '@sveltejs/adapter-node';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
+import { mdsvex } from 'mdsvex';
 import { wuchale } from 'wuchale/vite';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { signalingDevPlugin } from './src/lib/server/wsDevPlugin.ts';
@@ -17,6 +18,9 @@ export default defineConfig({
 		basicSsl(),
 		signalingDevPlugin(),
 		sveltekit({
+			// Wiki pages are .md/.mdx files compiled as Svelte components (see src/content/wiki).
+			extensions: ['.svelte', '.md', '.mdx'],
+			preprocess: [mdsvex({ extensions: ['.md', '.mdx'] })],
 			compilerOptions: {
 				// Force runes mode for the project, except for libraries. Can be removed in svelte 6.
 				runes: ({ filename }) => filename.split(/[/\\]/).includes('node_modules') ? undefined : true

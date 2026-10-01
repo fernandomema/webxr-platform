@@ -3,10 +3,11 @@ import lobby from './lobby.json';
 import workshop from './workshop.json';
 import popUpStore from './popUpStore.json';
 import pulse from './pulse.json';
+import polygonQuest from './polygonQuest.json';
 
 /** The worlds that ship with the app: always there to go to, and the starting points for the Studio's world templates. */
 export interface BuiltinWorld {
-	id: 'lobby' | 'workshop' | 'pop-up-store' | 'pulse';
+	id: 'lobby' | 'workshop' | 'pop-up-store' | 'pulse' | 'polygon-quest';
 	name: string;
 	description: string;
 	scene: SlotTree;
@@ -26,6 +27,7 @@ export const BUILTIN_WORLDS: readonly BuiltinWorld[] = [
 		description: 'An open store to showcase objects and tools, with shelves, display islands and a featured gallery. Everything is free.',
 		scene: popUpStore as SlotTree
 	},
+	{ id: 'polygon-quest', name: 'Polygon Quest', description: 'Explore a compact indoor world with its original room geometry and materials.', scene: polygonQuest as SlotTree },
 	{
 		id: 'pulse',
 		name: 'Pulse',

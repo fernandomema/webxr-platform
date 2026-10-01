@@ -1,0 +1,214 @@
+[
+	{
+		"id": "polygon-quest-sky",
+		"parentId": null,
+		"name": "Skybox",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "skybox",
+				"topColor": "#0f172a",
+				"horizonColor": "#253044",
+				"bottomColor": "#141414",
+				"stars": 0,
+				"ambientIntensity": 0.65,
+				"toneMapping": "aces",
+				"reflectionPx": {
+					"kind": "asset",
+					"assetId": "sha256:f2458dbd8140f541eb184124e05ce606383f83ac44b128c7d03b1d24a6946585"
+				},
+				"reflectionNx": {
+					"kind": "asset",
+					"assetId": "sha256:d56f94ca788868acce9c595bd541dc6fdbebc9f809a01abe1c4ef96f8d5ad183"
+				},
+				"reflectionPy": {
+					"kind": "asset",
+					"assetId": "sha256:a4aa0eed092bade033d9f2dc0cad5c754563315899e8004f7a8db5f86ec7977f"
+				},
+				"reflectionNy": {
+					"kind": "asset",
+					"assetId": "sha256:a46de5872d202bfa8a0f4c76477eff30fd806504a59e8cb28f09f17cd51c78fe"
+				},
+				"reflectionPz": {
+					"kind": "asset",
+					"assetId": "sha256:18f08e2c46fb6b4c2d50e6595d9b6657025bf7b1fe34a5635d50a208f2264163"
+				},
+				"reflectionNz": {
+					"kind": "asset",
+					"assetId": "sha256:c378eecd14a8ebc9d23925ca8cd9f43effac7499241323cecad364ea86f68c3e"
+				}
+			}
+		]
+	},
+	{
+		"id": "floor",
+		"parentId": null,
+		"name": "Floor",
+		"position": [
+			0,
+			-0.04,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.76,
+			1,
+			0.66
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "ground"
+				},
+				"color": "#1c2431"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "polygon-quest-room",
+		"parentId": null,
+		"name": "Polygon Quest Room",
+		"position": [
+			0,
+			1.84,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			15.060345,
+			15.060345,
+			15.060345
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "asset",
+					"assetId": "sha256:0b58c2d00e6638b752d540cceefb526e133a7602fefbd8e0b264ccd242874a8b"
+				}
+			},
+			{
+				"type": "collider",
+				"shape": "mesh"
+			}
+		]
+	},
+	{
+		"id": "polygon-quest-light-0",
+		"parentId": null,
+		"name": "Ceiling Light Front",
+		"position": [
+			3.1,
+			2.7,
+			-3.4
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "pointLight",
+				"color": "#fff7e9",
+				"intensity": 3.5,
+				"range": 8
+			}
+		]
+	},
+	{
+		"id": "polygon-quest-light-1",
+		"parentId": null,
+		"name": "Ceiling Light Center",
+		"position": [
+			0,
+			2.9,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "pointLight",
+				"color": "#fff7eb",
+				"intensity": 3.2,
+				"range": 8
+			}
+		]
+	},
+	{
+		"id": "polygon-quest-light-2",
+		"parentId": null,
+		"name": "Ceiling Light Back",
+		"position": [
+			-3.2,
+			2.85,
+			3.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "pointLight",
+				"color": "#f2f6ff",
+				"intensity": 3.4,
+				"range": 8
+			}
+		]
+	}
+]

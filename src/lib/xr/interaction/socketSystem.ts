@@ -17,7 +17,7 @@ export class SocketSystem {
 		private grabSystem: GrabSystem,
 		private isHost: () => boolean
 	) {
-		grabSystem.setListener({
+		grabSystem.addListener({
 			onGrab: (slotId) => this.handleGrab(slotId),
 			onRelease: (slotId) => this.handleRelease(slotId)
 		});

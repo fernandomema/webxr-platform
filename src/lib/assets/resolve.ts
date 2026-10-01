@@ -3,6 +3,7 @@ import { importAsset } from './importAsset.ts';
 import { AssetImportError } from './kinds/index.ts';
 import type { AssetId } from './ref.ts';
 import type { AssetStore } from './store.ts';
+import { bundledAssetResolver } from './builtin.ts';
 
 /** A place bytes can come from besides this device: the cloud, or the host of the current session. */
 export interface AssetResolver {
@@ -33,7 +34,7 @@ export async function resolveAsset(
 	if (local) return { ok: true, bytes: local, source: 'device' };
 
 	let invalid: string | null = null;
-	for (const source of sources) {
+	for (const source of [bundledAssetResolver, ...sources]) {
 		if (signal.aborted) break;
 		let bytes: Uint8Array | null;
 		try {

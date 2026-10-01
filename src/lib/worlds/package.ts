@@ -52,6 +52,14 @@ function validateAssetRefs(scene: SlotTree): void {
 				if (!valid) throw new Error('Invalid audio source');
 				continue;
 			}
+			if (component?.type === 'skybox') {
+				for (const key of ['reflectionPx', 'reflectionNx', 'reflectionPy', 'reflectionNy', 'reflectionPz', 'reflectionNz']) {
+					const source = (component as Record<string, unknown>)[key] as { kind?: unknown; url?: unknown; assetId?: unknown } | undefined;
+					if (source === undefined) continue;
+					if (!source || !((source.kind === 'asset' && isAssetId(source.assetId)) || (source.kind === 'url' && typeof source.url === 'string' && source.url.length <= 2048))) throw new Error('Invalid reflection image source');
+				}
+				continue;
+			}
 			if (component?.type !== 'meshRenderer') continue;
 			const ref = component.meshRef;
 			if (typeof ref === 'string') continue; // legacy form; unknown strings render as a box

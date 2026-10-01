@@ -16,6 +16,7 @@
 		Vector3
 	} from '@babylonjs/core';
 	import { SceneGraph } from '$lib/xr/sceneGraph';
+	import { bakeReflectionProbe, type ProbeFaces } from '$lib/xr/bakeReflectionProbe';
 	import { BlobAssetLibrary } from '$lib/xr/blobAssetLibrary';
 	import { ModelLibrary } from '$lib/xr/modelLibrary';
 	import { CloudResolver } from '$lib/assets/cloud';
@@ -25,6 +26,7 @@
 	import { handPreview } from './state/handPreview.svelte';
 	import { DEFAULT_PREVIEW_FOV_DEG, lookRotation } from '../xr/thumbnail/cameraPose';
 	import { EDITOR_ONLY, PreviewCameraHelper, type GizmoMode } from './previewCameraHelper';
+	import { DropZoneHelper, type ZoneGizmoMode } from './dropZoneHelper';
 	import { INSET_MARGIN, insetPixels } from './previewCameraGeometry';
 	import { createStudioHand, type StudioHand } from './studioHand';
 	import { defaultHandModel, holdingBends, solveGraspFull } from '../xr/avatar/grasp';
@@ -38,9 +40,11 @@
 		cameraKind?: 'object' | 'world';
 		/** A Preview camera was moved or turned with the handles; these are its new local position and rotation. */
 		onMoveSlot?: (slotId: string, position: [number, number, number], rotation: [number, number, number, number]) => void;
+		/** A Drop zone was moved, turned or resized with the handles; these are its new local position, rotation and scale. */
+		onTransformSlot?: (slotId: string, position: [number, number, number], rotation: [number, number, number, number], scale: [number, number, number]) => void;
 	}
 
-	let { tree, selectedId = null, onSelect = () => {}, cameraKind = 'object', onMoveSlot = () => {} }: ScenePreviewProps = $props();
+	let { tree, selectedId = null, onSelect = () => {}, cameraKind = 'object', onMoveSlot = () => {}, onTransformSlot = () => {} }: ScenePreviewProps = $props();
 
 	let canvas: HTMLCanvasElement;
 	let engine: Engine | null = null;
@@ -56,6 +60,10 @@
 
 	let highlighted: AbstractMesh | null = null;
 	let cameraHelper: PreviewCameraHelper | null = null;
+	let zoneHelper: DropZoneHelper | null = null;
+	let zoneMode = $state<ZoneGizmoMode>('move');
+	/** A Drop zone is selected: its handles are showing. */
+	let zoneSelected = $state(false);
 	let gizmoMode = $state<GizmoMode>('move');
 	/** A Preview camera is selected: its handles and its live view are showing. */
 	let cameraSelected = $state(false);
@@ -75,6 +83,14 @@
 		if (!camera) return null;
 		const forward = camera.getDirection(Axis.Z).normalize();
 		return { position: camera.position.asArray() as [number, number, number], rotation: lookRotation(forward.asArray() as [number, number, number]) };
+	}
+
+	/** Captures a slot's surroundings and imports the six faces as image assets. */
+	export async function bakeProbe(slotId: string): Promise<ProbeFaces> {
+		if (!scene || !sceneGraph) throw new Error('Scene preview is not ready.');
+		const live = sceneGraph.getLive(slotId);
+		if (!live) throw new Error('The selected object is not in the preview.');
+		return bakeReflectionProbe(scene, live.node.getAbsolutePosition(), live.slot.name || 'Reflection probe');
 	}
 
 	/** Moves the camera to look at the selected slot. */
@@ -129,6 +145,11 @@
 			onMoved: (slotId, position, rotation) => onMoveSlot(slotId, position, rotation)
 		});
 
+		zoneHelper = new DropZoneHelper(scene, canvas, camera, {
+			getNode: (slotId) => sceneGraph?.getLive(slotId)?.node,
+			onChanged: (slotId, position, rotation, scale) => onTransformSlot(slotId, position, rotation, scale)
+		});
+
 		handNode = new TransformNode('studio-hand', scene);
 		handNode.position = new Vector3(0, 1.2, 0);
 		const handleMaterial = new StandardMaterial('studio-hand-mat', scene);
@@ -167,6 +188,8 @@
 			const dx = event.clientX - panPointer.x;
 			const dy = event.clientY - panPointer.y;
 			panPointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
+			// Dragging a handle is not dragging the view.
+			if (cameraHelper?.isDragging() || zoneHelper?.isDragging()) return;
 			const right = camera.getDirection(Axis.X);
 			const up = camera.getDirection(Axis.Y);
 			camera.position.addInPlace(right.scale(-dx * 0.004)).addInPlace(up.scale(dy * 0.004));
@@ -180,7 +203,7 @@
 			const elapsed = performance.now() - pointerDownAt.time;
 			pointerDownAt = null;
 			if (event.button !== 0 || !scene || !sceneGraph) return;
-			if (moved > 6 || elapsed > 500 || cameraHelper?.recentlyDragged()) return;
+			if (moved > 6 || elapsed > 500 || cameraHelper?.recentlyDragged() || zoneHelper?.recentlyDragged()) return;
 			const slotId = sceneGraph.getSlotIdForNode(scene.pick(scene.pointerX, scene.pointerY)?.pickedMesh);
 			if (slotId) onSelect(slotId);
 		};
@@ -293,6 +316,19 @@
 		cameraSelected = cameras.some((camera) => camera.id === id);
 	});
 
+	// Drop zones: their boxes, and the handles of the selected one.
+	$effect(() => {
+		void rebuilds;
+		const slots = tree;
+		const id = selectedId;
+		const mode = zoneMode;
+		if (!ready || !zoneHelper) return;
+		const zones = slots.filter((slot) => slot.components.some((component) => component.type === 'dropZone')).map((slot) => slot.id);
+		zoneHelper.setMode(mode);
+		zoneHelper.update(zones, id);
+		zoneSelected = id !== null && zones.includes(id);
+	});
+
 	// Shows the selected equippable object in a stand-in controller, using the pose being edited.
 	$effect(() => {
 		void rebuilds;
@@ -336,6 +372,7 @@
 	onDestroy(() => {
 		clearTimeout(rebuildTimer);
 		cameraHelper?.dispose();
+		zoneHelper?.dispose();
 		for (const hand of Object.values(hands ?? {})) hand.dispose();
 		sceneGraph?.dispose();
 		models?.dispose();
@@ -347,6 +384,13 @@
 
 <div class="viewport">
 	<canvas bind:this={canvas} tabindex="0" aria-label="3D preview. Use WASD to move, Shift to move faster, left-drag to pan, right-drag to look, scroll to move forward or backward."></canvas>
+	{#if zoneSelected}
+		<div class="camera-tools" role="toolbar" aria-label="Drop zone handles">
+			<button class="btn sm" aria-pressed={zoneMode === 'move'} onclick={() => (zoneMode = 'move')}>Move</button>
+			<button class="btn sm" aria-pressed={zoneMode === 'rotate'} onclick={() => (zoneMode = 'rotate')}>Rotate</button>
+			<button class="btn sm" aria-pressed={zoneMode === 'scale'} onclick={() => (zoneMode = 'scale')}>Scale</button>
+		</div>
+	{/if}
 	{#if cameraSelected}
 		<div class="camera-tools" role="toolbar" aria-label="Preview camera handles">
 			<button class="btn sm" aria-pressed={gizmoMode === 'move'} onclick={() => (gizmoMode = 'move')}>Move</button>

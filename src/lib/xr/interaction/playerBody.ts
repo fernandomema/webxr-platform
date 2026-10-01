@@ -88,10 +88,14 @@ export function setupPlayerBody(
 			if (entry.system) continue;
 			const mesh = entry.node as AbstractMesh;
 			if (typeof mesh.getBoundingInfo !== 'function') continue;
-			if (isFloorSlot(entry.slot)) floors.add(mesh);
-			else if (isSolidSlot(entry.slot) && !insideGrabbable(entry.slot)) solids.add(mesh);
-			// Desktop camera collisions use the same rule: floors and solids block, the rest is walked through.
-			mesh.checkCollisions = floors.has(mesh) || solids.has(mesh);
+			const modelCollider = entry.slot.components.some((component) => component.type === 'collider' && component.shape === 'mesh');
+			const collisionMeshes = modelCollider ? entry.model?.instance?.root.getChildMeshes(false) ?? [] : [mesh];
+			for (const candidate of collisionMeshes) {
+				if (isFloorSlot(entry.slot)) floors.add(candidate);
+				else if (isSolidSlot(entry.slot) && !insideGrabbable(entry.slot)) solids.add(candidate);
+				// Desktop camera collisions use the same rule: floors and solids block, the rest is walked through.
+				candidate.checkCollisions = floors.has(candidate) || solids.has(candidate);
+			}
 		}
 	}
 
