@@ -79,6 +79,7 @@ export class Library {
 
 	async deleteItem(item: InventoryItem): Promise<void> {
 		if (!this.adapter?.deleteItem) throw new Error('This inventory is read-only.');
+		await this.adapter.connect?.();
 		await this.adapter.deleteItem(this.context, item.id);
 		await this.load();
 	}

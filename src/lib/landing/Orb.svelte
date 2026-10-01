@@ -1,0 +1,10 @@
+<script lang="ts">
+	import Scene3D from './Scene3D.svelte';
+	let { p = 0 }: { p?: number } = $props();
+	const clamp=(v:number)=>Math.max(0,Math.min(1,v));
+	const map=(v:number,a:number,b:number)=>clamp((v-a)/(b-a));
+	const steps=[{from:.02,to:.16,text:'Por cierto. Los mundos también son cosas.'},{from:.18,to:.32,text:'Puedes guardar uno.'},{from:.34,to:.5,text:'Puedes dárselo a alguien.'},{from:.52,to:.66,text:'Puedes llevarlo a otro mundo.'},{from:.68,to:.8,text:'Y puedes abrirlo.'}];
+	let finalText=$derived(map(p,.86,.95));
+	let inside=$derived(map(p,.76,.9));
+</script>
+<section class="relative"><div id="orb-scroll" class="relative h-[520vh]"><div class="sticky top-0 flex h-[100svh] items-center justify-center overflow-hidden bg-ink"><Scene3D variant="orb" progress={p}/><div class="pointer-events-none absolute inset-0" style={`background:${inside>.5?'radial-gradient(60% 50% at 50% 20%,rgba(143,240,207,0.16),transparent 70%)':'radial-gradient(50% 50% at 50% 50%,rgba(155,140,255,0.18),transparent 70%)'}`}></div><div class="pointer-events-none absolute inset-x-0 bottom-[12%] z-30 px-6 text-center">{#each steps as s}<p class="absolute inset-x-0 font-display text-[clamp(1.25rem,3.4vw,2.4rem)] leading-tight tracking-[-.035em] drop-shadow-[0_6px_24px_rgba(0,0,0,0.9)] transition-all duration-500 text-balance" style={`opacity:${p>=s.from-.015&&p<=s.to+.015?1:0};transform:${p>=s.from&&p<=s.to?'none':'translateY(10px)'}`}>{s.text}</p>{/each}</div><div class="pointer-events-none absolute inset-x-0 top-[14%] z-30 grid place-items-center px-6 text-center transition-all duration-500" style={`opacity:${finalText};transform:translateY(${(1-finalText)*14}px)`}><div class="rounded-3xl border border-white/12 bg-ink/60 px-7 py-5 backdrop-blur-md"><h2 class="font-display text-[clamp(2rem,6.5vw,4.6rem)] leading-none font-medium tracking-[-.045em]">Mundos dentro de mundos.</h2><p class="mt-4 text-[clamp(1rem,1.8vw,1.25rem)] text-bone/70">Sí. Nosotros tampoco pensamos parar ahí.</p></div></div></div></div></section>

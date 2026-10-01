@@ -15,6 +15,10 @@ export function placeInFrontOfCamera(
 	node.position = camera.globalPosition.add(forward.scale(distance)).add(new Vector3(0, heightOffset, 0));
 	// The panel's GUI-textured face is on the plane's -Z side, so a plain
 	// lookAt (which points +Z at the target) shows its back — mirrored, since
-	// the plane/material renders both sides — hence the 180° yaw.
-	node.lookAt(camera.globalPosition, Math.PI);
+	// the plane/material renders both sides. Instead of a 180° yaw correction
+	// (which flips the pitch sign, tilting the panel the wrong way when the user
+	// looks up or down), aim +Z at the point mirrored across the panel so -Z
+	// faces the camera.
+	const awayFromCamera = node.position.scale(2).subtract(camera.globalPosition);
+	node.lookAt(awayFromCamera);
 }

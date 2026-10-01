@@ -17,10 +17,28 @@
 	let name = $state(defaultName);
 	// svelte-ignore state_referenced_locally
 	let adapterId = $state(adapters[0]?.id ?? 'local');
+	let folderError = $state('');
+
+	async function submit(event: SubmitEvent) {
+		event.preventDefault();
+		if (!name.trim()) return;
+		folderError = '';
+		try {
+			if (adapterId === 'filesystem') await adapters.find((adapter) => adapter.id === adapterId)?.connect?.();
+			onsave({ adapterId, folderId: null, name: name.trim() });
+		} catch (error) {
+			if (error instanceof DOMException && error.name === 'AbortError') return;
+			folderError = error instanceof Error ? error.message : 'Could not open the folder';
+		}
+	}
+
 	const options = $derived(
 		[
 			{ id: 'local', label: 'This device', hint: 'Stored in this browser only.', enabled: adapters.some((a) => a.id === 'local') },
-			{ id: 'cloud', label: 'Cloud', hint: signedIn ? 'Available on all your devices.' : 'Sign in to save to the cloud.', enabled: adapters.some((a) => a.id === 'cloud') }
+			{ id: 'cloud', label: 'Cloud', hint: signedIn ? 'Available on all your devices.' : 'Sign in to save to the cloud.', enabled: adapters.some((a) => a.id === 'cloud') },
+			...(adapters.some((a) => a.id === 'filesystem')
+				? [{ id: 'filesystem', label: 'Project files', hint: 'Save a JSON file in a folder on this computer.', enabled: true }]
+				: [])
 		]
 	);
 </script>
@@ -30,7 +48,7 @@
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 <div class="studio-backdrop" onclick={(event) => event.target === event.currentTarget && onclose()}>
 	<div class="studio-modal" role="dialog" aria-modal="true" aria-label="Save project">
-	<form onsubmit={(event) => { event.preventDefault(); if (name.trim()) onsave({ adapterId, folderId: null, name: name.trim() }); }}>
+	<form onsubmit={submit}>
 		<h2>Save {kind === 'world' ? 'world' : 'object'}</h2>
 		<p>Choose a name and where to keep it.</p>
 		<label class="field">
@@ -47,6 +65,7 @@
 				</label>
 			{/each}
 		</fieldset>
+		{#if folderError}<p role="alert">{folderError}</p>{/if}
 		<div class="actions">
 			<button type="button" class="btn" onclick={onclose}>Cancel</button>
 			<button type="submit" class="btn primary" disabled={!name.trim()}>Save</button>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { adapterIcon, adapterLabel } from '$lib/studio/ui/adapters';
+	import { getInventoryAdapter } from '$lib/inventory/registry';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import type { InventoryItem } from '$lib/inventory/types';
@@ -17,6 +18,7 @@
 	import { PLATFORM_NAME } from '$lib/platform';
 
 	const library = new Library(studioSession.context);
+	const adapterPreferenceKey = 'studio-inventory-adapter';
 	let loadedFor = $state<string | null>(null);
 
 	const adapters = $derived(studioSession.adapters.filter((adapter) => adapter.id !== 'world'));
@@ -26,7 +28,10 @@
 		const key = adapters.map((adapter) => adapter.id).join(',');
 		if (loadedFor === key) return;
 		loadedFor = key;
-		if (!adapters.some((adapter) => adapter.id === library.adapterId)) library.adapterId = adapters[0]?.id ?? 'local';
+		let preferred: string | null = null;
+		try { preferred = localStorage.getItem(adapterPreferenceKey); } catch { /* Storage may be disabled. */ }
+		if (preferred && adapters.some((adapter) => adapter.id === preferred)) library.adapterId = preferred;
+		else if (!adapters.some((adapter) => adapter.id === library.adapterId)) library.adapterId = adapters[0]?.id ?? 'local';
 		void library.load();
 	});
 
@@ -54,6 +59,26 @@
 
 	function openItem(item: InventoryItem) {
 		void goto(editUrl({ source: library.adapterId, folder: library.folderId ?? 'root', item: item.id }));
+	}
+
+	async function switchAdapter(id: string) {
+		try { localStorage.setItem(adapterPreferenceKey, id); } catch { /* Storage may be disabled. */ }
+		await library.switchAdapter(id);
+	}
+
+	async function reconnectDirectory() {
+		try { await library.adapter?.connect?.(); await library.load(); }
+		catch (error) { toasts.error(error, 'Could not reconnect the folder'); }
+	}
+
+	async function connectDirectory() {
+		try {
+			await library.adapter?.connect?.(true);
+			await library.goTo(-1);
+		} catch (error) {
+			if (error instanceof DOMException && error.name === 'AbortError') return;
+			toasts.error(error, 'Could not open the folder');
+		}
 	}
 
 	async function newFolder() {
@@ -143,7 +168,7 @@
 					{#if adapters.length > 1}
 						<div class="tabs" role="tablist" aria-label="Storage">
 							{#each adapters as adapter (adapter.id)}
-								<button class="tab" role="tab" aria-selected={library.adapterId === adapter.id} onclick={() => library.switchAdapter(adapter.id)}>
+								<button class="tab" role="tab" aria-selected={library.adapterId === adapter.id} onclick={() => switchAdapter(adapter.id)}>
 									<Icon name={adapterIcon(adapter.id)} size={14} />{adapterLabel(adapter.id, adapter.label)}
 								</button>
 							{/each}
@@ -154,7 +179,8 @@
 						<span class="sr-only">Search projects</span>
 						<input class="input" placeholder="Search" bind:value={library.query} />
 					</label>
-					<button class="btn" onclick={newFolder}><Icon name="folder-plus" size={14} />New folder</button>
+					{#if library.adapter?.connect}<button class="btn" onclick={connectDirectory}><Icon name="folder" size={14} />Choose folder</button>{/if}
+					{#if library.adapter?.createFolder}<button class="btn" onclick={newFolder}><Icon name="folder-plus" size={14} />New folder</button>{/if}
 				</div>
 			</div>
 
@@ -169,13 +195,13 @@
 			{/if}
 
 			{#if library.error}
-				<div class="empty" role="alert"><Icon name="warning" size={22} /><strong>Could not load projects</strong>{library.error}<button class="btn" onclick={() => library.load()}>Try again</button></div>
+				<div class="empty" role="alert"><Icon name="warning" size={22} /><strong>Could not load projects</strong>{library.error}<button class="btn" onclick={() => library.load()}>Try again</button>{#if library.adapter?.connect}<button class="btn" onclick={reconnectDirectory}>Reconnect folder</button>{/if}</div>
 			{:else if library.loading && !library.items.length && !library.folders.length}
 				<div class="empty">Loading…</div>
 			{:else if !library.visibleItems.length && !library.visibleFolders.length}
 				<div class="empty">
 					<strong>{library.query ? 'No matches' : 'Nothing here yet'}</strong>
-					{library.query ? 'Try a different search.' : 'Pick a template above to create your first project.'}
+					{library.query ? 'Try a different search.' : library.adapter?.connect ? 'Choose a folder to load or save inventory JSON files.' : 'Pick a template above to create your first project.'}
 				</div>
 			{:else}
 				<ul class="grid">
@@ -185,7 +211,7 @@
 								<span class="card-icon"><Icon name="folder" size={20} /></span>
 								<strong>{folder.name}</strong>
 							</button>
-							<button class="icon-btn danger" aria-label={`Delete folder ${folder.name}`} onclick={() => removeFolder(folder)}><Icon name="trash" size={14} /></button>
+							{#if library.adapter?.deleteFolder}<button class="icon-btn danger" aria-label={`Delete folder ${folder.name}`} onclick={() => removeFolder(folder)}><Icon name="trash" size={14} /></button>{/if}
 						</li>
 					{/each}
 					{#each library.visibleItems as item (item.id)}
@@ -198,7 +224,7 @@
 								</span>
 							</button>
 							<span class="badge {item.kind === 'world' ? 'accent' : ''}">{item.kind === 'world' ? 'World' : item.kind === 'avatar' ? 'Avatar' : 'Object'}</span>
-							<button class="icon-btn danger" aria-label={`Delete ${item.name}`} onclick={() => removeItem(item)}><Icon name="trash" size={14} /></button>
+							{#if library.adapter?.deleteItem}<button class="icon-btn danger" aria-label={`Delete ${item.name}`} onclick={() => removeItem(item)}><Icon name="trash" size={14} /></button>{/if}
 						</li>
 					{/each}
 				</ul>

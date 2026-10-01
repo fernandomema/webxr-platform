@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 92" role="img" aria-labelledby="title">
+  <title id="title">Kithin stacked logo</title>
+  <defs>
+    <linearGradient id="kithin-stacked-gradient" x1="58" y1="5" x2="102" y2="49" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffcf7a"/>
+      <stop offset="1" stop-color="#ff7a45"/>
+    </linearGradient>
+  </defs>
+  <circle cx="80" cy="27" r="22" fill="url(#kithin-stacked-gradient)"/>
+  <circle cx="80" cy="27" r="9.625" fill="#07070c"/>
+  <text x="80" y="82" fill="#f4f1ea" font-family="Space Grotesk, Arial, sans-serif" font-size="20" font-weight="500" letter-spacing="5" text-anchor="middle">KITHIN</text>
+</svg>

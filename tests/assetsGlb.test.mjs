@@ -44,11 +44,13 @@ test('rejects things that are not a usable glb', () => {
 });
 
 test('rejects models that need a downloaded decoder, whether required or merely used', () => {
-  for (const name of ['KHR_draco_mesh_compression', 'EXT_meshopt_compression', 'KHR_texture_basisu']) {
+  for (const name of ['EXT_meshopt_compression', 'KHR_texture_basisu']) {
     fails(buildGlb({ extensionsUsed: [name], extensionsRequired: [name] }), 'extension');
     fails(buildGlb({ extensionsUsed: [name] }), 'extension');
   }
   fails(buildGlb({ extensionsRequired: ['VENDOR_made_up'] }), 'extension');
+  // Draco is decoded with the decoder bundled in /static/draco.
+  assert.doesNotThrow(() => parseGlb(buildGlb({ extensionsUsed: ['KHR_draco_mesh_compression'], extensionsRequired: ['KHR_draco_mesh_compression'] }), limits));
   assert.doesNotThrow(() => parseGlb(buildGlb({ extensionsUsed: ['KHR_materials_unlit'], extensionsRequired: ['KHR_materials_unlit'] }), limits));
 });
 

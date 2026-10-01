@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 194 40" role="img" aria-labelledby="title">
+  <title id="title">Kithin</title>
+  <defs>
+    <linearGradient id="a" x1="4" y1="4" x2="35" y2="36" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffcf7a"/><stop offset="1" stop-color="#ff7a45"/>
+    </linearGradient>
+  </defs>
+  <circle cx="20" cy="20" r="16" fill="url(#a)"/>
+  <circle cx="20" cy="20" r="7" fill="#07070c"/>
+  <text x="48" y="27" fill="#f4f1ea" font-family="Space Grotesk,Arial,sans-serif" font-size="19" font-weight="500" letter-spacing="5">KITHIN</text>
+</svg>

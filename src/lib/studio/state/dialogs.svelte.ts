@@ -1,3 +1,5 @@
+// @wc-ignore-file
+// Dialog defaults run outside a Svelte component and cannot use Wuchale runtime bindings.
 export interface ConfirmRequest {
 	kind: 'confirm';
 	title: string;

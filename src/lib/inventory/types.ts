@@ -36,13 +36,15 @@ export interface InventoryUsage {
 	unit: 'bytes' | 'count';
 }
 
-export type InventoryAdapterId = 'local' | 'world' | 'cloud' | 'purchased';
+export type InventoryAdapterId = 'local' | 'world' | 'cloud' | 'purchased' | 'filesystem';
 export type InventoryStorageAdapterId = Exclude<InventoryAdapterId, 'purchased'>;
 
 export interface InventoryAdapter {
 	readonly id: InventoryAdapterId;
 	readonly label: string;
 	isAvailable(ctx: InventoryContext): boolean;
+	/** Optional user-initiated connection, such as choosing a local directory. */
+	connect?(reselect?: boolean): Promise<void>;
 	listFolders(ctx: InventoryContext, parentId: string | null): Promise<InventoryFolder[]>;
 	createFolder?(ctx: InventoryContext, parentId: string | null, name: string): Promise<InventoryFolder>;
 	deleteFolder?(ctx: InventoryContext, folderId: string): Promise<void>;

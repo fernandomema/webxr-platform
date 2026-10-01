@@ -1479,7 +1479,7 @@
 				"type": "audioPlayer",
 				"source": {
 					"kind": "url",
-					"url": "/audio/lobby-disc-2.wav"
+					"url": "/audio/ambient1.mp3"
 				},
 				"loop": true,
 				"volume": 0.8

@@ -4,6 +4,7 @@
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import { validateWorldScene } from '$lib/worlds/package';
+	import { getInventoryAdapter } from '$lib/inventory/registry';
 	import { StudioProject, type SaveTarget } from '$lib/studio/state/project.svelte';
 	import { studioSession } from '$lib/studio/state/session.svelte';
 	import { dialogs } from '$lib/studio/state/dialogs.svelte';
@@ -50,6 +51,15 @@
 			await project.open(page.url.searchParams);
 		})();
 	});
+
+	async function reconnectProjectFolder() {
+		try {
+			await getInventoryAdapter('filesystem')?.connect?.();
+			await project.open(page.url.searchParams);
+		} catch (error) {
+			toasts.error(error, 'Could not reconnect the project folder');
+		}
+	}
 
 	function setAdvanced(value: boolean) {
 		advanced = value;
@@ -107,6 +117,10 @@
 	}
 
 	async function save(): Promise<boolean> {
+		if (project.adapterId === 'filesystem') {
+			try { await getInventoryAdapter('filesystem')?.connect?.(); }
+			catch (error) { toasts.error(error, 'Could not reconnect the project folder'); return false; }
+		}
 		if (!project.isSaved) {
 			dialog = 'save';
 			return false;
@@ -237,6 +251,7 @@
 			<Icon name="warning" size={24} />
 			<strong>Could not open this project</strong>
 			{project.error}
+			{#if page.url.searchParams.get('source') === 'filesystem'}<button class="btn primary" onclick={reconnectProjectFolder}>Reconnect project folder</button>{/if}
 			<button class="btn primary" onclick={back}>Back to projects</button>
 		</div>
 	</div>

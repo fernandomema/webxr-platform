@@ -48,7 +48,8 @@ import { uploadGuiBeforeDrawing } from './guiUploads';
 import { FOVEATION, loadSettings, saveSettings, xrSettings } from './settings';
 import { sanitizeAvatarTree } from './avatar/sanitize';
 import { saveWithPreview } from './inventorySave';
-import { configureThumbnails } from './thumbnail/capture';
+import { captureItemThumbnail, configureThumbnails } from './thumbnail/capture';
+import { ensureCloudAssets } from '$lib/assets/cloudSync';
 import { configureThumbnailSources } from '$lib/assets/thumbnails';
 import { AvatarSystem } from './avatar/avatarSystem';
 import { PlayerAvatars } from './avatar/playerAvatars';
@@ -435,6 +436,7 @@ export async function mountGame(
 			);
 			hostAuthority.setAvatarHooks(hostAvatarHooks);
 			refreshWorldsTab();
+			if (worldId) void uploadWorldPreview(worldId, snapshot);
 		} catch (error) {
 			if (didLeave) {
 				hostAuthority?.dispose();
@@ -445,6 +447,22 @@ export async function mountGame(
 			}
 			if (worldId) void fetch(`/api/worlds/${worldId}/host`, { method: 'DELETE' });
 			throw error;
+		}
+	}
+
+	/** The picture the Worlds tab shows for this session. It is made once the session is up, so hosting never waits for it. */
+	async function uploadWorldPreview(worldId: string, snapshot: SlotTree): Promise<void> {
+		try {
+			const thumbnailAssetId = await captureItemThumbnail(snapshot, 'world');
+			if (!thumbnailAssetId) return;
+			await ensureCloudAssets([], getLocalAssetStore(), { extraIds: [thumbnailAssetId] });
+			await fetch(`/api/worlds/${worldId}/preview`, {
+				method: 'PUT',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ thumbnailAssetId })
+			});
+		} catch (error) {
+			console.warn('[worlds] could not send the session preview', error);
 		}
 	}
 
@@ -563,10 +581,17 @@ export async function mountGame(
 		onStopHosting: stopHostingWorld,
 		onJoinWorld: joinWorld,
 		onSpawnItem: spawnFromInventory,
-		onSetDefaultAvatar: async (item) => {
+		onSetDefaultAvatar: async (item, adapterId) => {
 			// Rebuilt exactly as the host will rebuild it, so a bad avatar is refused here with a reason instead of silently ignored there.
 			const tree = sanitizeAvatarTree(item.slotData);
 			xrSettings.defaultAvatar = tree;
+			xrSettings.defaultAvatarSource = `${adapterId}:${item.id}`;
+			saveSettings();
+			await applyLocalAvatar();
+		},
+		onUnsetDefaultAvatar: async () => {
+			xrSettings.defaultAvatar = null;
+			xrSettings.defaultAvatarSource = null;
 			saveSettings();
 			await applyLocalAvatar();
 		},
@@ -590,7 +615,7 @@ export async function mountGame(
 	const worldPortalMenu = createWorldPortalMenu(scene, sceneGraph, getActiveCamera, launchWorldPackage, async (world) => {
 		validateWorldPackage(world);
 		const selected = getInventoryAdapter(gameState.currentInventoryAdapterId ?? 'local');
-		const adapter = selected?.isAvailable(getInventoryContext()) ? selected : getInventoryAdapter('local');
+		const adapter = selected?.isAvailable(getInventoryContext()) && selected.saveItem ? selected : getInventoryAdapter('local');
 		if (!adapter?.saveItem) throw new Error('Choose a writable inventory first');
 		const folderId = adapter.id === gameState.currentInventoryAdapterId ? gameState.currentInventoryFolderId : null;
 		await saveWithPreview(adapter, getInventoryContext(), folderId, world.name, copyScene(world.scene), 'world');

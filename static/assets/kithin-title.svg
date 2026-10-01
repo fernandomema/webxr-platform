@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-labelledby="title desc">
+  <title id="title">Kithin</title>
+  <desc id="desc">Kithin title artwork with the glowing circular mark and wordmark, on a transparent background.</desc>
+  <defs>
+    <linearGradient id="mark" x1="86" y1="102" x2="230" y2="280" gradientUnits="userSpaceOnUse"><stop stop-color="#ffcf7a"/><stop offset="1" stop-color="#ff7a45"/></linearGradient>
+    <linearGradient id="word" x1="292" y1="129" x2="1041" y2="255" gradientUnits="userSpaceOnUse"><stop stop-color="#fff6df"/><stop offset="1" stop-color="#f4f1ea"/></linearGradient>
+    <filter id="glow" x="35" y="43" width="246" height="246" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="17"/></filter>
+  </defs>
+  <circle cx="158" cy="164" r="70" fill="#ff9b55" opacity=".24" filter="url(#glow)"/>
+  <circle cx="158" cy="164" r="64" fill="url(#mark)"/>
+  <circle cx="158" cy="164" r="28" fill="#07070c"/>
+  <text x="278" y="193" fill="url(#word)" font-family="Space Grotesk, Arial, sans-serif" font-size="102" font-weight="500" letter-spacing="24">KITHIN</text>
+  <path d="M285 240h695" stroke="#f4f1ea" stroke-opacity=".22"/>
+  <text x="288" y="286" fill="#f4f1ea" fill-opacity=".72" font-family="Inter, Arial, sans-serif" font-size="21" font-weight="400" letter-spacing="6">ESTÁS HECHO DE LO QUE TE RODEA</text>
+</svg>

@@ -25,5 +25,11 @@
 	});
 </script>
 
-<svelte:head><link rel="icon" href={favicon} /></svelte:head>
+<svelte:head>
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&amp;family=Inter:wght@300;400;500;600&amp;display=swap" />
+	<link rel="icon" type="image/svg+xml" sizes="any" href={favicon} />
+	<link rel="shortcut icon" type="image/svg+xml" href={favicon} />
+</svelte:head>
 {@render children()}

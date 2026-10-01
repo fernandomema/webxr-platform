@@ -2,10 +2,11 @@ import type { SlotTree } from '$lib/ecs/types';
 import lobby from './lobby.json';
 import workshop from './workshop.json';
 import popUpStore from './popUpStore.json';
+import pulse from './pulse.json';
 
 /** The worlds that ship with the app: always there to go to, and the starting points for the Studio's world templates. */
 export interface BuiltinWorld {
-	id: 'lobby' | 'workshop' | 'pop-up-store';
+	id: 'lobby' | 'workshop' | 'pop-up-store' | 'pulse';
 	name: string;
 	description: string;
 	scene: SlotTree;
@@ -24,6 +25,12 @@ export const BUILTIN_WORLDS: readonly BuiltinWorld[] = [
 		name: 'Pop Up Store',
 		description: 'An open store to showcase objects and tools, with shelves, display islands and a featured gallery. Everything is free.',
 		scene: popUpStore as SlotTree
+	},
+	{
+		id: 'pulse',
+		name: 'Pulse',
+		description: 'An indoor feedback center: vote ideas and bugs up or down, send suggestions and share how you feel.',
+		scene: pulse as SlotTree
 	}
 ];
 

@@ -1,0 +1,9846 @@
+[
+	{
+		"id": "pulse-sky",
+		"parentId": null,
+		"name": "Night Sky",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "skybox",
+				"topColor": "#0a0f1f",
+				"horizonColor": "#1b2440",
+				"bottomColor": "#0a0f1f",
+				"stars": 0
+			}
+		]
+	},
+	{
+		"id": "pulse-floor",
+		"parentId": null,
+		"name": "Hall Floor",
+		"position": [
+			0,
+			0,
+			-10
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.4,
+			1,
+			1.6
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "ground"
+				},
+				"color": "#26314d"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-shell",
+		"parentId": null,
+		"name": "Shell",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "pulse-wall-left",
+		"parentId": "pulse-shell",
+		"name": "Wall Left",
+		"position": [
+			14,
+			3.5,
+			-10
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			7,
+			32.4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2e3c6b"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-wall-right",
+		"parentId": "pulse-shell",
+		"name": "Wall Right",
+		"position": [
+			-14,
+			3.5,
+			-10
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			7,
+			32.4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2e3c6b"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-wall-back",
+		"parentId": "pulse-shell",
+		"name": "Wall Back",
+		"position": [
+			0,
+			3.5,
+			-26
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			28.4,
+			7,
+			0.4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2e3c6b"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-wall-front",
+		"parentId": "pulse-shell",
+		"name": "Wall Front",
+		"position": [
+			0,
+			3.5,
+			6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			28.4,
+			7,
+			0.4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2e3c6b"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-ceiling",
+		"parentId": "pulse-shell",
+		"name": "Ceiling",
+		"position": [
+			0,
+			7.15,
+			-10
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			28.4,
+			0.3,
+			32.4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5a6a9c"
+			}
+		]
+	},
+	{
+		"id": "pulse-panelling-left",
+		"parentId": "pulse-shell",
+		"name": "Wall Panelling",
+		"position": [
+			13.77,
+			0.6,
+			-10
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.06,
+			1.2,
+			31.6
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7a573a"
+			}
+		]
+	},
+	{
+		"id": "pulse-panelling-cap-left",
+		"parentId": "pulse-shell",
+		"name": "Wall Panelling Cap",
+		"position": [
+			13.77,
+			1.23,
+			-10
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.09,
+			0.05,
+			31.6
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-glow-left",
+		"parentId": "pulse-shell",
+		"name": "Wall Light Line",
+		"position": [
+			13.77,
+			6.8,
+			-10
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.05,
+			0.1,
+			31.6
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-panelling-right",
+		"parentId": "pulse-shell",
+		"name": "Wall Panelling",
+		"position": [
+			-13.77,
+			0.6,
+			-10
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.06,
+			1.2,
+			31.6
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7a573a"
+			}
+		]
+	},
+	{
+		"id": "pulse-panelling-cap-right",
+		"parentId": "pulse-shell",
+		"name": "Wall Panelling Cap",
+		"position": [
+			-13.77,
+			1.23,
+			-10
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.09,
+			0.05,
+			31.6
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-glow-right",
+		"parentId": "pulse-shell",
+		"name": "Wall Light Line",
+		"position": [
+			-13.77,
+			6.8,
+			-10
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.05,
+			0.1,
+			31.6
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-panelling-front",
+		"parentId": "pulse-shell",
+		"name": "Wall Panelling",
+		"position": [
+			0,
+			0.6,
+			5.83
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			27.6,
+			1.2,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7a573a"
+			}
+		]
+	},
+	{
+		"id": "pulse-panelling-cap-front",
+		"parentId": "pulse-shell",
+		"name": "Wall Panelling Cap",
+		"position": [
+			0,
+			1.23,
+			5.83
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			27.6,
+			0.05,
+			0.09
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-glow-front",
+		"parentId": "pulse-shell",
+		"name": "Wall Light Line",
+		"position": [
+			0,
+			6.8,
+			5.83
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			27.6,
+			0.1,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-slats",
+		"parentId": null,
+		"name": "Back Wall Slats",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-0",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			-13.5,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7a573a"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-1",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			-12.75,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9a7049"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-2",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			-12,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7a573a"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-3",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			-11.25,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9a7049"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-4",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			-10.5,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7a573a"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-5",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			-9.75,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9a7049"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-6",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			-9,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7a573a"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-7",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			-8.25,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9a7049"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-8",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			-7.5,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7a573a"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-9",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			-6.75,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9a7049"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-10",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			-6,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7a573a"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-11",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			-5.25,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9a7049"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-12",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			-4.5,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7a573a"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-13",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			-3.75,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9a7049"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-14",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			-3,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7a573a"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-15",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			-2.25,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9a7049"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-16",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			-1.5,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7a573a"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-17",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			-0.75,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9a7049"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-18",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			0,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7a573a"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-19",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			0.75,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9a7049"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-20",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			1.5,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7a573a"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-21",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			2.25,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9a7049"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-22",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			3,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7a573a"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-23",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			3.75,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9a7049"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-24",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			4.5,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7a573a"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-25",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			5.25,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9a7049"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-26",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			6,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7a573a"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-27",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			6.75,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9a7049"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-28",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			7.5,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7a573a"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-29",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			8.25,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9a7049"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-30",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			9,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7a573a"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-31",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			9.75,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9a7049"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-32",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			10.5,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7a573a"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-33",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			11.25,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9a7049"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-34",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			12,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7a573a"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-35",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			12.75,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9a7049"
+			}
+		]
+	},
+	{
+		"id": "pulse-slat-36",
+		"parentId": "pulse-slats",
+		"name": "Wall Slat",
+		"position": [
+			13.5,
+			3.5,
+			-25.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4,
+			6.6,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7a573a"
+			}
+		]
+	},
+	{
+		"id": "pulse-columns",
+		"parentId": null,
+		"name": "Columns",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "pulse-column-l0",
+		"parentId": "pulse-columns",
+		"name": "Column",
+		"position": [
+			13.45,
+			3.5,
+			-3
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#3d4c7c"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-column-l0-light",
+		"parentId": "pulse-columns",
+		"name": "Column Light",
+		"position": [
+			13.08,
+			3.5,
+			-3
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.05,
+			5.4,
+			0.16
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-column-l1",
+		"parentId": "pulse-columns",
+		"name": "Column",
+		"position": [
+			13.45,
+			3.5,
+			-11
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#3d4c7c"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-column-l1-light",
+		"parentId": "pulse-columns",
+		"name": "Column Light",
+		"position": [
+			13.08,
+			3.5,
+			-11
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.05,
+			5.4,
+			0.16
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-column-l2",
+		"parentId": "pulse-columns",
+		"name": "Column",
+		"position": [
+			13.45,
+			3.5,
+			-19
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#3d4c7c"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-column-l2-light",
+		"parentId": "pulse-columns",
+		"name": "Column Light",
+		"position": [
+			13.08,
+			3.5,
+			-19
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.05,
+			5.4,
+			0.16
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-column-r0",
+		"parentId": "pulse-columns",
+		"name": "Column",
+		"position": [
+			-13.45,
+			3.5,
+			-3
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#3d4c7c"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-column-r0-light",
+		"parentId": "pulse-columns",
+		"name": "Column Light",
+		"position": [
+			-13.08,
+			3.5,
+			-3
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.05,
+			5.4,
+			0.16
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-column-r1",
+		"parentId": "pulse-columns",
+		"name": "Column",
+		"position": [
+			-13.45,
+			3.5,
+			-11
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#3d4c7c"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-column-r1-light",
+		"parentId": "pulse-columns",
+		"name": "Column Light",
+		"position": [
+			-13.08,
+			3.5,
+			-11
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.05,
+			5.4,
+			0.16
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-column-r2",
+		"parentId": "pulse-columns",
+		"name": "Column",
+		"position": [
+			-13.45,
+			3.5,
+			-19
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			7,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#3d4c7c"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-column-r2-light",
+		"parentId": "pulse-columns",
+		"name": "Column Light",
+		"position": [
+			-13.08,
+			3.5,
+			-19
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.05,
+			5.4,
+			0.16
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-ceiling-lights",
+		"parentId": null,
+		"name": "Ceiling Lights",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "pulse-ceiling-strip-0",
+		"parentId": "pulse-ceiling-lights",
+		"name": "Ceiling Light",
+		"position": [
+			-10,
+			6.94,
+			-10
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.3,
+			0.06,
+			30
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#fff4d6"
+			}
+		]
+	},
+	{
+		"id": "pulse-ceiling-strip-1",
+		"parentId": "pulse-ceiling-lights",
+		"name": "Ceiling Light",
+		"position": [
+			-5,
+			6.94,
+			-10
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.3,
+			0.06,
+			30
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#fff4d6"
+			}
+		]
+	},
+	{
+		"id": "pulse-ceiling-strip-2",
+		"parentId": "pulse-ceiling-lights",
+		"name": "Ceiling Light",
+		"position": [
+			0,
+			6.94,
+			-10
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.3,
+			0.06,
+			30
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#fff4d6"
+			}
+		]
+	},
+	{
+		"id": "pulse-ceiling-strip-3",
+		"parentId": "pulse-ceiling-lights",
+		"name": "Ceiling Light",
+		"position": [
+			5,
+			6.94,
+			-10
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.3,
+			0.06,
+			30
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#fff4d6"
+			}
+		]
+	},
+	{
+		"id": "pulse-ceiling-strip-4",
+		"parentId": "pulse-ceiling-lights",
+		"name": "Ceiling Light",
+		"position": [
+			10,
+			6.94,
+			-10
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.3,
+			0.06,
+			30
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#fff4d6"
+			}
+		]
+	},
+	{
+		"id": "pulse-ceiling-beam-0",
+		"parentId": "pulse-ceiling-lights",
+		"name": "Ceiling Beam",
+		"position": [
+			0,
+			6.86,
+			-4
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			27.6,
+			0.28,
+			0.3
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#3d4c7c"
+			}
+		]
+	},
+	{
+		"id": "pulse-ceiling-beam-1",
+		"parentId": "pulse-ceiling-lights",
+		"name": "Ceiling Beam",
+		"position": [
+			0,
+			6.86,
+			-12
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			27.6,
+			0.28,
+			0.3
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#3d4c7c"
+			}
+		]
+	},
+	{
+		"id": "pulse-ceiling-beam-2",
+		"parentId": "pulse-ceiling-lights",
+		"name": "Ceiling Beam",
+		"position": [
+			0,
+			6.86,
+			-20
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			27.6,
+			0.28,
+			0.3
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#3d4c7c"
+			}
+		]
+	},
+	{
+		"id": "pulse-arrival",
+		"parentId": null,
+		"name": "Arrival",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "pulse-rug",
+		"parentId": "pulse-arrival",
+		"name": "Arrival Rug",
+		"position": [
+			0,
+			0.006,
+			1.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			9,
+			0.01,
+			9
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#123a3f"
+			}
+		]
+	},
+	{
+		"id": "pulse-rug-ring",
+		"parentId": "pulse-arrival",
+		"name": "Arrival Rug Ring",
+		"position": [
+			0,
+			0.009,
+			1.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			6.6,
+			0.01,
+			6.6
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#17505a"
+			}
+		]
+	},
+	{
+		"id": "pulse-pad-ring",
+		"parentId": "pulse-arrival",
+		"name": "Arrival Pad Ring",
+		"position": [
+			0,
+			0.014,
+			1.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			3.4,
+			0.02,
+			3.4
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-pad",
+		"parentId": "pulse-arrival",
+		"name": "Arrival Pad",
+		"position": [
+			0,
+			0.018,
+			1.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			3,
+			0.02,
+			3
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#0b1224"
+			}
+		]
+	},
+	{
+		"id": "pulse-runner",
+		"parentId": "pulse-arrival",
+		"name": "Runner",
+		"position": [
+			0,
+			0.006,
+			-8.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			3.2,
+			0.01,
+			18
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#3a4a72"
+			}
+		]
+	},
+	{
+		"id": "pulse-runner-edge-l",
+		"parentId": "pulse-arrival",
+		"name": "Runner Edge",
+		"position": [
+			1.65,
+			0.012,
+			-8.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.06,
+			0.012,
+			18
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-runner-edge-r",
+		"parentId": "pulse-arrival",
+		"name": "Runner Edge",
+		"position": [
+			-1.65,
+			0.012,
+			-8.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.06,
+			0.012,
+			18
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-name-frame",
+		"parentId": "pulse-arrival",
+		"name": "PULSE Sign Frame",
+		"position": [
+			0,
+			3.7,
+			5.77
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			8.12,
+			2.02,
+			0.04
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-name",
+		"parentId": "pulse-arrival",
+		"name": "PULSE Sign",
+		"position": [
+			0,
+			3.7,
+			5.74
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			8,
+			1.9,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#0b1224"
+			},
+			{
+				"type": "textDisplay",
+				"title": "PULSE",
+				"lines": [
+					"The feedback center · your voice moves us"
+				],
+				"color": "#0b1224",
+				"scale": 2.4
+			}
+		]
+	},
+	{
+		"id": "pulse-how-vote-frame",
+		"parentId": "pulse-arrival",
+		"name": "VOTE Sign Frame",
+		"position": [
+			13.75,
+			3,
+			-1
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.04,
+			1.72,
+			2.72
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#fcd34d"
+			}
+		]
+	},
+	{
+		"id": "pulse-how-vote",
+		"parentId": "pulse-arrival",
+		"name": "VOTE Sign",
+		"position": [
+			13.72,
+			3,
+			-1
+		],
+		"rotation": [
+			0,
+			0.7071,
+			0,
+			0.7071
+		],
+		"scale": [
+			2.6,
+			1.6,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#0b1224"
+			},
+			{
+				"type": "textDisplay",
+				"title": "VOTE",
+				"lines": [
+					"Tap ▲ or ▼ on the boards",
+					"ahead to push ideas and bugs",
+					"up or down."
+				],
+				"color": "#0b1224"
+			}
+		]
+	},
+	{
+		"id": "pulse-how-speak-frame",
+		"parentId": "pulse-arrival",
+		"name": "SPEAK UP Sign Frame",
+		"position": [
+			-13.75,
+			3,
+			-1
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.04,
+			1.72,
+			2.72
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#fb7185"
+			}
+		]
+	},
+	{
+		"id": "pulse-how-speak",
+		"parentId": "pulse-arrival",
+		"name": "SPEAK UP Sign",
+		"position": [
+			-13.72,
+			3,
+			-1
+		],
+		"rotation": [
+			0,
+			-0.7071,
+			0,
+			0.7071
+		],
+		"scale": [
+			2.6,
+			1.6,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#0b1224"
+			},
+			{
+				"type": "textDisplay",
+				"title": "SPEAK UP",
+				"lines": [
+					"Send your own idea or bug",
+					"at the desk, or tell us how",
+					"you feel at the mood wall."
+				],
+				"color": "#0b1224"
+			}
+		]
+	},
+	{
+		"id": "pulse-stage",
+		"parentId": null,
+		"name": "Stage",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "pulse-stage-floor",
+		"parentId": "pulse-stage",
+		"name": "Stage Floor",
+		"position": [
+			0,
+			0.25,
+			-21.15
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.2,
+			1,
+			0.465
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "ground"
+				},
+				"color": "#3a4870"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-stage-riser-front",
+		"parentId": "pulse-stage",
+		"name": "Stage Riser",
+		"position": [
+			0,
+			0.125,
+			-16.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			24,
+			0.25,
+			0.06
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#0f172a"
+			}
+		]
+	},
+	{
+		"id": "pulse-stage-riser-left",
+		"parentId": "pulse-stage",
+		"name": "Stage Riser",
+		"position": [
+			12,
+			0.125,
+			-21.15
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.06,
+			0.25,
+			9.3
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#0f172a"
+			}
+		]
+	},
+	{
+		"id": "pulse-stage-riser-right",
+		"parentId": "pulse-stage",
+		"name": "Stage Riser",
+		"position": [
+			-12,
+			0.125,
+			-21.15
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.06,
+			0.25,
+			9.3
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#0f172a"
+			}
+		]
+	},
+	{
+		"id": "pulse-stage-edge",
+		"parentId": "pulse-stage",
+		"name": "Stage Edge Light",
+		"position": [
+			0,
+			0.262,
+			-16.46
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			24,
+			0.02,
+			0.08
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-headline-frame",
+		"parentId": "pulse-stage",
+		"name": "WHAT SHOULD WE BUILD NEXT? Sign Frame",
+		"position": [
+			0,
+			6.35,
+			-25.66
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			13.12,
+			1.02,
+			0.04
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-headline",
+		"parentId": "pulse-stage",
+		"name": "WHAT SHOULD WE BUILD NEXT? Sign",
+		"position": [
+			0,
+			6.35,
+			-25.63
+		],
+		"rotation": [
+			0,
+			1,
+			0,
+			0
+		],
+		"scale": [
+			13,
+			0.9,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#0b1224"
+			},
+			{
+				"type": "textDisplay",
+				"title": "WHAT SHOULD WE BUILD NEXT?",
+				"lines": [],
+				"color": "#0b1224",
+				"scale": 1.6
+			}
+		]
+	},
+	{
+		"id": "pulse-boards",
+		"parentId": null,
+		"name": "Boards",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board",
+		"parentId": "pulse-boards",
+		"name": "Ideas Board",
+		"position": [
+			0,
+			3.45,
+			-22.2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiPanel",
+				"width": 1200,
+				"height": 900,
+				"worldWidth": 5.2,
+				"background": "#0b1224",
+				"mirrorX": true
+			},
+			{
+				"type": "scriptState",
+				"data": {
+					"items": [
+						{
+							"id": "idea-1",
+							"title": "Spatial voice chat",
+							"detail": "Idea  ·  sample",
+							"votes": 42
+						},
+						{
+							"id": "idea-2",
+							"title": "Worlds that stay saved for everyone",
+							"detail": "Idea  ·  sample",
+							"votes": 37
+						},
+						{
+							"id": "idea-3",
+							"title": "Customisable avatars and outfits",
+							"detail": "Idea  ·  sample",
+							"votes": 31
+						},
+						{
+							"id": "idea-4",
+							"title": "Mini-games to play with friends",
+							"detail": "Idea  ·  sample",
+							"votes": 24
+						},
+						{
+							"id": "idea-5",
+							"title": "A marketplace for player-made objects",
+							"detail": "Idea  ·  sample",
+							"votes": 19
+						},
+						{
+							"id": "idea-6",
+							"title": "Emotes and reactions",
+							"detail": "Idea  ·  sample",
+							"votes": 14
+						},
+						{
+							"id": "idea-7",
+							"title": "A photo mode for screenshots",
+							"detail": "Idea  ·  sample",
+							"votes": 8
+						}
+					]
+				}
+			},
+			{
+				"type": "codeBlock",
+				"code": "\nconst SELF = ctx.self.id;\nconst PREFIX = \"pulse-ideas-board-\";\nconst ROWS = 5;\nconst NOUN = \"idea\";\nconst SETTLE_MS = 2000;\nlet drawn = null;\nlet order = [];\nlet view = [];\nlet lastVote = 0;\nlet unsorted = false;\nlet wait = 0;\n\nfunction set(id, field, value, broadcast = false) { ctx.world.setComponentField(PREFIX + id, 'uiElement', field, value, broadcast); }\nfunction state() { const s = ctx.self.getComponent('scriptState'); return s && s.data ? s.data : {}; }\nfunction items() { const list = state().items; return Array.isArray(list) ? list : []; }\nfunction ranked(list) { return list.map((item, i) => ({ item, i })).sort((a, b) => b.item.votes - a.item.votes || a.i - b.i).map((e) => e.item); }\n\n// Right after a vote the rows keep their places (so a second click lands on the same entry); they re-rank once votes stop.\nfunction draw() {\n  const list = items();\n  const signature = JSON.stringify(list);\n  const settling = Date.now() - lastVote < SETTLE_MS;\n  if (signature === drawn && (settling || !unsorted)) return;\n  drawn = signature;\n  const byId = new Map(list.map((item) => [item.id, item]));\n  const keep = settling && order.length > 0 && order.every((id) => byId.has(id));\n  if (!keep) order = ranked(list).slice(0, ROWS).map((item) => item.id);\n  unsorted = keep;\n  view = order.map((id) => byId.get(id));\n  for (let i = 0; i < ROWS; i++) {\n    const entry = view[i];\n    set('row-' + i, 'visible', !!entry);\n    if (!entry) continue;\n    set('score-' + i, 'text', String(entry.votes));\n    set('text-' + i, 'text', entry.title + (entry.detail ? '\\n' + entry.detail : ''));\n  }\n  const top = Math.min(list.length, ROWS);\n  set('status', 'text', list.length ? 'Top ' + top + ' of ' + list.length + ' ' + NOUN + (list.length === 1 ? '' : 's') + '  ·  vote to push the best to the top' : 'No ' + NOUN + 's yet. Be the first to send one!', true);\n}\n\nfunction vote(rank, delta) {\n  const entry = view[rank];\n  if (!entry) return;\n  const next = items().map((item) => (item.id === entry.id ? { ...item, votes: item.votes + delta } : item));\n  ctx.world.setComponentField(SELF, 'scriptState', 'data', { ...state(), items: next });\n  lastVote = Date.now();\n  draw();\n}\n\nreturn {\n  tick(dt) {\n    if (!ctx.world.isHost()) return;\n    wait -= dt;\n    if (wait > 0) return;\n    wait = 0.25;\n    draw();\n  },\n  onUIEvent(event) {\n    if (event.type !== 'press' || !event.slotId.startsWith(PREFIX)) return;\n    const match = event.slotId.slice(PREFIX.length).match(/^(up|down)-(\\d+)$/);\n    if (match) vote(Number(match[2]), match[1] === 'up' ? 1 : -1);\n  }\n};\n"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-title",
+		"parentId": "pulse-ideas-board",
+		"name": "Ideas Board Title",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"text": "TOP IDEAS",
+				"width": 1090,
+				"height": 64,
+				"fontSize": 42,
+				"fontWeight": "bold",
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-subtitle",
+		"parentId": "pulse-ideas-board",
+		"name": "Ideas Board Subtitle",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"text": "What should we build next? Sample ideas until live ones arrive.",
+				"width": 1090,
+				"height": 50,
+				"fontSize": 24,
+				"color": "#fcd34d"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-row-0",
+		"parentId": "pulse-ideas-board",
+		"name": "Ideas Board Row 1",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"gap": 12,
+				"width": 1090,
+				"height": 104,
+				"background": "#172036",
+				"visible": false,
+				"margin": 6
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-up-0",
+		"parentId": "pulse-ideas-board-row-0",
+		"name": "Vote Up",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 90,
+				"height": 104,
+				"text": "▲",
+				"fontSize": 40,
+				"background": "#10b981"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-score-0",
+		"parentId": "pulse-ideas-board-row-0",
+		"name": "Score",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 110,
+				"height": 104,
+				"text": "0",
+				"fontSize": 38,
+				"fontWeight": "bold",
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-down-0",
+		"parentId": "pulse-ideas-board-row-0",
+		"name": "Vote Down",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 90,
+				"height": 104,
+				"text": "▼",
+				"fontSize": 40,
+				"background": "#f43f5e"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-text-0",
+		"parentId": "pulse-ideas-board-row-0",
+		"name": "Entry",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 760,
+				"height": 104,
+				"text": "",
+				"fontSize": 28,
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-row-1",
+		"parentId": "pulse-ideas-board",
+		"name": "Ideas Board Row 2",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"gap": 12,
+				"width": 1090,
+				"height": 104,
+				"background": "#172036",
+				"visible": false,
+				"margin": 6
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-up-1",
+		"parentId": "pulse-ideas-board-row-1",
+		"name": "Vote Up",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 90,
+				"height": 104,
+				"text": "▲",
+				"fontSize": 40,
+				"background": "#10b981"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-score-1",
+		"parentId": "pulse-ideas-board-row-1",
+		"name": "Score",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 110,
+				"height": 104,
+				"text": "0",
+				"fontSize": 38,
+				"fontWeight": "bold",
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-down-1",
+		"parentId": "pulse-ideas-board-row-1",
+		"name": "Vote Down",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 90,
+				"height": 104,
+				"text": "▼",
+				"fontSize": 40,
+				"background": "#f43f5e"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-text-1",
+		"parentId": "pulse-ideas-board-row-1",
+		"name": "Entry",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 760,
+				"height": 104,
+				"text": "",
+				"fontSize": 28,
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-row-2",
+		"parentId": "pulse-ideas-board",
+		"name": "Ideas Board Row 3",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"gap": 12,
+				"width": 1090,
+				"height": 104,
+				"background": "#172036",
+				"visible": false,
+				"margin": 6
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-up-2",
+		"parentId": "pulse-ideas-board-row-2",
+		"name": "Vote Up",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 90,
+				"height": 104,
+				"text": "▲",
+				"fontSize": 40,
+				"background": "#10b981"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-score-2",
+		"parentId": "pulse-ideas-board-row-2",
+		"name": "Score",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 110,
+				"height": 104,
+				"text": "0",
+				"fontSize": 38,
+				"fontWeight": "bold",
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-down-2",
+		"parentId": "pulse-ideas-board-row-2",
+		"name": "Vote Down",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 90,
+				"height": 104,
+				"text": "▼",
+				"fontSize": 40,
+				"background": "#f43f5e"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-text-2",
+		"parentId": "pulse-ideas-board-row-2",
+		"name": "Entry",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 760,
+				"height": 104,
+				"text": "",
+				"fontSize": 28,
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-row-3",
+		"parentId": "pulse-ideas-board",
+		"name": "Ideas Board Row 4",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"gap": 12,
+				"width": 1090,
+				"height": 104,
+				"background": "#172036",
+				"visible": false,
+				"margin": 6
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-up-3",
+		"parentId": "pulse-ideas-board-row-3",
+		"name": "Vote Up",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 90,
+				"height": 104,
+				"text": "▲",
+				"fontSize": 40,
+				"background": "#10b981"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-score-3",
+		"parentId": "pulse-ideas-board-row-3",
+		"name": "Score",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 110,
+				"height": 104,
+				"text": "0",
+				"fontSize": 38,
+				"fontWeight": "bold",
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-down-3",
+		"parentId": "pulse-ideas-board-row-3",
+		"name": "Vote Down",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 90,
+				"height": 104,
+				"text": "▼",
+				"fontSize": 40,
+				"background": "#f43f5e"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-text-3",
+		"parentId": "pulse-ideas-board-row-3",
+		"name": "Entry",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 760,
+				"height": 104,
+				"text": "",
+				"fontSize": 28,
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-row-4",
+		"parentId": "pulse-ideas-board",
+		"name": "Ideas Board Row 5",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"gap": 12,
+				"width": 1090,
+				"height": 104,
+				"background": "#172036",
+				"visible": false,
+				"margin": 6
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-up-4",
+		"parentId": "pulse-ideas-board-row-4",
+		"name": "Vote Up",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 90,
+				"height": 104,
+				"text": "▲",
+				"fontSize": 40,
+				"background": "#10b981"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-score-4",
+		"parentId": "pulse-ideas-board-row-4",
+		"name": "Score",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 110,
+				"height": 104,
+				"text": "0",
+				"fontSize": 38,
+				"fontWeight": "bold",
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-down-4",
+		"parentId": "pulse-ideas-board-row-4",
+		"name": "Vote Down",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 90,
+				"height": 104,
+				"text": "▼",
+				"fontSize": 40,
+				"background": "#f43f5e"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-text-4",
+		"parentId": "pulse-ideas-board-row-4",
+		"name": "Entry",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 760,
+				"height": 104,
+				"text": "",
+				"fontSize": 28,
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-status",
+		"parentId": "pulse-ideas-board",
+		"name": "Ideas Board Status",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"text": "",
+				"width": 1090,
+				"height": 50,
+				"fontSize": 22,
+				"color": "#94a3b8"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-frame",
+		"parentId": "pulse-boards",
+		"name": "Ideas Board Frame",
+		"position": [
+			0,
+			3.45,
+			-22.26
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			5.5,
+			4.2,
+			0.1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#0b1224"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-glow",
+		"parentId": "pulse-boards",
+		"name": "Ideas Board Light",
+		"position": [
+			0,
+			1.3,
+			-22.26
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			4.16,
+			0.04,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-post-0",
+		"parentId": "pulse-boards",
+		"name": "Ideas Board Post",
+		"position": [
+			2.2,
+			0.8,
+			-22.4
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.2,
+			1.1,
+			0.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#64748b"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-ideas-board-post-1",
+		"parentId": "pulse-boards",
+		"name": "Ideas Board Post",
+		"position": [
+			-2.2,
+			0.8,
+			-22.4
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.2,
+			1.1,
+			0.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#64748b"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board",
+		"parentId": "pulse-boards",
+		"name": "Bugs Board",
+		"position": [
+			9.4,
+			3.075,
+			-21
+		],
+		"rotation": [
+			0,
+			-0.1987,
+			0,
+			0.9801
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiPanel",
+				"width": 1200,
+				"height": 900,
+				"worldWidth": 4.2,
+				"background": "#0b1224",
+				"mirrorX": true
+			},
+			{
+				"type": "scriptState",
+				"data": {
+					"items": [
+						{
+							"id": "bug-1",
+							"title": "Hands sink into the floor after teleporting",
+							"detail": "Bug  ·  sample",
+							"votes": 28
+						},
+						{
+							"id": "bug-2",
+							"title": "The keyboard sometimes opens twice",
+							"detail": "Bug  ·  sample",
+							"votes": 21
+						},
+						{
+							"id": "bug-3",
+							"title": "Panels flicker when seen from far away",
+							"detail": "Bug  ·  sample",
+							"votes": 17
+						},
+						{
+							"id": "bug-4",
+							"title": "Grabbed objects drift on a slow connection",
+							"detail": "Bug  ·  sample",
+							"votes": 12
+						},
+						{
+							"id": "bug-5",
+							"title": "Long names get cut off on scoreboards",
+							"detail": "Bug  ·  sample",
+							"votes": 6
+						},
+						{
+							"id": "bug-6",
+							"title": "The menu can open behind a wall",
+							"detail": "Bug  ·  sample",
+							"votes": 3
+						}
+					]
+				}
+			},
+			{
+				"type": "codeBlock",
+				"code": "\nconst SELF = ctx.self.id;\nconst PREFIX = \"pulse-bugs-board-\";\nconst ROWS = 5;\nconst NOUN = \"bug\";\nconst SETTLE_MS = 2000;\nlet drawn = null;\nlet order = [];\nlet view = [];\nlet lastVote = 0;\nlet unsorted = false;\nlet wait = 0;\n\nfunction set(id, field, value, broadcast = false) { ctx.world.setComponentField(PREFIX + id, 'uiElement', field, value, broadcast); }\nfunction state() { const s = ctx.self.getComponent('scriptState'); return s && s.data ? s.data : {}; }\nfunction items() { const list = state().items; return Array.isArray(list) ? list : []; }\nfunction ranked(list) { return list.map((item, i) => ({ item, i })).sort((a, b) => b.item.votes - a.item.votes || a.i - b.i).map((e) => e.item); }\n\n// Right after a vote the rows keep their places (so a second click lands on the same entry); they re-rank once votes stop.\nfunction draw() {\n  const list = items();\n  const signature = JSON.stringify(list);\n  const settling = Date.now() - lastVote < SETTLE_MS;\n  if (signature === drawn && (settling || !unsorted)) return;\n  drawn = signature;\n  const byId = new Map(list.map((item) => [item.id, item]));\n  const keep = settling && order.length > 0 && order.every((id) => byId.has(id));\n  if (!keep) order = ranked(list).slice(0, ROWS).map((item) => item.id);\n  unsorted = keep;\n  view = order.map((id) => byId.get(id));\n  for (let i = 0; i < ROWS; i++) {\n    const entry = view[i];\n    set('row-' + i, 'visible', !!entry);\n    if (!entry) continue;\n    set('score-' + i, 'text', String(entry.votes));\n    set('text-' + i, 'text', entry.title + (entry.detail ? '\\n' + entry.detail : ''));\n  }\n  const top = Math.min(list.length, ROWS);\n  set('status', 'text', list.length ? 'Top ' + top + ' of ' + list.length + ' ' + NOUN + (list.length === 1 ? '' : 's') + '  ·  vote to push the best to the top' : 'No ' + NOUN + 's yet. Be the first to send one!', true);\n}\n\nfunction vote(rank, delta) {\n  const entry = view[rank];\n  if (!entry) return;\n  const next = items().map((item) => (item.id === entry.id ? { ...item, votes: item.votes + delta } : item));\n  ctx.world.setComponentField(SELF, 'scriptState', 'data', { ...state(), items: next });\n  lastVote = Date.now();\n  draw();\n}\n\nreturn {\n  tick(dt) {\n    if (!ctx.world.isHost()) return;\n    wait -= dt;\n    if (wait > 0) return;\n    wait = 0.25;\n    draw();\n  },\n  onUIEvent(event) {\n    if (event.type !== 'press' || !event.slotId.startsWith(PREFIX)) return;\n    const match = event.slotId.slice(PREFIX.length).match(/^(up|down)-(\\d+)$/);\n    if (match) vote(Number(match[2]), match[1] === 'up' ? 1 : -1);\n  }\n};\n"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-title",
+		"parentId": "pulse-bugs-board",
+		"name": "Bugs Board Title",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"text": "BUG TRACKER",
+				"width": 1090,
+				"height": 64,
+				"fontSize": 42,
+				"fontWeight": "bold",
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-subtitle",
+		"parentId": "pulse-bugs-board",
+		"name": "Bugs Board Subtitle",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"text": "What should we fix first? Sample bugs until live ones arrive.",
+				"width": 1090,
+				"height": 50,
+				"fontSize": 24,
+				"color": "#fb7185"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-row-0",
+		"parentId": "pulse-bugs-board",
+		"name": "Bugs Board Row 1",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"gap": 12,
+				"width": 1090,
+				"height": 104,
+				"background": "#172036",
+				"visible": false,
+				"margin": 6
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-up-0",
+		"parentId": "pulse-bugs-board-row-0",
+		"name": "Vote Up",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 90,
+				"height": 104,
+				"text": "▲",
+				"fontSize": 40,
+				"background": "#10b981"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-score-0",
+		"parentId": "pulse-bugs-board-row-0",
+		"name": "Score",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 110,
+				"height": 104,
+				"text": "0",
+				"fontSize": 38,
+				"fontWeight": "bold",
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-down-0",
+		"parentId": "pulse-bugs-board-row-0",
+		"name": "Vote Down",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 90,
+				"height": 104,
+				"text": "▼",
+				"fontSize": 40,
+				"background": "#f43f5e"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-text-0",
+		"parentId": "pulse-bugs-board-row-0",
+		"name": "Entry",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 760,
+				"height": 104,
+				"text": "",
+				"fontSize": 28,
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-row-1",
+		"parentId": "pulse-bugs-board",
+		"name": "Bugs Board Row 2",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"gap": 12,
+				"width": 1090,
+				"height": 104,
+				"background": "#172036",
+				"visible": false,
+				"margin": 6
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-up-1",
+		"parentId": "pulse-bugs-board-row-1",
+		"name": "Vote Up",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 90,
+				"height": 104,
+				"text": "▲",
+				"fontSize": 40,
+				"background": "#10b981"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-score-1",
+		"parentId": "pulse-bugs-board-row-1",
+		"name": "Score",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 110,
+				"height": 104,
+				"text": "0",
+				"fontSize": 38,
+				"fontWeight": "bold",
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-down-1",
+		"parentId": "pulse-bugs-board-row-1",
+		"name": "Vote Down",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 90,
+				"height": 104,
+				"text": "▼",
+				"fontSize": 40,
+				"background": "#f43f5e"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-text-1",
+		"parentId": "pulse-bugs-board-row-1",
+		"name": "Entry",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 760,
+				"height": 104,
+				"text": "",
+				"fontSize": 28,
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-row-2",
+		"parentId": "pulse-bugs-board",
+		"name": "Bugs Board Row 3",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"gap": 12,
+				"width": 1090,
+				"height": 104,
+				"background": "#172036",
+				"visible": false,
+				"margin": 6
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-up-2",
+		"parentId": "pulse-bugs-board-row-2",
+		"name": "Vote Up",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 90,
+				"height": 104,
+				"text": "▲",
+				"fontSize": 40,
+				"background": "#10b981"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-score-2",
+		"parentId": "pulse-bugs-board-row-2",
+		"name": "Score",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 110,
+				"height": 104,
+				"text": "0",
+				"fontSize": 38,
+				"fontWeight": "bold",
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-down-2",
+		"parentId": "pulse-bugs-board-row-2",
+		"name": "Vote Down",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 90,
+				"height": 104,
+				"text": "▼",
+				"fontSize": 40,
+				"background": "#f43f5e"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-text-2",
+		"parentId": "pulse-bugs-board-row-2",
+		"name": "Entry",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 760,
+				"height": 104,
+				"text": "",
+				"fontSize": 28,
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-row-3",
+		"parentId": "pulse-bugs-board",
+		"name": "Bugs Board Row 4",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"gap": 12,
+				"width": 1090,
+				"height": 104,
+				"background": "#172036",
+				"visible": false,
+				"margin": 6
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-up-3",
+		"parentId": "pulse-bugs-board-row-3",
+		"name": "Vote Up",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 90,
+				"height": 104,
+				"text": "▲",
+				"fontSize": 40,
+				"background": "#10b981"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-score-3",
+		"parentId": "pulse-bugs-board-row-3",
+		"name": "Score",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 110,
+				"height": 104,
+				"text": "0",
+				"fontSize": 38,
+				"fontWeight": "bold",
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-down-3",
+		"parentId": "pulse-bugs-board-row-3",
+		"name": "Vote Down",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 90,
+				"height": 104,
+				"text": "▼",
+				"fontSize": 40,
+				"background": "#f43f5e"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-text-3",
+		"parentId": "pulse-bugs-board-row-3",
+		"name": "Entry",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 760,
+				"height": 104,
+				"text": "",
+				"fontSize": 28,
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-row-4",
+		"parentId": "pulse-bugs-board",
+		"name": "Bugs Board Row 5",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"gap": 12,
+				"width": 1090,
+				"height": 104,
+				"background": "#172036",
+				"visible": false,
+				"margin": 6
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-up-4",
+		"parentId": "pulse-bugs-board-row-4",
+		"name": "Vote Up",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 90,
+				"height": 104,
+				"text": "▲",
+				"fontSize": 40,
+				"background": "#10b981"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-score-4",
+		"parentId": "pulse-bugs-board-row-4",
+		"name": "Score",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 110,
+				"height": 104,
+				"text": "0",
+				"fontSize": 38,
+				"fontWeight": "bold",
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-down-4",
+		"parentId": "pulse-bugs-board-row-4",
+		"name": "Vote Down",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 90,
+				"height": 104,
+				"text": "▼",
+				"fontSize": 40,
+				"background": "#f43f5e"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-text-4",
+		"parentId": "pulse-bugs-board-row-4",
+		"name": "Entry",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 760,
+				"height": 104,
+				"text": "",
+				"fontSize": 28,
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-status",
+		"parentId": "pulse-bugs-board",
+		"name": "Bugs Board Status",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"text": "",
+				"width": 1090,
+				"height": 50,
+				"fontSize": 22,
+				"color": "#94a3b8"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-frame",
+		"parentId": "pulse-boards",
+		"name": "Bugs Board Frame",
+		"position": [
+			9.4234,
+			3.075,
+			-21.0553
+		],
+		"rotation": [
+			0,
+			-0.1987,
+			0,
+			0.9801
+		],
+		"scale": [
+			4.5,
+			3.45,
+			0.1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#0b1224"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-glow",
+		"parentId": "pulse-boards",
+		"name": "Bugs Board Light",
+		"position": [
+			9.4234,
+			1.3,
+			-21.0553
+		],
+		"rotation": [
+			0,
+			-0.1987,
+			0,
+			0.9801
+		],
+		"scale": [
+			3.36,
+			0.04,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-post-0",
+		"parentId": "pulse-boards",
+		"name": "Bugs Board Post",
+		"position": [
+			11.0437,
+			0.8,
+			-20.5222
+		],
+		"rotation": [
+			0,
+			-0.1987,
+			0,
+			0.9801
+		],
+		"scale": [
+			0.2,
+			1.1,
+			0.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#64748b"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-bugs-board-post-1",
+		"parentId": "pulse-boards",
+		"name": "Bugs Board Post",
+		"position": [
+			7.9121,
+			0.8,
+			-21.8462
+		],
+		"rotation": [
+			0,
+			-0.1987,
+			0,
+			0.9801
+		],
+		"scale": [
+			0.2,
+			1.1,
+			0.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#64748b"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board",
+		"parentId": "pulse-boards",
+		"name": "Roadmap Board",
+		"position": [
+			-9.4,
+			3.075,
+			-21
+		],
+		"rotation": [
+			0,
+			0.1987,
+			0,
+			0.9801
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiPanel",
+				"width": 1200,
+				"height": 900,
+				"worldWidth": 4.2,
+				"background": "#0b1224",
+				"mirrorX": true
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-title",
+		"parentId": "pulse-roadmap-board",
+		"name": "Roadmap Board Title",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"text": "ROADMAP",
+				"width": 1090,
+				"height": 64,
+				"fontSize": 42,
+				"fontWeight": "bold",
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-subtitle",
+		"parentId": "pulse-roadmap-board",
+		"name": "Roadmap Board Subtitle",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"text": "Where things stand. Sample entries for now.",
+				"width": 1090,
+				"height": 50,
+				"fontSize": 24,
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-row-0",
+		"parentId": "pulse-roadmap-board",
+		"name": "Roadmap Board Row 1",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"gap": 12,
+				"width": 1090,
+				"height": 84,
+				"background": "#172036",
+				"margin": 6
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-status-0",
+		"parentId": "pulse-roadmap-board-row-0",
+		"name": "Status",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"width": 250,
+				"height": 84,
+				"background": "#15803d"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-status-label-0",
+		"parentId": "pulse-roadmap-board-status-0",
+		"name": "Status Label",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 230,
+				"height": 84,
+				"text": "SHIPPED",
+				"fontSize": 26,
+				"fontWeight": "bold",
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-text-0",
+		"parentId": "pulse-roadmap-board-row-0",
+		"name": "Entry",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 810,
+				"height": 84,
+				"text": "Poly Haven model browser",
+				"fontSize": 28,
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-row-1",
+		"parentId": "pulse-roadmap-board",
+		"name": "Roadmap Board Row 2",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"gap": 12,
+				"width": 1090,
+				"height": 84,
+				"background": "#172036",
+				"margin": 6
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-status-1",
+		"parentId": "pulse-roadmap-board-row-1",
+		"name": "Status",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"width": 250,
+				"height": 84,
+				"background": "#15803d"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-status-label-1",
+		"parentId": "pulse-roadmap-board-status-1",
+		"name": "Status Label",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 230,
+				"height": 84,
+				"text": "SHIPPED",
+				"fontSize": 26,
+				"fontWeight": "bold",
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-text-1",
+		"parentId": "pulse-roadmap-board-row-1",
+		"name": "Entry",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 810,
+				"height": 84,
+				"text": "Pop Up Store world",
+				"fontSize": 28,
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-row-2",
+		"parentId": "pulse-roadmap-board",
+		"name": "Roadmap Board Row 3",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"gap": 12,
+				"width": 1090,
+				"height": 84,
+				"background": "#172036",
+				"margin": 6
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-status-2",
+		"parentId": "pulse-roadmap-board-row-2",
+		"name": "Status",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"width": 250,
+				"height": 84,
+				"background": "#b45309"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-status-label-2",
+		"parentId": "pulse-roadmap-board-status-2",
+		"name": "Status Label",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 230,
+				"height": 84,
+				"text": "IN PROGRESS",
+				"fontSize": 26,
+				"fontWeight": "bold",
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-text-2",
+		"parentId": "pulse-roadmap-board-row-2",
+		"name": "Entry",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 810,
+				"height": 84,
+				"text": "Feedback boards with real player data",
+				"fontSize": 28,
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-row-3",
+		"parentId": "pulse-roadmap-board",
+		"name": "Roadmap Board Row 4",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"gap": 12,
+				"width": 1090,
+				"height": 84,
+				"background": "#172036",
+				"margin": 6
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-status-3",
+		"parentId": "pulse-roadmap-board-row-3",
+		"name": "Status",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"width": 250,
+				"height": 84,
+				"background": "#b45309"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-status-label-3",
+		"parentId": "pulse-roadmap-board-status-3",
+		"name": "Status Label",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 230,
+				"height": 84,
+				"text": "IN PROGRESS",
+				"fontSize": 26,
+				"fontWeight": "bold",
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-text-3",
+		"parentId": "pulse-roadmap-board-row-3",
+		"name": "Entry",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 810,
+				"height": 84,
+				"text": "Avatars and outfits",
+				"fontSize": 28,
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-row-4",
+		"parentId": "pulse-roadmap-board",
+		"name": "Roadmap Board Row 5",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"gap": 12,
+				"width": 1090,
+				"height": 84,
+				"background": "#172036",
+				"margin": 6
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-status-4",
+		"parentId": "pulse-roadmap-board-row-4",
+		"name": "Status",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"width": 250,
+				"height": 84,
+				"background": "#475569"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-status-label-4",
+		"parentId": "pulse-roadmap-board-status-4",
+		"name": "Status Label",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 230,
+				"height": 84,
+				"text": "PLANNED",
+				"fontSize": 26,
+				"fontWeight": "bold",
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-text-4",
+		"parentId": "pulse-roadmap-board-row-4",
+		"name": "Entry",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 810,
+				"height": 84,
+				"text": "Worlds that stay saved for everyone",
+				"fontSize": 28,
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-row-5",
+		"parentId": "pulse-roadmap-board",
+		"name": "Roadmap Board Row 6",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"gap": 12,
+				"width": 1090,
+				"height": 84,
+				"background": "#172036",
+				"margin": 6
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-status-5",
+		"parentId": "pulse-roadmap-board-row-5",
+		"name": "Status",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"width": 250,
+				"height": 84,
+				"background": "#475569"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-status-label-5",
+		"parentId": "pulse-roadmap-board-status-5",
+		"name": "Status Label",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 230,
+				"height": 84,
+				"text": "PLANNED",
+				"fontSize": 26,
+				"fontWeight": "bold",
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-text-5",
+		"parentId": "pulse-roadmap-board-row-5",
+		"name": "Entry",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 810,
+				"height": 84,
+				"text": "Spatial voice chat",
+				"fontSize": 28,
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-frame",
+		"parentId": "pulse-boards",
+		"name": "Roadmap Board Frame",
+		"position": [
+			-9.4234,
+			3.075,
+			-21.0553
+		],
+		"rotation": [
+			0,
+			0.1987,
+			0,
+			0.9801
+		],
+		"scale": [
+			4.5,
+			3.45,
+			0.1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#0b1224"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-glow",
+		"parentId": "pulse-boards",
+		"name": "Roadmap Board Light",
+		"position": [
+			-9.4234,
+			1.3,
+			-21.0553
+		],
+		"rotation": [
+			0,
+			0.1987,
+			0,
+			0.9801
+		],
+		"scale": [
+			3.36,
+			0.04,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-post-0",
+		"parentId": "pulse-boards",
+		"name": "Roadmap Board Post",
+		"position": [
+			-7.9121,
+			0.8,
+			-21.8462
+		],
+		"rotation": [
+			0,
+			0.1987,
+			0,
+			0.9801
+		],
+		"scale": [
+			0.2,
+			1.1,
+			0.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#64748b"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-post-1",
+		"parentId": "pulse-boards",
+		"name": "Roadmap Board Post",
+		"position": [
+			-11.0437,
+			0.8,
+			-20.5222
+		],
+		"rotation": [
+			0,
+			0.1987,
+			0,
+			0.9801
+		],
+		"scale": [
+			0.2,
+			1.1,
+			0.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#64748b"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-desks",
+		"parentId": null,
+		"name": "Desks",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "pulse-suggestion-box-counter",
+		"parentId": "pulse-desks",
+		"name": "Suggestion Desk Counter",
+		"position": [
+			8,
+			0.5,
+			-9.5
+		],
+		"rotation": [
+			0,
+			-0.2231,
+			0,
+			0.9748
+		],
+		"scale": [
+			3,
+			1,
+			0.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#e5e9f0"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-suggestion-box-counter-top",
+		"parentId": "pulse-desks",
+		"name": "Suggestion Desk Counter Top",
+		"position": [
+			8,
+			1.025,
+			-9.5
+		],
+		"rotation": [
+			0,
+			-0.2231,
+			0,
+			0.9748
+		],
+		"scale": [
+			3.1,
+			0.05,
+			0.9
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#0b1224"
+			}
+		]
+	},
+	{
+		"id": "pulse-suggestion-box-counter-light",
+		"parentId": "pulse-desks",
+		"name": "Suggestion Desk Counter Light",
+		"position": [
+			7.8217,
+			0.06,
+			-9.1308
+		],
+		"rotation": [
+			0,
+			-0.2231,
+			0,
+			0.9748
+		],
+		"scale": [
+			2.8,
+			0.05,
+			0.02
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-suggestion-box-frame",
+		"parentId": "pulse-desks",
+		"name": "Suggestion Desk Frame",
+		"position": [
+			8.1218,
+			2.032,
+			-9.7521
+		],
+		"rotation": [
+			0,
+			-0.2231,
+			0,
+			0.9748
+		],
+		"scale": [
+			2.9,
+			1.964,
+			0.1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#0b1224"
+			}
+		]
+	},
+	{
+		"id": "pulse-suggestion-box-glow",
+		"parentId": "pulse-desks",
+		"name": "Suggestion Desk Light",
+		"position": [
+			8.1218,
+			1,
+			-9.7521
+		],
+		"rotation": [
+			0,
+			-0.2231,
+			0,
+			0.9748
+		],
+		"scale": [
+			2.08,
+			0.04,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-suggestion-box",
+		"parentId": "pulse-desks",
+		"name": "Suggestion Desk",
+		"position": [
+			8.0957,
+			2.032,
+			-9.6981
+		],
+		"rotation": [
+			0,
+			-0.2231,
+			0,
+			0.9748
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiPanel",
+				"width": 1000,
+				"height": 640,
+				"worldWidth": 2.6,
+				"background": "#0b1224",
+				"mirrorX": true
+			},
+			{
+				"type": "codeBlock",
+				"code": "\nconst PREFIX = \"pulse-suggestion-box-\";\nconst BOARDS = {\"idea\":\"pulse-ideas-board\",\"bug\":\"pulse-bugs-board\",\"other\":\"pulse-ideas-board\"};\nconst LABELS = {\"idea\":\"Idea\",\"bug\":\"Bug\",\"other\":\"Other\"};\nconst ACTIVE = \"#0d9488\";\nconst IDLE = \"#475569\";\nconst MIN_LENGTH = 4;\nconst MAX_LENGTH = 80;\nconst MAX_ENTRIES = 40;\nconst COOLDOWN_MS = 2000;\nlet category = \"idea\";\nlet typed = '';\nlet lastSent = 0;\n\nfunction set(id, field, value, broadcast = false) { ctx.world.setComponentField(PREFIX + id, 'uiElement', field, value, broadcast); }\nfunction status(message) { set('status', 'text', message, true); }\n\nfunction choose(key) {\n  category = key;\n  for (const other of Object.keys(LABELS)) set('category-' + other, 'background', other === key ? ACTIVE : IDLE);\n  status('Sending ' + (key === 'idea' ? 'an idea' : key === 'bug' ? 'a bug report' : 'something else') + '.');\n}\n\nfunction send() {\n  if (Date.now() - lastSent < COOLDOWN_MS) return;\n  const text = (typed || ctx.ui.getInputText(PREFIX + 'input') || '').trim().replace(/\\s+/g, ' ');\n  if (text.length < MIN_LENGTH) return status('Write a few more words first.');\n  const board = ctx.hierarchy.getSlot(BOARDS[category]);\n  const data = board && board.components.find((c) => c.type === 'scriptState');\n  if (!data) return status('That board is not here right now.');\n  lastSent = Date.now();\n  const title = text.slice(0, MAX_LENGTH);\n  const list = Array.isArray(data.data.items) ? data.data.items : [];\n  const same = list.find((item) => item.title.toLowerCase() === title.toLowerCase());\n  let next;\n  if (same) {\n    next = list.map((item) => (item === same ? { ...item, votes: item.votes + 1 } : item));\n    status('That is already on the board, so it got your vote.');\n  } else {\n    next = [...list, { id: crypto.randomUUID(), title, detail: LABELS[category] + '  ·  new', votes: 1 }];\n    // A full board drops its least-voted (and oldest) entry.\n    if (next.length > MAX_ENTRIES) {\n      const lowest = Math.min(...next.map((item) => item.votes));\n      next.splice(next.findIndex((item) => item.votes === lowest), 1);\n    }\n    status('Thanks! Your ' + LABELS[category].toLowerCase() + ' is on the board.');\n  }\n  ctx.world.setComponentField(BOARDS[category], 'scriptState', 'data', { ...data.data, items: next });\n  typed = '';\n  set('input', 'text', '');\n}\n\nreturn {\n  onUIEvent(event) {\n    if (!event.slotId.startsWith(PREFIX)) return;\n    const id = event.slotId.slice(PREFIX.length);\n    if (id === 'input' && (event.type === 'change' || event.type === 'submit')) {\n      typed = event.text || '';\n      if (event.type === 'submit') send();\n      return;\n    }\n    if (event.type !== 'press') return;\n    if (id === 'send') send();\n    else if (id.startsWith('category-') && LABELS[id.slice(9)]) choose(id.slice(9));\n  }\n};\n"
+			}
+		]
+	},
+	{
+		"id": "pulse-suggestion-box-title",
+		"parentId": "pulse-suggestion-box",
+		"name": "Suggestion Desk Title",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"text": "SUGGESTION BOX",
+				"width": 900,
+				"height": 64,
+				"fontSize": 40,
+				"fontWeight": "bold",
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-suggestion-box-hint",
+		"parentId": "pulse-suggestion-box",
+		"name": "Suggestion Desk Hint",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"text": "Pick a category, write it in a line and send it to the boards.",
+				"width": 900,
+				"height": 56,
+				"fontSize": 24,
+				"color": "#fcd34d"
+			}
+		]
+	},
+	{
+		"id": "pulse-suggestion-box-categories",
+		"parentId": "pulse-suggestion-box",
+		"name": "Suggestion Desk Categories",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"gap": 14,
+				"width": 900,
+				"height": 70,
+				"margin": 6
+			}
+		]
+	},
+	{
+		"id": "pulse-suggestion-box-category-idea",
+		"parentId": "pulse-suggestion-box-categories",
+		"name": "Idea Category",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 280,
+				"height": 66,
+				"text": "Idea",
+				"fontSize": 28,
+				"background": "#0d9488"
+			}
+		]
+	},
+	{
+		"id": "pulse-suggestion-box-category-bug",
+		"parentId": "pulse-suggestion-box-categories",
+		"name": "Bug Category",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 280,
+				"height": 66,
+				"text": "Bug",
+				"fontSize": 28,
+				"background": "#475569"
+			}
+		]
+	},
+	{
+		"id": "pulse-suggestion-box-category-other",
+		"parentId": "pulse-suggestion-box-categories",
+		"name": "Other Category",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 280,
+				"height": 66,
+				"text": "Other",
+				"fontSize": 28,
+				"background": "#475569"
+			}
+		]
+	},
+	{
+		"id": "pulse-suggestion-box-input",
+		"parentId": "pulse-suggestion-box",
+		"name": "Suggestion Desk Text",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "input",
+				"width": 900,
+				"height": 70,
+				"placeholder": "What should we build or fix?",
+				"fontSize": 26,
+				"background": "#172036",
+				"color": "#f8fafc",
+				"margin": 6
+			}
+		]
+	},
+	{
+		"id": "pulse-suggestion-box-send",
+		"parentId": "pulse-suggestion-box",
+		"name": "Suggestion Desk Send",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 900,
+				"height": 76,
+				"text": "Send",
+				"fontSize": 32,
+				"background": "#10b981",
+				"margin": 6
+			}
+		]
+	},
+	{
+		"id": "pulse-suggestion-box-status",
+		"parentId": "pulse-suggestion-box",
+		"name": "Suggestion Desk Status",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"text": "Sending an idea.",
+				"width": 900,
+				"height": 60,
+				"fontSize": 24,
+				"color": "#94a3b8"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-counter",
+		"parentId": "pulse-desks",
+		"name": "Mood Wall Counter",
+		"position": [
+			-8,
+			0.5,
+			-9.5
+		],
+		"rotation": [
+			0,
+			0.2231,
+			0,
+			0.9748
+		],
+		"scale": [
+			3,
+			1,
+			0.8
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#e5e9f0"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-counter-top",
+		"parentId": "pulse-desks",
+		"name": "Mood Wall Counter Top",
+		"position": [
+			-8,
+			1.025,
+			-9.5
+		],
+		"rotation": [
+			0,
+			0.2231,
+			0,
+			0.9748
+		],
+		"scale": [
+			3.1,
+			0.05,
+			0.9
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#0b1224"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-counter-light",
+		"parentId": "pulse-desks",
+		"name": "Mood Wall Counter Light",
+		"position": [
+			-7.8217,
+			0.06,
+			-9.1308
+		],
+		"rotation": [
+			0,
+			0.2231,
+			0,
+			0.9748
+		],
+		"scale": [
+			2.8,
+			0.05,
+			0.02
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-frame",
+		"parentId": "pulse-desks",
+		"name": "Mood Wall Frame",
+		"position": [
+			-8.1218,
+			2.11,
+			-9.7521
+		],
+		"rotation": [
+			0,
+			0.2231,
+			0,
+			0.9748
+		],
+		"scale": [
+			2.9,
+			2.12,
+			0.1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#0b1224"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-glow",
+		"parentId": "pulse-desks",
+		"name": "Mood Wall Light",
+		"position": [
+			-8.1218,
+			1,
+			-9.7521
+		],
+		"rotation": [
+			0,
+			0.2231,
+			0,
+			0.9748
+		],
+		"scale": [
+			2.08,
+			0.04,
+			0.12
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall",
+		"parentId": "pulse-desks",
+		"name": "Mood Wall",
+		"position": [
+			-8.0957,
+			2.11,
+			-9.6981
+		],
+		"rotation": [
+			0,
+			0.2231,
+			0,
+			0.9748
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiPanel",
+				"width": 1000,
+				"height": 700,
+				"worldWidth": 2.6,
+				"background": "#0b1224",
+				"mirrorX": true
+			},
+			{
+				"type": "scriptState",
+				"data": {
+					"counts": [
+						24,
+						41,
+						12,
+						5
+					]
+				}
+			},
+			{
+				"type": "codeBlock",
+				"code": "\nconst SELF = ctx.self.id;\nconst PREFIX = \"pulse-mood-wall-\";\nconst MOODS = 4;\nconst BAR = 500;\nlet drawn = null;\nlet wait = 0;\n\nfunction set(id, field, value, broadcast = false) { ctx.world.setComponentField(PREFIX + id, 'uiElement', field, value, broadcast); }\nfunction counts() {\n  const s = ctx.self.getComponent('scriptState');\n  const list = s && s.data && Array.isArray(s.data.counts) ? s.data.counts : [];\n  return Array.from({ length: MOODS }, (_, i) => Number(list[i]) || 0);\n}\n\nfunction draw() {\n  const list = counts();\n  const signature = list.join(',');\n  if (signature === drawn) return;\n  drawn = signature;\n  const total = list.reduce((sum, n) => sum + n, 0);\n  const most = Math.max(1, ...list);\n  list.forEach((n, i) => {\n    set('fill-' + i, 'width', Math.max(8, Math.round((BAR * n) / most)));\n    set('count-' + i, 'text', n + (total ? '  (' + Math.round((100 * n) / total) + '%)' : ''));\n  });\n  set('status', 'text', total ? total + ' votes so far  ·  thanks for telling us' : 'No votes yet.', true);\n}\n\nreturn {\n  tick(dt) {\n    if (!ctx.world.isHost()) return;\n    wait -= dt;\n    if (wait > 0) return;\n    wait = 0.25;\n    draw();\n  },\n  onUIEvent(event) {\n    if (event.type !== 'press' || !event.slotId.startsWith(PREFIX)) return;\n    const match = event.slotId.slice(PREFIX.length).match(/^button-(\\d+)$/);\n    if (!match) return;\n    const next = counts();\n    next[Number(match[1])] += 1;\n    ctx.world.setComponentField(SELF, 'scriptState', 'data', { counts: next });\n    draw();\n  }\n};\n"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-title",
+		"parentId": "pulse-mood-wall",
+		"name": "Mood Wall Title",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"text": "MOOD WALL",
+				"width": 900,
+				"height": 64,
+				"fontSize": 40,
+				"fontWeight": "bold",
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-hint",
+		"parentId": "pulse-mood-wall",
+		"name": "Mood Wall Hint",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"text": "How are you feeling about the platform?",
+				"width": 900,
+				"height": 56,
+				"fontSize": 26,
+				"color": "#fcd34d"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-buttons",
+		"parentId": "pulse-mood-wall",
+		"name": "Mood Wall Buttons",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"gap": 12,
+				"width": 900,
+				"height": 76,
+				"margin": 8
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-button-0",
+		"parentId": "pulse-mood-wall-buttons",
+		"name": "Loving it Button",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 213,
+				"height": 72,
+				"text": "Loving it",
+				"fontSize": 25,
+				"background": "#16a34a"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-button-1",
+		"parentId": "pulse-mood-wall-buttons",
+		"name": "Good Button",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 213,
+				"height": 72,
+				"text": "Good",
+				"fontSize": 25,
+				"background": "#65a30d"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-button-2",
+		"parentId": "pulse-mood-wall-buttons",
+		"name": "Meh Button",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 213,
+				"height": 72,
+				"text": "Meh",
+				"fontSize": 25,
+				"background": "#d97706"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-button-3",
+		"parentId": "pulse-mood-wall-buttons",
+		"name": "Needs work Button",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "button",
+				"width": 213,
+				"height": 72,
+				"text": "Needs work",
+				"fontSize": 25,
+				"background": "#dc2626"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-row-0",
+		"parentId": "pulse-mood-wall",
+		"name": "Loving it Tally",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"gap": 12,
+				"width": 900,
+				"height": 56,
+				"margin": 6
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-label-0",
+		"parentId": "pulse-mood-wall-row-0",
+		"name": "Loving it Label",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 190,
+				"height": 56,
+				"text": "Loving it",
+				"fontSize": 26,
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-track-0",
+		"parentId": "pulse-mood-wall-row-0",
+		"name": "Loving it Track",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"width": 500,
+				"height": 40,
+				"background": "#172036"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-fill-0",
+		"parentId": "pulse-mood-wall-track-0",
+		"name": "Loving it Bar",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"width": 8,
+				"height": 40,
+				"background": "#16a34a"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-count-0",
+		"parentId": "pulse-mood-wall-row-0",
+		"name": "Loving it Count",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 170,
+				"height": 56,
+				"text": "0",
+				"fontSize": 24,
+				"color": "#94a3b8"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-row-1",
+		"parentId": "pulse-mood-wall",
+		"name": "Good Tally",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"gap": 12,
+				"width": 900,
+				"height": 56,
+				"margin": 6
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-label-1",
+		"parentId": "pulse-mood-wall-row-1",
+		"name": "Good Label",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 190,
+				"height": 56,
+				"text": "Good",
+				"fontSize": 26,
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-track-1",
+		"parentId": "pulse-mood-wall-row-1",
+		"name": "Good Track",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"width": 500,
+				"height": 40,
+				"background": "#172036"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-fill-1",
+		"parentId": "pulse-mood-wall-track-1",
+		"name": "Good Bar",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"width": 8,
+				"height": 40,
+				"background": "#65a30d"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-count-1",
+		"parentId": "pulse-mood-wall-row-1",
+		"name": "Good Count",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 170,
+				"height": 56,
+				"text": "0",
+				"fontSize": 24,
+				"color": "#94a3b8"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-row-2",
+		"parentId": "pulse-mood-wall",
+		"name": "Meh Tally",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"gap": 12,
+				"width": 900,
+				"height": 56,
+				"margin": 6
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-label-2",
+		"parentId": "pulse-mood-wall-row-2",
+		"name": "Meh Label",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 190,
+				"height": 56,
+				"text": "Meh",
+				"fontSize": 26,
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-track-2",
+		"parentId": "pulse-mood-wall-row-2",
+		"name": "Meh Track",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"width": 500,
+				"height": 40,
+				"background": "#172036"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-fill-2",
+		"parentId": "pulse-mood-wall-track-2",
+		"name": "Meh Bar",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"width": 8,
+				"height": 40,
+				"background": "#d97706"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-count-2",
+		"parentId": "pulse-mood-wall-row-2",
+		"name": "Meh Count",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 170,
+				"height": 56,
+				"text": "0",
+				"fontSize": 24,
+				"color": "#94a3b8"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-row-3",
+		"parentId": "pulse-mood-wall",
+		"name": "Needs work Tally",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"gap": 12,
+				"width": 900,
+				"height": 56,
+				"margin": 6
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-label-3",
+		"parentId": "pulse-mood-wall-row-3",
+		"name": "Needs work Label",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 190,
+				"height": 56,
+				"text": "Needs work",
+				"fontSize": 26,
+				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-track-3",
+		"parentId": "pulse-mood-wall-row-3",
+		"name": "Needs work Track",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"flexDirection": "row",
+				"width": 500,
+				"height": 40,
+				"background": "#172036"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-fill-3",
+		"parentId": "pulse-mood-wall-track-3",
+		"name": "Needs work Bar",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "container",
+				"width": 8,
+				"height": 40,
+				"background": "#dc2626"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-count-3",
+		"parentId": "pulse-mood-wall-row-3",
+		"name": "Needs work Count",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"width": 170,
+				"height": 56,
+				"text": "0",
+				"fontSize": 24,
+				"color": "#94a3b8"
+			}
+		]
+	},
+	{
+		"id": "pulse-mood-wall-status",
+		"parentId": "pulse-mood-wall",
+		"name": "Mood Wall Status",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"text": "",
+				"width": 900,
+				"height": 50,
+				"fontSize": 22,
+				"color": "#94a3b8"
+			}
+		]
+	},
+	{
+		"id": "pulse-lounge",
+		"parentId": null,
+		"name": "Lounge",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "pulse-sofa-l1-seat",
+		"parentId": "pulse-lounge",
+		"name": "Sofa Seat",
+		"position": [
+			3.6,
+			0.25,
+			-13.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.6,
+			0.5,
+			0.95
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#0f766e"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-sofa-l1-back",
+		"parentId": "pulse-lounge",
+		"name": "Sofa Back",
+		"position": [
+			3.6,
+			0.75,
+			-13.1
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.6,
+			0.6,
+			0.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#0f766e"
+			}
+		]
+	},
+	{
+		"id": "pulse-sofa-l1-arm-a",
+		"parentId": "pulse-lounge",
+		"name": "Sofa Arm",
+		"position": [
+			2.3,
+			0.4,
+			-13.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.2,
+			0.8,
+			0.95
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#0f766e"
+			}
+		]
+	},
+	{
+		"id": "pulse-sofa-l1-arm-b",
+		"parentId": "pulse-lounge",
+		"name": "Sofa Arm",
+		"position": [
+			4.9,
+			0.4,
+			-13.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.2,
+			0.8,
+			0.95
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#0f766e"
+			}
+		]
+	},
+	{
+		"id": "pulse-sofa-l1-cushion",
+		"parentId": "pulse-lounge",
+		"name": "Sofa Cushion",
+		"position": [
+			3.6,
+			0.56,
+			-13.55
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.2,
+			0.12,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f1f5f9"
+			}
+		]
+	},
+	{
+		"id": "pulse-sofa-l2-seat",
+		"parentId": "pulse-lounge",
+		"name": "Sofa Seat",
+		"position": [
+			7.8,
+			0.25,
+			-4.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.6,
+			0.5,
+			0.95
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#b45309"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-sofa-l2-back",
+		"parentId": "pulse-lounge",
+		"name": "Sofa Back",
+		"position": [
+			7.8,
+			0.75,
+			-4.1
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.6,
+			0.6,
+			0.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#b45309"
+			}
+		]
+	},
+	{
+		"id": "pulse-sofa-l2-arm-a",
+		"parentId": "pulse-lounge",
+		"name": "Sofa Arm",
+		"position": [
+			6.5,
+			0.4,
+			-4.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.2,
+			0.8,
+			0.95
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#b45309"
+			}
+		]
+	},
+	{
+		"id": "pulse-sofa-l2-arm-b",
+		"parentId": "pulse-lounge",
+		"name": "Sofa Arm",
+		"position": [
+			9.1,
+			0.4,
+			-4.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.2,
+			0.8,
+			0.95
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#b45309"
+			}
+		]
+	},
+	{
+		"id": "pulse-sofa-l2-cushion",
+		"parentId": "pulse-lounge",
+		"name": "Sofa Cushion",
+		"position": [
+			7.8,
+			0.56,
+			-4.55
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.2,
+			0.12,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f1f5f9"
+			}
+		]
+	},
+	{
+		"id": "pulse-table-l",
+		"parentId": "pulse-lounge",
+		"name": "Coffee Table",
+		"position": [
+			4.9,
+			0.2,
+			-10.8
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9,
+			0.4,
+			0.9
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#9a7049"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-sofa-r1-seat",
+		"parentId": "pulse-lounge",
+		"name": "Sofa Seat",
+		"position": [
+			-3.6,
+			0.25,
+			-13.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.6,
+			0.5,
+			0.95
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#b45309"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-sofa-r1-back",
+		"parentId": "pulse-lounge",
+		"name": "Sofa Back",
+		"position": [
+			-3.6,
+			0.75,
+			-13.1
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.6,
+			0.6,
+			0.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#b45309"
+			}
+		]
+	},
+	{
+		"id": "pulse-sofa-r1-arm-a",
+		"parentId": "pulse-lounge",
+		"name": "Sofa Arm",
+		"position": [
+			-4.9,
+			0.4,
+			-13.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.2,
+			0.8,
+			0.95
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#b45309"
+			}
+		]
+	},
+	{
+		"id": "pulse-sofa-r1-arm-b",
+		"parentId": "pulse-lounge",
+		"name": "Sofa Arm",
+		"position": [
+			-2.3,
+			0.4,
+			-13.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.2,
+			0.8,
+			0.95
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#b45309"
+			}
+		]
+	},
+	{
+		"id": "pulse-sofa-r1-cushion",
+		"parentId": "pulse-lounge",
+		"name": "Sofa Cushion",
+		"position": [
+			-3.6,
+			0.56,
+			-13.55
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.2,
+			0.12,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f1f5f9"
+			}
+		]
+	},
+	{
+		"id": "pulse-sofa-r2-seat",
+		"parentId": "pulse-lounge",
+		"name": "Sofa Seat",
+		"position": [
+			-7.8,
+			0.25,
+			-4.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.6,
+			0.5,
+			0.95
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#0f766e"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-sofa-r2-back",
+		"parentId": "pulse-lounge",
+		"name": "Sofa Back",
+		"position": [
+			-7.8,
+			0.75,
+			-4.1
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.6,
+			0.6,
+			0.2
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#0f766e"
+			}
+		]
+	},
+	{
+		"id": "pulse-sofa-r2-arm-a",
+		"parentId": "pulse-lounge",
+		"name": "Sofa Arm",
+		"position": [
+			-9.1,
+			0.4,
+			-4.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.2,
+			0.8,
+			0.95
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#0f766e"
+			}
+		]
+	},
+	{
+		"id": "pulse-sofa-r2-arm-b",
+		"parentId": "pulse-lounge",
+		"name": "Sofa Arm",
+		"position": [
+			-6.5,
+			0.4,
+			-4.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.2,
+			0.8,
+			0.95
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#0f766e"
+			}
+		]
+	},
+	{
+		"id": "pulse-sofa-r2-cushion",
+		"parentId": "pulse-lounge",
+		"name": "Sofa Cushion",
+		"position": [
+			-7.8,
+			0.56,
+			-4.55
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			2.2,
+			0.12,
+			0.7
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#f1f5f9"
+			}
+		]
+	},
+	{
+		"id": "pulse-table-r",
+		"parentId": "pulse-lounge",
+		"name": "Coffee Table",
+		"position": [
+			-4.9,
+			0.2,
+			-10.8
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9,
+			0.4,
+			0.9
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#9a7049"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-plant-l1-pot",
+		"parentId": "pulse-lounge",
+		"name": "Plant Pot",
+		"position": [
+			12.6,
+			0.45,
+			4.6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9,
+			0.9,
+			0.9
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#c2703d"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-plant-l1-leaves",
+		"parentId": "pulse-lounge",
+		"name": "Plant",
+		"position": [
+			12.6,
+			1.425,
+			4.6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.35,
+			1.275,
+			1.35
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#22a35a"
+			}
+		]
+	},
+	{
+		"id": "pulse-plant-l1-top",
+		"parentId": "pulse-lounge",
+		"name": "Plant",
+		"position": [
+			12.75,
+			2.1,
+			4.525
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.825,
+			0.825,
+			0.825
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#34c46e"
+			}
+		]
+	},
+	{
+		"id": "pulse-plant-l2-pot",
+		"parentId": "pulse-lounge",
+		"name": "Plant Pot",
+		"position": [
+			12.6,
+			0.39,
+			-6.6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.78,
+			0.78,
+			0.78
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#c2703d"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-plant-l2-leaves",
+		"parentId": "pulse-lounge",
+		"name": "Plant",
+		"position": [
+			12.6,
+			1.235,
+			-6.6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.17,
+			1.105,
+			1.17
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#22a35a"
+			}
+		]
+	},
+	{
+		"id": "pulse-plant-l2-top",
+		"parentId": "pulse-lounge",
+		"name": "Plant",
+		"position": [
+			12.73,
+			1.82,
+			-6.665
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.715,
+			0.715,
+			0.715
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#34c46e"
+			}
+		]
+	},
+	{
+		"id": "pulse-plant-l3-pot",
+		"parentId": "pulse-lounge",
+		"name": "Plant Pot",
+		"position": [
+			12.6,
+			0.45,
+			-24.4
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9,
+			0.9,
+			0.9
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#c2703d"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-plant-l3-leaves",
+		"parentId": "pulse-lounge",
+		"name": "Plant",
+		"position": [
+			12.6,
+			1.425,
+			-24.4
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.35,
+			1.275,
+			1.35
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#22a35a"
+			}
+		]
+	},
+	{
+		"id": "pulse-plant-l3-top",
+		"parentId": "pulse-lounge",
+		"name": "Plant",
+		"position": [
+			12.75,
+			2.1,
+			-24.475
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.825,
+			0.825,
+			0.825
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#34c46e"
+			}
+		]
+	},
+	{
+		"id": "pulse-plant-r1-pot",
+		"parentId": "pulse-lounge",
+		"name": "Plant Pot",
+		"position": [
+			-12.6,
+			0.45,
+			4.6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9,
+			0.9,
+			0.9
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#c2703d"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-plant-r1-leaves",
+		"parentId": "pulse-lounge",
+		"name": "Plant",
+		"position": [
+			-12.6,
+			1.425,
+			4.6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.35,
+			1.275,
+			1.35
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#22a35a"
+			}
+		]
+	},
+	{
+		"id": "pulse-plant-r1-top",
+		"parentId": "pulse-lounge",
+		"name": "Plant",
+		"position": [
+			-12.45,
+			2.1,
+			4.525
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.825,
+			0.825,
+			0.825
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#34c46e"
+			}
+		]
+	},
+	{
+		"id": "pulse-plant-r2-pot",
+		"parentId": "pulse-lounge",
+		"name": "Plant Pot",
+		"position": [
+			-12.6,
+			0.39,
+			-6.6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.78,
+			0.78,
+			0.78
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#c2703d"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-plant-r2-leaves",
+		"parentId": "pulse-lounge",
+		"name": "Plant",
+		"position": [
+			-12.6,
+			1.235,
+			-6.6
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.17,
+			1.105,
+			1.17
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#22a35a"
+			}
+		]
+	},
+	{
+		"id": "pulse-plant-r2-top",
+		"parentId": "pulse-lounge",
+		"name": "Plant",
+		"position": [
+			-12.47,
+			1.82,
+			-6.665
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.715,
+			0.715,
+			0.715
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#34c46e"
+			}
+		]
+	},
+	{
+		"id": "pulse-plant-r3-pot",
+		"parentId": "pulse-lounge",
+		"name": "Plant Pot",
+		"position": [
+			-12.6,
+			0.45,
+			-24.4
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9,
+			0.9,
+			0.9
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#c2703d"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-plant-r3-leaves",
+		"parentId": "pulse-lounge",
+		"name": "Plant",
+		"position": [
+			-12.6,
+			1.425,
+			-24.4
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.35,
+			1.275,
+			1.35
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#22a35a"
+			}
+		]
+	},
+	{
+		"id": "pulse-plant-r3-top",
+		"parentId": "pulse-lounge",
+		"name": "Plant",
+		"position": [
+			-12.45,
+			2.1,
+			-24.475
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.825,
+			0.825,
+			0.825
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#34c46e"
+			}
+		]
+	},
+	{
+		"id": "pulse-pendant-0-cord",
+		"parentId": "pulse-lounge",
+		"name": "Lamp Cord",
+		"position": [
+			-6,
+			5.8,
+			-12
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.02,
+			2.4,
+			0.02
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#0b1224"
+			}
+		]
+	},
+	{
+		"id": "pulse-pendant-0",
+		"parentId": "pulse-lounge",
+		"name": "Pendant Lamp",
+		"position": [
+			-6,
+			4.6,
+			-12
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.6,
+			0.35,
+			0.6
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#fde68a"
+			}
+		]
+	},
+	{
+		"id": "pulse-pendant-1-cord",
+		"parentId": "pulse-lounge",
+		"name": "Lamp Cord",
+		"position": [
+			-3,
+			5.8,
+			-12
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.02,
+			2.4,
+			0.02
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#0b1224"
+			}
+		]
+	},
+	{
+		"id": "pulse-pendant-1",
+		"parentId": "pulse-lounge",
+		"name": "Pendant Lamp",
+		"position": [
+			-3,
+			4.6,
+			-12
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.6,
+			0.35,
+			0.6
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#fde68a"
+			}
+		]
+	},
+	{
+		"id": "pulse-pendant-2-cord",
+		"parentId": "pulse-lounge",
+		"name": "Lamp Cord",
+		"position": [
+			3,
+			5.8,
+			-12
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.02,
+			2.4,
+			0.02
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#0b1224"
+			}
+		]
+	},
+	{
+		"id": "pulse-pendant-2",
+		"parentId": "pulse-lounge",
+		"name": "Pendant Lamp",
+		"position": [
+			3,
+			4.6,
+			-12
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.6,
+			0.35,
+			0.6
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#fde68a"
+			}
+		]
+	},
+	{
+		"id": "pulse-pendant-3-cord",
+		"parentId": "pulse-lounge",
+		"name": "Lamp Cord",
+		"position": [
+			6,
+			5.8,
+			-12
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.02,
+			2.4,
+			0.02
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#0b1224"
+			}
+		]
+	},
+	{
+		"id": "pulse-pendant-3",
+		"parentId": "pulse-lounge",
+		"name": "Pendant Lamp",
+		"position": [
+			6,
+			4.6,
+			-12
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.6,
+			0.35,
+			0.6
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#fde68a"
+			}
+		]
+	},
+	{
+		"id": "pulse-pendant-l-cord",
+		"parentId": "pulse-lounge",
+		"name": "Lamp Cord",
+		"position": [
+			8,
+			5.8,
+			-9.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.02,
+			2.4,
+			0.02
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#0b1224"
+			}
+		]
+	},
+	{
+		"id": "pulse-pendant-l",
+		"parentId": "pulse-lounge",
+		"name": "Pendant Lamp",
+		"position": [
+			8,
+			4.6,
+			-9.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.6,
+			0.35,
+			0.6
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-pendant-r-cord",
+		"parentId": "pulse-lounge",
+		"name": "Lamp Cord",
+		"position": [
+			-8,
+			5.8,
+			-9.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.02,
+			2.4,
+			0.02
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#0b1224"
+			}
+		]
+	},
+	{
+		"id": "pulse-pendant-r",
+		"parentId": "pulse-lounge",
+		"name": "Pendant Lamp",
+		"position": [
+			-8,
+			4.6,
+			-9.5
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.6,
+			0.35,
+			0.6
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-podium",
+		"parentId": null,
+		"name": "Podium",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "pulse-podium-base",
+		"parentId": "pulse-podium",
+		"name": "Podium Base",
+		"position": [
+			-4.3,
+			0.75,
+			-19.3
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9,
+			1,
+			0.6
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9a7049"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "pulse-podium-top",
+		"parentId": "pulse-podium",
+		"name": "Podium Desk",
+		"position": [
+			-4.3,
+			1.3,
+			-19.32
+		],
+		"rotation": [
+			0.1741,
+			0,
+			0,
+			0.9847
+		],
+		"scale": [
+			1.05,
+			0.08,
+			0.75
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7a573a"
+			}
+		]
+	},
+	{
+		"id": "pulse-podium-sign-frame",
+		"parentId": "pulse-podium",
+		"name": "Dev Updates Sign Frame",
+		"position": [
+			-4.3,
+			0.8,
+			-18.97
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.82,
+			0.42,
+			0.04
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#5eead4"
+			}
+		]
+	},
+	{
+		"id": "pulse-podium-sign",
+		"parentId": "pulse-podium",
+		"name": "Dev Updates Sign",
+		"position": [
+			-4.3,
+			0.8,
+			-18.94
+		],
+		"rotation": [
+			0,
+			1,
+			0,
+			0
+		],
+		"scale": [
+			0.7,
+			0.3,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#0b1224"
+			},
+			{
+				"type": "textDisplay",
+				"title": "Dev Updates",
+				"lines": [
+					"Coming soon"
+				],
+				"color": "#0b1224"
+			}
+		]
+	}
+]

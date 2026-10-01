@@ -4,7 +4,8 @@ import type { IconName } from './Icon.svelte';
 const ADAPTER_VIEW: Record<string, { label: string; icon: IconName }> = {
 	local: { label: 'This device', icon: 'device' },
 	cloud: { label: 'Cloud', icon: 'cloud' },
-	purchased: { label: 'Marketplace', icon: 'cube' }
+	purchased: { label: 'Marketplace', icon: 'cube' },
+	filesystem: { label: 'Project files', icon: 'folder' }
 };
 
 export const adapterLabel = (id: string, fallback = id): string => ADAPTER_VIEW[id]?.label ?? fallback;

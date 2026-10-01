@@ -3,7 +3,7 @@ import { prisma } from '../db';
 import { UnauthorizedError, ForbiddenError, NotFoundError, BadRequestError } from '../errors';
 import { validateWorldScene } from '$lib/worlds/package';
 import { migrateSlotTree } from '$lib/assets/ref';
-import { linkSceneAssets, readyAssetIds } from './assets';
+import { linkSceneAssets, readyAssetIds, resolveThumbnail, withThumbnail } from './assets';
 import type { SlotTree } from '$lib/ecs/types';
 import type { HostedWorldVisibility } from '$lib/worldVisibility';
 import { getActiveRoomCodes } from '../rooms';
@@ -18,7 +18,10 @@ function generateRoomCode(): string {
 	return randomBytes(4).toString('hex');
 }
 
-/** Used by the Dash "Worlds" tab (fetched via /api/worlds) — every currently-hosted session. */
+/**
+ * Used by the Dash "Worlds" tab (fetched via /api/worlds) — the currently-hosted sessions the caller can enter.
+ * Today that is every public one; sessions that only friends can enter belong here too once friend access exists.
+ */
 export async function listActiveWorldSessions() {
 	const activeSessions = await prisma.worldSession.findMany({
 		where: { endedAt: null },
@@ -38,7 +41,7 @@ export async function listActiveWorldSessions() {
 
 	return prisma.worldSession.findMany({
 		where: { endedAt: null, world: { visibility: 'public' } },
-		include: { world: { select: { id: true, name: true, hostUserId: true, visibility: true } } },
+		include: { world: { select: { id: true, name: true, hostUserId: true, visibility: true, thumbnailAssetId: true, hostUser: { select: { name: true } } } } },
 		orderBy: { startedAt: 'desc' }
 	});
 }
@@ -75,7 +78,8 @@ export async function startHostingSession(
 	world = world
 		? await prisma.world.update({
 				where: { id: world.id },
-				data: { sceneData: migrateSlotTree(params.sceneSnapshot) as object, visibility: params.visibility }
+				// The old preview no longer shows this scene; the host sends a new one once it is up (see `setWorldPreview`).
+				data: { sceneData: migrateSlotTree(params.sceneSnapshot) as object, visibility: params.visibility, thumbnailAssetId: null }
 			})
 		: await prisma.world.create({
 				data: {
@@ -102,6 +106,20 @@ export async function startHostingSession(
 	});
 
 	return { world, session };
+}
+
+/** Sets the 360° preview of a world the caller hosts. A preview that is not a finished image asset is ignored. */
+export async function setWorldPreview(user: SessionUser | null, worldId: string, thumbnailAssetId: unknown) {
+	if (!user) throw new UnauthorizedError();
+	const world = await prisma.world.findUnique({ where: { id: worldId } });
+	if (!world) throw new NotFoundError();
+	if (world.hostUserId !== user.id) throw new ForbiddenError();
+	await prisma.$transaction(async (tx) => {
+		const thumbnail = await resolveThumbnail(tx, thumbnailAssetId, null);
+		const sceneIds = await readyAssetIds(tx, migrateSlotTree(world.sceneData as unknown as SlotTree));
+		await linkSceneAssets(tx, user, { kind: 'world', id: worldId }, withThumbnail(sceneIds, thumbnail));
+		await tx.world.update({ where: { id: worldId }, data: { thumbnailAssetId: thumbnail } });
+	});
 }
 
 export async function stopHostingSession(user: SessionUser | null, worldId: string) {

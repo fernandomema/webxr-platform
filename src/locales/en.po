@@ -18,8 +18,9 @@ msgstr "Email"
 #~ msgid "Contraseña"
 #~ msgstr "Contraseña"
 
-#~ msgid "Entrar"
-#~ msgstr "Entrar"
+#: src/routes/+page.svelte
+msgid "Entrar"
+msgstr "Entrar"
 
 #~ msgid "Crear cuenta"
 #~ msgstr "Crear cuenta"
@@ -62,7 +63,6 @@ msgstr "Username"
 msgid "Password"
 msgstr "Password"
 
-#: src/routes/+page.svelte
 #: src/routes/login/+page.svelte
 #: src/routes/register/+page.svelte
 msgid "Create an account"
@@ -86,8 +86,6 @@ msgstr "Email or username"
 
 #: src/lib/studio/components/MarketplacePanel.svelte
 #: src/lib/studio/components/PublishDialog.svelte
-#: src/routes/+page.svelte
-#: src/routes/+page.svelte
 #: src/routes/login/+page.svelte
 #: src/routes/login/+page.svelte
 #: src/routes/studio/+page.svelte
@@ -593,9 +591,8 @@ msgstr "Escape"
 msgid "Cancel"
 msgstr "Cancel"
 
-#: src/lib/studio/state/dialogs.svelte.ts
-msgid "Confirm"
-msgstr "Confirm"
+#~ msgid "Confirm"
+#~ msgstr "Confirm"
 
 #: src/lib/studio/ui/ToastHost.svelte
 msgid "Dismiss"
@@ -709,6 +706,7 @@ msgstr "M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6"
 msgid "M9 9h6v6H9zM9 9V6a3 3 0 10-3 3h3M15 9h3a3 3 0 10-3-3M9 15H6a3 3 0 103 3M15 15v3a3 3 0 103-3"
 msgstr "M9 9h6v6H9zM9 9V6a3 3 0 10-3 3h3M15 9h3a3 3 0 10-3-3M9 15H6a3 3 0 103 3M15 15v3a3 3 0 103-3"
 
+#: src/routes/+page.svelte
 #: src/routes/studio/+page.svelte
 msgid "Create"
 msgstr "Create"
@@ -745,13 +743,10 @@ msgstr "Could not delete the folder"
 #~ msgid "Create and edit worlds and objects for the WebXR platform."
 #~ msgstr "Create and edit worlds and objects for the WebXR platform."
 
-#: src/routes/+page.svelte
-#: src/routes/+page.svelte
 #: src/routes/studio/+page.svelte
 msgid "Studio"
 msgstr "Studio"
 
-#: src/routes/+page.svelte
 #: src/routes/studio/+page.svelte
 msgid "Signed in"
 msgstr "Signed in"
@@ -1089,10 +1084,14 @@ msgstr "Redo (Ctrl+Shift+Z)"
 msgid "Editing mode"
 msgstr "Editing mode"
 
+#: src/lib/landing/Create.svelte
+#: src/lib/landing/Create.svelte
 #: src/lib/studio/components/TopBar.svelte
 msgid "Simple"
 msgstr "Simple"
 
+#: src/lib/landing/Create.svelte
+#: src/lib/landing/Create.svelte
 #: src/lib/studio/components/TopBar.svelte
 #: src/routes/xr-panel/inspector/+page.svelte
 msgid "Advanced"
@@ -1112,7 +1111,6 @@ msgid "Try it in the game"
 msgstr "Try it in the game"
 
 #: src/lib/studio/components/TopBar.svelte
-#: src/routes/+page.svelte
 msgid "Play"
 msgstr "Play"
 
@@ -2108,68 +2106,53 @@ msgstr "Hide listing"
 msgid "Publishing an update also pushes your current scene as a new revision."
 msgstr "Publishing an update also pushes your current scene as a new revision."
 
-#: src/routes/+page.svelte
-msgid "Peer-to-peer worlds"
-msgstr "Peer-to-peer worlds"
+#~ msgid "Peer-to-peer worlds"
+#~ msgstr "Peer-to-peer worlds"
 
-#: src/routes/+page.svelte
-msgid "Every visitor connects straight to the host over WebRTC. The server only handles rendezvous — no world ever lives on our machines."
-msgstr "Every visitor connects straight to the host over WebRTC. The server only handles rendezvous — no world ever lives on our machines."
+#~ msgid "Every visitor connects straight to the host over WebRTC. The server only handles rendezvous — no world ever lives on our machines."
+#~ msgstr "Every visitor connects straight to the host over WebRTC. The server only handles rendezvous — no world ever lives on our machines."
 
-#: src/routes/+page.svelte
-msgid "Build in VR or on the web"
-msgstr "Build in VR or on the web"
+#~ msgid "Build in VR or on the web"
+#~ msgstr "Build in VR or on the web"
 
-#: src/routes/+page.svelte
-msgid "The Studio editor runs right in the browser: templates, a scene tree and an inspector to shape objects and worlds without leaving the tab."
-msgstr "The Studio editor runs right in the browser: templates, a scene tree and an inspector to shape objects and worlds without leaving the tab."
+#~ msgid "The Studio editor runs right in the browser: templates, a scene tree and an inspector to shape objects and worlds without leaving the tab."
+#~ msgstr "The Studio editor runs right in the browser: templates, a scene tree and an inspector to shape objects and worlds without leaving the tab."
 
-#: src/routes/+page.svelte
-msgid "Grab, equip, play"
-msgstr "Grab, equip, play"
+#~ msgid "Grab, equip, play"
+#~ msgstr "Grab, equip, play"
 
-#: src/routes/+page.svelte
-msgid "Pick objects up by hand or with the laser, equip them from the radial menu, and jump into a session with friends in one click."
-msgstr "Pick objects up by hand or with the laser, equip them from the radial menu, and jump into a session with friends in one click."
+#~ msgid "Pick objects up by hand or with the laser, equip them from the radial menu, and jump into a session with friends in one click."
+#~ msgstr "Pick objects up by hand or with the laser, equip them from the radial menu, and jump into a session with friends in one click."
 
 #~ msgid "A peer-to-peer WebXR platform: host your own world from the browser and build what's in it with the Studio editor."
 #~ msgstr "A peer-to-peer WebXR platform: host your own world from the browser and build what's in it with the Studio editor."
 
-#: src/routes/+page.svelte
-msgid "Play now"
-msgstr "Play now"
+#~ msgid "Play now"
+#~ msgstr "Play now"
 
-#: src/routes/+page.svelte
-msgid "<0/>Play now"
-msgstr "<0/>Play now"
+#~ msgid "<0/>Play now"
+#~ msgstr "<0/>Play now"
 
-#: src/routes/+page.svelte
-msgid "<0/>Open Studio"
-msgstr "<0/>Open Studio"
+#~ msgid "<0/>Open Studio"
+#~ msgstr "<0/>Open Studio"
 
-#: src/routes/+page.svelte
-msgid "Your own WebXR world, hosted from your browser"
-msgstr "Your own WebXR world, hosted from your browser"
+#~ msgid "Your own WebXR world, hosted from your browser"
+#~ msgstr "Your own WebXR world, hosted from your browser"
 
-#: src/routes/+page.svelte
-msgid "No install, no central world server. Open a room, build what's inside it with the Studio editor, and invite people to connect straight to you — on desktop or in a headset."
-msgstr "No install, no central world server. Open a room, build what's inside it with the Studio editor, and invite people to connect straight to you — on desktop or in a headset."
+#~ msgid "No install, no central world server. Open a room, build what's inside it with the Studio editor, and invite people to connect straight to you — on desktop or in a headset."
+#~ msgstr "No install, no central world server. Open a room, build what's inside it with the Studio editor, and invite people to connect straight to you — on desktop or in a headset."
 
-#: src/routes/+page.svelte
-msgid "No account needed to try it — sign in later to save your worlds."
-msgstr "No account needed to try it — sign in later to save your worlds."
+#~ msgid "No account needed to try it — sign in later to save your worlds."
+#~ msgstr "No account needed to try it — sign in later to save your worlds."
 
-#: src/routes/+page.svelte
-msgid "Features"
-msgstr "Features"
+#~ msgid "Features"
+#~ msgstr "Features"
 
 #~ msgid "Play · WebXR Platform"
 #~ msgstr "Play · WebXR Platform"
 
-#: src/routes/+page.svelte
-#: src/routes/+page.svelte
-msgid "Sign out"
-msgstr "Sign out"
+#~ msgid "Sign out"
+#~ msgstr "Sign out"
 
 #: src/lib/studio/components/AssetsPanel.svelte
 #: src/lib/studio/components/AssetsPanel.svelte
@@ -2674,10 +2657,8 @@ msgstr "Move the camera to its own slot"
 msgid "FreeCameraKeyboardMoveInput"
 msgstr "FreeCameraKeyboardMoveInput"
 
-#. 0: PLATFORM_NAME
-#: src/routes/+page.svelte
-msgid "{0}: host your own WebXR world from the browser and build what's in it with the Studio editor."
-msgstr "{0}: host your own WebXR world from the browser and build what's in it with the Studio editor."
+#~ msgid "{0}: host your own WebXR world from the browser and build what's in it with the Studio editor."
+#~ msgstr "{0}: host your own WebXR world from the browser and build what's in it with the Studio editor."
 
 #. 0: PLATFORM_NAME
 #: src/routes/studio/+page.svelte
@@ -2853,3 +2834,960 @@ msgstr "{0} picker"
 #: src/lib/studio/ui/ColorInput.svelte
 msgid "{0} hex"
 msgstr "{0} hex"
+
+#~ msgid "A place to be with people, discover things, and make a world of your own. Join Kithin on desktop or in VR."
+#~ msgstr "A place to be with people, discover things, and make a world of your own. Join Kithin on desktop or in VR."
+
+#~ msgid "Kithin — Your world, together"
+#~ msgstr "Kithin — Your world, together"
+
+#~ msgid "Kithin home"
+#~ msgstr "Kithin home"
+
+#: src/routes/+page.svelte
+#: src/routes/+page.svelte
+msgid "Kithin"
+msgstr "Kithin"
+
+#~ msgid "Toggle navigation"
+#~ msgstr "Toggle navigation"
+
+#~ msgid "Main navigation"
+#~ msgstr "Main navigation"
+
+#: src/routes/+page.svelte
+msgid "Discover"
+msgstr "Discover"
+
+#: src/routes/+page.svelte
+msgid "About"
+msgstr "About"
+
+#~ msgid "Enter Kithin <0/>"
+#~ msgstr "Enter Kithin <0/>"
+
+#~ msgid "Step inside <0/>"
+#~ msgstr "Step inside <0/>"
+
+#~ msgid "Make something <0/>"
+#~ msgstr "Make something <0/>"
+
+#~ msgid "<0/> YOUR PLACE IN THE MULTIVERSE"
+#~ msgstr "<0/> YOUR PLACE IN THE MULTIVERSE"
+
+#~ msgid "You are made of<0/>what surrounds you<1/>"
+#~ msgstr "You are made of<0/>what surrounds you<1/>"
+
+#~ msgid "A place to be with people, discover things, and take them with you."
+#~ msgstr "A place to be with people, discover things, and take them with you."
+
+#~ msgid "NO DOWNLOADS <0/> NO ACCOUNT NEEDED <1/> DESKTOP + VR"
+#~ msgstr "NO DOWNLOADS <0/> NO ACCOUNT NEEDED <1/> DESKTOP + VR"
+
+#~ msgid "<0/> SCROLL TO EXPLORE"
+#~ msgstr "<0/> SCROLL TO EXPLORE"
+
+#~ msgid "K7TH <0/> 00.01"
+#~ msgstr "K7TH <0/> 00.01"
+
+#~ msgid "Step into a shared place where the things you discover become part of your story. Bring your friends, meet someone new, stay a little longer."
+#~ msgstr "Step into a shared place where the things you discover become part of your story. Bring your friends, meet someone new, stay a little longer."
+
+#~ msgid "Everything starts to become your Kithin."
+#~ msgstr "Everything starts to become your Kithin."
+
+#~ msgid "Find your people.<0/><1>Keep what you find.</1>"
+#~ msgstr "Find your people.<0/><1>Keep what you find.</1>"
+
+#~ msgid "Discoverable objects"
+#~ msgstr "Discoverable objects"
+
+#~ msgid "01 — SOMETHING FOUND"
+#~ msgstr "01 — SOMETHING FOUND"
+
+#~ msgid "02 — SOMETHING MADE"
+#~ msgstr "02 — SOMETHING MADE"
+
+#~ msgid "03 — SOMETHING SHARED"
+#~ msgstr "03 — SOMETHING SHARED"
+
+#~ msgid "<0/> / THE THINGS AROUND US"
+#~ msgstr "<0/> / THE THINGS AROUND US"
+
+#~ msgid "A WORLD STARTS SOMEWHERE"
+#~ msgstr "A WORLD STARTS SOMEWHERE"
+
+#~ msgid "Make a place<0/>for <1>what matters.</1>"
+#~ msgstr "Make a place<0/>for <1>what matters.</1>"
+
+#~ msgid "Shape a room, arrange your things, and make it yours. The Studio editor lives right in your browser, ready when inspiration shows up."
+#~ msgstr "Shape a room, arrange your things, and make it yours. The Studio editor lives right in your browser, ready when inspiration shows up."
+
+#~ msgid "Open Studio <0/>"
+#~ msgstr "Open Studio <0/>"
+
+#~ msgid "Illustration of the Kithin Studio editor"
+#~ msgstr "Illustration of the Kithin Studio editor"
+
+#~ msgid "STUDIO / NEW WORLD"
+#~ msgstr "STUDIO / NEW WORLD"
+
+#~ msgid "<0/> LIVE"
+#~ msgstr "<0/> LIVE"
+
+#~ msgid "X <0/>"
+#~ msgstr "X <0/>"
+
+#~ msgid "Y <0/>"
+#~ msgstr "Y <0/>"
+
+#~ msgid "Z <0/>"
+#~ msgstr "Z <0/>"
+
+#~ msgid "Appearance"
+#~ msgstr "Appearance"
+
+#~ msgid "SCENE READY"
+#~ msgstr "SCENE READY"
+
+#~ msgid "● 1 OBJECT SELECTED"
+#~ msgstr "● 1 OBJECT SELECTED"
+
+#~ msgid "<0/> / MAKE IT YOURS"
+#~ msgstr "<0/> / MAKE IT YOURS"
+
+#~ msgid "Open your world.<0/><1>Pass the code.</1>"
+#~ msgstr "Open your world.<0/><1>Pass the code.</1>"
+
+#~ msgid "Your devices connect directly. Your world stays yours, and the moment happens between you."
+#~ msgstr "Your devices connect directly. Your world stays yours, and the moment happens between you."
+
+#~ msgid "Bring your people <0/>"
+#~ msgstr "Bring your people <0/>"
+
+#~ msgid "YOU"
+#~ msgstr "YOU"
+
+#~ msgid "FRIEND"
+#~ msgstr "FRIEND"
+
+#~ msgid "PEER TO PEER <0>· WEBRTC</0>"
+#~ msgstr "PEER TO PEER <0>· WEBRTC</0>"
+
+#~ msgid "<0/> / BETTER TOGETHER"
+#~ msgstr "<0/> / BETTER TOGETHER"
+
+#~ msgid "YOUR PLACE IS WAITING"
+#~ msgstr "YOUR PLACE IS WAITING"
+
+#: src/lib/landing/Closing.svelte
+#: src/routes/+page.svelte
+#: src/routes/+page.svelte
+msgid "Who’s in?"
+msgstr "Who’s in?"
+
+#~ msgid "Same world. Same people. Wherever you are."
+#~ msgstr "Same world. Same people. Wherever you are."
+
+#~ msgid "A WORLD OF YOUR OWN."
+#~ msgstr "A WORLD OF YOUR OWN."
+
+#~ msgid "© KITHIN 2026"
+#~ msgstr "© KITHIN 2026"
+
+#: src/lib/studio/components/SaveDialog.svelte
+#: src/routes/studio/+page.svelte
+msgid "AbortError"
+msgstr "AbortError"
+
+#: src/lib/studio/components/SaveDialog.svelte
+#: src/routes/studio/+page.svelte
+msgid "Could not open the folder"
+msgstr "Could not open the folder"
+
+#: src/routes/studio/+page.svelte
+msgid "<0/>Choose folder"
+msgstr "<0/>Choose folder"
+
+#~ msgid "Choose a folder containing inventory JSON files."
+#~ msgstr "Choose a folder containing inventory JSON files."
+
+#: src/routes/studio/+page.svelte
+msgid "Choose a folder to load or save inventory JSON files."
+msgstr "Choose a folder to load or save inventory JSON files."
+
+#: src/lib/studio/components/SaveDialog.svelte
+msgid "Project files"
+msgstr "Project files"
+
+#~ msgid "Save a JSON file in a folder on this computer (development only)."
+#~ msgstr "Save a JSON file in a folder on this computer (development only)."
+
+#: src/lib/studio/components/SaveDialog.svelte
+msgid "Save a JSON file in a folder on this computer."
+msgstr "Save a JSON file in a folder on this computer."
+
+#~ msgid "Un pincel"
+#~ msgstr "Un pincel"
+
+#~ msgid "Un trazo que alguien dejó aquí."
+#~ msgstr "Un trazo que alguien dejó aquí."
+
+#~ msgid "Una cámara"
+#~ msgstr "Una cámara"
+
+#~ msgid "Mira el mundo desde otro ángulo."
+#~ msgstr "Mira el mundo desde otro ángulo."
+
+#~ msgid "Un dado"
+#~ msgstr "Un dado"
+
+#~ msgid "A veces, el azar es el plan."
+#~ msgstr "A veces, el azar es el plan."
+
+#~ msgid "Algo extraño"
+#~ msgstr "Algo extraño"
+
+#~ msgid "No preguntes qué es. Cógelo."
+#~ msgstr "No preguntes qué es. Cógelo."
+
+#: src/routes/+page.svelte
+#: src/routes/+page.svelte
+msgid "Un lugar para estar con gente, descubrir cosas y llevártelas contigo. Se abre en el navegador, con o sin gafas."
+msgstr "Un lugar para estar con gente, descubrir cosas y llevártelas contigo. Se abre en el navegador, con o sin gafas."
+
+#: src/routes/+page.svelte
+msgid "Kithin — Estás hecho de lo que te rodea"
+msgstr "Kithin — Estás hecho de lo que te rodea"
+
+#: src/routes/+page.svelte
+msgid "Kithin, inicio"
+msgstr "Kithin, inicio"
+
+#: src/routes/+page.svelte
+msgid "Abrir menú"
+msgstr "Abrir menú"
+
+#. 0: menuOpen ? 'flex' \\: 'hidden'
+#: src/routes/+page.svelte
+msgid "{0} absolute inset-x-4 top-16 flex-col gap-4 rounded-2xl border border-white/10 bg-ink/95 p-5 text-sm text-bone/70 shadow-2xl backdrop-blur-xl md:static md:flex md:flex-row md:items-center md:gap-9 md:border-0 md:bg-transparent md:p-0 md:shadow-none"
+msgstr "{0} absolute inset-x-4 top-16 flex-col gap-4 rounded-2xl border border-white/10 bg-ink/95 p-5 text-sm text-bone/70 shadow-2xl backdrop-blur-xl md:static md:flex md:flex-row md:items-center md:gap-9 md:border-0 md:bg-transparent md:p-0 md:shadow-none"
+
+#~ msgid "Cerrar sesión"
+#~ msgstr "Cerrar sesión"
+
+#~ msgid "Iniciar sesión"
+#~ msgstr "Iniciar sesión"
+
+#: src/routes/+page.svelte
+msgid "Descubrir"
+msgstr "Descubrir"
+
+#: src/lib/landing/Create.svelte
+msgid "Crear"
+msgstr "Crear"
+
+#~ msgid "Sobre Kithin"
+#~ msgstr "Sobre Kithin"
+
+#: src/routes/+page.svelte
+msgid "Entrar ahora <0/>"
+msgstr "Entrar ahora <0/>"
+
+#: src/routes/+page.svelte
+msgid "“Eh, mira esto.”"
+msgstr "“Eh, mira esto.”"
+
+#: src/routes/+page.svelte
+msgid "Entrar en Kithin <0/>"
+msgstr "Entrar en Kithin <0/>"
+
+#: src/lib/landing/Closing.svelte
+#: src/routes/+page.svelte
+msgid "Crear algo"
+msgstr "Crear algo"
+
+#: src/lib/landing/Closing.svelte
+#: src/routes/+page.svelte
+msgid "KITHIN"
+msgstr "KITHIN"
+
+#: src/lib/landing/Closing.svelte
+#: src/routes/+page.svelte
+msgid "Estás hecho de lo que te rodea."
+msgstr "Estás hecho de lo que te rodea."
+
+#: src/routes/+page.svelte
+msgid "Un lugar para estar con gente, descubrir cosas y llevártelas contigo."
+msgstr "Un lugar para estar con gente, descubrir cosas y llevártelas contigo."
+
+#: src/routes/+page.svelte
+msgid "Sin descargas · No necesitas cuenta · PC + VR"
+msgstr "Sin descargas · No necesitas cuenta · PC + VR"
+
+#: src/lib/landing/PeopleThings.svelte
+msgid "Personas + cosas"
+msgstr "Personas + cosas"
+
+#: src/lib/landing/PeopleThings.svelte
+msgid "Rodéate bien."
+msgstr "Rodéate bien."
+
+#~ msgid "Voz espacial 3D"
+#~ msgstr "Voz espacial 3D"
+
+#: src/lib/landing/PeopleThings.svelte
+msgid "Tu gente."
+msgstr "Tu gente."
+
+#: src/lib/landing/PeopleThings.svelte
+msgid "Entra con tus amigos, conoce gente y comparte el mismo espacio. Habla como hablarías estando allí: cuanto más cerca estés de alguien, más cerca lo oirás."
+msgstr "Entra con tus amigos, conoce gente y comparte el mismo espacio. Habla como hablarías estando allí: cuanto más cerca estés de alguien, más cerca lo oirás."
+
+#: src/lib/landing/PeopleThings.svelte
+msgid "Guardar · sacar · pasar · combinar"
+msgstr "Guardar · sacar · pasar · combinar"
+
+#: src/lib/landing/PeopleThings.svelte
+msgid "Tus cosas."
+msgstr "Tus cosas."
+
+#: src/lib/landing/PeopleThings.svelte
+msgid "Guarda lo que encuentres. Saca tus cosas cuando quieras. Pásaselas a alguien. Combínalas con las suyas."
+msgstr "Guarda lo que encuentres. Saca tus cosas cuando quieras. Pásaselas a alguien. Combínalas con las suyas."
+
+#: src/lib/landing/PeopleThings.svelte
+msgid "Todo acaba formando <0>tu Kithin.</0>"
+msgstr "Todo acaba formando <0>tu Kithin.</0>"
+
+#~ msgid "Un universo que crece"
+#~ msgstr "Un universo que crece"
+
+#~ msgid "Mundos dentro<0/>de mundos."
+#~ msgstr "Mundos dentro<0/>de mundos."
+
+#: src/lib/landing/Orb.svelte
+msgid "Sí. Nosotros tampoco pensamos parar ahí."
+msgstr "Sí. Nosotros tampoco pensamos parar ahí."
+
+#~ msgid "Kithin / 001"
+#~ msgstr "Kithin / 001"
+
+#: src/lib/landing/Touch.svelte
+msgid "Todo hace algo"
+msgstr "Todo hace algo"
+
+#: src/lib/landing/Touch.svelte
+msgid "Tócalo."
+msgstr "Tócalo."
+
+#: src/lib/landing/Touch.svelte
+msgid "En Kithin, las cosas no están ahí simplemente para decorar. Aquí tampoco: cada uno de estos objetos está en 3D real. Tócalos."
+msgstr "En Kithin, las cosas no están ahí simplemente para decorar. Aquí tampoco: cada uno de estos objetos está en 3D real. Tócalos."
+
+#~ msgid "Pulsa un objeto para inspeccionarlo"
+#~ msgstr "Pulsa un objeto para inspeccionarlo"
+
+#: src/lib/landing/Touch.svelte
+msgid "No preguntes qué es. <0>Cógelo.</0>"
+msgstr "No preguntes qué es. <0>Cógelo.</0>"
+
+#~ msgid "No necesitas crear<0/>un videojuego entero."
+#~ msgstr "No necesitas crear<0/>un videojuego entero."
+
+#~ msgid "O un mundo entero. Empieza simple. Llega hasta donde quieras."
+#~ msgstr "O un mundo entero. Empieza simple. Llega hasta donde quieras."
+
+#~ msgid "Abrir Studio <0/>"
+#~ msgstr "Abrir Studio <0/>"
+
+#: src/lib/landing/Create.svelte
+msgid "Kithin Studio · 3D"
+msgstr "Kithin Studio · 3D"
+
+#: src/lib/landing/Create.svelte
+msgid "escena"
+msgstr "escena"
+
+#: src/lib/landing/Create.svelte
+msgid "◈ Mi cosa"
+msgstr "◈ Mi cosa"
+
+#~ msgid "└ ▢ Mesh (Aro)"
+#~ msgstr "└ ▢ Mesh (Aro)"
+
+#~ msgid "└ ◉ Agarrable"
+#~ msgstr "└ ◉ Agarrable"
+
+#~ msgid "▣ Agarrable · activado"
+#~ msgstr "▣ Agarrable · activado"
+
+#: src/lib/landing/Create.svelte
+msgid "propiedades"
+msgstr "propiedades"
+
+#~ msgid "Transformación"
+#~ msgstr "Transformación"
+
+#~ msgid "Color"
+#~ msgstr "Color"
+
+#~ msgid "ESCENA LISTA"
+#~ msgstr "ESCENA LISTA"
+
+#~ msgid "● 1 OBJETO SELECCIONADO"
+#~ msgstr "● 1 OBJETO SELECCIONADO"
+
+#: src/lib/landing/Create.svelte
+msgid "Propiedades visuales y componentes listos para usar."
+msgstr "Propiedades visuales y componentes listos para usar."
+
+#: src/lib/landing/Create.svelte
+msgid "Código, componentes avanzados, JSON…"
+msgstr "Código, componentes avanzados, JSON…"
+
+#: src/lib/landing/Create.svelte
+msgid "Pulsas Crear y ya estás creando. Directo en Kithin, sin instalar nada externo."
+msgstr "Pulsas Crear y ya estás creando. Directo en Kithin, sin instalar nada externo."
+
+#: src/routes/+page.svelte
+msgid "Cómo ocurre"
+msgstr "Cómo ocurre"
+
+#~ msgid "El mundo ocurre<0/>entre vosotros."
+#~ msgstr "El mundo ocurre<0/>entre vosotros."
+
+#: src/routes/+page.svelte
+msgid "Cuando entras con alguien, Kithin hace las presentaciones."
+msgstr "Cuando entras con alguien, Kithin hace las presentaciones."
+
+#: src/routes/+page.svelte
+msgid "Después, vuestros dispositivos hablan directamente. La posición, las interacciones y la voz no necesitan pasar continuamente por un servidor que esté alojando vuestro mundo."
+msgstr "Después, vuestros dispositivos hablan directamente. La posición, las interacciones y la voz no necesitan pasar continuamente por un servidor que esté alojando vuestro mundo."
+
+#~ msgid "Nosotros abrimos la puerta."
+#~ msgstr "Nosotros abrimos la puerta."
+
+#: src/routes/+page.svelte
+msgid "Peer-to-peer · WebRTC"
+msgstr "Peer-to-peer · WebRTC"
+
+#: src/routes/+page.svelte
+msgid "TÚ"
+msgstr "TÚ"
+
+#: src/routes/+page.svelte
+msgid "AMIGA"
+msgstr "AMIGA"
+
+#: src/routes/+page.svelte
+msgid "Dentro"
+msgstr "Dentro"
+
+#~ msgid "El mismo lugar.<0/>También en VR."
+#~ msgstr "El mismo lugar.<0/>También en VR."
+
+#~ msgid "Kithin funciona con teclado y ratón. Y si tienes unas gafas compatibles, puedes entrar directamente en VR. El mismo lugar, con la misma gente y las mismas cosas."
+#~ msgstr "Kithin funciona con teclado y ratón. Y si tienes unas gafas compatibles, puedes entrar directamente en VR. El mismo lugar, con la misma gente y las mismas cosas."
+
+#: src/routes/+page.svelte
+msgid "Kithin es Kithin. VR es una forma de estar dentro."
+msgstr "Kithin es Kithin. VR es una forma de estar dentro."
+
+#~ msgid "Entrar desde el navegador <0/>"
+#~ msgstr "Entrar desde el navegador <0/>"
+
+#: src/routes/+page.svelte
+msgid "PC + WebXR"
+msgstr "PC + WebXR"
+
+#: src/routes/+page.svelte
+msgid "Con gente"
+msgstr "Con gente"
+
+#~ msgid "Mejor con gente<0/>alrededor."
+#~ msgstr "Mejor con gente<0/>alrededor."
+
+#: src/routes/+page.svelte
+msgid "Abre tu mundo. Pasa el código. Ya están dentro."
+msgstr "Abre tu mundo. Pasa el código. Ya están dentro."
+
+#~ msgid "Crear una sala <0/>"
+#~ msgstr "Crear una sala <0/>"
+
+#~ msgid "Código de sala"
+#~ msgstr "Código de sala"
+
+#: src/routes/+page.svelte
+msgid "K7TH"
+msgstr "K7TH"
+
+#: src/lib/landing/Closing.svelte
+msgid "Entrar <0/>"
+msgstr "Entrar <0/>"
+
+#: src/lib/landing/Closing.svelte
+msgid "No necesitas cuenta."
+msgstr "No necesitas cuenta."
+
+#: src/routes/+page.svelte
+msgid "Peer-to-peer · WebRTC · WebXR"
+msgstr "Peer-to-peer · WebRTC · WebXR"
+
+#: src/routes/+page.svelte
+msgid "Entrar ahora"
+msgstr "Entrar ahora"
+
+#: src/routes/+page.svelte
+msgid "Con un código"
+msgstr "Con un código"
+
+#: src/routes/+page.svelte
+msgid "Hacer"
+msgstr "Hacer"
+
+#: src/lib/landing/Create.svelte
+#: src/routes/+page.svelte
+msgid "Abrir Studio"
+msgstr "Abrir Studio"
+
+#: src/routes/+page.svelte
+msgid "Cosas"
+msgstr "Cosas"
+
+#: src/routes/+page.svelte
+msgid "Lugares"
+msgstr "Lugares"
+
+#: src/routes/+page.svelte
+msgid "Sobre esto"
+msgstr "Sobre esto"
+
+#: src/routes/+page.svelte
+msgid "Qué es Kithin"
+msgstr "Qué es Kithin"
+
+#: src/routes/+page.svelte
+msgid "Cómo funciona"
+msgstr "Cómo funciona"
+
+#: src/routes/+page.svelte
+msgid "Contacto"
+msgstr "Contacto"
+
+#. 0: new Date().getFullYear()
+#: src/routes/+page.svelte
+msgid "© {0} Kithin"
+msgstr "© {0} Kithin"
+
+#: src/routes/studio/+page.svelte
+msgid "Could not reconnect the folder"
+msgstr "Could not reconnect the folder"
+
+#: src/routes/studio/+page.svelte
+msgid "Reconnect folder"
+msgstr "Reconnect folder"
+
+#: src/routes/studio/edit/+page.svelte
+#: src/routes/studio/edit/+page.svelte
+msgid "Could not reconnect the project folder"
+msgstr "Could not reconnect the project folder"
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Reconnect project folder"
+msgstr "Reconnect project folder"
+
+#: src/lib/landing/Carry.svelte
+#: src/lib/landing/Carry.svelte
+msgid "Escena 1"
+msgstr "Escena 1"
+
+#: src/lib/landing/Carry.svelte
+msgid "Alguien está usando un pincel y te lo lanza"
+msgstr "Alguien está usando un pincel y te lo lanza"
+
+#: src/lib/landing/Carry.svelte
+#: src/lib/landing/Carry.svelte
+#: src/lib/landing/Carry.svelte
+msgid "Escena 2"
+msgstr "Escena 2"
+
+#: src/lib/landing/Carry.svelte
+msgid "Lo coges → pintas en el aire."
+msgstr "Lo coges → pintas en el aire."
+
+#: src/lib/landing/Carry.svelte
+msgid "Funciona inmediatamente en tus manos"
+msgstr "Funciona inmediatamente en tus manos"
+
+#: src/lib/landing/Carry.svelte
+msgid "Abres tus cosas → lo guardas."
+msgstr "Abres tus cosas → lo guardas."
+
+#: src/lib/landing/Carry.svelte
+msgid "Ya no está atado a esta sala"
+msgstr "Ya no está atado a esta sala"
+
+#: src/lib/landing/Carry.svelte
+#: src/lib/landing/Carry.svelte
+#: src/lib/landing/Carry.svelte
+msgid "Escena 3"
+msgstr "Escena 3"
+
+#: src/lib/landing/Carry.svelte
+msgid "Cambio radical de mundo."
+msgstr "Cambio radical de mundo."
+
+#: src/lib/landing/Carry.svelte
+msgid "Otro lugar, otra luz, otra gente"
+msgstr "Otro lugar, otra luz, otra gente"
+
+#: src/lib/landing/Carry.svelte
+msgid "Abres tus cosas → sacas el pincel → continúas pintando."
+msgstr "Abres tus cosas → sacas el pincel → continúas pintando."
+
+#: src/lib/landing/Carry.svelte
+msgid "El mismo objeto, intacto, en otro mundo"
+msgstr "El mismo objeto, intacto, en otro mundo"
+
+#: src/lib/landing/Carry.svelte
+msgid "Pinta trazos volumétricos 3D en el aire"
+msgstr "Pinta trazos volumétricos 3D en el aire"
+
+#: src/lib/landing/Carry.svelte
+msgid "Enfoca, saca fotos y guárdalas como objetos"
+msgstr "Enfoca, saca fotos y guárdalas como objetos"
+
+#: src/lib/landing/Carry.svelte
+msgid "Física real sincronizada entre todos"
+msgstr "Física real sincronizada entre todos"
+
+#: src/lib/landing/Carry.svelte
+msgid "Suena con audio espacial según dónde estés"
+msgstr "Suena con audio espacial según dónde estés"
+
+#: src/lib/landing/Carry.svelte
+msgid "Mide, ilumina o modifica cosas in-situ"
+msgstr "Mide, ilumina o modifica cosas in-situ"
+
+#: src/lib/landing/Carry.svelte
+msgid "Algo que alguien inventó hace diez minutos"
+msgstr "Algo que alguien inventó hace diez minutos"
+
+#: src/lib/landing/Carry.svelte
+msgid "Si puedes cogerlo, <0>puedes llevártelo.</0>"
+msgstr "Si puedes cogerlo, <0>puedes llevártelo.</0>"
+
+#: src/lib/landing/Carry.svelte
+msgid "Tus cosas"
+msgstr "Tus cosas"
+
+#: src/lib/landing/Carry.svelte
+msgid "No pertenece a ese mundo.<0/><1>Ahora forma parte del tuyo.</1>"
+msgstr "No pertenece a ese mundo.<0/><1>Ahora forma parte del tuyo.</1>"
+
+#: src/lib/landing/Carry.svelte
+msgid "Posibilidades en 3D"
+msgstr "Posibilidades en 3D"
+
+#: src/lib/landing/Carry.svelte
+msgid "Pulsa cualquiera para inspeccionar el objeto 3D en tiempo real:"
+msgstr "Pulsa cualquiera para inspeccionar el objeto 3D en tiempo real:"
+
+#: src/lib/landing/Carry.svelte
+msgid "Si funciona en un sitio, <0>funciona en todos.</0>"
+msgstr "Si funciona en un sitio, <0>funciona en todos.</0>"
+
+#: src/lib/landing/PeopleThings.svelte
+msgid "Las personas que encuentras."
+msgstr "Las personas que encuentras."
+
+#: src/lib/landing/PeopleThings.svelte
+msgid "Las cosas que conservas."
+msgstr "Las cosas que conservas."
+
+#: src/lib/landing/PeopleThings.svelte
+msgid "Los lugares que visitas."
+msgstr "Los lugares que visitas."
+
+#: src/lib/landing/PeopleThings.svelte
+msgid "Voz espacial 3D · más cerca = más claro"
+msgstr "Voz espacial 3D · más cerca = más claro"
+
+#: src/lib/landing/Orb.svelte
+msgid "Por cierto. Los mundos también son cosas."
+msgstr "Por cierto. Los mundos también son cosas."
+
+#: src/lib/landing/Orb.svelte
+msgid "Puedes guardar uno."
+msgstr "Puedes guardar uno."
+
+#: src/lib/landing/Orb.svelte
+msgid "Puedes dárselo a alguien."
+msgstr "Puedes dárselo a alguien."
+
+#: src/lib/landing/Orb.svelte
+msgid "Puedes llevarlo a otro mundo."
+msgstr "Puedes llevarlo a otro mundo."
+
+#: src/lib/landing/Orb.svelte
+msgid "Y puedes abrirlo."
+msgstr "Y puedes abrirlo."
+
+#: src/lib/landing/Orb.svelte
+msgid "Mundos dentro de mundos."
+msgstr "Mundos dentro de mundos."
+
+#: src/lib/landing/Touch.svelte
+msgid "Pincel"
+msgstr "Pincel"
+
+#: src/lib/landing/Touch.svelte
+msgid "Disco"
+msgstr "Disco"
+
+#: src/lib/landing/Touch.svelte
+msgid "Botón"
+msgstr "Botón"
+
+#: src/lib/landing/Touch.svelte
+msgid "Cámara equipada"
+msgstr "Cámara equipada"
+
+#: src/lib/landing/Touch.svelte
+msgid "Juego"
+msgstr "Juego"
+
+#: src/lib/landing/Touch.svelte
+msgid "Orbe"
+msgstr "Orbe"
+
+#: src/lib/landing/Closing.svelte
+msgid "Haz scroll · mira qué queda si quitas todo lo que te rodea"
+msgstr "Haz scroll · mira qué queda si quitas todo lo que te rodea"
+
+#~ msgid "Tu perfil"
+#~ msgstr "Tu perfil"
+
+#: src/lib/landing/Create.svelte
+msgid "Haz una cámara."
+msgstr "Haz una cámara."
+
+#: src/lib/landing/Create.svelte
+msgid "Una mascota."
+msgstr "Una mascota."
+
+#: src/lib/landing/Create.svelte
+msgid "Una baraja."
+msgstr "Una baraja."
+
+#: src/lib/landing/Create.svelte
+msgid "Una puerta absurda."
+msgstr "Una puerta absurda."
+
+#: src/lib/landing/Create.svelte
+msgid "Un instrumento."
+msgstr "Un instrumento."
+
+#: src/lib/landing/Create.svelte
+msgid "Un minijuego."
+msgstr "Un minijuego."
+
+#: src/lib/landing/Create.svelte
+msgid "Probar en el navegador"
+msgstr "Probar en el navegador"
+
+#: src/lib/landing/Create.svelte
+msgid "¿No existe? <0>Hazlo.</0>"
+msgstr "¿No existe? <0>Hazlo.</0>"
+
+#: src/lib/landing/Create.svelte
+msgid "No necesitas crear un videojuego entero."
+msgstr "No necesitas crear un videojuego entero."
+
+#: src/lib/landing/Create.svelte
+msgid "O un mundo entero."
+msgstr "O un mundo entero."
+
+#: src/routes/+page.svelte
+msgid "Tu mundo ocurre <0>entre vosotros.</0>"
+msgstr "Tu mundo ocurre <0>entre vosotros.</0>"
+
+#: src/routes/+page.svelte
+msgid "Nosotros abrimos la puerta.<0/>El mundo ocurre entre vosotros."
+msgstr "Nosotros abrimos la puerta.<0/>El mundo ocurre entre vosotros."
+
+#: src/routes/+page.svelte
+msgid "1. Os pone en contacto"
+msgstr "1. Os pone en contacto"
+
+#: src/routes/+page.svelte
+msgid "2. Directo entre vosotros"
+msgstr "2. Directo entre vosotros"
+
+#: src/routes/+page.svelte
+msgid "<0/> Desktop"
+msgstr "<0/> Desktop"
+
+#: src/routes/+page.svelte
+msgid "<0/> Meta Quest"
+msgstr "<0/> Meta Quest"
+
+#: src/routes/+page.svelte
+msgid "· More to come"
+msgstr "· More to come"
+
+#: src/routes/+page.svelte
+msgid "¿Tienes gafas? <0>Póntelas.</0>"
+msgstr "¿Tienes gafas? <0>Póntelas.</0>"
+
+#: src/routes/+page.svelte
+msgid "Kithin funciona con teclado y ratón."
+msgstr "Kithin funciona con teclado y ratón."
+
+#: src/routes/+page.svelte
+msgid "Y si tienes unas gafas compatibles, puedes entrar directamente en VR. El mismo lugar, con la misma gente y las mismas cosas."
+msgstr "Y si tienes unas gafas compatibles, puedes entrar directamente en VR. El mismo lugar, con la misma gente y las mismas cosas."
+
+#: src/routes/+page.svelte
+msgid "kithin.app / jardín-tibio"
+msgstr "kithin.app / jardín-tibio"
+
+#: src/routes/+page.svelte
+msgid "60 FPS · Desktop"
+msgstr "60 FPS · Desktop"
+
+#: src/routes/+page.svelte
+msgid "Entrar o salir de VR"
+msgstr "Entrar o salir de VR"
+
+#: src/routes/+page.svelte
+msgid "Abres tu mundo"
+msgstr "Abres tu mundo"
+
+#: src/routes/+page.svelte
+msgid "Pasas el código"
+msgstr "Pasas el código"
+
+#: src/routes/+page.svelte
+msgid "Ya están dentro"
+msgstr "Ya están dentro"
+
+#: src/routes/+page.svelte
+msgid "Voz espacial"
+msgstr "Voz espacial"
+
+#: src/routes/+page.svelte
+msgid "Mejor con gente alrededor."
+msgstr "Mejor con gente alrededor."
+
+#: src/lib/landing/Create.svelte
+msgid "Objeto vacío"
+msgstr "Objeto vacío"
+
+#: src/lib/landing/Create.svelte
+msgid "Añade forma"
+msgstr "Añade forma"
+
+#: src/lib/landing/Create.svelte
+msgid "Hazlo agarrable"
+msgstr "Hazlo agarrable"
+
+#: src/lib/landing/Create.svelte
+msgid "Play en Kithin"
+msgstr "Play en Kithin"
+
+#: src/lib/landing/Create.svelte
+msgid "Cubo"
+msgstr "Cubo"
+
+#: src/lib/landing/Create.svelte
+msgid "Aro"
+msgstr "Aro"
+
+#: src/lib/landing/Create.svelte
+msgid "Cámara"
+msgstr "Cámara"
+
+#. 0: shapes.find(s=>s.id===shape)?.label
+#: src/lib/landing/Create.svelte
+msgid "└ ▢ Mesh ({0})"
+msgstr "└ ▢ Mesh ({0})"
+
+#: src/lib/landing/Create.svelte
+msgid "└ ✋ Grabbable"
+msgstr "└ ✋ Grabbable"
+
+#: src/lib/landing/Create.svelte
+msgid "└ ⚡ PhysicsBody"
+msgstr "└ ⚡ PhysicsBody"
+
+#: src/lib/landing/Create.svelte
+msgid "✋ componente Grabbable activo"
+msgstr "✋ componente Grabbable activo"
+
+#: src/lib/landing/Create.svelte
+msgid "forma 3D"
+msgstr "forma 3D"
+
+#. 0: i+1
+#: src/lib/landing/Create.svelte
+msgid "Color {0}"
+msgstr "Color {0}"
+
+#: src/lib/landing/Create.svelte
+msgid "color"
+msgstr "color"
+
+#: src/lib/landing/Create.svelte
+msgid "Empieza simple. Llega hasta donde quieras."
+msgstr "Empieza simple. Llega hasta donde quieras."
+
+#: src/routes/+page.svelte
+msgid "<0/>Fer (tú)"
+msgstr "<0/>Fer (tú)"
+
+#: src/routes/+page.svelte
+msgid "host"
+msgstr "host"
+
+#: src/routes/+page.svelte
+msgid "<0/>Sami"
+msgstr "<0/>Sami"
+
+#: src/routes/+page.svelte
+msgid "Ahora en K7TH"
+msgstr "Ahora en K7TH"
+
+#: src/routes/+page.svelte
+msgid "WASD · ratón"
+msgstr "WASD · ratón"
+
+#: src/routes/+page.svelte
+msgid "VR activo · manos 3D en el mismo espacio"
+msgstr "VR activo · manos 3D en el mismo espacio"
+
+#: src/routes/+page.svelte
+msgid "Enter VR ⟶"
+msgstr "Enter VR ⟶"
+
+#: src/lib/landing/Carry.svelte
+msgid "Objeto 3D portátil"
+msgstr "Objeto 3D portátil"
+
+#. 0: i + 1
+#: src/lib/landing/Touch.svelte
+msgid "Brush color {0}"
+msgstr "Brush color {0}"
+
+#: src/lib/landing/Touch.svelte
+msgid "marcador"
+msgstr "marcador"
+
+#: src/lib/landing/Touch.svelte
+msgid "fer"
+msgstr "fer"
+
+#: src/lib/landing/Touch.svelte
+msgid "sami"
+msgstr "sami"

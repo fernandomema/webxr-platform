@@ -12,6 +12,8 @@ export interface XrSettings {
 	rotationMode: RotationMode;
 	/** The avatar worn on entering any world, as a copy of the inventory item chosen. Null uses the built-in one. */
 	defaultAvatar: SlotTree | null;
+	/** Where that copy came from (`adapterId:itemId`), so the inventory can show which avatar is worn. Null when none is chosen. */
+	defaultAvatarSource: string | null;
 	/** Sitting down: the head is lifted to standing height (1.7 m) so the avatar and the world behave as if you stood. */
 	seatedMode: boolean;
 	/** Which buttons the Home tab of the personal menu shows, in order. */
@@ -31,6 +33,7 @@ export const xrSettings: XrSettings = {
 	movementMode: 'teleport',
 	rotationMode: 'snap-45',
 	defaultAvatar: null,
+	defaultAvatarSource: null,
 	seatedMode: false,
 	dashboardLayout: [...DEFAULT_DASHBOARD_LAYOUT],
 	keyboardLayout: null,
@@ -51,6 +54,7 @@ export function loadSettings(): void {
 		if (parsed.movementMode) xrSettings.movementMode = parsed.movementMode;
 		if (parsed.rotationMode) xrSettings.rotationMode = parsed.rotationMode;
 		if (Array.isArray(parsed.defaultAvatar)) xrSettings.defaultAvatar = parsed.defaultAvatar;
+		if (typeof parsed.defaultAvatarSource === 'string' && xrSettings.defaultAvatar) xrSettings.defaultAvatarSource = parsed.defaultAvatarSource;
 		if (typeof parsed.seatedMode === 'boolean') xrSettings.seatedMode = parsed.seatedMode;
 		if (parsed.dashboardLayout !== undefined) xrSettings.dashboardLayout = normalizeDashboardLayout(parsed.dashboardLayout);
 		if (typeof parsed.keyboardLayout === 'string') xrSettings.keyboardLayout = parsed.keyboardLayout;

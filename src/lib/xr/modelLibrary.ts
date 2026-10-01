@@ -2,10 +2,13 @@
 import '@babylonjs/loaders/glTF';
 import { LoadAssetContainerAsync, TransformNode, Vector3, type AssetContainer, type Scene } from '@babylonjs/core';
 import type { Vec3 } from '$lib/ecs/types';
+import { configureDraco } from './draco';
 import { normalizationTransform, normalizedExtents } from '$lib/assets/normalize';
 import type { AssetId } from '$lib/assets/ref';
 import { resolveAsset, type AssetResolver } from '$lib/assets/resolve';
 import { assetStoreChanges, getLocalAssetStore, type AssetStore } from '$lib/assets/store';
+
+configureDraco();
 
 /**
  * pending  – queued, waiting for a decode slot

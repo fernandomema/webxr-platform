@@ -7,7 +7,7 @@ import type { WorldVisibility } from '$lib/worldVisibility';
 
 /** The inventory world the current scene was loaded from, so saving can add a revision to it instead of creating a new world. */
 export interface LoadedWorld {
-	adapterId: 'local' | 'world' | 'cloud';
+	adapterId: 'local' | 'world' | 'cloud' | 'filesystem';
 	worldLineageId: string;
 	folderId: string | null;
 	name: string;

@@ -2,7 +2,7 @@ import { prisma } from '../db';
 import { UnauthorizedError, ForbiddenError, NotFoundError } from '../errors';
 import { validateWorldScene } from '$lib/worlds/package';
 import { collectAssetIds, migrateSlotTree } from '$lib/assets/ref';
-import { assertAssetsReady, assetSummaries, linkSceneAssets } from './assets';
+import { assertAssetsReady, assetSummaries, linkSceneAssets, resolveThumbnail, withThumbnail } from './assets';
 import type { SlotTree } from '$lib/ecs/types';
 import type { WorldPackage } from '$lib/worlds/types';
 import type { SessionUser } from './worlds';
@@ -15,32 +15,34 @@ function validateInput(name: unknown, scene: unknown): { name: string; scene: Sl
 
 export async function listPublications() {
   return prisma.publishedWorld.findMany({
-    select: { id: true, name: true, ownerId: true, latestRevision: true, updatedAt: true },
+    select: { id: true, name: true, ownerId: true, latestRevision: true, thumbnailAssetId: true, updatedAt: true },
     orderBy: { updatedAt: 'desc' }, take: 50
   });
 }
 
-export async function publishWorld(user: SessionUser | null, name: unknown, scene: unknown) {
+export async function publishWorld(user: SessionUser | null, name: unknown, scene: unknown, thumbnailAssetId?: unknown) {
   if (!user) throw new UnauthorizedError();
   const input = validateInput(name, scene);
   const migrated = migrateSlotTree(input.scene);
   return prisma.$transaction(async (tx) => {
     // A published world must be self-contained: every model it uses has to be in the cloud.
     const assetIds = await assertAssetsReady(tx, migrated);
+    const thumbnail = await resolveThumbnail(tx, thumbnailAssetId, null);
     const publication = await tx.publishedWorld.create({
       data: {
         ownerId: user.id,
         name: input.name,
+        thumbnailAssetId: thumbnail,
         revisions: { create: { number: 1, sceneData: migrated as object } }
       },
       select: { id: true, name: true, latestRevision: true, revisions: { select: { id: true } } }
     });
-    await linkSceneAssets(tx, user, { kind: 'publishedRevision', id: publication.revisions[0].id }, assetIds);
+    await linkSceneAssets(tx, user, { kind: 'publishedRevision', id: publication.revisions[0].id }, withThumbnail(assetIds, thumbnail));
     return { id: publication.id, name: publication.name, latestRevision: publication.latestRevision };
   });
 }
 
-export async function publishRevision(user: SessionUser | null, publicationId: string, scene: unknown) {
+export async function publishRevision(user: SessionUser | null, publicationId: string, scene: unknown, thumbnailAssetId?: unknown) {
   if (!user) throw new UnauthorizedError();
   validateWorldScene(scene);
   const migrated = migrateSlotTree(scene);
@@ -49,12 +51,14 @@ export async function publishRevision(user: SessionUser | null, publicationId: s
     if (!publication) throw new NotFoundError();
     if (publication.ownerId !== user.id) throw new ForbiddenError();
     const assetIds = await assertAssetsReady(tx, migrated);
+    // A revision without a preview of its own keeps the previous one: the picture may be a little out of date, never missing.
+    const thumbnail = await resolveThumbnail(tx, thumbnailAssetId, publication.thumbnailAssetId);
     const number = publication.latestRevision + 1;
     const revision = await tx.publishedWorldRevision.create({
       data: { publicationId, number, sceneData: migrated as object }
     });
-    await linkSceneAssets(tx, user, { kind: 'publishedRevision', id: revision.id }, assetIds);
-    await tx.publishedWorld.update({ where: { id: publicationId }, data: { latestRevision: number } });
+    await linkSceneAssets(tx, user, { kind: 'publishedRevision', id: revision.id }, withThumbnail(assetIds, thumbnail));
+    await tx.publishedWorld.update({ where: { id: publicationId }, data: { latestRevision: number, thumbnailAssetId: thumbnail } });
     return { id: revision.id, number };
   });
 }

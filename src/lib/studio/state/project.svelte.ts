@@ -129,12 +129,13 @@ export class StudioProject {
 	}
 
 	async save(target?: SaveTarget): Promise<InventoryItem> {
-		const adapterId = target?.adapterId ?? (this.adapterId === 'purchased' ? 'local' : this.adapterId);
+		const current = this.adapterId ? getInventoryAdapter(this.adapterId) : undefined;
+		const adapterId = target?.adapterId ?? (current && !current.saveItem ? 'local' : this.adapterId);
 		const adapter = adapterId ? getInventoryAdapter(adapterId) : undefined;
 		if (!adapter || !adapterId) throw new Error('Choose where to save this project.');
 		const name = (target?.name ?? this.doc.name).trim();
 		if (!name) throw new Error('Give the project a name first.');
-		const folderId = target ? target.folderId : this.folderId;
+		const folderId = target ? target.folderId : adapterId === this.adapterId ? this.folderId : null;
 		const previousKey = this.key;
 		const tree: SlotTree = cloneTree(this.doc.tree);
 		if (this.doc.kind === 'world') validateWorldScene(tree);
@@ -200,7 +201,7 @@ export class StudioProject {
 		const response = await fetch('/api/marketplace/items', jsonPost(body));
 		if (!response.ok) throw new Error(await errorMessage(response, 'Could not publish marketplace item'));
 		const result = await response.json() as { id: string; latestRevision: number };
-		if (this.item && this.adapterId === 'local') await getInventoryAdapter('local')?.setMarketplaceItemId?.(this.context, this.item.id, result.id);
+		if (this.item && (this.adapterId === 'local' || this.adapterId === 'filesystem')) await getInventoryAdapter(this.adapterId)?.setMarketplaceItemId?.(this.context, this.item.id, result.id);
 		if (this.item) this.item = { ...this.item, marketplaceItemId: result.id };
 		return { id: result.id, revision: result.latestRevision };
 	}

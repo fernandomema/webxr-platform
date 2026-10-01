@@ -40,15 +40,16 @@ export interface GlbLimits {
  * These load their decoders from a CDN by default, and a headset on a LAN
  * cannot reach one (the same trap as the controller profiles), so a model that
  * needs them would silently never appear. Rejected up front with a clear message.
+ * KHR_draco_mesh_compression is not here: its decoder is served from /static/draco.
  */
-const NEEDS_EXTERNAL_DECODER = ['KHR_draco_mesh_compression', 'EXT_meshopt_compression', 'KHR_texture_basisu'];
+const NEEDS_EXTERNAL_DECODER = ['EXT_meshopt_compression', 'KHR_texture_basisu'];
 
 /** Required extensions that only change how already-loaded data is interpreted. */
 const SUPPORTED_REQUIRED = new Set([
 	'KHR_materials_unlit', 'KHR_materials_emissive_strength', 'KHR_materials_pbrSpecularGlossiness', 'KHR_texture_transform',
 	'KHR_lights_punctual', 'KHR_materials_clearcoat', 'KHR_materials_transmission', 'KHR_materials_ior', 'KHR_materials_specular',
 	'KHR_materials_sheen', 'KHR_materials_volume', 'KHR_materials_iridescence', 'KHR_materials_anisotropy', 'KHR_materials_dispersion',
-	'KHR_materials_variants', 'KHR_mesh_quantization', 'EXT_texture_webp', 'EXT_mesh_gpu_instancing', 'KHR_materials_diffuse_transmission'
+	'KHR_materials_variants', 'KHR_mesh_quantization', 'KHR_draco_mesh_compression', 'EXT_texture_webp', 'EXT_mesh_gpu_instancing', 'KHR_materials_diffuse_transmission'
 ]);
 
 const MAGIC = 0x46546c67; // "glTF"

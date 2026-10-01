@@ -78,7 +78,8 @@ interface Rig {
 	arms: { left?: ArmBones; right?: ArmBones };
 	/** Present when the model has a hips bone: crouching then lowers the hips and bends the legs instead of sinking the whole body. */
 	hips?: TransformNode;
-	restHipsY: number;
+	/** The hips' local position at rest. */
+	restHipsPosition: Vector3;
 	skeletons: Skeleton[];
 	fingers: Record<'left' | 'right', FingerChain[]>;
 	/** The knuckles each hand's frame is read from once the hand is posed, so fingers are placed in the frame they were measured in. */
@@ -159,8 +160,11 @@ const REST_TO_HAND: Record<'left' | 'right', Matrix> = {
  * vertical part of where the head points, negative looking down).
  */
 export function localBodyBehind(crouch: number, lookY: number): number {
-	return 0.08 + 0.3 * Math.min(0.6, Math.max(0, crouch)) + 0.08 * Math.max(0, -lookY);
+	return 0.08 + 0.3 * Math.min(0.6, Math.max(0, crouch)) + 0.25 * Math.max(0, -lookY);
 }
+
+/** The share of the local body's setback that reaching for a hand may take back. */
+const MAX_REACH_PULL = 0.5;
 
 export class AvatarSystem {
 	private poses = new Map<string, AvatarPose>();
@@ -439,7 +443,7 @@ export class AvatarSystem {
 			head,
 			arms,
 			hips: legs.left || legs.right ? hips : undefined,
-			restHipsY: hips?.position.y ?? 0,
+			restHipsPosition: hips ? hips.position.clone() : Vector3.Zero(),
 			skeletons: [...skeletons],
 			fingers,
 			knuckles: { left: knuckles('left'), right: knuckles('right') },
@@ -493,12 +497,24 @@ export class AvatarSystem {
 		const x = headPosition.x - lean.x + back.x, z = headPosition.z - lean.z + back.z;
 		if (rig.hips) {
 			root.position.set(x, floorY, z);
-			rig.hips.position.y = rig.restHipsY - drop / scale;
+			root.computeWorldMatrix(true);
+			// The hips sink straight down in the world. Their own up is not necessarily the world's (rigs exported from
+			// Blender are rotated a quarter turn, which would slide the body forward instead), so the drop is taken into
+			// their parent's space.
+			const parent = rig.hips.parent as TransformNode | null;
+			const down = new Vector3(0, -drop, 0);
+			if (parent) {
+				const inverse = parent.computeWorldMatrix(true).clone().invert();
+				Vector3.TransformNormalToRef(down, inverse, down);
+			}
+			rig.hips.position.copyFrom(rig.restHipsPosition).addInPlace(down);
 		} else {
 			root.position.set(x, headPosition.y - standingEye, z);
 		}
 		root.computeWorldMatrix(true);
-		// ...but never so far back that an arm can no longer reach its hand: the body comes forward as much as that needs.
+		// ...but not so far back that an arm cannot reach its hand: the body comes forward for that, though never more than
+		// part of the way, so crouching with the hands out in front does not drag the chest back under the eyes (a hand then
+		// falls a little short of its controller instead).
 		if (behind > 0) {
 			let step = 0;
 			for (const side of ['left', 'right'] as const) {
@@ -511,7 +527,7 @@ export class AvatarSystem {
 				step = Math.max(step, stepToReach(toTarget.asArray() as V3, forward.asArray() as V3, reach));
 			}
 			if (step > 0) {
-				root.position.addInPlace(forward.scale(Math.min(step, behind)));
+				root.position.addInPlace(forward.scale(Math.min(step, behind * MAX_REACH_PULL)));
 				root.computeWorldMatrix(true);
 			}
 		}
