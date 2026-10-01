@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { mkdir, readFile, readdir } from 'node:fs/promises';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { resolve } from 'node:path';
 
@@ -49,11 +49,47 @@ async function checkProduction() {
 async function runBubblewrap(directory) {
 	await mkdir(directory, { recursive: true });
 	if ((await readdir(directory)).length) throw new Error(`${directory} must be empty for bubblewrap init.`);
+	await bubblewrap(directory, ['init', `--manifest=${manifestUrl}`, '--metaquest']);
+}
+
+async function bubblewrap(directory, args) {
 	await new Promise((done, fail) => {
-		const child = spawn(process.env.BUBBLEWRAP_BIN ?? 'bubblewrap', ['init', `--manifest=${manifestUrl}`, '--metaquest'], { cwd: directory, stdio: 'inherit' });
+		const child = spawn(process.env.BUBBLEWRAP_BIN ?? 'bubblewrap', args, { cwd: directory, stdio: 'inherit' });
 		child.on('error', fail);
 		child.on('exit', (code) => code === 0 ? done() : fail(new Error(`Bubblewrap exited with code ${code}.`)));
 	});
+}
+
+async function backupEnabled(directory) {
+	const path = resolve(directory, 'app/src/main/AndroidManifest.xml');
+	const manifest = await readFile(path, 'utf8');
+	const application = /<application\b[^>]*>/s.exec(manifest)?.[0];
+	if (!application) throw new Error(`Could not find the application element in ${path}.`);
+	return { path, manifest, application };
+}
+
+async function disableAndroidBackup(directory) {
+	const { path, manifest, application } = await backupEnabled(directory);
+	if (application.includes('android:allowBackup="false"')) {
+		console.log('Android backup is already disabled.');
+		return;
+	}
+	if (!application.includes('android:allowBackup="true"')) throw new Error(`Unexpected backup setting in ${path}.`);
+	await writeFile(path, manifest.replace(application, application.replace('android:allowBackup="true"', 'android:allowBackup="false"')));
+	console.log(`Disabled Android backup in ${path}.`);
+}
+
+async function buildSecureApk(directory) {
+	await disableAndroidBackup(directory);
+	await bubblewrap(directory, ['build']);
+	if ((await backupEnabled(directory)).application.includes('android:allowBackup="true"')) {
+		// Bubblewrap regenerated the Android project during build.
+		await disableAndroidBackup(directory);
+		await bubblewrap(directory, ['build']);
+	}
+	if (!(await backupEnabled(directory)).application.includes('android:allowBackup="false"')) {
+		throw new Error('The Android project does not explicitly disable backups. Do not distribute the APK.');
+	}
 }
 
 try {
@@ -62,7 +98,10 @@ try {
 	else if (mode === 'init') {
 		await checkProduction();
 		await runBubblewrap(resolve(process.argv[3] ?? 'meta-quest-package'));
-	} else throw new Error('Usage: node scripts/package-meta-quest.mjs [check-local|check|init [output-directory]]');
+		await disableAndroidBackup(resolve(process.argv[3] ?? 'meta-quest-package'));
+	} else if (mode === 'harden') await disableAndroidBackup(resolve(process.argv[3] ?? 'meta-quest-package'));
+	else if (mode === 'build') await buildSecureApk(resolve(process.argv[3] ?? 'meta-quest-package'));
+	else throw new Error('Usage: node scripts/package-meta-quest.mjs [check-local|check|init [output-directory]|harden [output-directory]|build [output-directory]]');
 } catch (error) {
 	console.error(error instanceof Error ? error.message : error);
 	process.exitCode = 1;
