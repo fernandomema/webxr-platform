@@ -5,7 +5,8 @@ import type { AssetId } from '$lib/assets/ref';
 import { flipRows } from './thumbnail/cubeToEquirect';
 
 export type ProbeFaces = Record<'Px' | 'Nx' | 'Py' | 'Ny' | 'Pz' | 'Nz', AssetId>;
-const DIRECTIONS = ['Px', 'Nx', 'Py', 'Ny', 'Pz', 'Nz'] as const;
+// Babylon reads cubemap targets in GL order; CubeTexture.CreateFromImages uses this same order.
+const DIRECTIONS = ['Px', 'Py', 'Pz', 'Nx', 'Ny', 'Nz'] as const;
 const SIZE = 128;
 
 function pngBytes(pixels: Uint8Array): Promise<Uint8Array> {
@@ -22,11 +23,12 @@ function pngBytes(pixels: Uint8Array): Promise<Uint8Array> {
 
 /** Captures one cubemap at a world position, then stores its faces as normal image assets. */
 export async function bakeReflectionProbe(scene: Scene, position: Vector3, name: string): Promise<ProbeFaces> {
+	await scene.whenReadyAsync();
 	const previousEnvironment = scene.environmentTexture;
 	const probe = new ReflectionProbe('baking-reflection-probe', SIZE, scene);
 	try {
 		probe.position.copyFrom(position);
-		probe.renderList = scene.meshes.filter((mesh): mesh is Mesh => mesh instanceof Mesh && mesh.isVisible && mesh.name !== 'skybox' && mesh.name !== 'studio-ground' && !mesh.name.startsWith('inspector-'));
+		probe.renderList = scene.meshes.filter((mesh): mesh is Mesh => mesh instanceof Mesh && mesh.isVisible && mesh.name !== 'studio-ground' && !mesh.name.startsWith('inspector-'));
 		// Avoid sampling the environment being replaced while capturing the new one.
 		scene.environmentTexture = null;
 		scene.incrementRenderId();

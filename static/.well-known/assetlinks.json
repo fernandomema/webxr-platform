@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.kithin.play",
+        "sha256_cert_fingerprints": ["A2:82:38:14:9F:15:6F:5A:2D:FD:35:FD:F9:73:65:CE:74:AE:71:36:57:A5:70:5F:2A:67:B3:0B:88:BF:99:9B"]
+      }
+    }]

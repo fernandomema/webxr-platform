@@ -88,6 +88,7 @@
 	/** Captures a slot's surroundings and imports the six faces as image assets. */
 	export async function bakeProbe(slotId: string): Promise<ProbeFaces> {
 		if (!scene || !sceneGraph) throw new Error('Scene preview is not ready.');
+		if (sceneGraph.allSlots().some((entry) => entry.assetState && entry.assetState !== 'ready')) throw new Error('Wait for the models to finish loading before capturing.');
 		const live = sceneGraph.getLive(slotId);
 		if (!live) throw new Error('The selected object is not in the preview.');
 		return bakeReflectionProbe(scene, live.node.getAbsolutePosition(), live.slot.name || 'Reflection probe');

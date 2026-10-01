@@ -421,13 +421,7 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 			{ key: 'bottomColor', label: 'Ground', kind: 'color', default: '#0f172a' },
 			{ key: 'stars', label: 'Stars', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 0.8 },
 			{ key: 'ambientIntensity', label: 'Ambient intensity', kind: 'number', min: 0, max: 3, step: 0.05, optional: true, default: 1 },
-			{ key: 'reflectionCapture', label: 'Capture reflections here', kind: 'bool', optional: true, default: true, help: 'Render the world from this slot into a reflection cubemap while it runs. Leave off when using six imported faces.' },
-			{ key: 'reflectionPx', advanced: true, label: 'Right (+X)', kind: 'asset', assetType: 'image', optional: true },
-			{ key: 'reflectionNx', advanced: true, label: 'Left (-X)', kind: 'asset', assetType: 'image', optional: true },
-			{ key: 'reflectionPy', advanced: true, label: 'Up (+Y)', kind: 'asset', assetType: 'image', optional: true },
-			{ key: 'reflectionNy', advanced: true, label: 'Down (-Y)', kind: 'asset', assetType: 'image', optional: true },
-			{ key: 'reflectionPz', advanced: true, label: 'Front (+Z)', kind: 'asset', assetType: 'image', optional: true },
-			{ key: 'reflectionNz', advanced: true, label: 'Back (-Z)', kind: 'asset', assetType: 'image', optional: true }
+			{ key: 'reflectionCapture', label: 'Live reflections', kind: 'bool', optional: true, default: true, help: 'Capture the world from this object while it runs. Use Generate reflection probe to save the capture as assets.' }
 		],
 		create: () => ({ type: 'skybox', topColor: '#0b1030', horizonColor: '#7c3aed', bottomColor: '#0f172a', stars: 0.8 })
 	},

@@ -107,7 +107,7 @@ export function setupSkybox(scene: Scene, node: TransformNode, initial: SkyboxCo
 		const capture = new ReflectionProbe('skybox-reflection-capture', 128, scene);
 		capture.position = node.getAbsolutePosition().clone();
 		capture.refreshRate = 30;
-		const included = (mesh: Mesh) => mesh.name !== 'skybox' && mesh.name !== 'studio-ground' && mesh.isVisible;
+		const included = (mesh: Mesh) => mesh.name !== 'studio-ground' && mesh.isVisible;
 		capture.renderList = scene.meshes.filter((mesh): mesh is Mesh => mesh instanceof Mesh && included(mesh));
 		const meshObserver = scene.onNewMeshAddedObservable.add((mesh) => {
 			if (mesh instanceof Mesh && included(mesh)) capture.renderList?.push(mesh);

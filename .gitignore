@@ -7,6 +7,7 @@ node_modules
 .wrangler
 /.svelte-kit
 /build
+/meta-quest-package/
 
 # OS
 .DS_Store

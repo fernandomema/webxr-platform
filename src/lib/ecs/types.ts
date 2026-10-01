@@ -192,7 +192,7 @@ export interface SkyboxComponent {
 	stars?: number;
 	/** Global diffuse light level while this skybox is active. */
 	ambientIntensity?: number;
-	/** Six images of a reflection cubemap, ordered by their world-space directions. */
+	/** Six images of a reflection cubemap, addressed by cubemap face. */
 	reflectionPx?: SourceRef;
 	reflectionNx?: SourceRef;
 	reflectionPy?: SourceRef;

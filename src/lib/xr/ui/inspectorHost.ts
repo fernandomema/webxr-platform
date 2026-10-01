@@ -254,6 +254,7 @@ export function createInspectorHost(scene: Scene, sceneGraph: SceneGraph, callba
 		const live = sceneGraph.getLive(slotId);
 		if (!live || !findComponent(live.slot, 'skybox')) return;
 		try {
+			if (sceneGraph.allSlots().some((entry) => entry.assetState && entry.assetState !== 'ready')) throw new Error('Wait for the models to finish loading before capturing.');
 			const faces = await bakeReflectionProbe(scene, live.node.getAbsolutePosition(), live.slot.name || 'Reflection probe');
 			const current = sceneGraph.getLive(slotId)?.slot;
 			if (!current || !canEdit()) return;

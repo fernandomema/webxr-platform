@@ -33,6 +33,18 @@ node server.ts   # Node 22.18+ ejecuta .ts nativamente, sin paso de compilación
 
 `server.ts` envuelve el `handler` de adapter-node en un `http.Server` propio y le adjunta el WebSocket de `/signaling` — mismo handler (`src/lib/server/signaling.ts`) que usa `vite dev` vía `src/lib/server/wsDevPlugin.ts`.
 
+## Meta Quest PWA package for `/play`
+
+The package is a Trusted Web Activity that loads the hosted game from `https://kithin.app/play`. It requires the site to remain online. The Meta Quest [packaging guide](https://developers.meta.com/vr/documentation/web/pwa-packaging/) uses `@meta-quest/bubblewrap-cli` 1.24.1.
+
+1. Deploy this version of the site. Confirm that `https://kithin.app/manifest.webmanifest`, `/play`, and the icons under `/icons/` return successfully. Run `node scripts/package-meta-quest.mjs check-local` before deployment and `node scripts/package-meta-quest.mjs check` after it. The production check is required: Bubblewrap reads the public manifest, not the file in this repository.
+2. Install the CLI with `npm install --global @meta-quest/bubblewrap-cli@1.24.1`. On this computer, keep any Bubblewrap JDK and Android SDK downloads on `/run/media/fernando/HDD 1TB`. Bubblewrap defaults to `~/.bubblewrap/jdk` and `~/.bubblewrap/android_sdk`; create directories on that disk and symlink those two default paths to them before the first run. The symlink paths have no spaces, which Android SDK tools require.
+3. Run `node scripts/package-meta-quest.mjs init`. This initializes `meta-quest-package/` from **`https://kithin.app/manifest.webmanifest`**. Select `immersive` app mode, a permanent unique Android package identifier, and no Horizon Billing unless in-app purchases have been configured. Save the signing keystore, alias, and passwords securely outside Git. Keep the same signing key for every update.
+4. In `meta-quest-package/`, run `keytool -list -v -keystore <keystore-path> -alias <alias>` and `bubblewrap fingerprint add <SHA256-fingerprint>`. Publish the generated `assetlinks.json` at `https://kithin.app/.well-known/assetlinks.json`, then confirm it returns the generated JSON. If this origin hosts other packaged apps, merge their statements into the same JSON array.
+5. Run `bubblewrap build` in `meta-quest-package/`. The result is `app-release-signed.apk`. Verify the package and the hosted Digital Asset Links before sideloading with `adb install app-release-signed.apk` on a developer-mode Quest.
+
+The package directory is ignored by Git because it can contain signing material. The `assetlinks.json` file needs the real package name and signing fingerprint; a placeholder cannot verify the immersive app.
+
 ## Variables de entorno
 
 Ver `.env.example`. `DATABASE_URL` (de `prisma dev`), `BETTER_AUTH_SECRET`/`BETTER_AUTH_URL`, `DISCORD_CLIENT_ID`/`SECRET` (opcional), `PUBLIC_STUN_URLS`.

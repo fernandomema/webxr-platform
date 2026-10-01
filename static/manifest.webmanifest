@@ -4,7 +4,7 @@
 	"short_name": "Kithin",
 	"description": "Step into shared worlds built from what surrounds you.",
 	"start_url": "/play",
-	"scope": "/",
+	"scope": "/play",
 	"display": "standalone",
 	"orientation": "any",
 	"theme_color": "#07070c",
