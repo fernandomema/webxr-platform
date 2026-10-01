@@ -99,7 +99,8 @@ export async function mountGame(
 	new HemisphericLight('light', new Vector3(0, 1, 0), scene);
 
 	const desktopCamera = new UniversalCamera('desktop-cam', new Vector3(0, 1.6, 2), scene);
-	desktopCamera.setTarget(new Vector3(0, 1.4, 0));
+	// Face the world facade: the initial view is turned 180 degrees around Y.
+	desktopCamera.setTarget(new Vector3(0, 1.4, 4));
 	desktopCamera.attachControl(canvas, true);
 	desktopCamera.speed = 1; // half Babylon's default of 2
 	// Babylon's default near plane is 1 m, which cut off panels opened 1 m away and anything held close.
@@ -342,7 +343,11 @@ export async function mountGame(
 		return localAudio ?? undefined;
 	}
 
+	/** An avatar worn for this session only. Any change of session drops it and the default avatar comes back. */
+	let sessionAvatar: SlotTree | null = null;
+
 	function resetSessionState(): void {
+		sessionAvatar = null;
 		gameState.worldId = null;
 		gameState.worldName = null;
 		gameState.roomCode = null;
@@ -354,7 +359,7 @@ export async function mountGame(
 
 	/** Puts the player's chosen avatar (or the built-in one) into the world: the host places it, a guest asks the host to. */
 	async function applyLocalAvatar(): Promise<void> {
-		const chosen = xrSettings.defaultAvatar;
+		const chosen = sessionAvatar ?? xrSettings.defaultAvatar;
 		const tree = chosen ?? (await loadBaseAvatar());
 		if (!tree) return;
 		if (gameState.role === 'guest') {
@@ -589,17 +594,23 @@ export async function mountGame(
 		onStopHosting: stopHostingWorld,
 		onJoinWorld: joinWorld,
 		onSpawnItem: spawnFromInventory,
+		onWearAvatar: async (item) => {
+			sessionAvatar = sanitizeAvatarTree(item.slotData);
+			await applyLocalAvatar();
+		},
 		onSetDefaultAvatar: async (item, adapterId) => {
 			// Rebuilt exactly as the host will rebuild it, so a bad avatar is refused here with a reason instead of silently ignored there.
 			const tree = sanitizeAvatarTree(item.slotData);
 			xrSettings.defaultAvatar = tree;
 			xrSettings.defaultAvatarSource = `${adapterId}:${item.id}`;
+			sessionAvatar = null;
 			saveSettings();
 			await applyLocalAvatar();
 		},
 		onUnsetDefaultAvatar: async () => {
 			xrSettings.defaultAvatar = null;
 			xrSettings.defaultAvatarSource = null;
+			sessionAvatar = null;
 			saveSettings();
 			await applyLocalAvatar();
 		},

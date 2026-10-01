@@ -228,12 +228,12 @@ const PANORAMA_VIEWS: Array<{ look: V3; up: V3 }> = [
 	{ look: [0, 0, -1], up: [0, 1, 0] } // -Z
 ];
 
-/** A 360° equirectangular picture of a world from its spawn: forward (+Z) in the middle, up at the top. */
+/** A 360° equirectangular picture of a world from its spawn: forward (-Z) in the middle, up at the top. */
 export async function renderWorldPanorama(tree: SlotTree, options: RenderOptions = {}): Promise<Blob | null> {
 	const stage = await buildStage(tree, options);
 	try {
 		if (options.signal?.cancelled) return null;
-		// From the author's Preview camera when there is one (its forward is the middle of the picture), else from the spawn.
+		// From the author's Preview camera when there is one, else from the spawn; the panorama applies a half turn around Y.
 		const authored = findPreviewCamera(tree);
 		const frame = authored?.rotation ?? ([0, 0, 0, 1] as [number, number, number, number]);
 		const position = authored ? Vector3.FromArray(authored.position) : new Vector3(WORLD_SPAWN.x, eyeHeightAtSpawn(stage), WORLD_SPAWN.z);

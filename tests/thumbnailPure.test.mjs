@@ -43,7 +43,7 @@ test('directions land on the expected cube face', () => {
 	assert.ok(Math.abs(centre.u - 0.5) < 1e-9 && Math.abs(centre.v - 0.5) < 1e-9);
 });
 
-test('the panorama looks along +Z in the middle, with +X on the right, up at the top and down at the bottom', () => {
+test('the panorama rotates 180 degrees around Y: -Z in the middle, with -X on the right, up at the top and down at the bottom', () => {
 	const size = 8;
 	const colours = { '+X': [255, 0, 0], '-X': [0, 255, 0], '+Y': [0, 0, 255], '-Y': [255, 255, 0], '+Z': [255, 0, 255], '-Z': [0, 255, 255] };
 	const faces = FACE_ORDER.map((name) => {
@@ -54,10 +54,10 @@ test('the panorama looks along +Z in the middle, with +X on the right, up at the
 	const width = 64, height = 32;
 	const out = cubeToEquirect(faces, size, width, height);
 	const at = (column, row) => [...out.slice((row * width + column) * 4, (row * width + column) * 4 + 3)];
-	assert.deepEqual(at(width / 2, height / 2), colours['+Z'], 'centre is forward');
-	assert.deepEqual(at(Math.round(width * 0.75), height / 2), colours['+X'], 'a quarter turn right is +X');
-	assert.deepEqual(at(Math.round(width * 0.25), height / 2), colours['-X'], 'a quarter turn left is -X');
-	assert.deepEqual(at(1, height / 2), colours['-Z'], 'the edge of the image is behind');
+	assert.deepEqual(at(width / 2, height / 2), colours['-Z'], 'centre is forward');
+	assert.deepEqual(at(Math.round(width * 0.75), height / 2), colours['-X'], 'a quarter turn right is -X');
+	assert.deepEqual(at(Math.round(width * 0.25), height / 2), colours['+X'], 'a quarter turn left is +X');
+	assert.deepEqual(at(1, height / 2), colours['+Z'], 'the edge of the image is behind');
 	assert.deepEqual(at(width / 2, 0), colours['+Y'], 'top row is up');
 	assert.deepEqual(at(width / 2, height - 1), colours['-Y'], 'bottom row is down');
 	assert.throws(() => cubeToEquirect([], size, width, height));

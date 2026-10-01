@@ -1,9 +1,9 @@
 /**
  * Turns the six faces of a cube map into one equirectangular (360°) picture. Pure, so it is tested in Node.
  *
- * The output looks along +Z at its centre, with +X to the right, +Y up: the panorama a person standing at the
- * cube's centre and facing +Z would see. Faces are in the usual order: +X, -X, +Y, -Y, +Z, -Z, each a square RGBA
- * image with row 0 at the top as it looks from inside the cube.
+ * The output looks along -Z at its centre, with -X to the right, +Y up: the panorama a person standing at the
+ * cube's centre and facing -Z would see. Faces are in the usual order: +X, -X, +Y, -Y, +Z, -Z, each a square RGBA
+ * image with row 0 at the top as it looks from inside the cube. The panorama is rotated 180 degrees around Y.
  */
 
 export const FACE_ORDER = ['+X', '-X', '+Y', '-Y', '+Z', '-Z'] as const;
@@ -44,7 +44,7 @@ export function cubeToEquirect(faces: readonly Uint8Array[], faceSize: number, w
 		const lat = (0.5 - (row + 0.5) / height) * Math.PI; // +PI/2 at the top
 		const cosLat = Math.cos(lat), sinLat = Math.sin(lat);
 		for (let column = 0; column < width; column++) {
-			const lon = ((column + 0.5) / width - 0.5) * 2 * Math.PI; // 0 looks along +Z, positive towards +X
+			const lon = ((column + 0.5) / width - 0.5) * 2 * Math.PI + Math.PI; // Centre faces -Z after a half turn around Y
 			const { face, u, v } = faceLookup(cosLat * Math.sin(lon), sinLat, cosLat * Math.cos(lon));
 			const px = Math.min(faceSize - 1, Math.floor(u * faceSize));
 			const py = Math.min(faceSize - 1, Math.floor(v * faceSize));

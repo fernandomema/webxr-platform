@@ -45,6 +45,7 @@ export interface DashPanelCallbacks {
 	/** Goes to one of the worlds that ship with the app, on your own. */
 	onLaunchBuiltinWorld(world: BuiltinWorld): Promise<void>;
 	/** Makes an avatar item the one worn from now on, here and in every world joined later. Rejects with a readable message if it cannot be worn. */
+	onWearAvatar(item: InventoryItem): Promise<void>;
 	onSetDefaultAvatar(item: InventoryItem, adapterId: InventoryAdapterId): Promise<void>;
 	/** Goes back to the avatar that ships with the app. */
 	onUnsetDefaultAvatar(): Promise<void>;
@@ -627,8 +628,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			callbacks.onSpawnWorldOrb(entry.item, adapter.id);
 			showMessage(`Placed “${entry.name}” as a world orb`, 'ok');
 		} else if (entry.item.kind === 'avatar') {
-			if (isWornAvatar(entry.item)) void unsetDefaultAvatar();
-			else void setDefaultAvatar(entry.item);
+			void wearAvatar(entry.item);
 		} else {
 			callbacks.onSpawnItem(entry.item.slotData);
 		}
@@ -636,6 +636,13 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 
 	function isWornAvatar(item: InventoryItem): boolean {
 		return !!activeAdapter && xrSettings.defaultAvatarSource === `${activeAdapter.id}:${item.id}`;
+	}
+
+	async function wearAvatar(item: InventoryItem) {
+		try {
+			await callbacks.onWearAvatar(item);
+			showMessage(`Wearing “${item.name}” for this session`, 'ok');
+		} catch (error) { showMessage(error instanceof Error ? error.message : 'Could not use this avatar', 'error'); }
 	}
 
 	async function setDefaultAvatar(item: InventoryItem) {
@@ -681,8 +688,8 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			const isWorld = item.kind === 'world';
 			const isAvatar = item.kind === 'avatar';
 			if (isAvatar) inventoryToolbar.addControl(isWornAvatar(item)
-				? actionButton('tb-unset-avatar', 'Unset', INV.surface, 110, () => activate(entry))
-				: actionButton('tb-set-avatar', 'Set as default', INV.accent, 150, () => activate(entry)));
+				? actionButton('tb-unset-avatar', 'Unset', INV.surface, 110, () => void unsetDefaultAvatar())
+				: actionButton('tb-set-avatar', 'Set as default', INV.accent, 150, () => void setDefaultAvatar(item)));
 			else inventoryToolbar.addControl(actionButton('tb-spawn', isWorld ? 'Place orb' : 'Spawn', INV.accent, isWorld ? 116 : 94, () => activate(entry)));
 			if (!isWorld && gameState.userId && !isReadOnlyAdapter(adapter.id) && (adapter.id !== 'world' || gameState.role === 'host')) {
 				inventoryToolbar.addControl(actionButton('tb-marketplace', item.marketplaceItemId ? 'Update Marketplace' : 'Publish', '#7c3aed', 160, async () => {
