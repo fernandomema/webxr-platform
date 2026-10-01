@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 
 const origin = 'https://kithin.app';
@@ -79,17 +80,64 @@ async function disableAndroidBackup(directory) {
 	console.log(`Disabled Android backup in ${path}.`);
 }
 
-async function buildSecureApk(directory) {
+async function hardenAndroidProject(directory) {
 	await disableAndroidBackup(directory);
+	const configPath = resolve(directory, 'twa-manifest.json');
+	const config = JSON.parse(await readFile(configPath, 'utf8'));
+	if (config.enableNotifications !== false) {
+		config.enableNotifications = false;
+		await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
+	}
+	const gradlePath = resolve(directory, 'app/build.gradle');
+	const gradle = await readFile(gradlePath, 'utf8');
+	const updatedGradle = gradle.replace(/enableNotifications:\s*true\b/g, 'enableNotifications: false');
+	if (updatedGradle !== gradle) await writeFile(gradlePath, updatedGradle);
+	const { path, manifest } = await backupEnabled(directory);
+	// Override dependency manifests too, so they cannot restore this permission.
+	let updated = manifest.replace(/<uses-permission\b[^>]*android:name=["']android\.permission\.POST_NOTIFICATIONS["'][^>]*\/\s*>/g, '');
+	if (!/xmlns:tools=/.test(updated)) updated = updated.replace('<manifest ', '<manifest xmlns:tools="http://schemas.android.com/tools" ');
+	updated = updated.replace(/(<manifest\b[^>]*>)/s, '$1\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" tools:node="remove" />');
+	if (updated !== manifest) await writeFile(path, updated);
+	console.log('Notification delegation is disabled and POST_NOTIFICATIONS is excluded.');
+}
+
+async function androidProjectIsHardened(directory) {
+	const { manifest, application } = await backupEnabled(directory);
+	const permissions = manifest.match(/<uses-permission\b[^>]*android:name=["']android\.permission\.POST_NOTIFICATIONS["'][^>]*>/g) ?? [];
+	const config = JSON.parse(await readFile(resolve(directory, 'twa-manifest.json'), 'utf8'));
+	const gradle = await readFile(resolve(directory, 'app/build.gradle'), 'utf8');
+	return application.includes('android:allowBackup="false"') && config.enableNotifications === false
+		&& !/enableNotifications:\s*true\b/.test(gradle)
+		&& permissions.length === 1 && permissions[0].includes('tools:node="remove"');
+}
+
+async function buildSecureApk(directory) {
+	await hardenAndroidProject(directory);
 	await bubblewrap(directory, ['build']);
-	if ((await backupEnabled(directory)).application.includes('android:allowBackup="true"')) {
+	if (!await androidProjectIsHardened(directory)) {
 		// Bubblewrap regenerated the Android project during build.
-		await disableAndroidBackup(directory);
+		await hardenAndroidProject(directory);
 		await bubblewrap(directory, ['build']);
 	}
-	if (!(await backupEnabled(directory)).application.includes('android:allowBackup="false"')) {
-		throw new Error('The Android project does not explicitly disable backups. Do not distribute the APK.');
+	if (!await androidProjectIsHardened(directory)) {
+		throw new Error('The Android project must disable backups and notification permissions. Do not distribute the APK.');
 	}
+	await verifyCompiledManifest(directory);
+}
+
+async function verifyCompiledManifest(directory) {
+	const config = JSON.parse(await readFile(resolve(homedir(), '.bubblewrap/config.json'), 'utf8'));
+	const toolsDirectory = resolve(config.androidSdkPath, 'build-tools');
+	const versions = (await readdir(toolsDirectory)).sort((left, right) => right.localeCompare(left, undefined, { numeric: true }));
+	if (!versions.length) throw new Error('Android build tools are missing.');
+	const aapt = resolve(toolsDirectory, versions[0], process.platform === 'win32' ? 'aapt.exe' : 'aapt');
+	const apk = resolve(directory, 'app-release-signed.apk');
+	const result = spawnSync(aapt, ['dump', 'xmltree', apk, 'AndroidManifest.xml'], { encoding: 'utf8' });
+	if (result.status !== 0) throw new Error(`Could not inspect the APK manifest: ${result.stderr}`);
+	if (!/android:allowBackup\([^\n]*\)=\(type 0x12\)0x0\b/.test(result.stdout)) {
+		throw new Error(`The compiled APK does not explicitly disable Android backup: ${apk}`);
+	}
+	console.log(`Verified android:allowBackup=false in ${apk}.`);
 }
 
 try {
@@ -98,10 +146,11 @@ try {
 	else if (mode === 'init') {
 		await checkProduction();
 		await runBubblewrap(resolve(process.argv[3] ?? 'meta-quest-package'));
-		await disableAndroidBackup(resolve(process.argv[3] ?? 'meta-quest-package'));
-	} else if (mode === 'harden') await disableAndroidBackup(resolve(process.argv[3] ?? 'meta-quest-package'));
+		await hardenAndroidProject(resolve(process.argv[3] ?? 'meta-quest-package'));
+	} else if (mode === 'harden') await hardenAndroidProject(resolve(process.argv[3] ?? 'meta-quest-package'));
 	else if (mode === 'build') await buildSecureApk(resolve(process.argv[3] ?? 'meta-quest-package'));
-	else throw new Error('Usage: node scripts/package-meta-quest.mjs [check-local|check|init [output-directory]|harden [output-directory]|build [output-directory]]');
+	else if (mode === 'verify') await verifyCompiledManifest(resolve(process.argv[3] ?? 'meta-quest-package'));
+	else throw new Error('Usage: node scripts/package-meta-quest.mjs [check-local|check|init [output-directory]|harden [output-directory]|build [output-directory]|verify [output-directory]]');
 } catch (error) {
 	console.error(error instanceof Error ? error.message : error);
 	process.exitCode = 1;
