@@ -5,10 +5,10 @@ import { readFile } from 'node:fs/promises';
 import { parseGlb } from '../src/lib/assets/glb.ts';
 import { ASSET_LIMITS } from '../src/lib/assets/limits.ts';
 
-const scenePath = new URL('../src/lib/xr/templates/polygonQuest.json', import.meta.url);
+const scenePath = new URL('../src/lib/xr/templates/avatarShowcase.json', import.meta.url);
 const modelPath = new URL('../static/worlds/polygon-quest/room.glb', import.meta.url);
 
-test('Polygon Quest scene refers to the bundled, valid GLB and has a walkable floor', async () => {
+test('Avatar Showcase scene refers to the bundled, valid GLB and has a walkable floor', async () => {
 	const scene = JSON.parse(await readFile(scenePath, 'utf8'));
 	const bytes = await readFile(modelPath);
 	const model = scene.find((slot) => slot.id === 'polygon-quest-room');

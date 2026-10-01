@@ -1,6 +1,5 @@
 import type { SlotTree } from '$lib/ecs/types';
 import { createSlot } from '$lib/ecs/types';
-import polygonQuest from '$lib/xr/templates/polygonQuest.json';
 
 export interface StudioTemplate {
 	id: string;
@@ -12,14 +11,6 @@ export interface StudioTemplate {
 }
 
 export const TEMPLATES: StudioTemplate[] = [
-	{
-		id: 'polygon-quest',
-		label: 'Polygon Quest',
-		description: 'An indoor room with its original geometry and materials.',
-		kind: 'world',
-		defaultName: 'Polygon Quest',
-		build: () => JSON.parse(JSON.stringify(polygonQuest)) as SlotTree
-	},
 	{
 		id: 'blank-world',
 		label: 'Blank world',

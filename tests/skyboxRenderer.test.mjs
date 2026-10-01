@@ -10,11 +10,11 @@ const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.Scri
  .replaceAll("'@babylonjs/core'", JSON.stringify(import.meta.resolve('@babylonjs/core')))
  .replaceAll("'$lib/assets/builtin'", JSON.stringify(new URL('../src/lib/assets/builtin.ts', import.meta.url).href));
 const { setupSkybox } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
-const tree = JSON.parse(await readFile(new URL('../src/lib/xr/templates/polygonQuest.json', import.meta.url), 'utf8'));
+const tree = JSON.parse(await readFile(new URL('../src/lib/xr/templates/avatarShowcase.json', import.meta.url), 'utf8'));
 const component = tree[0].components.find((item) => item.type === 'skybox');
 const directions = ['Px', 'Py', 'Pz', 'Nx', 'Ny', 'Nz'];
 
-test('Polygon Quest waits for all six reflection images, regardless of arrival order', () => {
+test('Avatar Showcase waits for all six reflection images, regardless of arrival order', () => {
  const engine = new NullEngine();
  const scene = new Scene(engine);
  const node = new TransformNode('sky', scene);

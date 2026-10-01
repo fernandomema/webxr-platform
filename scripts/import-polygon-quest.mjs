@@ -162,7 +162,7 @@ const glb = Buffer.concat([header, jsonHeader, jsonChunk, binHeader, bin]);
 await mkdir(path.dirname(output), { recursive: true });
 await writeFile(output, glb);
 const hash = createHash('sha256').update(glb).digest('hex');
-for (const file of ['src/lib/assets/builtin.ts', 'src/lib/xr/templates/polygonQuest.json']) {
+for (const file of ['src/lib/assets/builtin.ts', 'src/lib/xr/templates/avatarShowcase.json']) {
 	const content = await readFile(file, 'utf8');
 	const updated = content.replace(/sha256:[0-9a-f]{64}/, `sha256:${hash}`);
 	if (updated === content && !content.includes(`sha256:${hash}`)) throw new Error(`Missing model reference in ${file}`);

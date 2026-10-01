@@ -18,9 +18,8 @@ msgstr "Email"
 #~ msgid "Contraseña"
 #~ msgstr "Contraseña"
 
-#: src/routes/+page.svelte
-msgid "Entrar"
-msgstr "Entrar"
+#~ msgid "Entrar"
+#~ msgstr "Entrar"
 
 #~ msgid "Crear cuenta"
 #~ msgstr "Crear cuenta"
@@ -712,6 +711,7 @@ msgid "M9 9h6v6H9zM9 9V6a3 3 0 10-3 3h3M15 9h3a3 3 0 10-3-3M9 15H6a3 3 0 103 3M1
 msgstr "M9 9h6v6H9zM9 9V6a3 3 0 10-3 3h3M15 9h3a3 3 0 10-3-3M9 15H6a3 3 0 103 3M15 15v3a3 3 0 103-3"
 
 #: src/routes/+page.svelte
+#: src/routes/+page.svelte
 #: src/routes/studio/+page.svelte
 msgid "Create"
 msgstr "Create"
@@ -1390,6 +1390,7 @@ msgstr "Publish “{0}”"
 #: src/lib/studio/ui/Combobox.svelte
 #: src/lib/studio/ui/Select.svelte
 #: src/lib/studio/ui/Select.svelte
+#: src/routes/+page.svelte
 msgid "Enter"
 msgstr "Enter"
 
@@ -2718,6 +2719,7 @@ msgstr "Close inspector"
 msgid "Connecting to the world…"
 msgstr "Connecting to the world…"
 
+#: src/routes/+page.svelte
 #: src/routes/xr-panel/inspector/+page.svelte
 msgid "Objects"
 msgstr "Objects"
@@ -2885,6 +2887,7 @@ msgstr "Kithin"
 #~ msgid "Main navigation"
 #~ msgstr "Main navigation"
 
+#: src/routes/+page.svelte
 #: src/routes/+page.svelte
 msgid "Discover"
 msgstr "Discover"
@@ -3109,9 +3112,8 @@ msgstr "{0} absolute inset-x-4 top-16 flex-col gap-4 rounded-2xl border border-w
 #~ msgid "Iniciar sesión"
 #~ msgstr "Iniciar sesión"
 
-#: src/routes/+page.svelte
-msgid "Descubrir"
-msgstr "Descubrir"
+#~ msgid "Descubrir"
+#~ msgstr "Descubrir"
 
 #: src/lib/landing/Create.svelte
 msgid "Crear"
@@ -3132,10 +3134,8 @@ msgstr "“Eh, mira esto.”"
 msgid "Entrar en Kithin <0/>"
 msgstr "Entrar en Kithin <0/>"
 
-#: src/lib/landing/Closing.svelte
-#: src/routes/+page.svelte
-msgid "Crear algo"
-msgstr "Crear algo"
+#~ msgid "Crear algo"
+#~ msgstr "Crear algo"
 
 #: src/lib/landing/Closing.svelte
 #: src/routes/+page.svelte
@@ -3364,30 +3364,24 @@ msgstr "No necesitas cuenta."
 msgid "Peer-to-peer · WebRTC · WebXR"
 msgstr "Peer-to-peer · WebRTC · WebXR"
 
-#: src/routes/+page.svelte
-msgid "Entrar ahora"
-msgstr "Entrar ahora"
+#~ msgid "Entrar ahora"
+#~ msgstr "Entrar ahora"
 
-#: src/routes/+page.svelte
-msgid "Con un código"
-msgstr "Con un código"
+#~ msgid "Con un código"
+#~ msgstr "Con un código"
 
-#: src/routes/+page.svelte
-msgid "Hacer"
-msgstr "Hacer"
+#~ msgid "Hacer"
+#~ msgstr "Hacer"
 
 #: src/lib/landing/Create.svelte
-#: src/routes/+page.svelte
 msgid "Abrir Studio"
 msgstr "Abrir Studio"
 
-#: src/routes/+page.svelte
-msgid "Cosas"
-msgstr "Cosas"
+#~ msgid "Cosas"
+#~ msgstr "Cosas"
 
-#: src/routes/+page.svelte
-msgid "Lugares"
-msgstr "Lugares"
+#~ msgid "Lugares"
+#~ msgstr "Lugares"
 
 #: src/routes/+page.svelte
 msgid "Sobre esto"
@@ -3401,9 +3395,8 @@ msgstr "Qué es Kithin"
 msgid "Cómo funciona"
 msgstr "Cómo funciona"
 
-#: src/routes/+page.svelte
-msgid "Contacto"
-msgstr "Contacto"
+#~ msgid "Contacto"
+#~ msgstr "Contacto"
 
 #. 0: new Date().getFullYear()
 #: src/routes/+page.svelte
@@ -4148,3 +4141,54 @@ msgstr "{0} snap: hold Shift to use"
 #: src/lib/studio/ScenePreview.svelte
 msgid "Snap"
 msgstr "Snap"
+
+#: src/lib/landing/Closing.svelte
+#: src/routes/+page.svelte
+msgid "Create something"
+msgstr "Create something"
+
+#: src/routes/+page.svelte
+msgid "Enter now"
+msgstr "Enter now"
+
+#: src/routes/+page.svelte
+msgid "Open Studio"
+msgstr "Open Studio"
+
+#: src/routes/+page.svelte
+#: src/routes/worlds/+page.svelte
+msgid "Worlds"
+msgstr "Worlds"
+
+#. 0: PLATFORM_NAME
+#: src/routes/worlds/+page.svelte
+msgid "Explore the worlds published on {0}."
+msgstr "Explore the worlds published on {0}."
+
+#. 0: PLATFORM_NAME
+#: src/routes/worlds/+page.svelte
+msgid "Worlds · {0}"
+msgstr "Worlds · {0}"
+
+#. 0: PLATFORM_NAME
+#: src/routes/worlds/+page.svelte
+msgid "{0} home"
+msgstr "{0} home"
+
+#. 0: PLATFORM_NAME
+#: src/routes/worlds/+page.svelte
+msgid "Open {0} <0/>"
+msgstr "Open {0} <0/>"
+
+#: src/routes/worlds/+page.svelte
+msgid "No worlds have been published yet."
+msgstr "No worlds have been published yet."
+
+#. 0: world.latestRevision; 1: new Date(world.updatedAt).toLocaleDateString()
+#: src/routes/worlds/+page.svelte
+msgid "v{0} · {1}"
+msgstr "v{0} · {1}"
+
+#: src/routes/worlds/+page.svelte
+msgid "Pick a world to step inside."
+msgstr "Pick a world to step inside."

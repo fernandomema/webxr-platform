@@ -18,9 +18,8 @@ msgstr "Email"
 #~ msgid "Contraseña"
 #~ msgstr ""
 
-#: src/routes/+page.svelte
-msgid "Entrar"
-msgstr ""
+#~ msgid "Entrar"
+#~ msgstr ""
 
 #~ msgid "Crear cuenta"
 #~ msgstr ""
@@ -712,9 +711,10 @@ msgid "M9 9h6v6H9zM9 9V6a3 3 0 10-3 3h3M15 9h3a3 3 0 10-3-3M9 15H6a3 3 0 103 3M1
 msgstr ""
 
 #: src/routes/+page.svelte
+#: src/routes/+page.svelte
 #: src/routes/studio/+page.svelte
 msgid "Create"
-msgstr ""
+msgstr "Crear"
 
 #: src/routes/studio/+page.svelte
 msgid "Could not create the folder"
@@ -1390,8 +1390,9 @@ msgstr ""
 #: src/lib/studio/ui/Combobox.svelte
 #: src/lib/studio/ui/Select.svelte
 #: src/lib/studio/ui/Select.svelte
+#: src/routes/+page.svelte
 msgid "Enter"
-msgstr ""
+msgstr "Entrar"
 
 #: src/lib/studio/components/CommandPalette.svelte
 msgid "Type a command…"
@@ -2718,9 +2719,10 @@ msgstr ""
 msgid "Connecting to the world…"
 msgstr ""
 
+#: src/routes/+page.svelte
 #: src/routes/xr-panel/inspector/+page.svelte
 msgid "Objects"
-msgstr ""
+msgstr "Cosas"
 
 #: src/routes/xr-panel/inspector/+page.svelte
 msgid "Applied when you press Apply."
@@ -2886,8 +2888,9 @@ msgstr "Kithin"
 #~ msgstr ""
 
 #: src/routes/+page.svelte
+#: src/routes/+page.svelte
 msgid "Discover"
-msgstr ""
+msgstr "Descubrir"
 
 #: src/routes/+page.svelte
 msgid "About"
@@ -3109,9 +3112,8 @@ msgstr ""
 #~ msgid "Iniciar sesión"
 #~ msgstr ""
 
-#: src/routes/+page.svelte
-msgid "Descubrir"
-msgstr ""
+#~ msgid "Descubrir"
+#~ msgstr ""
 
 #: src/lib/landing/Create.svelte
 msgid "Crear"
@@ -3132,10 +3134,8 @@ msgstr ""
 msgid "Entrar en Kithin <0/>"
 msgstr ""
 
-#: src/lib/landing/Closing.svelte
-#: src/routes/+page.svelte
-msgid "Crear algo"
-msgstr ""
+#~ msgid "Crear algo"
+#~ msgstr ""
 
 #: src/lib/landing/Closing.svelte
 #: src/routes/+page.svelte
@@ -3364,30 +3364,24 @@ msgstr ""
 msgid "Peer-to-peer · WebRTC · WebXR"
 msgstr ""
 
-#: src/routes/+page.svelte
-msgid "Entrar ahora"
-msgstr ""
+#~ msgid "Entrar ahora"
+#~ msgstr ""
 
-#: src/routes/+page.svelte
-msgid "Con un código"
-msgstr ""
+#~ msgid "Con un código"
+#~ msgstr ""
 
-#: src/routes/+page.svelte
-msgid "Hacer"
-msgstr ""
+#~ msgid "Hacer"
+#~ msgstr ""
 
 #: src/lib/landing/Create.svelte
-#: src/routes/+page.svelte
 msgid "Abrir Studio"
 msgstr ""
 
-#: src/routes/+page.svelte
-msgid "Cosas"
-msgstr ""
+#~ msgid "Cosas"
+#~ msgstr ""
 
-#: src/routes/+page.svelte
-msgid "Lugares"
-msgstr ""
+#~ msgid "Lugares"
+#~ msgstr ""
 
 #: src/routes/+page.svelte
 msgid "Sobre esto"
@@ -3401,9 +3395,8 @@ msgstr ""
 msgid "Cómo funciona"
 msgstr ""
 
-#: src/routes/+page.svelte
-msgid "Contacto"
-msgstr ""
+#~ msgid "Contacto"
+#~ msgstr ""
 
 #. 0: new Date().getFullYear()
 #: src/routes/+page.svelte
@@ -4147,4 +4140,55 @@ msgstr ""
 
 #: src/lib/studio/ScenePreview.svelte
 msgid "Snap"
+msgstr ""
+
+#: src/lib/landing/Closing.svelte
+#: src/routes/+page.svelte
+msgid "Create something"
+msgstr "Crear algo"
+
+#: src/routes/+page.svelte
+msgid "Enter now"
+msgstr "Entrar ahora"
+
+#: src/routes/+page.svelte
+msgid "Open Studio"
+msgstr "Abrir Studio"
+
+#: src/routes/+page.svelte
+#: src/routes/worlds/+page.svelte
+msgid "Worlds"
+msgstr "Lugares"
+
+#. 0: PLATFORM_NAME
+#: src/routes/worlds/+page.svelte
+msgid "Explore the worlds published on {0}."
+msgstr ""
+
+#. 0: PLATFORM_NAME
+#: src/routes/worlds/+page.svelte
+msgid "Worlds · {0}"
+msgstr ""
+
+#. 0: PLATFORM_NAME
+#: src/routes/worlds/+page.svelte
+msgid "{0} home"
+msgstr ""
+
+#. 0: PLATFORM_NAME
+#: src/routes/worlds/+page.svelte
+msgid "Open {0} <0/>"
+msgstr ""
+
+#: src/routes/worlds/+page.svelte
+msgid "No worlds have been published yet."
+msgstr ""
+
+#. 0: world.latestRevision; 1: new Date(world.updatedAt).toLocaleDateString()
+#: src/routes/worlds/+page.svelte
+msgid "v{0} · {1}"
+msgstr ""
+
+#: src/routes/worlds/+page.svelte
+msgid "Pick a world to step inside."
 msgstr ""
