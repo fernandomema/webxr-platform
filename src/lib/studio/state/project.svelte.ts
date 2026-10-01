@@ -1,5 +1,5 @@
 import type { SlotTree } from '$lib/ecs/types';
-import { getInventoryAdapter } from '$lib/inventory/registry';
+import { getInventoryAdapter, isReadOnlyAdapter } from '$lib/inventory/registry';
 import type { InventoryContext, InventoryItem, InventoryKind } from '$lib/inventory/types';
 import { validateWorldScene } from '$lib/worlds/package';
 import { ensureCloudAssets, type CloudSyncProgress } from '$lib/assets/cloudSync';
@@ -181,7 +181,7 @@ export class StudioProject {
 
 	async publishMarketplaceItem(name: string, description: string): Promise<{ id: string; revision: number }> {
 		if (this.doc.kind !== 'object') throw new Error('Only objects can be published to the marketplace.');
-		if (!this.item || this.adapterId === 'purchased') throw new Error('Save this object to a writable inventory before publishing it.');
+		if (!this.item || isReadOnlyAdapter(this.adapterId)) throw new Error('Save this object to a writable inventory before publishing it.');
 		const scene = cloneTree(this.doc.tree);
 		validateWorldScene(scene);
 		// The marketplace listing shows the object's own preview; an object saved before previews existed gets one now.

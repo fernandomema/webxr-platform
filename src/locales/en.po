@@ -2845,11 +2845,14 @@ msgstr "{0} hex"
 #~ msgid "Kithin — Your world, together"
 #~ msgstr "Kithin — Your world, together"
 
-#~ msgid "Kithin home"
-#~ msgstr "Kithin home"
+#: src/routes/privacy/+page.svelte
+msgid "Kithin home"
+msgstr "Kithin home"
 
 #: src/routes/+page.svelte
 #: src/routes/+page.svelte
+#: src/routes/privacy/+page.svelte
+#: src/routes/privacy/+page.svelte
 msgid "Kithin"
 msgstr "Kithin"
 
@@ -3868,3 +3871,240 @@ msgstr "Generate reflection probe"
 #: src/lib/studio/ScenePreview.svelte
 msgid "Reflection probe"
 msgstr "Reflection probe"
+
+#: src/routes/privacy/+page.svelte
+msgid "How Kithin handles account information, shared worlds, microphone audio, movement data and your privacy choices."
+msgstr "How Kithin handles account information, shared worlds, microphone audio, movement data and your privacy choices."
+
+#: src/routes/privacy/+page.svelte
+msgid "Privacy Policy · Kithin"
+msgstr "Privacy Policy · Kithin"
+
+#: src/routes/privacy/+page.svelte
+msgid "Open Kithin <0/>"
+msgstr "Open Kithin <0/>"
+
+#: src/routes/privacy/+page.svelte
+msgid "Privacy overview"
+msgstr "Privacy overview"
+
+#: src/routes/privacy/+page.svelte
+msgid "<0>Microphone access is optional.</0> Voice is transmitted live through WebRTC. Kithin does not record or store voice conversations."
+msgstr "<0>Microphone access is optional.</0> Voice is transmitted live through WebRTC. Kithin does not record or store voice conversations."
+
+#: src/routes/privacy/+page.svelte
+msgid "<0>Shared spaces involve sharing information.</0> Other participants receive your avatar movements, interactions and voice when enabled."
+msgstr "<0>Shared spaces involve sharing information.</0> Other participants receive your avatar movements, interactions and voice when enabled."
+
+#: src/routes/privacy/+page.svelte
+msgid "1. Who to contact"
+msgstr "1. Who to contact"
+
+#: src/routes/privacy/+page.svelte
+msgid "<0>Account information:</0> your name, email address, username, profile image when provided, account identifiers and authentication information. Password authentication uses a password hash. If you choose Discord sign-in, we receive the account information and authentication tokens needed for that connection."
+msgstr "<0>Account information:</0> your name, email address, username, profile image when provided, account identifiers and authentication information. Password authentication uses a password hash. If you choose Discord sign-in, we receive the account information and authentication tokens needed for that connection."
+
+#: src/routes/privacy/+page.svelte
+msgid "<0>Session and connection information:</0> login sessions, expiry times, IP addresses and browser or device information used for authentication, network connections and service security. Hosting infrastructure may also process request logs."
+msgstr "<0>Session and connection information:</0> login sessions, expiry times, IP addresses and browser or device information used for authentication, network connections and service security. Hosting infrastructure may also process request logs."
+
+#: src/routes/privacy/+page.svelte
+msgid "<0>Content you create or save:</0> worlds, scene data, objects, uploaded models, images and audio files, previews, inventory folders, publications and records of items acquired through the marketplace. Uploaded audio files are separate from live microphone audio."
+msgstr "<0>Content you create or save:</0> worlds, scene data, objects, uploaded models, images and audio files, previews, inventory folders, publications and records of items acquired through the marketplace. Uploaded audio files are separate from live microphone audio."
+
+#~ msgid "<0>Multiplayer information:</0> room and participant identifiers, display names, avatar positions, head and hand poses, controller input and world interactions needed to synchronise a shared session."
+#~ msgstr "<0>Multiplayer information:</0> room and participant identifiers, display names, avatar positions, head and hand poses, controller input and world interactions needed to synchronise a shared session."
+
+#: src/routes/privacy/+page.svelte
+msgid "<0>Support communications:</0> information you choose to send when contacting us."
+msgstr "<0>Support communications:</0> information you choose to send when contacting us."
+
+#: src/routes/privacy/+page.svelte
+msgid "2. Information the service handles"
+msgstr "2. Information the service handles"
+
+#: src/routes/privacy/+page.svelte
+msgid "3. Microphone and headset permissions"
+msgstr "3. Microphone and headset permissions"
+
+#: src/routes/privacy/+page.svelte
+msgid "The Android permission <0/> and your browser's microphone permission allow live voice communication in shared worlds. With permission, microphone audio is sent through WebRTC to connected participants, including the participant hosting the world. Spatial playback reflects participants' positions. You can deny or revoke microphone access in your browser or device settings and continue using Kithin without transmitting your voice."
+msgstr "The Android permission <0/> and your browser's microphone permission allow live voice communication in shared worlds. With permission, microphone audio is sent through WebRTC to connected participants, including the participant hosting the world. Spatial playback reflects participants' positions. You can deny or revoke microphone access in your browser or device settings and continue using Kithin without transmitting your voice."
+
+#: src/routes/privacy/+page.svelte
+msgid "On supported headsets, WebXR and hand tracking provide head, controller and hand movement data for rendering, avatar animation and interaction. Movement needed for the shared experience is transmitted to connected participants. Kithin does not use these movements to identify you biometrically."
+msgstr "On supported headsets, WebXR and hand tracking provide head, controller and hand movement data for rendering, avatar animation and interaction. Movement needed for the shared experience is transmitted to connected participants. Kithin does not use these movements to identify you biometrically."
+
+#: src/routes/privacy/+page.svelte
+msgid "Kithin does not record live voice conversations or store live headset and hand tracking streams on its servers. Other participants can hear what you transmit and may use tools outside Kithin to record it. Avoid sharing sensitive information in a session."
+msgstr "Kithin does not record live voice conversations or store live headset and hand tracking streams on its servers. Other participants can hear what you transmit and may use tools outside Kithin to record it. Avoid sharing sensitive information in a session."
+
+#: src/routes/privacy/+page.svelte
+msgid "4. Why information is used"
+msgstr "4. Why information is used"
+
+#: src/routes/privacy/+page.svelte
+msgid "Information is used to create and authenticate accounts, connect participants, run shared worlds, store and publish the content you choose, maintain your inventory, respond to requests and protect the service against abuse."
+msgstr "Information is used to create and authenticate accounts, connect participants, run shared worlds, store and publish the content you choose, maintain your inventory, respond to requests and protect the service against abuse."
+
+#~ msgid "Where the GDPR applies, account and service operations rely on performing the service agreement with you; optional microphone and tracking access rely on your permission and, where required, consent; security relies on legitimate interests in protecting users and the service; and information required by law is processed to meet legal obligations. You can withdraw consent through device or browser settings. This does not affect processing that occurred before withdrawal."
+#~ msgstr "Where the GDPR applies, account and service operations rely on performing the service agreement with you; optional microphone and tracking access rely on your permission and, where required, consent; security relies on legitimate interests in protecting users and the service; and information required by law is processed to meet legal obligations. You can withdraw consent through device or browser settings. This does not affect processing that occurred before withdrawal."
+
+#: src/routes/privacy/+page.svelte
+msgid "5. Sharing and external services"
+msgstr "5. Sharing and external services"
+
+#~ msgid "Connected participants receive the information needed to take part in the same world. WebRTC connections can expose network addresses to peers. Connection discovery services (STUN) process network information to help devices connect. Content you publish or share can be accessed by its intended audience, and recipients may keep copies."
+#~ msgstr "Connected participants receive the information needed to take part in the same world. WebRTC connections can expose network addresses to peers. Connection discovery services (STUN) process network information to help devices connect. Content you publish or share can be accessed by its intended audience, and recipients may keep copies."
+
+#~ msgid "Infrastructure providers process information needed to host the website, database and uploaded files. Google Fonts receives network requests when the website loads its fonts. Discord processes sign-in when you choose that option. Your browser and Meta Quest platform also process information under their own privacy policies."
+#~ msgstr "Infrastructure providers process information needed to host the website, database and uploaded files. Google Fonts receives network requests when the website loads its fonts. Discord processes sign-in when you choose that option. Your browser and Meta Quest platform also process information under their own privacy policies."
+
+#: src/routes/privacy/+page.svelte
+msgid "Worlds can contain external links, media or interactive content. Opening or loading them can send information such as your IP address to the relevant external service."
+msgstr "Worlds can contain external links, media or interactive content. Opening or loading them can send information such as your IP address to the relevant external service."
+
+#~ msgid "If you use the optional Studio AI assistant, your prompts, conversation and scene information provided to the assistant are sent to the AI provider you select. For supported cloud providers, requests and the credential you supply pass through Kithin's server to that provider. Custom and local endpoints connect directly from your browser. Provider retention and use are governed by that provider's terms and privacy policy. Do not include information you do not want to share with that provider."
+#~ msgstr "If you use the optional Studio AI assistant, your prompts, conversation and scene information provided to the assistant are sent to the AI provider you select. For supported cloud providers, requests and the credential you supply pass through Kithin's server to that provider. Custom and local endpoints connect directly from your browser. Provider retention and use are governed by that provider's terms and privacy policy. Do not include information you do not want to share with that provider."
+
+#~ msgid "We do not sell personal information or use microphone audio or movement data for targeted advertising. Information may be disclosed when required by law or necessary to protect the service and its users."
+#~ msgstr "We do not sell personal information or use microphone audio or movement data for targeted advertising. Information may be disclosed when required by law or necessary to protect the service and its users."
+
+#: src/routes/privacy/+page.svelte
+msgid "6. Cookies, local storage and retention"
+msgstr "6. Cookies, local storage and retention"
+
+#: src/routes/privacy/+page.svelte
+msgid "Authentication cookies keep you signed in. A language cookie and browser storage remember preferences. Local storage and IndexedDB can hold settings, drafts, downloaded assets and local inventory. You can clear these through browser settings; doing so may sign you out or remove local content that has not been saved elsewhere."
+msgstr "Authentication cookies keep you signed in. A language cookie and browser storage remember preferences. Local storage and IndexedDB can hold settings, drafts, downloaded assets and local inventory. You can clear these through browser settings; doing so may sign you out or remove local content that has not been saved elsewhere."
+
+#~ msgid "Account information and saved content are kept while needed to provide your account and the storage or publications you request. Session records have expiry times. Support correspondence and security records are kept as needed to resolve requests, investigate abuse or meet legal obligations. Live voice and movement streams are processed during use rather than archived by Kithin."
+#~ msgstr "Account information and saved content are kept while needed to provide your account and the storage or publications you request. Session records have expiry times. Support correspondence and security records are kept as needed to resolve requests, investigate abuse or meet legal obligations. Live voice and movement streams are processed during use rather than archived by Kithin."
+
+#~ msgid "You can request account and personal data deletion by email. Some information may need to be retained to meet legal obligations or resolve disputes. Shared assets can remain where they are still referenced by other users' content, and copies held by other participants are outside Kithin's control. Clearing browser storage does not delete your cloud account."
+#~ msgstr "You can request account and personal data deletion by email. Some information may need to be retained to meet legal obligations or resolve disputes. Shared assets can remain where they are still referenced by other users' content, and copies held by other participants are outside Kithin's control. Clearing browser storage does not delete your cloud account."
+
+#: src/routes/privacy/+page.svelte
+msgid "7. Your choices and rights"
+msgstr "7. Your choices and rights"
+
+#: src/routes/privacy/+page.svelte
+msgid "You can choose whether to create an account, grant microphone access, upload content, publish worlds or use optional AI features. Review permissions in your browser and headset settings."
+msgstr "You can choose whether to create an account, grant microphone access, upload content, publish worlds or use optional AI features. Review permissions in your browser and headset settings."
+
+#: src/routes/privacy/+page.svelte
+msgid "8. Security and international processing"
+msgstr "8. Security and international processing"
+
+#: src/routes/privacy/+page.svelte
+msgid "The website uses HTTPS, and WebRTC encrypts data in transit. Authentication and access controls restrict access to account content. No online service can guarantee absolute security."
+msgstr "The website uses HTTPS, and WebRTC encrypts data in transit. Authentication and access controls restrict access to account content. No online service can guarantee absolute security."
+
+#~ msgid "Connections to other participants or external providers may involve processing outside your country. Where applicable, transfers of personal information must comply with legal requirements, including appropriate safeguards under European data protection law. Contact us for information about the providers and transfer arrangements relevant to your data."
+#~ msgstr "Connections to other participants or external providers may involve processing outside your country. Where applicable, transfers of personal information must comply with legal requirements, including appropriate safeguards under European data protection law. Contact us for information about the providers and transfer arrangements relevant to your data."
+
+#: src/routes/privacy/+page.svelte
+msgid "9. Changes to this policy"
+msgstr "9. Changes to this policy"
+
+#: src/routes/privacy/+page.svelte
+msgid "Your information"
+msgstr "Your information"
+
+#: src/routes/+page.svelte
+#: src/routes/login/+page.svelte
+#: src/routes/privacy/+page.svelte
+#: src/routes/privacy/+page.svelte
+#: src/routes/register/+page.svelte
+msgid "Privacy Policy"
+msgstr "Privacy Policy"
+
+#: src/routes/privacy/+page.svelte
+msgid "Last updated: October 1, 2026"
+msgstr "Last updated: October 1, 2026"
+
+#: src/routes/privacy/+page.svelte
+msgid "Kithin lets you create and explore virtual worlds with other people, in a browser or on a compatible VR headset. This policy explains how information is handled across kithin.app and the Kithin Meta Quest application."
+msgstr "Kithin lets you create and explore virtual worlds with other people, in a browser or on a compatible VR headset. This policy explains how information is handled across kithin.app and the Kithin Meta Quest application."
+
+#: src/routes/privacy/+page.svelte
+msgid "Contact"
+msgstr "Contact"
+
+#: src/routes/privacy/+page.svelte
+msgid "<0>You can request deletion.</0> Contact <1/> about your account or personal information."
+msgstr "<0>You can request deletion.</0> Contact <1/> about your account or personal information."
+
+#~ msgid "Kithin operates this service. For privacy questions, requests to access your information or requests to delete your account, email <0/>. Include the email address associated with your account so we can identify it. Do not send your password. We may need to verify your identity before acting on a request."
+#~ msgstr "Kithin operates this service. For privacy questions, requests to access your information or requests to delete your account, email <0/>. Include the email address associated with your account so we can identify it. Do not send your password. We may need to verify your identity before acting on a request."
+
+#~ msgid "Depending on applicable law, you may request access, correction, deletion, a portable copy of your information, restriction of processing or object to processing. Contact <0/> to exercise these rights. Where the GDPR applies, we normally respond within one month; permitted extensions will be explained. You can also complain to your local data protection authority, including the <1>Spanish Data Protection Agency (AEPD)</1>."
+#~ msgstr "Depending on applicable law, you may request access, correction, deletion, a portable copy of your information, restriction of processing or object to processing. Contact <0/> to exercise these rights. Where the GDPR applies, we normally respond within one month; permitted extensions will be explained. You can also complain to your local data protection authority, including the <1>Spanish Data Protection Agency (AEPD)</1>."
+
+#: src/routes/privacy/+page.svelte
+msgid "Updates will appear on this page with a revised date. Material changes will be communicated where required by law. For questions about this policy, contact <0/>."
+msgstr "Updates will appear on this page with a revised date. Material changes will be communicated where required by law. For questions about this policy, contact <0/>."
+
+#: src/routes/privacy/+page.svelte
+msgid "<0>Multiplayer information:</0> room and participant identifiers, display names, connection negotiation messages and network addresses, avatar positions, head and hand poses, controller input and world interactions needed to synchronise a shared session."
+msgstr "<0>Multiplayer information:</0> room and participant identifiers, display names, connection negotiation messages and network addresses, avatar positions, head and hand poses, controller input and world interactions needed to synchronise a shared session."
+
+#: src/routes/privacy/+page.svelte
+msgid "Where the GDPR applies, we process account information, saved content and the connection and movement data necessary to deliver the features you request to perform our service agreement with you. We rely on legitimate interests in protecting users and the service for proportionate security and abuse prevention, and on legal obligations when processing is required by law. Browser and headset permissions control technical access to your microphone and tracking features; they do not by themselves establish a legal basis for every use of that information. Where a use requires your consent, you may withdraw it at any time by contacting us, and you can stop microphone or tracking access through device or browser settings. Withdrawal does not affect the lawfulness of processing before it occurred."
+msgstr "Where the GDPR applies, we process account information, saved content and the connection and movement data necessary to deliver the features you request to perform our service agreement with you. We rely on legitimate interests in protecting users and the service for proportionate security and abuse prevention, and on legal obligations when processing is required by law. Browser and headset permissions control technical access to your microphone and tracking features; they do not by themselves establish a legal basis for every use of that information. Where a use requires your consent, you may withdraw it at any time by contacting us, and you can stop microphone or tracking access through device or browser settings. Withdrawal does not affect the lawfulness of processing before it occurred."
+
+#: src/routes/privacy/+page.svelte
+msgid "Account details are required to create and authenticate an account. Without them, account features are unavailable. Microphone access and optional AI features are voluntary. Movement and connection information are necessary for the interactive multiplayer features you choose to use. Kithin does not use your personal information for automated decisions that produce legal or similarly significant effects."
+msgstr "Account details are required to create and authenticate an account. Without them, account features are unavailable. Microphone access and optional AI features are voluntary. Movement and connection information are necessary for the interactive multiplayer features you choose to use. Kithin does not use your personal information for automated decisions that produce legal or similarly significant effects."
+
+#: src/routes/privacy/+page.svelte
+msgid "If you use the optional Studio AI assistant, your prompts, conversation and scene information provided to the assistant are sent to the AI provider you select. For supported cloud providers, requests and the credential you supply pass through Kithin's server to that provider. Supported providers include OpenAI, Anthropic (Claude), OpenCode and OpenRouter. Custom and local endpoints connect directly from your browser. The API key you enter is held in memory for the current page session; Kithin does not save it in browser storage or its database. Provider preferences are saved in your browser. Provider retention and use are governed by that provider's terms and privacy policy. Do not include information you do not want to share with that provider."
+msgstr "If you use the optional Studio AI assistant, your prompts, conversation and scene information provided to the assistant are sent to the AI provider you select. For supported cloud providers, requests and the credential you supply pass through Kithin's server to that provider. Supported providers include OpenAI, Anthropic (Claude), OpenCode and OpenRouter. Custom and local endpoints connect directly from your browser. The API key you enter is held in memory for the current page session; Kithin does not save it in browser storage or its database. Provider preferences are saved in your browser. Provider retention and use are governed by that provider's terms and privacy policy. Do not include information you do not want to share with that provider."
+
+#~ msgid "You can request account and personal data deletion by email. Some information may need to be retained to meet legal obligations or resolve disputes. Shared files may remain referenced by other users' content. This does not remove your right to request erasure of personal information contained in those files; we assess such requests under applicable law. Copies independently held by other participants are outside Kithin's control. Clearing browser storage does not delete your cloud account."
+#~ msgstr "You can request account and personal data deletion by email. Some information may need to be retained to meet legal obligations or resolve disputes. Shared files may remain referenced by other users' content. This does not remove your right to request erasure of personal information contained in those files; we assess such requests under applicable law. Copies independently held by other participants are outside Kithin's control. Clearing browser storage does not delete your cloud account."
+
+#: src/routes/privacy/+page.svelte
+msgid "Depending on applicable law, you may request access, correction, deletion, a portable copy of your information, restriction of processing or object to processing. Contact <0/> to exercise these rights. Where the GDPR applies, we respond without undue delay and within one month of receiving your request. If complexity or the number of requests requires an extension of up to two further months, we will explain the reason within the first month. Requests are normally free; applicable law allows a reasonable fee or refusal for manifestly unfounded or excessive requests. You can also complain to your local data protection authority, including the <1>Spanish Data Protection Agency (AEPD)</1>."
+msgstr "Depending on applicable law, you may request access, correction, deletion, a portable copy of your information, restriction of processing or object to processing. Contact <0/> to exercise these rights. Where the GDPR applies, we respond without undue delay and within one month of receiving your request. If complexity or the number of requests requires an extension of up to two further months, we will explain the reason within the first month. Requests are normally free; applicable law allows a reasonable fee or refusal for manifestly unfounded or excessive requests. You can also complain to your local data protection authority, including the <1>Spanish Data Protection Agency (AEPD)</1>."
+
+#: src/routes/privacy/+page.svelte
+msgid "Fernando Merino Marquez"
+msgstr "Fernando Merino Marquez"
+
+#. 0: controllerName
+#: src/routes/privacy/+page.svelte
+msgid "{0}, based in Reus, Spain, is the data controller responsible for Kithin. For privacy questions, requests to access your information or requests to delete your account, email <0/>. Include the email address associated with your account so we can identify it. Do not send your password. We may need to verify your identity before acting on a request."
+msgstr "{0}, based in Reus, Spain, is the data controller responsible for Kithin. For privacy questions, requests to access your information or requests to delete your account, email <0/>. Include the email address associated with your account so we can identify it. Do not send your password. We may need to verify your identity before acting on a request."
+
+#: src/routes/privacy/+page.svelte
+msgid "The Quest package opens the same Kithin web service. The current Kithin implementation does not integrate Meta account identifiers, Meta in-app purchases or a separate third-party diagnostics SDK. Android application backups are disabled by the packaging process. Meta and the browser may independently process platform information under their own policies."
+msgstr "The Quest package opens the same Kithin web service. The current Kithin implementation does not integrate Meta account identifiers, Meta in-app purchases or a separate third-party diagnostics SDK. Android application backups are disabled by the packaging process. Meta and the browser may independently process platform information under their own policies."
+
+#: src/routes/privacy/+page.svelte
+msgid "Connected participants receive the information needed to take part in the same world. WebRTC connections can expose network addresses to peers. Google STUN (stun.l.google.com) processes network information, including your IP address, to help devices connect. STUN discovers connection addresses; it does not carry your voice conversations or shared world content. Content you publish or share can be accessed by its intended audience, and recipients may keep copies."
+msgstr "Connected participants receive the information needed to take part in the same world. WebRTC connections can expose network addresses to peers. Google STUN (stun.l.google.com) processes network information, including your IP address, to help devices connect. STUN discovers connection addresses; it does not carry your voice conversations or shared world content. Content you publish or share can be accessed by its intended audience, and recipients may keep copies."
+
+#: src/routes/privacy/+page.svelte
+msgid "Bytehosting provides the VPS infrastructure used to operate Kithin. Bytehosting states that its infrastructure is located in Frankfurt, Germany. Infrastructure providers process information needed to host the website, database and uploaded files. Google Fonts receives your IP address and browser request information when the website loads its fonts. Discord processes sign-in when you choose that option. Your browser and Meta Quest platform also process information under their own privacy policies."
+msgstr "Bytehosting provides the VPS infrastructure used to operate Kithin. Bytehosting states that its infrastructure is located in Frankfurt, Germany. Infrastructure providers process information needed to host the website, database and uploaded files. Google Fonts receives your IP address and browser request information when the website loads its fonts. Discord processes sign-in when you choose that option. Your browser and Meta Quest platform also process information under their own privacy policies."
+
+#: src/routes/privacy/+page.svelte
+msgid "Kithin currently has no advertising, third-party analytics, payment processing or third-party crash reporting integrations. We do not sell personal information or use microphone audio or movement data for targeted advertising. Information may be disclosed when required by law or necessary to protect the service and its users."
+msgstr "Kithin currently has no advertising, third-party analytics, payment processing or third-party crash reporting integrations. We do not sell personal information or use microphone audio or movement data for targeted advertising. Information may be disclosed when required by law or necessary to protect the service and its users."
+
+#: src/routes/privacy/+page.svelte
+msgid "Account information and saved content are kept while your account remains open and are reviewed for deletion when you close it. Our retention limits are 30 days for routine access and security logs, seven days after expiry for authentication sessions and verification records, 30 days after a world session ends for its hosting history, and 12 months after resolution for support correspondence. Records needed for a specific security incident, legal obligation or legal claim may be retained for the necessary period, with access restricted. Live voice and movement streams are not archived by Kithin."
+msgstr "Account information and saved content are kept while your account remains open and are reviewed for deletion when you close it. Our retention limits are 30 days for routine access and security logs, seven days after expiry for authentication sessions and verification records, 30 days after a world session ends for its hosting history, and 12 months after resolution for support correspondence. Records needed for a specific security incident, legal obligation or legal claim may be retained for the necessary period, with access restricted. Live voice and movement streams are not archived by Kithin."
+
+#: src/routes/privacy/+page.svelte
+msgid "To request account and personal data deletion, email support using the address associated with your account where possible. We verify your request using only the information reasonably needed, delete or anonymise applicable account records and content, and confirm the outcome. We aim to complete ordinary requests within one month of receipt; statutory exceptions and permitted extensions are explained in section 7. Some information may need to be retained to meet legal obligations or resolve disputes. Shared files may remain referenced by other users' content. This does not remove your right to request erasure of personal information contained in those files; we assess such requests under applicable law. Copies independently held by other participants are outside Kithin's control. Clearing browser storage does not delete your cloud account."
+msgstr "To request account and personal data deletion, email support using the address associated with your account where possible. We verify your request using only the information reasonably needed, delete or anonymise applicable account records and content, and confirm the outcome. We aim to complete ordinary requests within one month of receipt; statutory exceptions and permitted extensions are explained in section 7. Some information may need to be retained to meet legal obligations or resolve disputes. Shared files may remain referenced by other users' content. This does not remove your right to request erasure of personal information contained in those files; we assess such requests under applicable law. Copies independently held by other participants are outside Kithin's control. Clearing browser storage does not delete your cloud account."
+
+#: src/routes/privacy/+page.svelte
+msgid "Where recovery backups are maintained, our retention limit is 30 days from creation. Deleted information may remain in an isolated backup until it expires and is not used for ordinary service operations. If a backup is restored, deletion requests must be reapplied before the restored data returns to ordinary use. These limits concern copies under Kithin's control; external providers apply their own disclosed retention rules."
+msgstr "Where recovery backups are maintained, our retention limit is 30 days from creation. Deleted information may remain in an isolated backup until it expires and is not used for ordinary service operations. If a backup is restored, deletion requests must be reapplied before the restored data returns to ordinary use. These limits concern copies under Kithin's control; external providers apply their own disclosed retention rules."
+
+#: src/routes/privacy/+page.svelte
+msgid "Bytehosting reports hosting infrastructure in Germany, within the European Economic Area (EEA). Google services, Discord, Meta, the AI provider you choose and participants in other countries may process information outside the EEA. The countries involved depend on the provider and the participants you connect to. For transfers for which Kithin is responsible, an applicable European Commission adequacy decision or appropriate safeguards, such as standard contractual clauses, are required unless a specific lawful exception applies. Contact us to request the arrangements and a copy of the safeguards applicable to a particular transfer. This policy does not mean that every external service processes information only in Europe."
+msgstr "Bytehosting reports hosting infrastructure in Germany, within the European Economic Area (EEA). Google services, Discord, Meta, the AI provider you choose and participants in other countries may process information outside the EEA. The countries involved depend on the provider and the participants you connect to. For transfers for which Kithin is responsible, an applicable European Commission adequacy decision or appropriate safeguards, such as standard contractual clauses, are required unless a specific lawful exception applies. Contact us to request the arrangements and a copy of the safeguards applicable to a particular transfer. This policy does not mean that every external service processes information only in Europe."

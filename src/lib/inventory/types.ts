@@ -36,8 +36,8 @@ export interface InventoryUsage {
 	unit: 'bytes' | 'count';
 }
 
-export type InventoryAdapterId = 'local' | 'world' | 'cloud' | 'purchased' | 'filesystem';
-export type InventoryStorageAdapterId = Exclude<InventoryAdapterId, 'purchased'>;
+export type InventoryAdapterId = 'local' | 'world' | 'cloud' | 'purchased' | 'builtin' | 'filesystem';
+export type InventoryStorageAdapterId = Exclude<InventoryAdapterId, 'purchased' | 'builtin'>;
 
 export interface InventoryAdapter {
 	readonly id: InventoryAdapterId;

@@ -4,7 +4,7 @@
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import { validateWorldScene } from '$lib/worlds/package';
-	import { getInventoryAdapter } from '$lib/inventory/registry';
+	import { getInventoryAdapter, isReadOnlyAdapter } from '$lib/inventory/registry';
 	import { StudioProject, type SaveTarget } from '$lib/studio/state/project.svelte';
 	import { studioSession } from '$lib/studio/state/session.svelte';
 	import { dialogs } from '$lib/studio/state/dialogs.svelte';
@@ -205,7 +205,7 @@
 		{ id: 'import-model', label: 'Import model (.glb)…', run: () => void studioModels.pickAndImport() },
 		{ id: 'play', label: 'Play in the game', run: play },
 		{ id: 'publish', label: 'Publish world…', enabled: doc.kind === 'world', run: () => (dialog = 'publish') },
-		{ id: 'marketplace', label: 'Marketplace…', enabled: doc.kind === 'object' && project.adapterId !== 'purchased', run: openMarketplace },
+		{ id: 'marketplace', label: 'Marketplace…', enabled: doc.kind === 'object' && !isReadOnlyAdapter(project.adapterId), run: openMarketplace },
 		{ id: 'mode', label: advanced ? 'Switch to Simple mode' : 'Switch to Advanced mode', run: () => setAdvanced(!advanced) },
 		{ id: 'assets', label: 'Show asset library', run: () => { leftTab = 'assets'; mobilePanel = 'left'; } },
 		{ id: 'projects', label: 'Back to projects', run: back }
@@ -334,14 +334,14 @@
 				<div class="tabs" role="tablist">
 					<button class="tab" role="tab" aria-selected={rightTab === 'inspector'} onclick={() => (rightTab = 'inspector')}><Icon name="sliders" size={14} />Inspector</button>
 					<button class="tab" role="tab" aria-selected={rightTab === 'ai'} onclick={() => (rightTab = 'ai')}>AI</button>
-					{#if doc.kind === 'object' && project.adapterId !== 'purchased'}
+					{#if doc.kind === 'object' && !isReadOnlyAdapter(project.adapterId)}
 						<button class="tab" role="tab" aria-selected={rightTab === 'marketplace'} onclick={openMarketplace}><Icon name="publish" size={14} />Marketplace</button>
 					{/if}
 				</div>
 				<div class="right-body">
 					<div class="right-view" hidden={rightTab !== 'inspector'}><Inspector {doc} {advanced} onOpenCode={openCode} onGenerateProbe={generateProbe} getViewPose={() => preview?.getViewPose() ?? null} /></div>
 					<div class="right-view" hidden={rightTab !== 'ai'}><AiPanel {doc} projectKey={project.key} /></div>
-					{#if doc.kind === 'object' && project.adapterId !== 'purchased'}
+					{#if doc.kind === 'object' && !isReadOnlyAdapter(project.adapterId)}
 						<div class="right-view" hidden={rightTab !== 'marketplace'}><MarketplacePanel {project} /></div>
 					{/if}
 				</div>

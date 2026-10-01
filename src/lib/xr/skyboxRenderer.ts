@@ -83,7 +83,9 @@ export function setupSkybox(scene: Scene, node: TransformNode, initial: SkyboxCo
 	let probe: CubeTexture | ReflectionProbe | null = null;
 	let stopMeshWatch: (() => void) | null = null;
 	let stopPoseWatch: (() => void) | null = null;
-	const urls = new Array<string>(6);
+	// Keep every face present: Array.some skips holes in a sparse array, which
+	// would let the first resolved asset start a cubemap with undefined URLs.
+	const urls = new Array<string>(6).fill('');
 	const useImages = sources.every((source) => source?.kind === 'asset' || (source?.kind === 'url' && source.url));
 	function installImageProbe(): void {
 		if (disposed || probe || urls.some((url) => !url)) return;

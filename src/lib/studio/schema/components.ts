@@ -94,7 +94,8 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 			{ key: 'title', label: 'Title', kind: 'text', optional: true, default: '' },
 			{ key: 'lines', label: 'Lines', kind: 'lines' },
 			{ key: 'color', label: 'Color', kind: 'color', optional: true, default: '#ffffff' },
-			{ key: 'scale', label: 'Text size', kind: 'number', min: 0.25, max: 6, step: 0.25, optional: true, default: 1, help: 'Times the usual size of the text.' }
+			{ key: 'scale', label: 'Text size', kind: 'number', min: 0.25, max: 6, step: 0.25, optional: true, default: 1, help: 'Times the usual size of the text.' },
+			{ key: 'verticalAlign', label: 'Vertical alignment', kind: 'enum', options: [{ value: 'top', label: 'Top' }, { value: 'middle', label: 'Middle' }], optional: true, default: 'top' }
 		],
 		create: () => ({ type: 'textDisplay', title: 'New label', lines: ['Edit this text'] })
 	},
@@ -251,6 +252,20 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 			{ key: 'volume', label: 'Volume', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 1 }
 		],
 		create: () => ({ type: 'impactSound', frequency: 220, pitchDrop: 60, noiseMix: 0.3, durationMs: 200, volume: 1 })
+	},
+	{
+		type: 'recordDisc',
+		label: 'Record Disc',
+		group: 'Media',
+		description: 'Title, author and colours of a record disc. Editing them redraws the disc’s label, rim and vinyl.',
+		glyph: '◎',
+		fields: [
+			{ key: 'title', label: 'Title', kind: 'text', default: 'Untitled' },
+			{ key: 'author', label: 'Author', kind: 'text', default: 'Unknown' },
+			{ key: 'labelColor', label: 'Label colour', kind: 'color', default: '#6366f1', help: 'The centre label and the rim.' },
+			{ key: 'vinylColor', label: 'Vinyl colour', kind: 'color', optional: true, default: '#0b0b10' }
+		],
+		create: () => ({ type: 'recordDisc', title: 'Untitled', author: 'Unknown', labelColor: '#6366f1' })
 	},
 	{
 		type: 'socket',

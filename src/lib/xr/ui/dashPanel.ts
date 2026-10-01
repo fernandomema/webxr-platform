@@ -13,7 +13,7 @@ import {
 import { createSlot, type SlotTree } from '$lib/ecs/types';
 import type { SceneGraph } from '../sceneGraph';
 import { authClient } from '$lib/auth-client';
-import { availableInventoryFolders, getInventoryAdapter } from '$lib/inventory/registry';
+import { availableInventoryFolders, getInventoryAdapter, isReadOnlyAdapter } from '$lib/inventory/registry';
 import type { InventoryAdapter, InventoryAdapterId, InventoryStorageAdapterId, InventoryFolder, InventoryItem } from '$lib/inventory/types';
 import { validateWorldScene } from '$lib/worlds/package';
 import { ensureCloudAssets } from '$lib/assets/cloudSync';
@@ -353,7 +353,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			const snapshot = sceneGraph.serialize({ withoutAvatars: true });
 			validateWorldScene(snapshot);
 			const lineage = loaded && loaded.adapterId === adapter.id ? loaded.worldLineageId : undefined;
-			if (!adapter.saveItem || adapter.id === 'purchased') throw new Error('This inventory is read-only');
+			if (!adapter.saveItem || isReadOnlyAdapter(adapter.id)) throw new Error('This inventory is read-only');
 			saveWorldStatus.color = '#9ca3af';
 			saveWorldStatus.text = 'Saving…';
 			const saved = await saveWithPreview(adapter, getInventoryContext(), folderId, name, snapshot, 'world', lineage);
@@ -623,7 +623,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			refreshPath();
 			refreshList();
 		} else if (entry.item.kind === 'world') {
-			if (adapter.id === 'purchased') return;
+			if (isReadOnlyAdapter(adapter.id)) return;
 			callbacks.onSpawnWorldOrb(entry.item, adapter.id);
 			showMessage(`Placed “${entry.name}” as a world orb`, 'ok');
 		} else if (entry.item.kind === 'avatar') {
@@ -684,7 +684,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 				? actionButton('tb-unset-avatar', 'Unset', INV.surface, 110, () => activate(entry))
 				: actionButton('tb-set-avatar', 'Set as default', INV.accent, 150, () => activate(entry)));
 			else inventoryToolbar.addControl(actionButton('tb-spawn', isWorld ? 'Place orb' : 'Spawn', INV.accent, isWorld ? 116 : 94, () => activate(entry)));
-			if (!isWorld && gameState.userId && (adapter.id !== 'world' || gameState.role === 'host')) {
+			if (!isWorld && gameState.userId && !isReadOnlyAdapter(adapter.id) && (adapter.id !== 'world' || gameState.role === 'host')) {
 				inventoryToolbar.addControl(actionButton('tb-marketplace', item.marketplaceItemId ? 'Update Marketplace' : 'Publish', '#7c3aed', 160, async () => {
 					try {
 						// The listing shows the object's own preview, which goes up with its models.
@@ -704,7 +704,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			}
 			if (isWorld) {
 				inventoryToolbar.addControl(actionButton('tb-load', 'Load', '#0f766e', 84, async () => {
-					if (adapter.id === 'purchased') return;
+					if (isReadOnlyAdapter(adapter.id)) return;
 					try { await callbacks.onLaunchWorldItem(item, adapter.id); }
 					catch (error) { showMessage(error instanceof Error ? error.message : 'Could not load world', 'error'); }
 				}));

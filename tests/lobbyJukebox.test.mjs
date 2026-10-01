@@ -12,7 +12,10 @@ test('the lobby record player has a socket that takes discs', () => {
   const socket = find(sockets[0], 'socket');
   assert.deepEqual(socket.accepts, ['disc']);
   assert.ok(socket.radius > 0);
-  assert.equal(socket.occupantId, undefined, 'a template never ships with something already inserted');
+  const occupant = lobby.find((slot) => slot.id === socket.occupantId);
+  assert.ok(occupant && find(occupant, 'insertable'), 'the player starts with a disc inserted');
+  assert.equal(occupant.parentId, sockets[0].id, 'an inserted disc is a child of its socket');
+  assert.deepEqual(occupant.position, socket.snap.position, 'and sits at the socket snap point');
   assert.deepEqual(sockets[0].scale, [1, 1, 1], 'a scaled socket would squash whatever sits in it');
 });
 
@@ -26,7 +29,9 @@ test('every lobby disc can be grabbed, fits the socket and plays a bundled file'
     assert.ok(socket.accepts.includes(find(disc, 'insertable').tag));
     const audio = find(disc, 'audioPlayer');
     assert.equal(audio.source.kind, 'url');
-    assert.ok(!audio.playing && !audio.autoplay, 'a disc only plays once it is in the player');
+    const inserted = disc.parentId !== null;
+    assert.equal(!!audio.playing, inserted, 'a disc plays only while it is in the player');
+    assert.ok(!audio.autoplay);
     assert.ok(existsSync(new URL(`../static${audio.source.url}`, import.meta.url)), `${audio.source.url} is missing`);
   }
 });

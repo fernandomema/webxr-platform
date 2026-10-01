@@ -834,7 +834,7 @@
 		"parentId": null,
 		"name": "Mirror Frame",
 		"position": [
-			-3.0,
+			-3,
 			1.25,
 			-3.28
 		],
@@ -869,7 +869,7 @@
 		"parentId": null,
 		"name": "Mirror",
 		"position": [
-			-3.0,
+			-3,
 			1.25,
 			-3.245
 		],
@@ -929,12 +929,11 @@
 			},
 			{
 				"type": "textDisplay",
-				"title": "Welcome",
+				"title": "Welcome to Kithin",
 				"lines": [
-					"Grip: grab objects",
-					"Menu button: open menu",
-					"Trigger: use held tool",
-					"Try the paint brush!"
+					"A place to be with people,",
+					"discover things and",
+					"take them with you."
 				],
 				"color": "#1e1b4b"
 			}
@@ -945,9 +944,9 @@
 		"parentId": null,
 		"name": "Brush Pedestal",
 		"position": [
-			-1.9,
+			-2.2,
 			0.45,
-			-1.5
+			-2
 		],
 		"rotation": [
 			0,
@@ -980,9 +979,9 @@
 		"parentId": null,
 		"name": "Brush Pedestal Top",
 		"position": [
-			-1.9,
+			-2.2,
 			0.92,
-			-1.5
+			-2
 		],
 		"rotation": [
 			0,
@@ -1015,9 +1014,9 @@
 		"parentId": null,
 		"name": "Paint Brush",
 		"position": [
-			-1.9,
+			-2.2,
 			1.12,
-			-1.5
+			-2
 		],
 		"rotation": [
 			0,
@@ -1138,13 +1137,13 @@
 		]
 	},
 	{
-		"id": "lobby-jukebox-body",
+		"id": "lobby-jukebox-base",
 		"parentId": null,
-		"name": "Record Player Body",
+		"name": "Record Player Base",
 		"position": [
-			1.9,
-			0.4,
-			-1.5
+			2.2,
+			0.02,
+			-2
 		],
 		"rotation": [
 			0,
@@ -1153,9 +1152,75 @@
 			1
 		],
 		"scale": [
-			0.75,
-			0.8,
-			0.55
+			0.78,
+			0.04,
+			0.58
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2b1a10"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-body",
+		"parentId": null,
+		"name": "Record Player Body",
+		"position": [
+			2.2,
+			0.42,
+			-2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.72,
+			0.76,
+			0.52
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#4a2c1a"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-grille",
+		"parentId": null,
+		"name": "Record Player Speaker",
+		"position": [
+			2.2,
+			0.42,
+			-1.738
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			0.4,
+			0.012
 		],
 		"components": [
 			{
@@ -1165,21 +1230,17 @@
 					"id": "box"
 				},
 				"color": "#1f2937"
-			},
-			{
-				"type": "collider",
-				"shape": "box"
 			}
 		]
 	},
 	{
-		"id": "lobby-jukebox-top",
+		"id": "lobby-jukebox-grille-bar-1",
 		"parentId": null,
-		"name": "Record Player Top",
+		"name": "Speaker Bar 1",
 		"position": [
-			1.9,
-			0.82,
-			-1.5
+			2.2,
+			0.3,
+			-1.73
 		],
 		"rotation": [
 			0,
@@ -1188,9 +1249,9 @@
 			1
 		],
 		"scale": [
-			0.81,
-			0.04,
-			0.61
+			0.46,
+			0.012,
+			0.006
 		],
 		"components": [
 			{
@@ -1199,7 +1260,131 @@
 					"kind": "builtin",
 					"id": "box"
 				},
-				"color": "#6366f1"
+				"color": "#9ca3af"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-grille-bar-2",
+		"parentId": null,
+		"name": "Speaker Bar 2",
+		"position": [
+			2.2,
+			0.38,
+			-1.73
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.46,
+			0.012,
+			0.006
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9ca3af"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-grille-bar-3",
+		"parentId": null,
+		"name": "Speaker Bar 3",
+		"position": [
+			2.2,
+			0.46,
+			-1.73
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.46,
+			0.012,
+			0.006
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9ca3af"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-grille-bar-4",
+		"parentId": null,
+		"name": "Speaker Bar 4",
+		"position": [
+			2.2,
+			0.54,
+			-1.73
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.46,
+			0.012,
+			0.006
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9ca3af"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-top",
+		"parentId": null,
+		"name": "Record Player Top",
+		"position": [
+			2.2,
+			0.825,
+			-2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.78,
+			0.05,
+			0.58
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#b98b5e"
 			},
 			{
 				"type": "collider",
@@ -1208,13 +1393,13 @@
 		]
 	},
 	{
-		"id": "lobby-jukebox-platter",
+		"id": "lobby-jukebox-felt",
 		"parentId": null,
-		"name": "Record Player Platter",
+		"name": "Record Player Felt",
 		"position": [
-			1.9,
-			0.855,
-			-1.5
+			2.2,
+			0.852,
+			-2
 		],
 		"rotation": [
 			0,
@@ -1223,29 +1408,29 @@
 			1
 		],
 		"scale": [
-			0.42,
-			0.02,
-			0.42
+			0.7,
+			0.004,
+			0.5
 		],
 		"components": [
 			{
 				"type": "meshRenderer",
 				"meshRef": {
 					"kind": "builtin",
-					"id": "cylinder"
+					"id": "box"
 				},
-				"color": "#0f172a"
+				"color": "#2a1d14"
 			}
 		]
 	},
 	{
-		"id": "lobby-jukebox-spindle",
+		"id": "lobby-jukebox-platter",
 		"parentId": null,
-		"name": "Record Player Spindle",
+		"name": "Record Player Platter",
 		"position": [
-			1.9,
-			0.885,
-			-1.5
+			2.2,
+			0.861,
+			-2
 		],
 		"rotation": [
 			0,
@@ -1254,9 +1439,9 @@
 			1
 		],
 		"scale": [
-			0.015,
-			0.04,
-			0.015
+			0.36,
+			0.014,
+			0.36
 		],
 		"components": [
 			{
@@ -1265,7 +1450,330 @@
 					"kind": "builtin",
 					"id": "cylinder"
 				},
-				"color": "#e2e8f0"
+				"color": "#9ca3af"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-mat",
+		"parentId": null,
+		"name": "Record Player Mat",
+		"position": [
+			2.2,
+			0.87,
+			-2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.33,
+			0.004,
+			0.33
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-arm-base",
+		"parentId": null,
+		"name": "Tonearm Base",
+		"position": [
+			2.47,
+			0.8715,
+			-2.17
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.05,
+			0.035,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#d1d5db"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-arm",
+		"parentId": null,
+		"name": "Tonearm",
+		"position": [
+			2.37,
+			0.895,
+			-2.095
+		],
+		"rotation": [
+			0,
+			-0.4472,
+			0,
+			0.8944
+		],
+		"scale": [
+			0.01,
+			0.01,
+			0.25
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#e5e7eb"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-arm-head",
+		"parentId": null,
+		"name": "Tonearm Head",
+		"position": [
+			2.276,
+			0.891,
+			-2.0245
+		],
+		"rotation": [
+			0,
+			-0.4472,
+			0,
+			0.8944
+		],
+		"scale": [
+			0.022,
+			0.014,
+			0.034
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-arm-weight",
+		"parentId": null,
+		"name": "Tonearm Counterweight",
+		"position": [
+			2.498,
+			0.895,
+			-2.191
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.036,
+			0.036,
+			0.036
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#9ca3af"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-knob-1",
+		"parentId": null,
+		"name": "Start Knob",
+		"position": [
+			1.92,
+			0.864,
+			-1.8
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.045,
+			0.02,
+			0.045
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#e5e7eb"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-knob-2",
+		"parentId": null,
+		"name": "Speed Knob",
+		"position": [
+			1.92,
+			0.864,
+			-1.88
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.045,
+			0.02,
+			0.045
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#e5e7eb"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-led",
+		"parentId": null,
+		"name": "Power Light",
+		"position": [
+			2,
+			0.858,
+			-1.78
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.014,
+			0.014,
+			0.014
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#22c55e"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-backboard",
+		"parentId": null,
+		"name": "Record Player Backboard",
+		"position": [
+			2.2,
+			1.12,
+			-2.24
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.72,
+			0.5,
+			0.03
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#4a2c1a"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-sign",
+		"parentId": null,
+		"name": "Record Player Sign",
+		"position": [
+			2.2,
+			1.12,
+			-2.222
+		],
+		"rotation": [
+			0,
+			1,
+			0,
+			0
+		],
+		"scale": [
+			0.6,
+			0.3,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#2a1d14"
+			},
+			{
+				"type": "textDisplay",
+				"title": "Record Player",
+				"lines": [
+					"Two records on the rack"
+				],
+				"color": "#2a1d14",
+				"verticalAlign": "middle"
 			}
 		]
 	},
@@ -1274,9 +1782,9 @@
 		"parentId": null,
 		"name": "Record Player Socket",
 		"position": [
-			1.9,
-			0.872,
-			-1.5
+			2.2,
+			0.877,
+			-2
 		],
 		"rotation": [
 			0,
@@ -1308,7 +1816,8 @@
 						0
 					]
 				},
-				"playMedia": true
+				"playMedia": true,
+				"occupantId": "lobby-disc-2"
 			}
 		]
 	},
@@ -1317,9 +1826,9 @@
 		"parentId": null,
 		"name": "Disc Rack",
 		"position": [
-			1.9,
-			0.35,
-			-0.75
+			3.6,
+			0,
+			-2
 		],
 		"rotation": [
 			0,
@@ -1328,9 +1837,35 @@
 			1
 		],
 		"scale": [
-			0.95,
-			0.7,
-			0.35
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "container"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-rack-panel",
+		"parentId": "lobby-disc-rack",
+		"name": "Rack Panel",
+		"position": [
+			0,
+			0.643,
+			0.01
+		],
+		"rotation": [
+			-0.1564,
+			0,
+			0,
+			0.9877
+		],
+		"scale": [
+			1,
+			1.12,
+			0.03
 		],
 		"components": [
 			{
@@ -1339,7 +1874,7 @@
 					"kind": "builtin",
 					"id": "box"
 				},
-				"color": "#334155"
+				"color": "#3a2518"
 			},
 			{
 				"type": "collider",
@@ -1348,24 +1883,24 @@
 		]
 	},
 	{
-		"id": "lobby-disc-rack-top",
-		"parentId": null,
-		"name": "Disc Rack Top",
+		"id": "lobby-disc-rack-side-L",
+		"parentId": "lobby-disc-rack",
+		"name": "Rack Side L",
 		"position": [
-			1.9,
-			0.71,
-			-0.75
+			-0.52,
+			0.6523,
+			0.0385
 		],
 		"rotation": [
+			-0.1564,
 			0,
 			0,
-			0,
-			1
+			0.9877
 		],
 		"scale": [
-			1.01,
-			0.03,
-			0.41
+			0.04,
+			1.12,
+			0.09
 		],
 		"components": [
 			{
@@ -1374,42 +1909,577 @@
 					"kind": "builtin",
 					"id": "box"
 				},
-				"color": "#6366f1"
+				"color": "#b98b5e"
 			},
 			{
 				"type": "collider",
 				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-rack-side-R",
+		"parentId": "lobby-disc-rack",
+		"name": "Rack Side R",
+		"position": [
+			0.52,
+			0.6523,
+			0.0385
+		],
+		"rotation": [
+			-0.1564,
+			0,
+			0,
+			0.9877
+		],
+		"scale": [
+			0.04,
+			1.12,
+			0.09
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#b98b5e"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-rack-cap",
+		"parentId": "lobby-disc-rack",
+		"name": "Rack Top Rail",
+		"position": [
+			0,
+			1.2039,
+			-0.1407
+		],
+		"rotation": [
+			-0.1564,
+			0,
+			0,
+			0.9877
+		],
+		"scale": [
+			1.08,
+			0.04,
+			0.09
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#b98b5e"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-rack-ledge-1",
+		"parentId": "lobby-disc-rack",
+		"name": "Rack Ledge 1",
+		"position": [
+			0,
+			0.1829,
+			0.2121
+		],
+		"rotation": [
+			-0.1564,
+			0,
+			0,
+			0.9877
+		],
+		"scale": [
+			1,
+			0.03,
+			0.07
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#8a5a34"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-rack-ledge-2",
+		"parentId": "lobby-disc-rack",
+		"name": "Rack Ledge 2",
+		"position": [
+			0,
+			0.5253,
+			0.1008
+		],
+		"rotation": [
+			-0.1564,
+			0,
+			0,
+			0.9877
+		],
+		"scale": [
+			1,
+			0.03,
+			0.07
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#8a5a34"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-rack-ledge-3",
+		"parentId": "lobby-disc-rack",
+		"name": "Rack Ledge 3",
+		"position": [
+			0,
+			0.8677,
+			-0.0104
+		],
+		"rotation": [
+			-0.1564,
+			0,
+			0,
+			0.9877
+		],
+		"scale": [
+			1,
+			0.03,
+			0.07
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#8a5a34"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-rack-skid-L",
+		"parentId": "lobby-disc-rack",
+		"name": "Rack Skid L",
+		"position": [
+			-0.5,
+			0.025,
+			0.05
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.06,
+			0.05,
+			0.62
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#3b2416"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-rack-leg-L",
+		"parentId": "lobby-disc-rack",
+		"name": "Rack Back Leg L",
+		"position": [
+			-0.5,
+			0.5535,
+			-0.2159
+		],
+		"rotation": [
+			0.0436,
+			0,
+			0,
+			0.999
+		],
+		"scale": [
+			0.05,
+			1.0109,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#3b2416"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-rack-skid-R",
+		"parentId": "lobby-disc-rack",
+		"name": "Rack Skid R",
+		"position": [
+			0.5,
+			0.025,
+			0.05
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.06,
+			0.05,
+			0.62
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#3b2416"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-rack-leg-R",
+		"parentId": "lobby-disc-rack",
+		"name": "Rack Back Leg R",
+		"position": [
+			0.5,
+			0.5535,
+			-0.2159
+		],
+		"rotation": [
+			0.0436,
+			0,
+			0,
+			0.999
+		],
+		"scale": [
+			0.05,
+			1.0109,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#3b2416"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-rack-bar",
+		"parentId": "lobby-disc-rack",
+		"name": "Rack Front Bar",
+		"position": [
+			0,
+			0.025,
+			0.34
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1.06,
+			0.05,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#3b2416"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-rack-sleeve-1",
+		"parentId": "lobby-disc-rack",
+		"name": "Record Sleeve 1",
+		"position": [
+			-0.32,
+			0.33,
+			0.1306
+		],
+		"rotation": [
+			-0.1564,
+			0,
+			0,
+			0.9877
+		],
+		"scale": [
+			0.3,
+			0.3,
+			0.006
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#be123c"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-rack-sleeve-2",
+		"parentId": "lobby-disc-rack",
+		"name": "Record Sleeve 2",
+		"position": [
+			0,
+			0.33,
+			0.1306
+		],
+		"rotation": [
+			-0.1564,
+			0,
+			0,
+			0.9877
+		],
+		"scale": [
+			0.3,
+			0.3,
+			0.006
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#0f766e"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-rack-sleeve-3",
+		"parentId": "lobby-disc-rack",
+		"name": "Record Sleeve 3",
+		"position": [
+			0.32,
+			0.33,
+			0.1306
+		],
+		"rotation": [
+			-0.1564,
+			0,
+			0,
+			0.9877
+		],
+		"scale": [
+			0.3,
+			0.3,
+			0.006
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#7c3aed"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-rack-sleeve-4",
+		"parentId": "lobby-disc-rack",
+		"name": "Record Sleeve 4",
+		"position": [
+			-0.32,
+			0.6723,
+			0.0194
+		],
+		"rotation": [
+			-0.1564,
+			0,
+			0,
+			0.9877
+		],
+		"scale": [
+			0.3,
+			0.3,
+			0.006
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#ca8a04"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-rack-sleeve-5",
+		"parentId": "lobby-disc-rack",
+		"name": "Record Sleeve 5",
+		"position": [
+			0,
+			0.6723,
+			0.0194
+		],
+		"rotation": [
+			-0.1564,
+			0,
+			0,
+			0.9877
+		],
+		"scale": [
+			0.3,
+			0.3,
+			0.006
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#1d4ed8"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-rack-sleeve-6",
+		"parentId": "lobby-disc-rack",
+		"name": "Record Sleeve 6",
+		"position": [
+			0.32,
+			0.6723,
+			0.0194
+		],
+		"rotation": [
+			-0.1564,
+			0,
+			0,
+			0.9877
+		],
+		"scale": [
+			0.3,
+			0.3,
+			0.006
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#c2410c"
 			}
 		]
 	},
 	{
 		"id": "lobby-disc-1",
 		"parentId": null,
-		"name": "Disc: Morning Arpeggio",
+		"name": "Disc: Remembering a Heartbeat",
 		"position": [
-			1.62,
-			0.735,
-			-0.75
+			3.28,
+			1.0156,
+			-2.089
 		],
 		"rotation": [
+			0.5878,
 			0,
 			0,
-			0,
-			1
+			0.809
 		],
 		"scale": [
-			0.28,
-			0.012,
-			0.28
+			0.3,
+			0.01,
+			0.3
 		],
 		"components": [
+			{
+				"type": "recordDisc",
+				"title": "Remembering a Heartbeat",
+				"author": "Hampus Naeselius",
+				"labelColor": "#9f1239",
+				"vinylColor": "#0b0b10"
+			},
 			{
 				"type": "meshRenderer",
 				"meshRef": {
 					"kind": "builtin",
 					"id": "cylinder"
 				},
-				"color": "#ef4444"
+				"color": "#0b0b10"
 			},
 			{
 				"type": "collider",
@@ -1435,13 +2505,13 @@
 		]
 	},
 	{
-		"id": "lobby-disc-2",
-		"parentId": null,
-		"name": "Disc: Riff Loop",
+		"id": "lobby-disc-1-rim",
+		"parentId": "lobby-disc-1",
+		"name": "Disc Rim",
 		"position": [
-			2.18,
-			0.735,
-			-0.75
+			0,
+			0.52,
+			0
 		],
 		"rotation": [
 			0,
@@ -1450,9 +2520,9 @@
 			1
 		],
 		"scale": [
-			0.28,
-			0.012,
-			0.28
+			0.9733,
+			0.04,
+			0.9733
 		],
 		"components": [
 			{
@@ -1461,7 +2531,303 @@
 					"kind": "builtin",
 					"id": "cylinder"
 				},
-				"color": "#22c55e"
+				"color": "#9f1239"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-1-plate",
+		"parentId": "lobby-disc-1",
+		"name": "Disc Plate",
+		"position": [
+			0,
+			0.54,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9333,
+			0.08,
+			0.9333
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#0b0b10"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-1-groove-1",
+		"parentId": "lobby-disc-1",
+		"name": "Disc Groove 1",
+		"position": [
+			0,
+			0.555,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8733,
+			0.11,
+			0.8733
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#232328"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-1-groove-2",
+		"parentId": "lobby-disc-1",
+		"name": "Disc Groove 2",
+		"position": [
+			0,
+			0.57,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7933,
+			0.14,
+			0.7933
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#0b0b10"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-1-groove-3",
+		"parentId": "lobby-disc-1",
+		"name": "Disc Groove 3",
+		"position": [
+			0,
+			0.585,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7133,
+			0.17,
+			0.7133
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#232328"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-1-groove-4",
+		"parentId": "lobby-disc-1",
+		"name": "Disc Groove 4",
+		"position": [
+			0,
+			0.6,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.6333,
+			0.2,
+			0.6333
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#0b0b10"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-1-groove-5",
+		"parentId": "lobby-disc-1",
+		"name": "Disc Groove 5",
+		"position": [
+			0,
+			0.615,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5533,
+			0.23,
+			0.5533
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#232328"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-1-label",
+		"parentId": "lobby-disc-1",
+		"name": "Disc Label",
+		"position": [
+			0,
+			0.65,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4333,
+			0.3,
+			0.4333
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#9f1239"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-1-label-text",
+		"parentId": "lobby-disc-1",
+		"name": "Disc Label Text",
+		"position": [
+			0,
+			0.83,
+			0
+		],
+		"rotation": [
+			0,
+			0.7071,
+			-0.7071,
+			0
+		],
+		"scale": [
+			0.3067,
+			0.3067,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#9f1239"
+			},
+			{
+				"type": "textDisplay",
+				"title": "Remembering a Heartbeat",
+				"lines": [
+					"Hampus Naeselius"
+				],
+				"color": "#9f1239",
+				"scale": 1.2,
+				"verticalAlign": "middle"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-2",
+		"parentId": "lobby-jukebox-socket",
+		"name": "Disc: Mesosiderite",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.3,
+			0.01,
+			0.3
+		],
+		"components": [
+			{
+				"type": "recordDisc",
+				"title": "Mesosiderite",
+				"author": "rhodesmas",
+				"labelColor": "#0f766e",
+				"vinylColor": "#0b0b10"
+			},
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#0b0b10"
 			},
 			{
 				"type": "collider",
@@ -1482,28 +2848,277 @@
 					"url": "/audio/ambient1.mp3"
 				},
 				"loop": true,
-				"volume": 0.8
+				"volume": 0.8,
+				"playing": true
 			}
 		]
 	},
 	{
-		"id": "lobby-jukebox-sign",
-		"parentId": null,
-		"name": "Record Player Sign",
+		"id": "lobby-disc-2-rim",
+		"parentId": "lobby-disc-2",
+		"name": "Disc Rim",
 		"position": [
-			1.9,
-			1.3,
-			-1.5
+			0,
+			0.52,
+			0
 		],
 		"rotation": [
 			0,
-			1,
 			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9733,
+			0.04,
+			0.9733
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#0f766e"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-2-plate",
+		"parentId": "lobby-disc-2",
+		"name": "Disc Plate",
+		"position": [
+			0,
+			0.54,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.9333,
+			0.08,
+			0.9333
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#0b0b10"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-2-groove-1",
+		"parentId": "lobby-disc-2",
+		"name": "Disc Groove 1",
+		"position": [
+			0,
+			0.555,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.8733,
+			0.11,
+			0.8733
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#232328"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-2-groove-2",
+		"parentId": "lobby-disc-2",
+		"name": "Disc Groove 2",
+		"position": [
+			0,
+			0.57,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7933,
+			0.14,
+			0.7933
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#0b0b10"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-2-groove-3",
+		"parentId": "lobby-disc-2",
+		"name": "Disc Groove 3",
+		"position": [
+			0,
+			0.585,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7133,
+			0.17,
+			0.7133
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#232328"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-2-groove-4",
+		"parentId": "lobby-disc-2",
+		"name": "Disc Groove 4",
+		"position": [
+			0,
+			0.6,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.6333,
+			0.2,
+			0.6333
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#0b0b10"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-2-groove-5",
+		"parentId": "lobby-disc-2",
+		"name": "Disc Groove 5",
+		"position": [
+			0,
+			0.615,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5533,
+			0.23,
+			0.5533
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#232328"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-2-label",
+		"parentId": "lobby-disc-2",
+		"name": "Disc Label",
+		"position": [
+			0,
+			0.65,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.4333,
+			0.3,
+			0.4333
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#0f766e"
+			}
+		]
+	},
+	{
+		"id": "lobby-disc-2-label-text",
+		"parentId": "lobby-disc-2",
+		"name": "Disc Label Text",
+		"position": [
+			0,
+			0.83,
+			0
+		],
+		"rotation": [
+			0,
+			0.7071,
+			-0.7071,
 			0
 		],
 		"scale": [
-			0.8,
-			0.34,
+			0.3067,
+			0.3067,
 			1
 		],
 		"components": [
@@ -1513,255 +3128,17 @@
 					"kind": "builtin",
 					"id": "plane"
 				},
-				"color": "#1e1b4b"
+				"color": "#0f766e"
 			},
 			{
 				"type": "textDisplay",
-				"title": "Record Player",
+				"title": "Mesosiderite",
 				"lines": [
-					"Grab a disc and",
-					"set it on the platter"
+					"rhodesmas"
 				],
-				"color": "#1e1b4b"
-			}
-		]
-	},
-	{
-		"id": "lobby-dirty-cube",
-		"parentId": null,
-		"name": "Dirty Cube",
-		"position": [
-			3.6,
-			0.4,
-			1.4
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			0.8,
-			0.8,
-			0.8
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": {
-					"kind": "builtin",
-					"id": "box"
-				},
-				"color": "#d8d3c8"
-			},
-			{
-				"type": "collider",
-				"shape": "box"
-			},
-			{
-				"type": "surfaceMask",
-				"color": "#4b3621",
-				"opacity": 0.92,
-				"resolution": 32,
-				"mask": "////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////"
-			}
-		]
-	},
-	{
-		"id": "lobby-washer-pedestal",
-		"parentId": null,
-		"name": "Washer Pedestal",
-		"position": [
-			4.6,
-			0.45,
-			1.4
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			0.55,
-			0.9,
-			0.55
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": {
-					"kind": "builtin",
-					"id": "cylinder"
-				},
-				"color": "#334155"
-			},
-			{
-				"type": "collider",
-				"shape": "box"
-			}
-		]
-	},
-	{
-		"id": "lobby-washer-pedestal-top",
-		"parentId": null,
-		"name": "Washer Pedestal Top",
-		"position": [
-			4.6,
-			0.92,
-			1.4
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			0.65,
-			0.06,
-			0.65
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": {
-					"kind": "builtin",
-					"id": "cylinder"
-				},
-				"color": "#0ea5e9"
-			},
-			{
-				"type": "collider",
-				"shape": "box"
-			}
-		]
-	},
-	{
-		"id": "lobby-pressure-washer",
-		"parentId": null,
-		"name": "Pressure Washer",
-		"position": [
-			4.6,
-			1.12,
-			1.4
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "container"
-			},
-			{
-				"type": "grabbable",
-				"scalable": false
-			},
-			{
-				"type": "equippable",
-				"left": {
-					"position": [
-						0,
-						0,
-						0.04
-					],
-					"rotation": [
-						15,
-						0,
-						0
-					]
-				},
-				"right": {
-					"position": [
-						0,
-						0,
-						0.04
-					],
-					"rotation": [
-						15,
-						0,
-						0
-					]
-				}
-			},
-			{
-				"type": "codeBlock",
-				"code": "const RANGE = 1.4;          // max reach of the jet\nconst CLEAN_RADIUS = 0.17;  // per-face UV-space radius cleaned around the hit point (0-1)\nconst CLEAN_RATE = 0.55;    // fraction of coverage removed per tick within the radius\nconst SYNC_MS = 120;        // how often guests get the growing clean spot\nconst BEAM_SYNC_MS = 40;    // how often the beam's endpoints are pushed to guests\nconst ATLAS_COLS = 3;       // must match surfaceMaskRenderer.ts's box atlas layout\nconst ATLAS_ROWS = 2;\nlet spraying = false;\nlet beamId = null;\nlet lastMaskSync = 0;\nlet lastBeamSync = 0;\n\nfunction nozzlePose() {\n  const tip = ctx.hierarchy.findByName('Washer Nozzle');\n  return tip ? ctx.hierarchy.getWorldPose(tip.id) : null;\n}\n\nfunction decodeMask(b64, size) {\n  const bin = atob(b64);\n  const arr = new Uint8ClampedArray(size);\n  for (let i = 0; i < arr.length && i < bin.length; i++) arr[i] = bin.charCodeAt(i);\n  return arr;\n}\n\nfunction encodeMask(arr) {\n  let bin = '';\n  for (let i = 0; i < arr.length; i++) bin += String.fromCharCode(arr[i]);\n  return btoa(bin);\n}\n\n// Babylon's box builder order (boxBuilder.js CreateBoxVertexData's \"normals\"\n// array): +Z, -Z, +X, -X, +Y, -Y — surfaceMaskRenderer.ts's atlas cells follow\n// this same order, so identifying the hit face this way lands on the matching cell.\nfunction faceIndexFromNormal(normal, rotation) {\n  const inv = [-rotation[0], -rotation[1], -rotation[2], rotation[3]];\n  const local = ctx.math.rotateVec(inv, normal);\n  const ax = Math.abs(local[0]), ay = Math.abs(local[1]), az = Math.abs(local[2]);\n  if (az >= ax && az >= ay) return local[2] > 0 ? 0 : 1;\n  if (ax >= ay && ax >= az) return local[0] > 0 ? 2 : 3;\n  return local[1] > 0 ? 4 : 5;\n}\n\n// Erodes a surfaceMask's coverage around a raycast hit — any object with a\n// surfaceMask can be cleaned this way, not just the lobby's dirty cube. A box\n// host is laid out as a 3x2 face atlas (see surfaceMaskRenderer.ts), so the\n// hit's face is identified from its normal and mapped into that face's cell;\n// any other shape uses its single, already-unique UV region directly.\nfunction cleanAt(hit) {\n  const target = ctx.hierarchy.getSlot(hit.slotId);\n  const mask = target && target.components.find((c) => c.type === 'surfaceMask');\n  if (!mask) return;\n  const meshRef = target.components.find((c) => c.type === 'meshRenderer')?.meshRef;\n  const isBox = !!meshRef && meshRef.kind === 'builtin' && meshRef.id === 'box';\n  const cols = isBox ? ATLAS_COLS : 1;\n  const rows = isBox ? ATLAS_ROWS : 1;\n  const cell = mask.resolution;\n  const width = cell * cols;\n  const height = cell * rows;\n  const bytes = decodeMask(mask.mask, width * height);\n\n  let u = hit.u;\n  let v = hit.v;\n  if (isBox) {\n    const faceIndex = faceIndexFromNormal(hit.normal, target.rotation);\n    const col = faceIndex % ATLAS_COLS;\n    const row = Math.floor(faceIndex / ATLAS_COLS);\n    u = (col + hit.u) / ATLAS_COLS;\n    v = (row + hit.v) / ATLAS_ROWS;\n  }\n\n  const cx = u * width;\n  const cy = v * height;\n  const radiusPx = CLEAN_RADIUS * cell;\n  const minX = Math.max(0, Math.floor(cx - radiusPx));\n  const maxX = Math.min(width - 1, Math.ceil(cx + radiusPx));\n  const minY = Math.max(0, Math.floor(cy - radiusPx));\n  const maxY = Math.min(height - 1, Math.ceil(cy + radiusPx));\n  let changed = false;\n  for (let y = minY; y <= maxY; y++) {\n    for (let x = minX; x <= maxX; x++) {\n      const dx = x + 0.5 - cx;\n      const dy = y + 0.5 - cy;\n      const dist = Math.sqrt(dx * dx + dy * dy);\n      if (dist > radiusPx) continue;\n      const i = y * width + x;\n      const next = bytes[i] - 255 * CLEAN_RATE * (1 - dist / radiusPx);\n      if (next < bytes[i]) {\n        bytes[i] = next < 0 ? 0 : next;\n        changed = true;\n      }\n    }\n  }\n  if (!changed) return;\n  const now = Date.now();\n  const broadcast = now - lastMaskSync >= SYNC_MS;\n  if (broadcast) lastMaskSync = now;\n  ctx.world.setComponentField(hit.slotId, 'surfaceMask', 'mask', encodeMask(bytes), broadcast);\n}\n\nfunction beamPoints(from, to) {\n  return [from[0], from[1], from[2], to[0], to[1], to[2]];\n}\n\nfunction startBeam(from, to) {\n  beamId = crypto.randomUUID();\n  ctx.world.spawn({ id: beamId, name: 'Water Jet', components: [{ type: 'stroke', points: beamPoints(from, to), color: '#8ee3ff', width: 0.045 }] });\n  lastBeamSync = Date.now();\n}\n\nfunction updateBeam(from, to) {\n  if (!beamId) return;\n  const now = Date.now();\n  const broadcast = now - lastBeamSync >= BEAM_SYNC_MS;\n  if (broadcast) lastBeamSync = now;\n  ctx.world.setComponentField(beamId, 'stroke', 'points', beamPoints(from, to), broadcast);\n}\n\nfunction endBeam() {\n  if (beamId) ctx.world.deleteSlot(beamId);\n  beamId = null;\n}\n\nfunction spray() {\n  const pose = nozzlePose();\n  if (!pose) return;\n  const origin = ctx.math.vecAdd(pose.position, ctx.math.vecScale(pose.forward, 0.03));\n  const hit = ctx.world.raycast(origin, pose.forward, RANGE);\n  const target = hit ? hit.point : ctx.math.vecAdd(pose.position, ctx.math.vecScale(pose.forward, RANGE));\n  if (!beamId) startBeam(pose.position, target);\n  else updateBeam(pose.position, target);\n  if (hit) cleanAt(hit);\n}\n\nreturn {\n  onTrigger(e) {\n    if (e.phase === 'press') spraying = true;\n    else if (e.phase === 'release') { spraying = false; endBeam(); }\n    return true;\n  },\n  onUnequip() { spraying = false; endBeam(); },\n  tick() {\n    if (!spraying || !ctx.world.isHost()) return;\n    if (!ctx.equip.isEquipped() && !ctx.grab.isHeld()) { spraying = false; endBeam(); return; }\n    spray();\n  }\n};\n"
-			}
-		]
-	},
-	{
-		"id": "lobby-pressure-washer-body",
-		"parentId": "lobby-pressure-washer",
-		"name": "Washer Body",
-		"position": [
-			0,
-			0,
-			0
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			0.05,
-			0.05,
-			0.22
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": {
-					"kind": "builtin",
-					"id": "box"
-				},
-				"color": "#1d4ed8"
-			},
-			{
-				"type": "collider",
-				"shape": "box"
-			}
-		]
-	},
-	{
-		"id": "lobby-pressure-washer-nozzle",
-		"parentId": "lobby-pressure-washer",
-		"name": "Washer Nozzle",
-		"position": [
-			0,
-			0,
-			0.135
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			0.028,
-			0.028,
-			0.05
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": {
-					"kind": "builtin",
-					"id": "box"
-				},
-				"color": "#e2e8f0"
+				"color": "#0f766e",
+				"scale": 1.2,
+				"verticalAlign": "middle"
 			}
 		]
 	}

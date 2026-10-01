@@ -2,6 +2,7 @@
 	import type { StudioProject } from '../state/project.svelte';
 	import { studioSession } from '../state/session.svelte';
 	import { toasts } from '../state/toasts.svelte';
+	import { isReadOnlyAdapter } from '$lib/inventory/registry';
 
 	interface Props { project: StudioProject }
 	let { project }: Props = $props();
@@ -9,7 +10,7 @@
 	interface Listing { name: string; description: string; thumbnailAssetId: string | null; status: 'published' | 'hidden'; latestRevision: number; updatedAt: string; containsCode: boolean }
 
 	const marketplaceItemId = $derived(project.item?.marketplaceItemId ?? null);
-	const canPublish = $derived(Boolean(project.item) && project.adapterId !== 'purchased');
+	const canPublish = $derived(Boolean(project.item) && !isReadOnlyAdapter(project.adapterId));
 
 	let name = $state('');
 	let description = $state('');

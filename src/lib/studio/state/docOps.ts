@@ -2,6 +2,7 @@ import type { Component, Slot, SlotTree, Vec3 } from '../../ecs/types';
 import { eulerToQuat } from '../../math/euler.ts';
 import { componentSchema, type ComponentType } from '../schema/components.ts';
 import * as ops from '../tree/ops.ts';
+import { paintDisc } from '../../xr/templates/recordDisc.ts';
 
 /**
  * Every edit the inspector can make, as plain data. The Studio applies them to its own document; the in-game inspector
@@ -88,8 +89,12 @@ export function reduceDocOp(tree: SlotTree, op: DocOp): DocOpResult | null {
 			return ops.getSlot(tree, op.id) ? { tree: ops.addComponent(tree, op.id, op.component) } : null;
 		case 'removeComponent':
 			return ops.getSlot(tree, op.id) ? { tree: ops.removeComponent(tree, op.id, op.index) } : null;
-		case 'setField':
-			return ops.getSlot(tree, op.id) ? { tree: ops.setComponentField(tree, op.id, op.index, op.key, op.value) } : null;
+		case 'setField': {
+			if (!ops.getSlot(tree, op.id)) return null;
+			const next = ops.setComponentField(tree, op.id, op.index, op.key, op.value);
+			// A record disc's look follows its title, author and colours: the parts are redrawn from them here, once, for everyone.
+			return { tree: ops.getSlot(next, op.id)?.components[op.index]?.type === 'recordDisc' ? paintDisc(next, op.id) : next };
+		}
 		case 'addSlot': {
 			const result = ops.addSlot(tree, op.parentId, op.slot);
 			return { tree: result.tree, selectId: result.id };

@@ -14,7 +14,7 @@ export interface BuiltinWorld {
 }
 
 export const BUILTIN_WORLDS: readonly BuiltinWorld[] = [
-	{ id: 'lobby', name: 'Lobby', description: 'A glowing spawn pad, a welcome sign and a few toys to try.', scene: lobby as SlotTree },
+	{ id: 'lobby', name: 'Lobby', description: 'A glowing spawn pad, a welcome sign, a mirror, a paint brush and a record player.', scene: lobby as SlotTree },
 	{
 		id: 'workshop',
 		name: 'Workshop',

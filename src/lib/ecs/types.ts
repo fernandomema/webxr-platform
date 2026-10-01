@@ -238,6 +238,8 @@ export interface TextDisplayComponent {
 	color?: string;
 	/** How big the text is, times the usual size (1). Larger for shop signs, smaller to fit more lines. */
 	scale?: number;
+	/** Where the text block sits in the sign: from the top (the default) or centred vertically. */
+	verticalAlign?: 'top' | 'middle';
 }
 
 /**
@@ -411,6 +413,21 @@ export interface KeyboardKeyComponent {
 	candidate?: number;
 }
 
+/**
+ * The title, author and colours of a record disc (see `$lib/xr/templates/recordDisc`). The disc's look (label text,
+ * label and rim colour, vinyl and groove tones) is derived from these fields whenever they are edited, in the Studio
+ * and in the in-game inspector alike, so nobody has to touch the parts of the disc by hand.
+ */
+export interface RecordDiscComponent {
+	type: 'recordDisc';
+	title: string;
+	author: string;
+	/** Centre label and rim. */
+	labelColor: string;
+	/** The vinyl itself; the groove tones follow from it. Near-black when absent. */
+	vinylColor?: string;
+}
+
 /** Marks a grabbable object as something a `socket` can take. */
 export interface InsertableComponent {
 	type: 'insertable';
@@ -465,6 +482,7 @@ export type Component =
 	| ImpactSoundComponent
 	| SocketComponent
 	| InsertableComponent
+	| RecordDiscComponent
 	| PreviewCameraComponent
 	| DropZoneComponent
 	| KeyboardKeyComponent

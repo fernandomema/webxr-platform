@@ -44,5 +44,6 @@
 		{#if error}<p class="text-sm text-red-400">{error}</p>{/if}
 		<button class="w-full rounded bg-blue-600 p-2 font-medium" type="submit">Sign in</button>
 		<a href="/register" class="block text-center text-sm text-gray-400">Create an account</a>
+		<a href="/privacy" class="block text-center text-sm text-gray-400">Privacy Policy</a>
 	</form>
 </div>

@@ -55,7 +55,9 @@ export function setupTextDisplay(scene: Scene, mesh: AbstractMesh, initial: Text
 	let unit = 1;
 	const fit = (component: TextDisplayComponent) => {
 		unit = Math.min(size[0], size[1]) / DESIGN_SHORT_SIDE;
-		stack.top = `${Math.round(24 * unit)}px`;
+		const middle = component.verticalAlign === 'middle';
+		stack.verticalAlignment = middle ? Control.VERTICAL_ALIGNMENT_CENTER : Control.VERTICAL_ALIGNMENT_TOP;
+		stack.top = middle ? '0px' : `${Math.round(24 * unit)}px`;
 		return unit * (component.scale ?? 1);
 	};
 

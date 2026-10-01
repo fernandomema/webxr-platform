@@ -5,6 +5,7 @@ const ADAPTER_VIEW: Record<string, { label: string; icon: IconName }> = {
 	local: { label: 'This device', icon: 'device' },
 	cloud: { label: 'Cloud', icon: 'cloud' },
 	purchased: { label: 'Marketplace', icon: 'cube' },
+	builtin: { label: 'Starter kit', icon: 'cube' },
 	filesystem: { label: 'Project files', icon: 'folder' }
 };
 
