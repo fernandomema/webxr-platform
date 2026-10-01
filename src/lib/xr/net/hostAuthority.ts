@@ -329,7 +329,7 @@ export class HostAuthority {
 				if (this.sceneGraph.controlMedia(msg.slotId, msg.action)) this.broadcastSnapshot();
 				break;
 			case 'ui-event-request':
-				if (this.sceneGraph.dispatchUIEvent(msg.event) && msg.event.type !== 'change') this.broadcastSnapshot();
+				if (this.sceneGraph.dispatchUIEvent({ ...msg.event, remoteGuestId: guestId }) && msg.event.type !== 'change') this.broadcastSnapshot();
 				break;
 		}
 	}

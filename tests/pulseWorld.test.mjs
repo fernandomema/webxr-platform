@@ -52,10 +52,11 @@ test('every raised floor can be stepped onto from the one below it', () => {
 // --- the screens --------------------------------------------------------------------------------------------------------
 
 /** Runs the script of slot `id` against a small stand-in for the host, which keeps the scene's slots in memory. */
-function run(scene, id, { isHost = true } = {}) {
+function run(scene, id, { isHost = true, net = { fetchJson: async () => ({ items: [], counts: [0, 0, 0, 0] }), postJson: async () => ({ ok: true }) } } = {}) {
 	const byId = new Map(scene.map((slot) => [slot.id, slot]));
 	const self = byId.get(id);
 	const ctx = {
+		net,
 		self: { id, getComponent: (type) => find(self, type) },
 		hierarchy: { getSlot: (slotId) => byId.get(slotId) },
 		world: {
@@ -85,84 +86,89 @@ test('every control a screen script uses exists', () => {
 	for (const slot of pulse.filter((s) => find(s, 'codeBlock'))) assert.ok(find(slot, 'uiPanel'), `${slot.id} is a panel`);
 });
 
-test('a voting board shows its best entries first, keeps them in place while being voted on, then re-ranks', (t) => {
-	let clock = 1_000_000;
-	t.mock.method(Date, 'now', () => clock);
-	const { handlers, ui, press, byId } = run(fresh(), 'pulse-ideas-board');
-	handlers.tick(1);
-	const items = find(byId.get('pulse-ideas-board'), 'scriptState').data.items;
-	assert.equal(items.length, 7);
-	assert.equal(ui('pulse-ideas-board-row-0', 'visible'), true);
-	assert.equal(ui('pulse-ideas-board-row-4', 'visible'), true);
-	assert.match(ui('pulse-ideas-board-text-0', 'text'), /^Spatial voice chat/);
-	assert.equal(ui('pulse-ideas-board-score-0', 'text'), '42');
 
-	// The fifth entry gets enough votes to lead, but stays on its row while the clicks keep coming...
-	for (let i = 0; i < 30; i++) press('pulse-ideas-board-up-4');
-	assert.equal(ui('pulse-ideas-board-score-4', 'text'), '49');
-	assert.match(ui('pulse-ideas-board-text-0', 'text'), /^Spatial voice chat/);
-	// ...and takes the top once they stop.
-	clock += 2500;
-	handlers.tick(1);
-	assert.match(ui('pulse-ideas-board-text-0', 'text'), /^A marketplace for player-made objects/);
-	assert.equal(ui('pulse-ideas-board-score-0', 'text'), '49');
+const flush = () => new Promise((resolve) => setImmediate(resolve));
 
-	// A down vote can be given too.
-	press('pulse-ideas-board-down-0');
-	assert.equal(ui('pulse-ideas-board-score-0', 'text'), '48');
+test('boards load persisted entries, filter categories and submit votes', async () => {
+  const posts = [];
+  const data = { items: [{ id: 'a', title: 'Real idea', category: 'idea', votes: 12 }, { id: 'b', title: 'Real bug', category: 'bug', votes: 25 }], counts: [0, 0, 0, 0] };
+  const net = { fetchJson: async () => structuredClone(data), postJson: async (url, body) => { posts.push(body); data.items[0].votes += body.delta; } };
+  const board = run(fresh(), 'pulse-ideas-board', { net });
+  board.handlers.tick(1);
+  await flush();
+  assert.equal(board.ui('pulse-ideas-board-text-0', 'text'), 'Real idea');
+  assert.equal(board.ui('pulse-ideas-board-score-0', 'text'), '12');
+  await board.press('pulse-ideas-board-down-0');
+  assert.deepEqual(posts, [{ action: 'vote', id: 'a', delta: -1 }]);
+  assert.equal(board.ui('pulse-ideas-board-score-0', 'text'), '11');
 });
 
-test('a guest does not draw or vote (only the host does)', () => {
-	const { handlers, ui } = run(fresh(), 'pulse-bugs-board', { isHost: false });
-	handlers.tick(1);
-	assert.equal(ui('pulse-bugs-board-row-0', 'visible'), false);
+test('a guest does not fetch or write feedback', () => {
+  const net = { fetchJson: () => assert.fail('guest requested data'), postJson: () => assert.fail('guest wrote data') };
+  const board = run(fresh(), 'pulse-bugs-board', { isHost: false, net });
+  board.handlers.tick(1);
+  board.press('pulse-bugs-board-up-0');
+  const box = run(fresh(), 'pulse-suggestion-box', { isHost: false, net });
+  box.press('pulse-suggestion-box-send');
+  const mood = run(fresh(), 'pulse-mood-wall', { isHost: false, net });
+  mood.press('pulse-mood-wall-button-0');
 });
 
-test('a suggestion lands on the board of its category, and the same suggestion again is a vote', () => {
-	const scene = fresh();
-	const box = run(scene, 'pulse-suggestion-box');
-	const bugs = () => find(box.byId.get('pulse-bugs-board'), 'scriptState').data.items;
-	const before = bugs().length;
-
-	box.press('pulse-suggestion-box-category-bug');
-	box.handlers.onUIEvent({ type: 'change', slotId: 'pulse-suggestion-box-input', text: '  The door  sticks ' });
-	box.press('pulse-suggestion-box-send');
-	assert.equal(bugs().length, before + 1);
-	const added = bugs().at(-1);
-	assert.equal(added.title, 'The door sticks');
-	assert.equal(added.votes, 1);
-	assert.match(box.ui('pulse-suggestion-box-status', 'text'), /^Thanks/);
-
-	// A second copy of the script is a fresh sender, so it is not held back by the first one's pause.
-	const again = run(scene, 'pulse-suggestion-box');
-	again.press('pulse-suggestion-box-category-bug');
-	again.handlers.onUIEvent({ type: 'submit', slotId: 'pulse-suggestion-box-input', text: 'the door sticks' });
-	assert.equal(bugs().length, before + 1);
-	assert.equal(bugs().at(-1).votes, 2);
+test('suggestions persist and clear the input only after success', async () => {
+  const posts = [];
+  const net = { postJson: async (url, body) => posts.push(body) };
+  const box = run(fresh(), 'pulse-suggestion-box', { net });
+  box.press('pulse-suggestion-box-category-bug');
+  await box.handlers.onUIEvent({ type: 'submit', slotId: 'pulse-suggestion-box-input', text: '  The door  sticks ' });
+  assert.deepEqual(posts, [{ action: 'suggest', category: 'bug', title: 'The door sticks' }]);
+  assert.match(box.ui('pulse-suggestion-box-status', 'text'), /saved/);
+  box.press('pulse-suggestion-box-send');
+  assert.equal(posts.length, 1, 'cooldown prevents a duplicate submission');
 });
 
-test('a suggestion that is too short is not sent, and is not sent twice in a row', () => {
-	const box = run(fresh(), 'pulse-suggestion-box');
-	const ideas = () => find(box.byId.get('pulse-ideas-board'), 'scriptState').data.items.length;
-	const before = ideas();
-	box.handlers.onUIEvent({ type: 'change', slotId: 'pulse-suggestion-box-input', text: 'hi' });
-	box.press('pulse-suggestion-box-send');
-	assert.equal(ideas(), before);
-
-	box.handlers.onUIEvent({ type: 'change', slotId: 'pulse-suggestion-box-input', text: 'A longer idea' });
-	box.press('pulse-suggestion-box-send');
-	box.handlers.onUIEvent({ type: 'change', slotId: 'pulse-suggestion-box-input', text: 'Another idea right after' });
-	box.press('pulse-suggestion-box-send');
-	assert.equal(ideas(), before + 1);
+test('failed suggestions can be retried and failed votes do not change local counts', async () => {
+  let failed = true;
+  const posts = [];
+  const net = { postJson: async (url, body) => { if (failed) throw new Error('Offline'); posts.push(body); } };
+  const box = run(fresh(), 'pulse-suggestion-box', { net });
+  await box.handlers.onUIEvent({ type: 'submit', slotId: 'pulse-suggestion-box-input', text: 'Keep this idea' });
+  assert.match(box.ui('pulse-suggestion-box-status', 'text'), /Offline/);
+  failed = false;
+  await box.press('pulse-suggestion-box-send');
+  assert.equal(posts[0].title, 'Keep this idea');
 });
 
-test('the mood wall counts a vote and sizes the bars to match', () => {
-	const { handlers, ui, press, byId } = run(fresh(), 'pulse-mood-wall');
-	handlers.tick(1);
-	assert.equal(ui('pulse-mood-wall-fill-1', 'width'), 500, 'the most common mood has the full bar');
-	press('pulse-mood-wall-button-0');
-	assert.deepEqual(find(byId.get('pulse-mood-wall'), 'scriptState').data.counts, [25, 41, 12, 5]);
-	assert.match(ui('pulse-mood-wall-count-0', 'text'), /^25 /);
-	for (let i = 0; i < 40; i++) press('pulse-mood-wall-button-3');
-	assert.equal(ui('pulse-mood-wall-fill-3', 'width'), 500, 'and a mood that overtakes it takes the full bar');
+test('mood counts come from the API and mood presses are persisted', async () => {
+  const data = { items: [], counts: [1, 4, 0, 0] };
+  const net = { fetchJson: async () => structuredClone(data), postJson: async (url, body) => { assert.deepEqual(body, { action: 'mood', key: 'loving' }); data.counts[0]++; } };
+  const wall = run(fresh(), 'pulse-mood-wall', { net });
+  wall.handlers.tick(1);
+  await flush();
+  assert.equal(wall.ui('pulse-mood-wall-fill-1', 'width'), 500);
+  await wall.press('pulse-mood-wall-button-0');
+  assert.match(wall.ui('pulse-mood-wall-count-0', 'text'), /^2 /);
+});
+
+test('roadmap uses persisted development status', async () => {
+  const net = { fetchJson: async () => ({ items: [{ id: 'a', category: 'idea', title: 'Shipped feature', status: 'shipped' }], counts: [] }) };
+  const board = run(fresh(), 'pulse-roadmap-board', { net });
+  board.handlers.tick(1);
+  await flush();
+  assert.equal(board.ui('pulse-roadmap-board-status-label-0', 'text'), 'SHIPPED');
+  assert.equal(board.ui('pulse-roadmap-board-text-0', 'text'), 'Shipped feature');
+  assert.equal(board.ui('pulse-roadmap-board-row-1', 'visible'), false);
+});
+
+test('forwarded guest actions cannot submit using the host session', async () => {
+  const net = { fetchJson: async () => ({ items: [{ id: 'a', category: 'idea', title: 'An idea', votes: 1 }], counts: [0, 0, 0, 0] }), postJson: () => assert.fail('Guest action submitted as host') };
+  for (const [panel, target, type, text] of [
+    ['pulse-ideas-board', 'pulse-ideas-board-up-0', 'press'],
+    ['pulse-suggestion-box', 'pulse-suggestion-box-input', 'submit', 'A guest suggestion'],
+    ['pulse-mood-wall', 'pulse-mood-wall-button-0', 'press']
+  ]) {
+    const screen = run(fresh(), panel, { net });
+    screen.handlers.tick?.(1);
+    await flush();
+    await screen.handlers.onUIEvent({ slotId: target, type, text, remoteGuestId: 'guest' });
+  }
 });

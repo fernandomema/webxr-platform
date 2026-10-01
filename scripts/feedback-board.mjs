@@ -1,13 +1,11 @@
-// The feedback screens of Pulse: what each is made of (its UI slots) and what it does (its codeBlock script).
+// The feedback screens of Feedback Center: what each is made of (its UI slots) and what it does (its codeBlock script).
 //   - a voting board: ranked entries with an up and a down vote button each (ideas, bugs);
-//   - the suggestion box: a category, a line of text and a Send button that adds an entry to a board;
+//   - the suggestion box: a category, a line of text and a Send button that saves an entry to the server;
 //   - the mood wall: four buttons and a live tally of how players feel;
 //   - the roadmap: a read-only list of what is planned, in progress and shipped.
 //
-// The entries of a board live in its `scriptState` component (`{ items: [{ id, title, detail, votes }] }`) and its
-// script only draws them. That keeps one place to feed from later (a server, the world's saved data): whatever writes
-// `items` there is what the screen shows. For now the entries are samples, and votes and suggestions live in the world
-// only (there is no per-player vote limit and nothing is sent anywhere).
+// Feedback screens load and submit persistent data through /api/feedback. Only the host performs requests.
+// State and UI updates are broadcast to guests.
 //
 // Every builder takes the `slot` function of `createWorld()` (see world-kit.mjs) and adds its slots to that world.
 
@@ -41,6 +39,30 @@ function panelSlot(slot, { id, name, parentId = null, position, rotation = IDENT
 	});
 }
 
+/** Poll persistent data and broadcast it to this screen's guests. */
+function liveLoader(kind) {
+	return String.raw`
+let loading = false;
+let refreshIn = 0;
+async function refresh() {
+  if (loading || !ctx.world.isHost()) return;
+  loading = true;
+  try {
+    const data = await ctx.net.fetchJson('/api/feedback');
+    const payload = ${kind === 'mood' ? '{ counts: data.counts }' : kind === 'roadmap' ? '{ items: data.items.filter((item) => item.category !== "bug" && item.status !== "pending").slice(0, 6) }' : '{ items: data.items.filter((item) => ' + (kind === 'bug' ? 'item.category === "bug"' : 'item.category !== "bug"') + ') }'};
+    ctx.world.setComponentField(SELF, 'scriptState', 'data', payload);
+    drawn = null;
+    draw();
+  } catch (err) { set('status', 'text', 'Could not load feedback. Retrying shortly.', true); }
+  finally { loading = false; }
+}
+function poll(dt) {
+  refreshIn -= dt;
+  if (refreshIn <= 0) { refreshIn = 10; void refresh(); }
+}
+`;
+}
+
 // --- voting board ------------------------------------------------------------------------------------------------------
 
 /**
@@ -70,7 +92,7 @@ export function votingBoardSlots(slot, { id, name, title, subtitle, noun, accent
 	control(slot, `${id}-status`, `${name} Status`, id, { kind: 'text', text: '', width: 1090, height: 50, fontSize: 22, color: PALETTE.muted });
 }
 
-/** The script of a voting board: draws its `scriptState` items ranked by votes, and turns button presses into votes. Host only. */
+/** The script of a voting board: draws its `scriptState` items ranked by votes, and persists button presses as votes. Host only. */
 export function boardScript({ prefix, rows, noun }) {
 	return String.raw`
 const SELF = ctx.self.id;
@@ -84,8 +106,8 @@ let view = [];
 let lastVote = 0;
 let unsorted = false;
 let wait = 0;
-
-function set(id, field, value, broadcast = false) { ctx.world.setComponentField(PREFIX + id, 'uiElement', field, value, broadcast); }
+${liveLoader(noun)}
+function set(id, field, value, broadcast = true) { ctx.world.setComponentField(PREFIX + id, 'uiElement', field, value, broadcast); }
 function state() { const s = ctx.self.getComponent('scriptState'); return s && s.data ? s.data : {}; }
 function items() { const list = state().items; return Array.isArray(list) ? list : []; }
 function ranked(list) { return list.map((item, i) => ({ item, i })).sort((a, b) => b.item.votes - a.item.votes || a.i - b.i).map((e) => e.item); }
@@ -113,27 +135,33 @@ function draw() {
   set('status', 'text', list.length ? 'Top ' + top + ' of ' + list.length + ' ' + NOUN + (list.length === 1 ? '' : 's') + '  ·  vote to push the best to the top' : 'No ' + NOUN + 's yet. Be the first to send one!', true);
 }
 
-function vote(rank, delta) {
+let sending = false;
+async function vote(rank, delta) {
   const entry = view[rank];
-  if (!entry) return;
-  const next = items().map((item) => (item.id === entry.id ? { ...item, votes: item.votes + delta } : item));
-  ctx.world.setComponentField(SELF, 'scriptState', 'data', { ...state(), items: next });
-  lastVote = Date.now();
-  draw();
+  if (!entry || sending || !ctx.world.isHost()) return;
+  sending = true;
+  try {
+    await ctx.net.postJson('/api/feedback', { action: 'vote', id: entry.id, delta });
+    lastVote = Date.now();
+    await refresh();
+  } catch (err) { set('status', 'text', err.message || 'Vote failed. Please try again.', true); }
+  finally { sending = false; }
 }
 
 return {
   tick(dt) {
     if (!ctx.world.isHost()) return;
+    poll(dt);
     wait -= dt;
     if (wait > 0) return;
     wait = 0.25;
     draw();
   },
   onUIEvent(event) {
+    if (event.remoteGuestId !== undefined) return;
     if (event.type !== 'press' || !event.slotId.startsWith(PREFIX)) return;
     const match = event.slotId.slice(PREFIX.length).match(/^(up|down)-(\d+)$/);
-    if (match) vote(Number(match[2]), match[1] === 'up' ? 1 : -1);
+    if (match) return vote(Number(match[2]), match[1] === 'up' ? 1 : -1);
   }
 };
 `;
@@ -147,10 +175,10 @@ export const SUGGESTION_CATEGORIES = [
 	{ key: 'other', label: 'Other' }
 ];
 
-/** A kiosk to send an idea or a bug: `boards` maps each category key to the id of the voting board that receives it. */
-export function suggestionBoxSlots(slot, { id, name, boards, position, rotation, worldWidth, parentId = null }) {
+/** A kiosk to persist an idea, bug report or other suggestion. */
+export function suggestionBoxSlots(slot, { id, name, position, rotation, worldWidth, parentId = null }) {
 	const pixels = { width: 1000, height: 640 };
-	panelSlot(slot, { id, name, parentId, position, rotation, pixels, worldWidth, components: [{ type: 'codeBlock', code: suggestionScript({ prefix: `${id}-`, boards }) }] });
+	panelSlot(slot, { id, name, parentId, position, rotation, pixels, worldWidth, components: [{ type: 'codeBlock', code: suggestionScript({ prefix: `${id}-` }) }] });
 	control(slot, `${id}-title`, `${name} Title`, id, { kind: 'text', text: 'SUGGESTION BOX', width: 900, height: 64, fontSize: 40, fontWeight: 'bold', color: PALETTE.text });
 	control(slot, `${id}-hint`, `${name} Hint`, id, { kind: 'text', text: 'Pick a category, write it in a line and send it to the boards.', width: 900, height: 56, fontSize: 24, color: '#fcd34d' });
 	const row = control(slot, `${id}-categories`, `${name} Categories`, id, { kind: 'container', flexDirection: 'row', gap: 14, width: 900, height: 70 }, 6);
@@ -169,23 +197,22 @@ export function suggestionBoxSlots(slot, { id, name, boards, position, rotation,
 	control(slot, `${id}-status`, `${name} Status`, id, { kind: 'text', text: 'Sending an idea.', width: 900, height: 60, fontSize: 24, color: PALETTE.muted });
 }
 
-/** The script of the suggestion box: a sent line becomes an entry (with one vote) on the board of its category. Host only. */
-export function suggestionScript({ prefix, boards }) {
+/** The script of the suggestion box: a sent line is persisted pending review without an automatic vote. Host only. */
+export function suggestionScript({ prefix }) {
 	return String.raw`
 const PREFIX = ${JSON.stringify(prefix)};
-const BOARDS = ${JSON.stringify(boards)};
 const LABELS = ${JSON.stringify(Object.fromEntries(SUGGESTION_CATEGORIES.map((c) => [c.key, c.label])))};
 const ACTIVE = ${JSON.stringify(PALETTE.active)};
 const IDLE = ${JSON.stringify(PALETTE.neutral)};
 const MIN_LENGTH = 4;
 const MAX_LENGTH = 80;
-const MAX_ENTRIES = 40;
 const COOLDOWN_MS = 2000;
 let category = ${JSON.stringify(SUGGESTION_CATEGORIES[0].key)};
 let typed = '';
 let lastSent = 0;
+let sending = false;
 
-function set(id, field, value, broadcast = false) { ctx.world.setComponentField(PREFIX + id, 'uiElement', field, value, broadcast); }
+function set(id, field, value, broadcast = true) { ctx.world.setComponentField(PREFIX + id, 'uiElement', field, value, broadcast); }
 function status(message) { set('status', 'text', message, true); }
 
 function choose(key) {
@@ -194,46 +221,35 @@ function choose(key) {
   status('Sending ' + (key === 'idea' ? 'an idea' : key === 'bug' ? 'a bug report' : 'something else') + '.');
 }
 
-function send() {
-  if (Date.now() - lastSent < COOLDOWN_MS) return;
+async function send() {
+  if (!ctx.world.isHost() || sending || Date.now() - lastSent < COOLDOWN_MS) return;
   const text = (typed || ctx.ui.getInputText(PREFIX + 'input') || '').trim().replace(/\s+/g, ' ');
   if (text.length < MIN_LENGTH) return status('Write a few more words first.');
-  const board = ctx.hierarchy.getSlot(BOARDS[category]);
-  const data = board && board.components.find((c) => c.type === 'scriptState');
-  if (!data) return status('That board is not here right now.');
-  lastSent = Date.now();
-  const title = text.slice(0, MAX_LENGTH);
-  const list = Array.isArray(data.data.items) ? data.data.items : [];
-  const same = list.find((item) => item.title.toLowerCase() === title.toLowerCase());
-  let next;
-  if (same) {
-    next = list.map((item) => (item === same ? { ...item, votes: item.votes + 1 } : item));
-    status('That is already on the board, so it got your vote.');
-  } else {
-    next = [...list, { id: crypto.randomUUID(), title, detail: LABELS[category] + '  ·  new', votes: 1 }];
-    // A full board drops its least-voted (and oldest) entry.
-    if (next.length > MAX_ENTRIES) {
-      const lowest = Math.min(...next.map((item) => item.votes));
-      next.splice(next.findIndex((item) => item.votes === lowest), 1);
-    }
-    status('Thanks! Your ' + LABELS[category].toLowerCase() + ' is on the board.');
-  }
-  ctx.world.setComponentField(BOARDS[category], 'scriptState', 'data', { ...data.data, items: next });
-  typed = '';
-  set('input', 'text', '');
+  if (text.length > MAX_LENGTH) return status('Use at most 80 characters.');
+  sending = true;
+  status('Sending…');
+  try {
+    await ctx.net.postJson('/api/feedback', { action: 'suggest', category, title: text });
+    lastSent = Date.now();
+    typed = '';
+    set('input', 'text', '', true);
+    status('Thanks! Your feedback was saved.');
+  } catch (err) { status(err.message || 'Could not send feedback. Please try again.'); }
+  finally { sending = false; }
 }
 
 return {
   onUIEvent(event) {
+    if (event.remoteGuestId !== undefined) return;
     if (!event.slotId.startsWith(PREFIX)) return;
     const id = event.slotId.slice(PREFIX.length);
     if (id === 'input' && (event.type === 'change' || event.type === 'submit')) {
       typed = event.text || '';
-      if (event.type === 'submit') send();
+      if (event.type === 'submit') return send();
       return;
     }
     if (event.type !== 'press') return;
-    if (id === 'send') send();
+    if (id === 'send') return send();
     else if (id.startsWith('category-') && LABELS[id.slice(9)]) choose(id.slice(9));
   }
 };
@@ -288,8 +304,11 @@ const MOODS = ${moods.length};
 const BAR = ${barWidth};
 let drawn = null;
 let wait = 0;
+${liveLoader("mood")}
+let sending = false;
+const KEYS = ${JSON.stringify(moods.map((mood) => mood.key))};
 
-function set(id, field, value, broadcast = false) { ctx.world.setComponentField(PREFIX + id, 'uiElement', field, value, broadcast); }
+function set(id, field, value, broadcast = true) { ctx.world.setComponentField(PREFIX + id, 'uiElement', field, value, broadcast); }
 function counts() {
   const s = ctx.self.getComponent('scriptState');
   const list = s && s.data && Array.isArray(s.data.counts) ? s.data.counts : [];
@@ -313,19 +332,24 @@ function draw() {
 return {
   tick(dt) {
     if (!ctx.world.isHost()) return;
+    poll(dt);
     wait -= dt;
     if (wait > 0) return;
     wait = 0.25;
     draw();
   },
   onUIEvent(event) {
+    if (event.remoteGuestId !== undefined) return;
     if (event.type !== 'press' || !event.slotId.startsWith(PREFIX)) return;
     const match = event.slotId.slice(PREFIX.length).match(/^button-(\d+)$/);
     if (!match) return;
-    const next = counts();
-    next[Number(match[1])] += 1;
-    ctx.world.setComponentField(SELF, 'scriptState', 'data', { counts: next });
-    draw();
+    const key = KEYS[Number(match[1])];
+    if (!key || sending || !ctx.world.isHost()) return;
+    sending = true;
+    return ctx.net.postJson('/api/feedback', { action: 'mood', key })
+      .then(() => refresh())
+      .catch((err) => set('status', 'text', err.message || 'Could not save your mood. Please try again.', true))
+      .finally(() => { sending = false; });
   }
 };
 `;
@@ -336,19 +360,46 @@ return {
 export const ROADMAP_STATUSES = {
 	shipped: { label: 'SHIPPED', color: '#15803d' },
 	progress: { label: 'IN PROGRESS', color: '#b45309' },
-	planned: { label: 'PLANNED', color: '#475569' }
+	planned: { label: 'PLANNED', color: '#475569' },
+	pending: { label: 'PENDING REVIEW', color: '#475569' }
 };
 
 /** A read-only list of what is planned, in progress and shipped. `entries` are `{ status, title }`. */
 export function roadmapSlots(slot, { id, name, subtitle, entries, position, rotation, worldWidth, parentId = null }) {
-	panelSlot(slot, { id, name, parentId, position, rotation, pixels: BOARD_PIXELS, worldWidth });
+	panelSlot(slot, { id, name, parentId, position, rotation, pixels: BOARD_PIXELS, worldWidth, components: [{ type: 'scriptState', data: { items: [] } }, { type: 'codeBlock', code: roadmapScript(`${id}-`) }] });
 	control(slot, `${id}-title`, `${name} Title`, id, { kind: 'text', text: 'ROADMAP', width: 1090, height: 64, fontSize: 42, fontWeight: 'bold', color: PALETTE.text });
 	control(slot, `${id}-subtitle`, `${name} Subtitle`, id, { kind: 'text', text: subtitle, width: 1090, height: 50, fontSize: 24, color: '#5eead4' });
 	for (const [i, entry] of entries.entries()) {
 		const status = ROADMAP_STATUSES[entry.status];
-		const row = control(slot, `${id}-row-${i}`, `${name} Row ${i + 1}`, id, { kind: 'container', flexDirection: 'row', gap: 12, width: 1090, height: 84, background: PALETTE.row }, 6);
+		const row = control(slot, `${id}-row-${i}`, `${name} Row ${i + 1}`, id, { kind: 'container', flexDirection: 'row', gap: 12, width: 1090, height: 84, background: PALETTE.row, visible: false }, 6);
 		const chip = control(slot, `${id}-status-${i}`, 'Status', row, { kind: 'container', width: 250, height: 84, background: status.color });
 		control(slot, `${id}-status-label-${i}`, 'Status Label', chip, { kind: 'text', width: 230, height: 84, text: status.label, fontSize: 26, fontWeight: 'bold', color: PALETTE.text });
 		control(slot, `${id}-text-${i}`, 'Entry', row, { kind: 'text', width: 810, height: 84, text: entry.title, fontSize: 28, color: PALETTE.text });
 	}
+	control(slot, `${id}-status`, `${name} Status`, id, { kind: 'text', text: 'Loading roadmap…', width: 1090, height: 50, fontSize: 22, color: PALETTE.muted });
+}
+
+function roadmapScript(prefix) {
+	return String.raw`
+const SELF = ctx.self.id;
+const PREFIX = ${JSON.stringify(prefix)};
+const STATUSES = ${JSON.stringify(ROADMAP_STATUSES)};
+let drawn = null;
+function set(id, field, value, broadcast = true) { ctx.world.setComponentField(PREFIX + id, 'uiElement', field, value, broadcast); }
+function draw() {
+  const items = ctx.self.getComponent('scriptState').data.items || [];
+  for (let i = 0; i < 6; i++) {
+    const item = items[i];
+    set('row-' + i, 'visible', !!item);
+    if (!item) continue;
+    const status = STATUSES[item.status] || STATUSES.pending;
+    set('status-' + i, 'background', status.color);
+    set('status-label-' + i, 'text', status.label);
+    set('text-' + i, 'text', item.title);
+  }
+  set('status', 'text', items.length ? 'Live development status' : 'No roadmap entries yet.');
+}
+${liveLoader('roadmap')}
+return { tick(dt) { if (ctx.world.isHost()) poll(dt); } };
+`;
 }

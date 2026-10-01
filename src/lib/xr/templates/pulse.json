@@ -2655,7 +2655,7 @@
 	{
 		"id": "pulse-name-frame",
 		"parentId": "pulse-arrival",
-		"name": "PULSE Sign Frame",
+		"name": "FEEDBACK CENTER Sign Frame",
 		"position": [
 			0,
 			3.7,
@@ -2686,7 +2686,7 @@
 	{
 		"id": "pulse-name",
 		"parentId": "pulse-arrival",
-		"name": "PULSE Sign",
+		"name": "FEEDBACK CENTER Sign",
 		"position": [
 			0,
 			3.7,
@@ -2714,7 +2714,7 @@
 			},
 			{
 				"type": "textDisplay",
-				"title": "PULSE",
+				"title": "FEEDBACK CENTER",
 				"lines": [
 					"The feedback center · your voice moves us"
 				],
@@ -3179,55 +3179,12 @@
 			{
 				"type": "scriptState",
 				"data": {
-					"items": [
-						{
-							"id": "idea-1",
-							"title": "Spatial voice chat",
-							"detail": "Idea  ·  sample",
-							"votes": 42
-						},
-						{
-							"id": "idea-2",
-							"title": "Worlds that stay saved for everyone",
-							"detail": "Idea  ·  sample",
-							"votes": 37
-						},
-						{
-							"id": "idea-3",
-							"title": "Customisable avatars and outfits",
-							"detail": "Idea  ·  sample",
-							"votes": 31
-						},
-						{
-							"id": "idea-4",
-							"title": "Mini-games to play with friends",
-							"detail": "Idea  ·  sample",
-							"votes": 24
-						},
-						{
-							"id": "idea-5",
-							"title": "A marketplace for player-made objects",
-							"detail": "Idea  ·  sample",
-							"votes": 19
-						},
-						{
-							"id": "idea-6",
-							"title": "Emotes and reactions",
-							"detail": "Idea  ·  sample",
-							"votes": 14
-						},
-						{
-							"id": "idea-7",
-							"title": "A photo mode for screenshots",
-							"detail": "Idea  ·  sample",
-							"votes": 8
-						}
-					]
+					"items": []
 				}
 			},
 			{
 				"type": "codeBlock",
-				"code": "\nconst SELF = ctx.self.id;\nconst PREFIX = \"pulse-ideas-board-\";\nconst ROWS = 5;\nconst NOUN = \"idea\";\nconst SETTLE_MS = 2000;\nlet drawn = null;\nlet order = [];\nlet view = [];\nlet lastVote = 0;\nlet unsorted = false;\nlet wait = 0;\n\nfunction set(id, field, value, broadcast = false) { ctx.world.setComponentField(PREFIX + id, 'uiElement', field, value, broadcast); }\nfunction state() { const s = ctx.self.getComponent('scriptState'); return s && s.data ? s.data : {}; }\nfunction items() { const list = state().items; return Array.isArray(list) ? list : []; }\nfunction ranked(list) { return list.map((item, i) => ({ item, i })).sort((a, b) => b.item.votes - a.item.votes || a.i - b.i).map((e) => e.item); }\n\n// Right after a vote the rows keep their places (so a second click lands on the same entry); they re-rank once votes stop.\nfunction draw() {\n  const list = items();\n  const signature = JSON.stringify(list);\n  const settling = Date.now() - lastVote < SETTLE_MS;\n  if (signature === drawn && (settling || !unsorted)) return;\n  drawn = signature;\n  const byId = new Map(list.map((item) => [item.id, item]));\n  const keep = settling && order.length > 0 && order.every((id) => byId.has(id));\n  if (!keep) order = ranked(list).slice(0, ROWS).map((item) => item.id);\n  unsorted = keep;\n  view = order.map((id) => byId.get(id));\n  for (let i = 0; i < ROWS; i++) {\n    const entry = view[i];\n    set('row-' + i, 'visible', !!entry);\n    if (!entry) continue;\n    set('score-' + i, 'text', String(entry.votes));\n    set('text-' + i, 'text', entry.title + (entry.detail ? '\\n' + entry.detail : ''));\n  }\n  const top = Math.min(list.length, ROWS);\n  set('status', 'text', list.length ? 'Top ' + top + ' of ' + list.length + ' ' + NOUN + (list.length === 1 ? '' : 's') + '  ·  vote to push the best to the top' : 'No ' + NOUN + 's yet. Be the first to send one!', true);\n}\n\nfunction vote(rank, delta) {\n  const entry = view[rank];\n  if (!entry) return;\n  const next = items().map((item) => (item.id === entry.id ? { ...item, votes: item.votes + delta } : item));\n  ctx.world.setComponentField(SELF, 'scriptState', 'data', { ...state(), items: next });\n  lastVote = Date.now();\n  draw();\n}\n\nreturn {\n  tick(dt) {\n    if (!ctx.world.isHost()) return;\n    wait -= dt;\n    if (wait > 0) return;\n    wait = 0.25;\n    draw();\n  },\n  onUIEvent(event) {\n    if (event.type !== 'press' || !event.slotId.startsWith(PREFIX)) return;\n    const match = event.slotId.slice(PREFIX.length).match(/^(up|down)-(\\d+)$/);\n    if (match) vote(Number(match[2]), match[1] === 'up' ? 1 : -1);\n  }\n};\n"
+				"code": "\nconst SELF = ctx.self.id;\nconst PREFIX = \"pulse-ideas-board-\";\nconst ROWS = 5;\nconst NOUN = \"idea\";\nconst SETTLE_MS = 2000;\nlet drawn = null;\nlet order = [];\nlet view = [];\nlet lastVote = 0;\nlet unsorted = false;\nlet wait = 0;\n\nlet loading = false;\nlet refreshIn = 0;\nasync function refresh() {\n  if (loading || !ctx.world.isHost()) return;\n  loading = true;\n  try {\n    const data = await ctx.net.fetchJson('/api/feedback');\n    const payload = { items: data.items.filter((item) => item.category !== \"bug\") };\n    ctx.world.setComponentField(SELF, 'scriptState', 'data', payload);\n    drawn = null;\n    draw();\n  } catch (err) { set('status', 'text', 'Could not load feedback. Retrying shortly.', true); }\n  finally { loading = false; }\n}\nfunction poll(dt) {\n  refreshIn -= dt;\n  if (refreshIn <= 0) { refreshIn = 10; void refresh(); }\n}\n\nfunction set(id, field, value, broadcast = true) { ctx.world.setComponentField(PREFIX + id, 'uiElement', field, value, broadcast); }\nfunction state() { const s = ctx.self.getComponent('scriptState'); return s && s.data ? s.data : {}; }\nfunction items() { const list = state().items; return Array.isArray(list) ? list : []; }\nfunction ranked(list) { return list.map((item, i) => ({ item, i })).sort((a, b) => b.item.votes - a.item.votes || a.i - b.i).map((e) => e.item); }\n\n// Right after a vote the rows keep their places (so a second click lands on the same entry); they re-rank once votes stop.\nfunction draw() {\n  const list = items();\n  const signature = JSON.stringify(list);\n  const settling = Date.now() - lastVote < SETTLE_MS;\n  if (signature === drawn && (settling || !unsorted)) return;\n  drawn = signature;\n  const byId = new Map(list.map((item) => [item.id, item]));\n  const keep = settling && order.length > 0 && order.every((id) => byId.has(id));\n  if (!keep) order = ranked(list).slice(0, ROWS).map((item) => item.id);\n  unsorted = keep;\n  view = order.map((id) => byId.get(id));\n  for (let i = 0; i < ROWS; i++) {\n    const entry = view[i];\n    set('row-' + i, 'visible', !!entry);\n    if (!entry) continue;\n    set('score-' + i, 'text', String(entry.votes));\n    set('text-' + i, 'text', entry.title + (entry.detail ? '\\n' + entry.detail : ''));\n  }\n  const top = Math.min(list.length, ROWS);\n  set('status', 'text', list.length ? 'Top ' + top + ' of ' + list.length + ' ' + NOUN + (list.length === 1 ? '' : 's') + '  ·  vote to push the best to the top' : 'No ' + NOUN + 's yet. Be the first to send one!', true);\n}\n\nlet sending = false;\nasync function vote(rank, delta) {\n  const entry = view[rank];\n  if (!entry || sending || !ctx.world.isHost()) return;\n  sending = true;\n  try {\n    await ctx.net.postJson('/api/feedback', { action: 'vote', id: entry.id, delta });\n    lastVote = Date.now();\n    await refresh();\n  } catch (err) { set('status', 'text', err.message || 'Vote failed. Please try again.', true); }\n  finally { sending = false; }\n}\n\nreturn {\n  tick(dt) {\n    if (!ctx.world.isHost()) return;\n    poll(dt);\n    wait -= dt;\n    if (wait > 0) return;\n    wait = 0.25;\n    draw();\n  },\n  onUIEvent(event) {\n    if (event.remoteGuestId !== undefined) return;\n    if (event.type !== 'press' || !event.slotId.startsWith(PREFIX)) return;\n    const match = event.slotId.slice(PREFIX.length).match(/^(up|down)-(\\d+)$/);\n    if (match) return vote(Number(match[2]), match[1] === 'up' ? 1 : -1);\n  }\n};\n"
 			}
 		]
 	},
@@ -3288,7 +3245,7 @@
 			{
 				"type": "uiElement",
 				"kind": "text",
-				"text": "What should we build next? Sample ideas until live ones arrive.",
+				"text": "What should we build next? Live ideas from players.",
 				"width": 1090,
 				"height": 50,
 				"fontSize": 24,
@@ -4307,49 +4264,12 @@
 			{
 				"type": "scriptState",
 				"data": {
-					"items": [
-						{
-							"id": "bug-1",
-							"title": "Hands sink into the floor after teleporting",
-							"detail": "Bug  ·  sample",
-							"votes": 28
-						},
-						{
-							"id": "bug-2",
-							"title": "The keyboard sometimes opens twice",
-							"detail": "Bug  ·  sample",
-							"votes": 21
-						},
-						{
-							"id": "bug-3",
-							"title": "Panels flicker when seen from far away",
-							"detail": "Bug  ·  sample",
-							"votes": 17
-						},
-						{
-							"id": "bug-4",
-							"title": "Grabbed objects drift on a slow connection",
-							"detail": "Bug  ·  sample",
-							"votes": 12
-						},
-						{
-							"id": "bug-5",
-							"title": "Long names get cut off on scoreboards",
-							"detail": "Bug  ·  sample",
-							"votes": 6
-						},
-						{
-							"id": "bug-6",
-							"title": "The menu can open behind a wall",
-							"detail": "Bug  ·  sample",
-							"votes": 3
-						}
-					]
+					"items": []
 				}
 			},
 			{
 				"type": "codeBlock",
-				"code": "\nconst SELF = ctx.self.id;\nconst PREFIX = \"pulse-bugs-board-\";\nconst ROWS = 5;\nconst NOUN = \"bug\";\nconst SETTLE_MS = 2000;\nlet drawn = null;\nlet order = [];\nlet view = [];\nlet lastVote = 0;\nlet unsorted = false;\nlet wait = 0;\n\nfunction set(id, field, value, broadcast = false) { ctx.world.setComponentField(PREFIX + id, 'uiElement', field, value, broadcast); }\nfunction state() { const s = ctx.self.getComponent('scriptState'); return s && s.data ? s.data : {}; }\nfunction items() { const list = state().items; return Array.isArray(list) ? list : []; }\nfunction ranked(list) { return list.map((item, i) => ({ item, i })).sort((a, b) => b.item.votes - a.item.votes || a.i - b.i).map((e) => e.item); }\n\n// Right after a vote the rows keep their places (so a second click lands on the same entry); they re-rank once votes stop.\nfunction draw() {\n  const list = items();\n  const signature = JSON.stringify(list);\n  const settling = Date.now() - lastVote < SETTLE_MS;\n  if (signature === drawn && (settling || !unsorted)) return;\n  drawn = signature;\n  const byId = new Map(list.map((item) => [item.id, item]));\n  const keep = settling && order.length > 0 && order.every((id) => byId.has(id));\n  if (!keep) order = ranked(list).slice(0, ROWS).map((item) => item.id);\n  unsorted = keep;\n  view = order.map((id) => byId.get(id));\n  for (let i = 0; i < ROWS; i++) {\n    const entry = view[i];\n    set('row-' + i, 'visible', !!entry);\n    if (!entry) continue;\n    set('score-' + i, 'text', String(entry.votes));\n    set('text-' + i, 'text', entry.title + (entry.detail ? '\\n' + entry.detail : ''));\n  }\n  const top = Math.min(list.length, ROWS);\n  set('status', 'text', list.length ? 'Top ' + top + ' of ' + list.length + ' ' + NOUN + (list.length === 1 ? '' : 's') + '  ·  vote to push the best to the top' : 'No ' + NOUN + 's yet. Be the first to send one!', true);\n}\n\nfunction vote(rank, delta) {\n  const entry = view[rank];\n  if (!entry) return;\n  const next = items().map((item) => (item.id === entry.id ? { ...item, votes: item.votes + delta } : item));\n  ctx.world.setComponentField(SELF, 'scriptState', 'data', { ...state(), items: next });\n  lastVote = Date.now();\n  draw();\n}\n\nreturn {\n  tick(dt) {\n    if (!ctx.world.isHost()) return;\n    wait -= dt;\n    if (wait > 0) return;\n    wait = 0.25;\n    draw();\n  },\n  onUIEvent(event) {\n    if (event.type !== 'press' || !event.slotId.startsWith(PREFIX)) return;\n    const match = event.slotId.slice(PREFIX.length).match(/^(up|down)-(\\d+)$/);\n    if (match) vote(Number(match[2]), match[1] === 'up' ? 1 : -1);\n  }\n};\n"
+				"code": "\nconst SELF = ctx.self.id;\nconst PREFIX = \"pulse-bugs-board-\";\nconst ROWS = 5;\nconst NOUN = \"bug\";\nconst SETTLE_MS = 2000;\nlet drawn = null;\nlet order = [];\nlet view = [];\nlet lastVote = 0;\nlet unsorted = false;\nlet wait = 0;\n\nlet loading = false;\nlet refreshIn = 0;\nasync function refresh() {\n  if (loading || !ctx.world.isHost()) return;\n  loading = true;\n  try {\n    const data = await ctx.net.fetchJson('/api/feedback');\n    const payload = { items: data.items.filter((item) => item.category === \"bug\") };\n    ctx.world.setComponentField(SELF, 'scriptState', 'data', payload);\n    drawn = null;\n    draw();\n  } catch (err) { set('status', 'text', 'Could not load feedback. Retrying shortly.', true); }\n  finally { loading = false; }\n}\nfunction poll(dt) {\n  refreshIn -= dt;\n  if (refreshIn <= 0) { refreshIn = 10; void refresh(); }\n}\n\nfunction set(id, field, value, broadcast = true) { ctx.world.setComponentField(PREFIX + id, 'uiElement', field, value, broadcast); }\nfunction state() { const s = ctx.self.getComponent('scriptState'); return s && s.data ? s.data : {}; }\nfunction items() { const list = state().items; return Array.isArray(list) ? list : []; }\nfunction ranked(list) { return list.map((item, i) => ({ item, i })).sort((a, b) => b.item.votes - a.item.votes || a.i - b.i).map((e) => e.item); }\n\n// Right after a vote the rows keep their places (so a second click lands on the same entry); they re-rank once votes stop.\nfunction draw() {\n  const list = items();\n  const signature = JSON.stringify(list);\n  const settling = Date.now() - lastVote < SETTLE_MS;\n  if (signature === drawn && (settling || !unsorted)) return;\n  drawn = signature;\n  const byId = new Map(list.map((item) => [item.id, item]));\n  const keep = settling && order.length > 0 && order.every((id) => byId.has(id));\n  if (!keep) order = ranked(list).slice(0, ROWS).map((item) => item.id);\n  unsorted = keep;\n  view = order.map((id) => byId.get(id));\n  for (let i = 0; i < ROWS; i++) {\n    const entry = view[i];\n    set('row-' + i, 'visible', !!entry);\n    if (!entry) continue;\n    set('score-' + i, 'text', String(entry.votes));\n    set('text-' + i, 'text', entry.title + (entry.detail ? '\\n' + entry.detail : ''));\n  }\n  const top = Math.min(list.length, ROWS);\n  set('status', 'text', list.length ? 'Top ' + top + ' of ' + list.length + ' ' + NOUN + (list.length === 1 ? '' : 's') + '  ·  vote to push the best to the top' : 'No ' + NOUN + 's yet. Be the first to send one!', true);\n}\n\nlet sending = false;\nasync function vote(rank, delta) {\n  const entry = view[rank];\n  if (!entry || sending || !ctx.world.isHost()) return;\n  sending = true;\n  try {\n    await ctx.net.postJson('/api/feedback', { action: 'vote', id: entry.id, delta });\n    lastVote = Date.now();\n    await refresh();\n  } catch (err) { set('status', 'text', err.message || 'Vote failed. Please try again.', true); }\n  finally { sending = false; }\n}\n\nreturn {\n  tick(dt) {\n    if (!ctx.world.isHost()) return;\n    poll(dt);\n    wait -= dt;\n    if (wait > 0) return;\n    wait = 0.25;\n    draw();\n  },\n  onUIEvent(event) {\n    if (event.remoteGuestId !== undefined) return;\n    if (event.type !== 'press' || !event.slotId.startsWith(PREFIX)) return;\n    const match = event.slotId.slice(PREFIX.length).match(/^(up|down)-(\\d+)$/);\n    if (match) return vote(Number(match[2]), match[1] === 'up' ? 1 : -1);\n  }\n};\n"
 			}
 		]
 	},
@@ -4410,7 +4330,7 @@
 			{
 				"type": "uiElement",
 				"kind": "text",
-				"text": "What should we fix first? Sample bugs until live ones arrive.",
+				"text": "What should we fix first? Live bug reports from players.",
 				"width": 1090,
 				"height": 50,
 				"fontSize": 24,
@@ -5425,6 +5345,16 @@
 				"worldWidth": 4.2,
 				"background": "#0b1224",
 				"mirrorX": true
+			},
+			{
+				"type": "scriptState",
+				"data": {
+					"items": []
+				}
+			},
+			{
+				"type": "codeBlock",
+				"code": "\nconst SELF = ctx.self.id;\nconst PREFIX = \"pulse-roadmap-board-\";\nconst STATUSES = {\"shipped\":{\"label\":\"SHIPPED\",\"color\":\"#15803d\"},\"progress\":{\"label\":\"IN PROGRESS\",\"color\":\"#b45309\"},\"planned\":{\"label\":\"PLANNED\",\"color\":\"#475569\"},\"pending\":{\"label\":\"PENDING REVIEW\",\"color\":\"#475569\"}};\nlet drawn = null;\nfunction set(id, field, value, broadcast = true) { ctx.world.setComponentField(PREFIX + id, 'uiElement', field, value, broadcast); }\nfunction draw() {\n  const items = ctx.self.getComponent('scriptState').data.items || [];\n  for (let i = 0; i < 6; i++) {\n    const item = items[i];\n    set('row-' + i, 'visible', !!item);\n    if (!item) continue;\n    const status = STATUSES[item.status] || STATUSES.pending;\n    set('status-' + i, 'background', status.color);\n    set('status-label-' + i, 'text', status.label);\n    set('text-' + i, 'text', item.title);\n  }\n  set('status', 'text', items.length ? 'Live development status' : 'No roadmap entries yet.');\n}\n\nlet loading = false;\nlet refreshIn = 0;\nasync function refresh() {\n  if (loading || !ctx.world.isHost()) return;\n  loading = true;\n  try {\n    const data = await ctx.net.fetchJson('/api/feedback');\n    const payload = { items: data.items.filter((item) => item.category !== \"bug\" && item.status !== \"pending\").slice(0, 6) };\n    ctx.world.setComponentField(SELF, 'scriptState', 'data', payload);\n    drawn = null;\n    draw();\n  } catch (err) { set('status', 'text', 'Could not load feedback. Retrying shortly.', true); }\n  finally { loading = false; }\n}\nfunction poll(dt) {\n  refreshIn -= dt;\n  if (refreshIn <= 0) { refreshIn = 10; void refresh(); }\n}\n\nreturn { tick(dt) { if (ctx.world.isHost()) poll(dt); } };\n"
 			}
 		]
 	},
@@ -5485,7 +5415,7 @@
 			{
 				"type": "uiElement",
 				"kind": "text",
-				"text": "Where things stand. Sample entries for now.",
+				"text": "Live status of player suggestions.",
 				"width": 1090,
 				"height": 50,
 				"fontSize": 24,
@@ -5522,6 +5452,7 @@
 				"width": 1090,
 				"height": 84,
 				"background": "#172036",
+				"visible": false,
 				"margin": 6
 			}
 		]
@@ -5552,7 +5483,7 @@
 				"kind": "container",
 				"width": 250,
 				"height": 84,
-				"background": "#15803d"
+				"background": "#475569"
 			}
 		]
 	},
@@ -5582,7 +5513,7 @@
 				"kind": "text",
 				"width": 230,
 				"height": 84,
-				"text": "SHIPPED",
+				"text": "PLANNED",
 				"fontSize": 26,
 				"fontWeight": "bold",
 				"color": "#f8fafc"
@@ -5615,7 +5546,7 @@
 				"kind": "text",
 				"width": 810,
 				"height": 84,
-				"text": "Poly Haven model browser",
+				"text": "",
 				"fontSize": 28,
 				"color": "#f8fafc"
 			}
@@ -5650,6 +5581,7 @@
 				"width": 1090,
 				"height": 84,
 				"background": "#172036",
+				"visible": false,
 				"margin": 6
 			}
 		]
@@ -5680,7 +5612,7 @@
 				"kind": "container",
 				"width": 250,
 				"height": 84,
-				"background": "#15803d"
+				"background": "#475569"
 			}
 		]
 	},
@@ -5710,7 +5642,7 @@
 				"kind": "text",
 				"width": 230,
 				"height": 84,
-				"text": "SHIPPED",
+				"text": "PLANNED",
 				"fontSize": 26,
 				"fontWeight": "bold",
 				"color": "#f8fafc"
@@ -5743,7 +5675,7 @@
 				"kind": "text",
 				"width": 810,
 				"height": 84,
-				"text": "Pop Up Store world",
+				"text": "",
 				"fontSize": 28,
 				"color": "#f8fafc"
 			}
@@ -5778,6 +5710,7 @@
 				"width": 1090,
 				"height": 84,
 				"background": "#172036",
+				"visible": false,
 				"margin": 6
 			}
 		]
@@ -5808,7 +5741,7 @@
 				"kind": "container",
 				"width": 250,
 				"height": 84,
-				"background": "#b45309"
+				"background": "#475569"
 			}
 		]
 	},
@@ -5838,7 +5771,7 @@
 				"kind": "text",
 				"width": 230,
 				"height": 84,
-				"text": "IN PROGRESS",
+				"text": "PLANNED",
 				"fontSize": 26,
 				"fontWeight": "bold",
 				"color": "#f8fafc"
@@ -5871,7 +5804,7 @@
 				"kind": "text",
 				"width": 810,
 				"height": 84,
-				"text": "Feedback boards with real player data",
+				"text": "",
 				"fontSize": 28,
 				"color": "#f8fafc"
 			}
@@ -5906,6 +5839,7 @@
 				"width": 1090,
 				"height": 84,
 				"background": "#172036",
+				"visible": false,
 				"margin": 6
 			}
 		]
@@ -5936,7 +5870,7 @@
 				"kind": "container",
 				"width": 250,
 				"height": 84,
-				"background": "#b45309"
+				"background": "#475569"
 			}
 		]
 	},
@@ -5966,7 +5900,7 @@
 				"kind": "text",
 				"width": 230,
 				"height": 84,
-				"text": "IN PROGRESS",
+				"text": "PLANNED",
 				"fontSize": 26,
 				"fontWeight": "bold",
 				"color": "#f8fafc"
@@ -5999,7 +5933,7 @@
 				"kind": "text",
 				"width": 810,
 				"height": 84,
-				"text": "Avatars and outfits",
+				"text": "",
 				"fontSize": 28,
 				"color": "#f8fafc"
 			}
@@ -6034,6 +5968,7 @@
 				"width": 1090,
 				"height": 84,
 				"background": "#172036",
+				"visible": false,
 				"margin": 6
 			}
 		]
@@ -6127,7 +6062,7 @@
 				"kind": "text",
 				"width": 810,
 				"height": 84,
-				"text": "Worlds that stay saved for everyone",
+				"text": "",
 				"fontSize": 28,
 				"color": "#f8fafc"
 			}
@@ -6162,6 +6097,7 @@
 				"width": 1090,
 				"height": 84,
 				"background": "#172036",
+				"visible": false,
 				"margin": 6
 			}
 		]
@@ -6255,9 +6191,41 @@
 				"kind": "text",
 				"width": 810,
 				"height": 84,
-				"text": "Spatial voice chat",
+				"text": "",
 				"fontSize": 28,
 				"color": "#f8fafc"
+			}
+		]
+	},
+	{
+		"id": "pulse-roadmap-board-status",
+		"parentId": "pulse-roadmap-board",
+		"name": "Roadmap Board Status",
+		"position": [
+			0,
+			0,
+			0
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "uiElement",
+				"kind": "text",
+				"text": "Loading roadmap…",
+				"width": 1090,
+				"height": 50,
+				"fontSize": 22,
+				"color": "#94a3b8"
 			}
 		]
 	},
@@ -6609,7 +6577,7 @@
 			},
 			{
 				"type": "codeBlock",
-				"code": "\nconst PREFIX = \"pulse-suggestion-box-\";\nconst BOARDS = {\"idea\":\"pulse-ideas-board\",\"bug\":\"pulse-bugs-board\",\"other\":\"pulse-ideas-board\"};\nconst LABELS = {\"idea\":\"Idea\",\"bug\":\"Bug\",\"other\":\"Other\"};\nconst ACTIVE = \"#0d9488\";\nconst IDLE = \"#475569\";\nconst MIN_LENGTH = 4;\nconst MAX_LENGTH = 80;\nconst MAX_ENTRIES = 40;\nconst COOLDOWN_MS = 2000;\nlet category = \"idea\";\nlet typed = '';\nlet lastSent = 0;\n\nfunction set(id, field, value, broadcast = false) { ctx.world.setComponentField(PREFIX + id, 'uiElement', field, value, broadcast); }\nfunction status(message) { set('status', 'text', message, true); }\n\nfunction choose(key) {\n  category = key;\n  for (const other of Object.keys(LABELS)) set('category-' + other, 'background', other === key ? ACTIVE : IDLE);\n  status('Sending ' + (key === 'idea' ? 'an idea' : key === 'bug' ? 'a bug report' : 'something else') + '.');\n}\n\nfunction send() {\n  if (Date.now() - lastSent < COOLDOWN_MS) return;\n  const text = (typed || ctx.ui.getInputText(PREFIX + 'input') || '').trim().replace(/\\s+/g, ' ');\n  if (text.length < MIN_LENGTH) return status('Write a few more words first.');\n  const board = ctx.hierarchy.getSlot(BOARDS[category]);\n  const data = board && board.components.find((c) => c.type === 'scriptState');\n  if (!data) return status('That board is not here right now.');\n  lastSent = Date.now();\n  const title = text.slice(0, MAX_LENGTH);\n  const list = Array.isArray(data.data.items) ? data.data.items : [];\n  const same = list.find((item) => item.title.toLowerCase() === title.toLowerCase());\n  let next;\n  if (same) {\n    next = list.map((item) => (item === same ? { ...item, votes: item.votes + 1 } : item));\n    status('That is already on the board, so it got your vote.');\n  } else {\n    next = [...list, { id: crypto.randomUUID(), title, detail: LABELS[category] + '  ·  new', votes: 1 }];\n    // A full board drops its least-voted (and oldest) entry.\n    if (next.length > MAX_ENTRIES) {\n      const lowest = Math.min(...next.map((item) => item.votes));\n      next.splice(next.findIndex((item) => item.votes === lowest), 1);\n    }\n    status('Thanks! Your ' + LABELS[category].toLowerCase() + ' is on the board.');\n  }\n  ctx.world.setComponentField(BOARDS[category], 'scriptState', 'data', { ...data.data, items: next });\n  typed = '';\n  set('input', 'text', '');\n}\n\nreturn {\n  onUIEvent(event) {\n    if (!event.slotId.startsWith(PREFIX)) return;\n    const id = event.slotId.slice(PREFIX.length);\n    if (id === 'input' && (event.type === 'change' || event.type === 'submit')) {\n      typed = event.text || '';\n      if (event.type === 'submit') send();\n      return;\n    }\n    if (event.type !== 'press') return;\n    if (id === 'send') send();\n    else if (id.startsWith('category-') && LABELS[id.slice(9)]) choose(id.slice(9));\n  }\n};\n"
+				"code": "\nconst PREFIX = \"pulse-suggestion-box-\";\nconst LABELS = {\"idea\":\"Idea\",\"bug\":\"Bug\",\"other\":\"Other\"};\nconst ACTIVE = \"#0d9488\";\nconst IDLE = \"#475569\";\nconst MIN_LENGTH = 4;\nconst MAX_LENGTH = 80;\nconst COOLDOWN_MS = 2000;\nlet category = \"idea\";\nlet typed = '';\nlet lastSent = 0;\nlet sending = false;\n\nfunction set(id, field, value, broadcast = true) { ctx.world.setComponentField(PREFIX + id, 'uiElement', field, value, broadcast); }\nfunction status(message) { set('status', 'text', message, true); }\n\nfunction choose(key) {\n  category = key;\n  for (const other of Object.keys(LABELS)) set('category-' + other, 'background', other === key ? ACTIVE : IDLE);\n  status('Sending ' + (key === 'idea' ? 'an idea' : key === 'bug' ? 'a bug report' : 'something else') + '.');\n}\n\nasync function send() {\n  if (!ctx.world.isHost() || sending || Date.now() - lastSent < COOLDOWN_MS) return;\n  const text = (typed || ctx.ui.getInputText(PREFIX + 'input') || '').trim().replace(/\\s+/g, ' ');\n  if (text.length < MIN_LENGTH) return status('Write a few more words first.');\n  if (text.length > MAX_LENGTH) return status('Use at most 80 characters.');\n  sending = true;\n  status('Sending…');\n  try {\n    await ctx.net.postJson('/api/feedback', { action: 'suggest', category, title: text });\n    lastSent = Date.now();\n    typed = '';\n    set('input', 'text', '', true);\n    status('Thanks! Your feedback was saved.');\n  } catch (err) { status(err.message || 'Could not send feedback. Please try again.'); }\n  finally { sending = false; }\n}\n\nreturn {\n  onUIEvent(event) {\n    if (event.remoteGuestId !== undefined) return;\n    if (!event.slotId.startsWith(PREFIX)) return;\n    const id = event.slotId.slice(PREFIX.length);\n    if (id === 'input' && (event.type === 'change' || event.type === 'submit')) {\n      typed = event.text || '';\n      if (event.type === 'submit') return send();\n      return;\n    }\n    if (event.type !== 'press') return;\n    if (id === 'send') return send();\n    else if (id.startsWith('category-') && LABELS[id.slice(9)]) choose(id.slice(9));\n  }\n};\n"
 			}
 		]
 	},
@@ -7097,16 +7065,16 @@
 				"type": "scriptState",
 				"data": {
 					"counts": [
-						24,
-						41,
-						12,
-						5
+						0,
+						0,
+						0,
+						0
 					]
 				}
 			},
 			{
 				"type": "codeBlock",
-				"code": "\nconst SELF = ctx.self.id;\nconst PREFIX = \"pulse-mood-wall-\";\nconst MOODS = 4;\nconst BAR = 500;\nlet drawn = null;\nlet wait = 0;\n\nfunction set(id, field, value, broadcast = false) { ctx.world.setComponentField(PREFIX + id, 'uiElement', field, value, broadcast); }\nfunction counts() {\n  const s = ctx.self.getComponent('scriptState');\n  const list = s && s.data && Array.isArray(s.data.counts) ? s.data.counts : [];\n  return Array.from({ length: MOODS }, (_, i) => Number(list[i]) || 0);\n}\n\nfunction draw() {\n  const list = counts();\n  const signature = list.join(',');\n  if (signature === drawn) return;\n  drawn = signature;\n  const total = list.reduce((sum, n) => sum + n, 0);\n  const most = Math.max(1, ...list);\n  list.forEach((n, i) => {\n    set('fill-' + i, 'width', Math.max(8, Math.round((BAR * n) / most)));\n    set('count-' + i, 'text', n + (total ? '  (' + Math.round((100 * n) / total) + '%)' : ''));\n  });\n  set('status', 'text', total ? total + ' votes so far  ·  thanks for telling us' : 'No votes yet.', true);\n}\n\nreturn {\n  tick(dt) {\n    if (!ctx.world.isHost()) return;\n    wait -= dt;\n    if (wait > 0) return;\n    wait = 0.25;\n    draw();\n  },\n  onUIEvent(event) {\n    if (event.type !== 'press' || !event.slotId.startsWith(PREFIX)) return;\n    const match = event.slotId.slice(PREFIX.length).match(/^button-(\\d+)$/);\n    if (!match) return;\n    const next = counts();\n    next[Number(match[1])] += 1;\n    ctx.world.setComponentField(SELF, 'scriptState', 'data', { counts: next });\n    draw();\n  }\n};\n"
+				"code": "\nconst SELF = ctx.self.id;\nconst PREFIX = \"pulse-mood-wall-\";\nconst MOODS = 4;\nconst BAR = 500;\nlet drawn = null;\nlet wait = 0;\n\nlet loading = false;\nlet refreshIn = 0;\nasync function refresh() {\n  if (loading || !ctx.world.isHost()) return;\n  loading = true;\n  try {\n    const data = await ctx.net.fetchJson('/api/feedback');\n    const payload = { counts: data.counts };\n    ctx.world.setComponentField(SELF, 'scriptState', 'data', payload);\n    drawn = null;\n    draw();\n  } catch (err) { set('status', 'text', 'Could not load feedback. Retrying shortly.', true); }\n  finally { loading = false; }\n}\nfunction poll(dt) {\n  refreshIn -= dt;\n  if (refreshIn <= 0) { refreshIn = 10; void refresh(); }\n}\n\nlet sending = false;\nconst KEYS = [\"loving\",\"good\",\"meh\",\"needs-work\"];\n\nfunction set(id, field, value, broadcast = true) { ctx.world.setComponentField(PREFIX + id, 'uiElement', field, value, broadcast); }\nfunction counts() {\n  const s = ctx.self.getComponent('scriptState');\n  const list = s && s.data && Array.isArray(s.data.counts) ? s.data.counts : [];\n  return Array.from({ length: MOODS }, (_, i) => Number(list[i]) || 0);\n}\n\nfunction draw() {\n  const list = counts();\n  const signature = list.join(',');\n  if (signature === drawn) return;\n  drawn = signature;\n  const total = list.reduce((sum, n) => sum + n, 0);\n  const most = Math.max(1, ...list);\n  list.forEach((n, i) => {\n    set('fill-' + i, 'width', Math.max(8, Math.round((BAR * n) / most)));\n    set('count-' + i, 'text', n + (total ? '  (' + Math.round((100 * n) / total) + '%)' : ''));\n  });\n  set('status', 'text', total ? total + ' votes so far  ·  thanks for telling us' : 'No votes yet.', true);\n}\n\nreturn {\n  tick(dt) {\n    if (!ctx.world.isHost()) return;\n    poll(dt);\n    wait -= dt;\n    if (wait > 0) return;\n    wait = 0.25;\n    draw();\n  },\n  onUIEvent(event) {\n    if (event.remoteGuestId !== undefined) return;\n    if (event.type !== 'press' || !event.slotId.startsWith(PREFIX)) return;\n    const match = event.slotId.slice(PREFIX.length).match(/^button-(\\d+)$/);\n    if (!match) return;\n    const key = KEYS[Number(match[1])];\n    if (!key || sending || !ctx.world.isHost()) return;\n    sending = true;\n    return ctx.net.postJson('/api/feedback', { action: 'mood', key })\n      .then(() => refresh())\n      .catch((err) => set('status', 'text', err.message || 'Could not save your mood. Please try again.', true))\n      .finally(() => { sending = false; });\n  }\n};\n"
 			}
 		]
 	},

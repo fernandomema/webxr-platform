@@ -1,6 +1,6 @@
-// Builds src/lib/xr/templates/pulse.json: Pulse, an indoor feedback center where players speak up. Screens at the far end
+// Builds src/lib/xr/templates/pulse.json: Feedback Center, an indoor space where players speak up. Screens at the far end
 // of the hall show the ideas and bugs players want worked on, each with an up and a down button to vote; a suggestion desk
-// and a mood wall let anyone add their own voice (see feedback-board.mjs). The entries are samples for now.
+// and a mood wall let anyone add their own voice (see feedback-board.mjs). The screens use persistent feedback APIs.
 // Run with `node scripts/generate-pulse.mjs`.
 //
 // The player arrives on a glowing pad just inside the hall, looking down its long axis (towards -Z; +X is on their left).
@@ -103,7 +103,7 @@ box('pulse-runner', 'Runner', 'pulse-arrival', [0, 0.006, -8.5], [3.2, 0.01, 18]
 for (const side of [LEFT, RIGHT]) box(`pulse-runner-edge-${side === LEFT ? 'l' : 'r'}`, 'Runner Edge', 'pulse-arrival', [side * 1.65, 0.012, -8.5], [0.06, 0.012, 18], COLORS.glow, true);
 
 // The name, big, on the entrance wall behind the arrival pad, and what to do on the side walls.
-sign('pulse-name', 'pulse-arrival', [0, 3.7, FRONT - WALL / 2 - 0.03], [8, 1.9], '-z', { title: 'PULSE', lines: ['The feedback center · your voice moves us'], scale: 2.4 }, COLORS.glow, '#0b1224');
+sign('pulse-name', 'pulse-arrival', [0, 3.7, FRONT - WALL / 2 - 0.03], [8, 1.9], '-z', { title: 'FEEDBACK CENTER', lines: ['The feedback center · your voice moves us'], scale: 2.4 }, COLORS.glow, '#0b1224');
 sign('pulse-how-vote', 'pulse-arrival', [LEFT * (INNER - 0.05), 3, -1], [2.6, 1.6], '-x', { title: 'VOTE', lines: ['Tap ▲ or ▼ on the boards', 'ahead to push ideas and bugs', 'up or down.'] }, COLORS.idea, '#0b1224');
 sign('pulse-how-speak', 'pulse-arrival', [RIGHT * (INNER - 0.05), 3, -1], [2.6, 1.6], '+x', { title: 'SPEAK UP', lines: ['Send your own idea or bug', 'at the desk, or tell us how', 'you feel at the mood wall.'] }, COLORS.bug, '#0b1224');
 
@@ -139,25 +139,6 @@ function mount(id, name, parentId, position, angle, worldWidth, height, floorY) 
 	}
 }
 
-const ideas = [
-	['Spatial voice chat', 42],
-	['Worlds that stay saved for everyone', 37],
-	['Customisable avatars and outfits', 31],
-	['Mini-games to play with friends', 24],
-	['A marketplace for player-made objects', 19],
-	['Emotes and reactions', 14],
-	['A photo mode for screenshots', 8]
-];
-const bugs = [
-	['Hands sink into the floor after teleporting', 28],
-	['The keyboard sometimes opens twice', 21],
-	['Panels flicker when seen from far away', 17],
-	['Grabbed objects drift on a slow connection', 12],
-	['Long names get cut off on scoreboards', 6],
-	['The menu can open behind a wall', 3]
-];
-const seed = (list, tag) => list.map(([title, votes], i) => ({ id: `${tag}-${i + 1}`, title, detail: `${tag === 'idea' ? 'Idea' : 'Bug'}  ·  sample`, votes }));
-
 const centre = { worldWidth: 5.2, y: STAGE_TOP + BOARD_BOTTOM + heightOf(5.2, BOARD_PIXELS) / 2, z: -22.2 };
 const side = { worldWidth: 4.2, y: STAGE_TOP + BOARD_BOTTOM + heightOf(4.2, BOARD_PIXELS) / 2, x: 9.4, z: -21, angle: 0.4 };
 
@@ -167,10 +148,10 @@ votingBoardSlots(slot, {
 	name: 'Ideas Board',
 	parentId: 'pulse-boards',
 	title: 'TOP IDEAS',
-	subtitle: 'What should we build next? Sample ideas until live ones arrive.',
+	subtitle: 'What should we build next? Live ideas from players.',
 	noun: 'idea',
 	accent: COLORS.idea,
-	items: seed(ideas, 'idea'),
+	items: [],
 	position: [0, centre.y, centre.z],
 	worldWidth: centre.worldWidth
 });
@@ -181,10 +162,10 @@ votingBoardSlots(slot, {
 	name: 'Bugs Board',
 	parentId: 'pulse-boards',
 	title: 'BUG TRACKER',
-	subtitle: 'What should we fix first? Sample bugs until live ones arrive.',
+	subtitle: 'What should we fix first? Live bug reports from players.',
 	noun: 'bug',
 	accent: COLORS.bug,
-	items: seed(bugs, 'bug'),
+	items: [],
 	position: [LEFT * side.x, side.y, side.z],
 	rotation: yaw(-LEFT * side.angle),
 	worldWidth: side.worldWidth
@@ -195,15 +176,8 @@ roadmapSlots(slot, {
 	id: 'pulse-roadmap-board',
 	name: 'Roadmap Board',
 	parentId: 'pulse-boards',
-	subtitle: 'Where things stand. Sample entries for now.',
-	entries: [
-		{ status: 'shipped', title: 'Poly Haven model browser' },
-		{ status: 'shipped', title: 'Pop Up Store world' },
-		{ status: 'progress', title: 'Feedback boards with real player data' },
-		{ status: 'progress', title: 'Avatars and outfits' },
-		{ status: 'planned', title: 'Worlds that stay saved for everyone' },
-		{ status: 'planned', title: 'Spatial voice chat' }
-	],
+	subtitle: 'Live status of player suggestions.',
+	entries: Array.from({ length: 6 }, () => ({ status: 'planned', title: '' })),
 	position: [RIGHT * side.x, side.y, side.z],
 	rotation: yaw(-RIGHT * side.angle),
 	worldWidth: side.worldWidth
@@ -234,7 +208,6 @@ suggestionBoxSlots(slot, {
 	id: 'pulse-suggestion-box',
 	name: 'Suggestion Desk',
 	parentId: 'pulse-desks',
-	boards: { idea: 'pulse-ideas-board', bug: 'pulse-bugs-board', other: 'pulse-ideas-board' },
 	position: suggest.position,
 	rotation: suggest.rotation,
 	worldWidth: suggest.worldWidth
@@ -245,7 +218,7 @@ moodWallSlots(slot, {
 	id: 'pulse-mood-wall',
 	name: 'Mood Wall',
 	parentId: 'pulse-desks',
-	counts: [24, 41, 12, 5].slice(0, MOODS.length),
+	counts: MOODS.map(() => 0),
 	position: mood.position,
 	rotation: mood.rotation,
 	worldWidth: mood.worldWidth

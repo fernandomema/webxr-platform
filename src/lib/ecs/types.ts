@@ -312,6 +312,8 @@ export interface UIElementComponent {
 
 /** A user interaction with a UI element. Delivered to the element's codeBlock and every ancestor's `onUIEvent`, on the host. */
 export interface UIEvent {
+	/** Set by the host for events forwarded by a guest. */
+	remoteGuestId?: string;
 	type: 'press' | 'change' | 'submit';
 	slotId: string;
 	/** `input` only: the field's current text. */

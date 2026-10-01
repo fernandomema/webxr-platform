@@ -1,3 +1,4 @@
+import { requestScriptJson } from './scriptNet';
 import { Vector3, Quaternion, type TransformNode } from '@babylonjs/core';
 import type { Slot, UIEvent, Vec3, Quat } from '$lib/ecs/types';
 import type { UIMediaState } from './uiPanelSurface';
@@ -323,18 +324,10 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 			}
 		},
 		net: {
-			/** GET a JSON document over https. Rejects on a network/HTTP error or a non-JSON body. Runs on whichever peer calls it, so gate shared work behind `world.isHost()`. */
-			fetchJson: async (url: string): Promise<unknown> => {
-				const parsed = new URL(url);
-				if (parsed.protocol !== 'https:') throw new Error('net.fetchJson only allows https URLs');
-				const response = await fetch(parsed.href, { headers: { accept: 'application/json' } });
-				if (!response.ok) {
-					// Servers often explain the failure in a JSON body; surface its first line.
-					const detail = await response.json().then((body: { message?: string; error?: string }) => String(body.message ?? body.error ?? '').split('\n')[0].slice(0, 90), () => '');
-					throw new Error(detail || `HTTP ${response.status} from ${parsed.host}`);
-				}
-				return response.json();
-			}
+			/** GET JSON from a local route or an external HTTPS endpoint. Gate shared work behind world.isHost(). */
+			fetchJson: (url: string) => requestScriptJson(url),
+			/** POST a JSON body and read the JSON response. */
+			postJson: (url: string, body: unknown) => requestScriptJson(url, 'POST', body)
 		},
 		assets: {
 			/** Imports a Poly Haven model as a reusable local object and returns its content-addressed asset id. */

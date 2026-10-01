@@ -1966,9 +1966,8 @@ msgstr "UI Button"
 msgid "Button"
 msgstr "Button"
 
-#: src/lib/studio/CodeEditor.svelte
-msgid "GET a JSON document over https."
-msgstr "GET a JSON document over https."
+#~ msgid "GET a JSON document over https."
+#~ msgstr "GET a JSON document over https."
 
 #: src/lib/studio/CodeEditor.svelte
 msgid "Playback state of a video UI element on this peer."
@@ -4192,3 +4191,11 @@ msgstr "v{0} · {1}"
 #: src/routes/worlds/+page.svelte
 msgid "Pick a world to step inside."
 msgstr "Pick a world to step inside."
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "GET JSON from a local route or HTTPS endpoint."
+msgstr "GET JSON from a local route or HTTPS endpoint."
+
+#: src/lib/studio/CodeEditor.svelte
+msgid "POST JSON to a local route or HTTPS endpoint."
+msgstr "POST JSON to a local route or HTTPS endpoint."

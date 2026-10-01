@@ -30,7 +30,7 @@ export const BUILTIN_WORLDS: readonly BuiltinWorld[] = [
 	{ id: 'avatarShowcase', name: 'avatarShowcase', description: 'Explore a compact indoor world with its original room geometry and materials.', scene: avatarShowcase as SlotTree },
 	{
 		id: 'pulse',
-		name: 'Pulse',
+		name: 'Feedback Center',
 		description: 'An indoor feedback center: vote ideas and bugs up or down, send suggestions and share how you feel.',
 		scene: pulse as SlotTree
 	}

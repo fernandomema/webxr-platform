@@ -29,6 +29,10 @@ model user {
   cloudItems      cloudInventoryItem[]
   cloudFolders    cloudInventoryFolder[]
   assetOwnerships assetOwner[]
+  feedbackVotes feedbackVote[]
+  feedbackEntries feedbackEntry[]
+  feedbackInteractions feedbackInteraction[]
+  feedbackMoodResponses feedbackMoodResponse[]
 
   @@unique([email])
   @@unique([username])
@@ -360,4 +364,68 @@ model worldAsset {
 
   @@id([worldId, assetId])
   @@index([assetId])
+}
+
+// Feedback Center: shared across all copies and hosted sessions.
+model feedbackEntry {
+  id        String @id @default(cuid())
+  userId    String
+  user      user @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interactions feedbackInteraction[]
+  userVotes feedbackVote[]
+  category  String // idea | bug | other
+  title     String
+  titleKey  String
+  votes     Int @default(0)
+  status    String @default("pending") // pending | planned | progress | shipped
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([category, titleKey])
+  @@index([category, votes])
+  @@index([userId])
+}
+
+model feedbackMood {
+  key   String @id // loving | good | meh | needs-work
+  count Int @default(0)
+}
+
+// Records every submission and vote, including submissions matching an existing title.
+model feedbackInteraction {
+  id        String @id @default(cuid())
+  entryId   String
+  entry     feedbackEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  userId    String
+  user      user @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String // suggest | vote
+  delta     Int
+  createdAt DateTime @default(now())
+
+  @@index([entryId])
+  @@index([userId])
+}
+
+model feedbackMoodResponse {
+  id        String @id @default(cuid())
+  key       String // loving | good | meh | needs-work
+  userId    String
+  user      user @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([key])
+  @@index([userId])
+}
+
+model feedbackVote {
+  entryId String
+  entry feedbackEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  userId String
+  user user @relation(fields: [userId], references: [id], onDelete: Cascade)
+  value Int // 1 | -1
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([entryId, userId])
+  @@index([userId])
 }
