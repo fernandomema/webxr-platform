@@ -5,7 +5,7 @@ import type { SlotTree } from '../../ecs/types.ts';
  * sounds, transient effects, live page views and mirrors (which render the whole scene a second time) are left out.
  */
 const MIRROR_TINT = '#b6c4d6';
-const ACTIVE = new Set<string>(['codeBlock', 'mirror', 'audioPlayer', 'htmlView', 'particleBurst', 'impactSound']);
+const ACTIVE = new Set<string>(['codeBlock', 'mirror', 'camera', 'audioPlayer', 'htmlView', 'particleBurst', 'impactSound']);
 
 /** A copy of the tree that is safe to load into a throwaway scene: everything that runs or plays is removed; what is drawn stays. */
 export function stripActiveComponents(tree: SlotTree): SlotTree {

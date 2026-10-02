@@ -647,6 +647,10 @@ export async function mountGame(
 	const pointerState = xr ? setupPointerAndGrabControllers(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, {
 		onWorldPortal: (slotId) => worldPortalMenu.open(slotId),
 		onUse: (slotId, hand, phase, value) => {
+			// A camera takes its pictures here, on the device of whoever holds it.
+			const usable = equipment.getUsableSlot(localPlayerId, hand, slotId);
+			const local = usable ? sceneGraph.getSubtree(usable).find((entry) => entry.runtime?.localUse) : undefined;
+			if (local) { local.runtime!.localUse!(phase); return; }
 			// A guest asks the host, which runs the object's actions once; solo/host run them here.
 			if (gameState.role === 'guest') guestSync?.requestUse(slotId, hand, phase, value);
 			else equipment.dispatchTrigger(localPlayerId, hand, phase, value, slotId);

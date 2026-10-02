@@ -72,6 +72,16 @@ export interface MirrorComponent {
 	resolution?: number;
 }
 
+/**
+ * A camera whose screen is this slot's mesh: what lies in front of the screen (along its local +Z) is shown on it live.
+ * Held in a hand, the trigger takes a photo or starts and stops a video, saved on the holder's device.
+ */
+export interface CameraComponent {
+	type: 'camera';
+	/** Pixels on the long side of the preview (and of a video and a photo). */
+	resolution?: number;
+}
+
 export interface AudioPlayerComponent {
 	type: 'audioPlayer';
 	/** A direct browser-loadable audio URL, or an audio asset (local, cloud or shared). */
@@ -469,6 +479,7 @@ export type Component =
 	| ContainerComponent
 	| WorldPortalComponent
 	| MirrorComponent
+	| CameraComponent
 	| AudioPlayerComponent
 	| HtmlViewComponent
 	| CodeBlockComponent

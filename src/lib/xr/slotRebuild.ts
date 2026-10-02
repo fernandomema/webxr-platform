@@ -19,6 +19,7 @@ type Construction =
 const CONSTRUCTED: Partial<Record<Component['type'], Construction>> = {
 	meshRenderer: { liveKeys: ['color'] }, // a different mesh is caught by the visual key
 	mirror: { liveKeys: [] },
+	camera: { liveKeys: [] },
 	audioPlayer: { rebuildKeys: [] },
 	htmlView: { rebuildKeys: ['width', 'height', 'interaction', 'pixelRatio'] },
 	textDisplay: { rebuildKeys: [] },

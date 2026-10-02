@@ -107,6 +107,27 @@ const ENTRIES: BuiltinEntry[] = [
 		id: 'disc-rack', folderId: 'music', name: 'Disc Rack',
 		build: () => fromLobby('lobby-disc-rack')
 	},
+	{
+		id: 'camera', folderId: 'tools', name: 'Camera',
+		build: () => [
+			slot('camera', 'Camera', [
+				{ type: 'container' },
+				{ type: 'grabbable', scalable: false },
+				{ type: 'equippable', left: { position: [0, 0, 0.04], rotation: [0, 0, 0] }, right: { position: [0, 0, 0.04], rotation: [0, 0, 0] } }
+			]),
+			slot('camera-body', 'Camera Body', [
+				{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'box' }, color: '#1f2937' },
+				{ type: 'collider', shape: 'box' }
+			], { parentId: 'camera', scale: [0.16, 0.1, 0.07] }),
+			// The lens is on the front (+Z) and the screen on the back: the picture is what the lens looks at.
+			slot('camera-lens', 'Camera Lens', [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'cylinder' }, color: '#0b0b10' }], {
+				parentId: 'camera', position: [0, 0, 0.05], rotation: [0.7071, 0, 0, 0.7071], scale: [0.05, 0.03, 0.05]
+			}),
+			slot('camera-screen', 'Camera Screen', [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'plane' } }, { type: 'camera', resolution: 960 }], {
+				parentId: 'camera', position: [0, 0, -0.036], scale: [0.14, 0.078, 1]
+			})
+		]
+	},
 	{ id: 'paint-brush', folderId: 'tools', name: 'Paint Brush', build: () => fromLobby('lobby-paint-brush') }
 ];
 

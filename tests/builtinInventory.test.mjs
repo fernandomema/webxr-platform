@@ -43,3 +43,12 @@ test('the starter discs are real discs: painting them changes nothing', () => {
     assert.deepEqual(paintDisc(tree, tree[0].id), tree);
   }
 });
+
+test('the camera has a screen that looks out of the lens side of its body', () => {
+  const tree = BUILTIN_ENTRIES.find((entry) => entry.id === 'camera').build();
+  const screen = tree.find((slot) => slot.name === 'Camera Screen');
+  assert.ok(screen.components.some((c) => c.type === 'camera'));
+  assert.ok(screen.components.some((c) => c.type === 'meshRenderer'));
+  assert.ok(tree[0].components.some((c) => c.type === 'equippable'));
+  assert.ok(tree.find((slot) => slot.name === 'Camera Lens').position[2] > 0 && screen.position[2] < 0);
+});

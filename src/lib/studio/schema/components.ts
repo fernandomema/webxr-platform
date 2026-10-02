@@ -176,6 +176,16 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		create: () => ({ type: 'mirror', resolution: 512 })
 	},
 	{
+		type: 'camera',
+		label: 'Camera',
+		group: 'Render',
+		description: 'Shows what is in front of this surface (along its +Z) live. Held in a hand, the trigger takes a photo or records a video.',
+		glyph: '◉',
+		advanced: true,
+		fields: [{ key: 'resolution', label: 'Starting quality (px)', kind: 'number', min: 64, max: 1280, step: 64, optional: true, default: 960 }],
+		create: () => ({ type: 'camera', resolution: 960 })
+	},
+	{
 		type: 'collider',
 		label: 'Collider',
 		group: 'Interaction',

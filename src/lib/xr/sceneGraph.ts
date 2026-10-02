@@ -21,6 +21,7 @@ import { needsRebuild } from './slotRebuild';
 import type { BlobAssetLibrary } from './blobAssetLibrary';
 import type { ModelInstance, ModelLease, ModelLibrary, ModelState } from './modelLibrary';
 import { setupMirrorSurface } from './specialSurfaces';
+import { setupCameraSurface } from './cameraSurface';
 import { setupAudioPlayerSurface, type MediaRuntimeBinding } from './mediaSurfaces';
 import { setupHtmlView } from './htmlViewSurface';
 import { setupParticleBurst } from './particleEffects';
@@ -41,7 +42,7 @@ import { createCodeBlockHandlers, type CodeBlockHost, type RadialItemDef, type C
  */
 const INSTANCED_SHAPES = new Set(['box', 'sphere', 'cylinder']);
 /** Components that draw onto their slot's own mesh (a texture, or a material of its own): such a mesh cannot be shared. */
-const OWN_SURFACE = new Set<string>(['mirror', 'textDisplay', 'htmlView', 'scoreboard', 'uiPanel', 'uiElement', 'surfaceMask', 'worldPortal', 'audioPlayer']);
+const OWN_SURFACE = new Set<string>(['mirror', 'camera', 'textDisplay', 'htmlView', 'scoreboard', 'uiPanel', 'uiElement', 'surfaceMask', 'worldPortal', 'audioPlayer']);
 
 const instanceColor = (color: string | undefined): Color4 => {
 	const c = Color3.FromHexString(color ?? '#ffffff');
@@ -79,6 +80,8 @@ interface LiveSlot {
 		onEquip?: (event: HandEvent) => void;
 		onUnequip?: (event: HandEvent) => void;
 		onTrigger?: (event: TriggerEvent) => boolean | void;
+		/** The trigger of the hand holding this, handled on this device whoever runs the world (a camera saves its pictures where it is held). */
+		localUse?: (phase: 'press' | 'release' | 'value') => void;
 		getRadialItems?: () => RadialItemDef[];
 		getDebugLog?: () => CodeBlockLogEntry[];
 	};
@@ -610,6 +613,8 @@ export class SceneGraph {
 		if (mesh && !modelAssetId) {
 			const mirror = findComponent(slot, 'mirror');
 			if (mirror) entry.runtime = { dispose: setupMirrorSurface(this.scene, node as AbstractMesh, mirror.resolution) };
+			const camera = findComponent(slot, 'camera');
+			if (camera) entry.runtime = setupCameraSurface(this.scene, node as AbstractMesh, camera);
 			const audio = findComponent(slot, 'audioPlayer');
 			if (audio) entry.runtime = this.createMediaRuntime(slot, node as AbstractMesh, setupAudioPlayerSurface);
 			const htmlView = findComponent(slot, 'htmlView');
@@ -841,7 +846,8 @@ export class SceneGraph {
 	/** codeBlock-contributed radial menu items for whatever this hand currently holds — see radialMenu.ts. */
 	getRadialExtras(slotId: string): RadialItemDef[] {
 		try {
-			return this.live.get(slotId)?.runtime?.getRadialItems?.() ?? [];
+			// The object's parts count too: a camera's screen is a child of its body.
+			return this.getSubtree(slotId).flatMap((entry) => entry.runtime?.getRadialItems?.() ?? []);
 		} catch (err) {
 			console.error(`[sceneGraph] getRadialExtras(${slotId}) threw`, err);
 			return [];
