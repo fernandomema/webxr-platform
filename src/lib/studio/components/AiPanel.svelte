@@ -3,6 +3,8 @@
 	import type { StudioDocument } from '../state/document.svelte';
 	import type { OpenRouterModel } from '../ai/openrouterModels';
 	import { ProviderConversation, defaultProfile, type ProviderKind, type ProviderProfile } from '../ai/providers';
+	import Select, { type SelectGroup, type SelectOption } from '../ui/Select.svelte';
+	import Icon from '../ui/Icon.svelte';
 	import { introducedErrors } from '../ai/validation';
 	import { StudioDraft, STUDIO_TOOLS, summarizeDiff } from '../ai/tools';
 	import { validateAiScene } from '../ai/validation';
@@ -17,19 +19,18 @@
 		{ id: 'responses', label: 'Responses' },
 		{ id: 'messages', label: 'Messages' }
 	]);
-	const selectModelLabel = $derived('Select a model');
-	const freeGroupLabel = $derived('Free');
-	const paidGroupLabel = $derived('Paid');
 	let profiles = $state<Record<ProviderKind, ProviderProfile>>({ openrouter: defaultProfile('openrouter'), openai: defaultProfile('openai'), claude: defaultProfile('claude'), opencode: defaultProfile('opencode'), ollama: defaultProfile('ollama'), custom: defaultProfile('custom') });
 	let kind = $state<ProviderKind>('openrouter');
 	let credential = $state('');
+	let openRouterConnected = $state(false);
 	let prompt = $state('');
 	let messages = $state<Message[]>([]);
 	let openRouterModels = $state<OpenRouterModel[]>([]);
 	let modelsBusy = $state(false);
 	let modelsError = $state('');
 	let modelsController: AbortController | null = null;
-	let settings = $state(true);
+	let settings = $state(false);
+	let connectionChecked = $state(false);
 	let busy = $state(false);
 	let error = $state('');
 	let draft = $state.raw<StudioDraft | null>(null);
@@ -41,6 +42,18 @@
 	let proposalVersion = $state(0);
 	let reviewOpen = $state(false);
 	const profile = $derived(profiles[kind]);
+	// A connected OpenRouter account (Settings → Connections) stands in for a pasted key.
+	const useConnection = $derived(kind === 'openrouter' && openRouterConnected && !credential.trim());
+	const local = $derived(kind === 'ollama' || kind === 'custom');
+	const ready = $derived(Boolean(profile.model.trim()) && (local || Boolean(credential.trim()) || useConnection));
+	const modelOptions = $derived.by<(SelectOption | SelectGroup)[]>(() => {
+		const free = openRouterModels.filter((item) => item.free).map((item) => ({ value: item.id, label: `${item.name} · ${item.id}` }));
+		const paid = openRouterModels.filter((item) => !item.free).map((item) => ({ value: item.id, label: `${item.name} · ${item.id}` }));
+		const manual = profile.model && !openRouterModels.some((item) => item.id === profile.model) ? [{ value: profile.model, label: `${profile.model} (manual)` }] : [];
+		return [...(manual.length ? [{ label: 'Current', options: manual }] : []), { label: 'Free', options: free }, { label: 'Paid', options: paid }].filter((group) => group.options.length);
+	});
+	const kindOptions: SelectOption[] = kinds.map((id) => ({ value: id, label: labels[id] }));
+	const suggestions = ['Create a grouped pool table', 'Describe what is in this scene', 'Arrange the selected objects in a circle'];
 	// `draft` is $state.raw: StudioDraft mutates its own fields in place, so Svelte only
 	// notices via this proposalVersion bump, never via reading draft.changed directly.
 	const draftChanged = $derived.by(() => { void proposalVersion; return Boolean(draft?.changed); });
@@ -58,6 +71,14 @@
 	});
 
 	onMount(() => {
+		void fetch('/api/connections/openrouter').then(async (response) => {
+			if (response.ok) openRouterConnected = Boolean((await response.json()).connected);
+		}).catch(() => { /* Signed-out or offline: fall back to a pasted key. */ }).finally(() => {
+			connectionChecked = true;
+			// First run: show setup. Once a model and credential exist the panel opens straight to chat.
+			settings = !ready;
+			if (kind === 'openrouter' && useConnection) void loadOpenRouterModels();
+		});
 		try {
 			const saved = JSON.parse(localStorage.getItem('studio:ai:profiles') ?? '{}') as Partial<Record<ProviderKind, ProviderProfile>>;
 			for (const id of kinds) if (saved[id]?.kind === id) profiles[id] = { ...defaultProfile(id), model: saved[id]!.model, protocol: saved[id]!.protocol, endpoint: saved[id]!.endpoint };
@@ -94,6 +115,7 @@
 		if (busy || draft?.changed) return;
 		modelsController?.abort(); openRouterModels = []; modelsError = '';
 		kind = next; credential = ''; messages = []; resetProposal(); saveProfile();
+		if (next === 'openrouter' && openRouterConnected) void loadOpenRouterModels();
 	}
 	function updateProfile(patch: Partial<ProviderProfile>) {
 		if (busy || draft?.changed) return;
@@ -101,7 +123,7 @@
 		resetProposal(); saveProfile();
 	}
 	async function loadOpenRouterModels() {
-		if (kind !== 'openrouter' || !credential.trim() || modelsBusy) return;
+		if (kind !== 'openrouter' || (!credential.trim() && !useConnection) || modelsBusy) return;
 		modelsController?.abort();
 		const abort = new AbortController();
 		modelsController = abort;
@@ -109,7 +131,7 @@
 		try {
 			const response = await fetch('/api/studio/ai/openrouter/models', {
 				method: 'POST', headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ credential }), signal: abort.signal
+				body: JSON.stringify({ credential, useConnection }), signal: abort.signal
 			});
 			const body = await response.json();
 			if (!response.ok) throw new Error(body.message ?? 'Could not load OpenRouter models.');
@@ -137,7 +159,7 @@
 		if (!request || busy) return;
 		if (stale) { error = 'The document changed. Discard the proposal before continuing.'; return; }
 		if (!profile.model.trim()) { error = 'Enter a model in provider settings.'; settings = true; return; }
-		if (!['ollama', 'custom'].includes(kind) && !credential.trim()) { error = 'Enter an API key for this session.'; settings = true; return; }
+		if (!['ollama', 'custom'].includes(kind) && !credential.trim() && !useConnection) { error = 'Enter an API key for this session.'; settings = true; return; }
 		const signature = JSON.stringify(profile);
 		if (conversation && signature !== activeSignature) resetProposal();
 		if (!draft) { draft = new StudioDraft(doc.tree, doc.selectedId); base = JSON.stringify(doc.tree); }
@@ -158,7 +180,7 @@
 		try {
 			let finished = false;
 			for (let step = 0; step < 12; step++) {
-				const response = await conversation.step(credential, STUDIO_TOOLS, abort.signal);
+				const response = await conversation.step(credential, STUDIO_TOOLS, abort.signal, useConnection);
 				if (response.text) messages = [...messages, { role: 'assistant', text: response.text }];
 				if (response.calls.length === 0) { finished = true; break; }
 				const results = response.calls.map((call) => {
@@ -180,41 +202,79 @@
 </script>
 
 <div class="ai-panel">
-	<div class="toolbar">
-		<label class="sr-only" for="ai-provider">Provider</label>
-		<select id="ai-provider" class="input" value={kind} disabled={busy || draftChanged} onchange={(event) => selectKind(event.currentTarget.value as ProviderKind)}>{#each kinds as id}<option value={id}>{labels[id]}</option>{/each}</select>
-		<button class="btn sm" onclick={() => (settings = !settings)} aria-expanded={settings}>Settings</button>
+	<div class="head">
+		<button class="status" type="button" onclick={() => (settings = !settings)} aria-expanded={settings} title="Provider settings">
+			<span class="dot" class:on={ready}></span>
+			<span class="status-text"><strong>{labels[kind]}</strong><small>{profile.model || (connectionChecked ? 'No model chosen' : 'Checking…')}</small></span>
+			<Icon name="sliders" size={14} />
+		</button>
+		{#if messages.length || draftChanged}<button class="btn ghost sm" type="button" onclick={() => { messages = []; resetProposal(); }} disabled={busy}>Clear</button>{/if}
 	</div>
 	{#if settings}<div class="settings">
-		<label>Model<input class="input" placeholder="Model ID" value={profile.model} disabled={busy || draftChanged} oninput={(event) => updateProfile({ model: event.currentTarget.value })} /></label>
-		{#if kind === 'opencode' || kind === 'custom'}<label>API format<select class="input" value={profile.protocol} disabled={busy || draftChanged} onchange={(event) => updateProfile({ protocol: event.currentTarget.value as ProviderProfile['protocol'] })}>{#each protocolChoices as choice}<option value={choice.id}>{choice.label}</option>{/each}</select></label>{/if}
-		{#if kind === 'ollama' || kind === 'custom'}<label>Endpoint<input class="input" value={profile.endpoint} disabled={busy || draftChanged} oninput={(event) => updateProfile({ endpoint: event.currentTarget.value })} /></label><small>Direct browser connection; this endpoint must allow this origin (CORS). Use only trusted endpoints.</small>{/if}
-		{#if kind !== 'ollama'}<label>API key (this session only)<input class="input" type="password" autocomplete="off" bind:value={credential} disabled={busy} oninput={() => { if (kind === 'openrouter') { modelsController?.abort(); openRouterModels = []; modelsError = ''; } }} /></label>{/if}
+		<div class="field"><span class="label">Provider</span>
+			<Select label="Provider" value={kind} options={kindOptions} disabled={busy || draftChanged} onchange={(next) => selectKind(next as ProviderKind)} />
+		</div>
 		{#if kind === 'openrouter'}
-			<small>Free models still require an OpenRouter API key and may have usage limits.</small>
-			<button class="btn sm" type="button" onclick={loadOpenRouterModels} disabled={busy || modelsBusy || !credential.trim()}>{modelsBusy ? 'Loading models…' : 'Load available models'}</button>
-			{#if modelsError}<small class="error" role="alert">{modelsError}</small>{/if}
-			{#if openRouterModels.length}
-				<label>Available models
-					<select class="input" value={profile.model} disabled={busy || draftChanged} onchange={(event) => updateProfile({ model: event.currentTarget.value })}>
-						<option value="" disabled>{selectModelLabel}</option>
-						{#if profile.model && !openRouterModels.some((item) => item.id === profile.model)}<option value={profile.model}>{profile.model} (manual)</option>{/if}
-						<optgroup label={freeGroupLabel}>
-							{#each openRouterModels.filter((item) => item.free) as item}<option value={item.id}>{item.name} · {item.id} · Free</option>{/each}
-						</optgroup>
-						<optgroup label={paidGroupLabel}>
-							{#each openRouterModels.filter((item) => !item.free) as item}<option value={item.id}>{item.name} · {item.id}</option>{/each}
-						</optgroup>
-					</select>
-				</label>
-				<small>{openRouterModels.length} text models with tool calling. Free labels reflect current OpenRouter catalogue prices; rate limits may still apply.</small>
+			<div class="card" class:ok={openRouterConnected}>
+				{#if openRouterConnected}
+					<span class="dot on"></span><span class="card-text"><strong>Account connected</strong><small>Usage is billed to your OpenRouter account.</small></span>
+					<a class="btn ghost sm" href="/settings/connections">Manage</a>
+				{:else}
+					<span class="dot"></span><span class="card-text"><strong>Not connected</strong><small>Connect once and use it everywhere, no key pasting.</small></span>
+					<a class="btn primary sm" href="/settings/connections">Connect</a>
+				{/if}
+			</div>
+			<div class="field"><span class="label">Model</span>
+				{#if openRouterModels.length}
+					<Select label="Model" searchable placeholder="Select a model" value={profile.model} options={modelOptions} disabled={busy || draftChanged} onchange={(next) => updateProfile({ model: next })} />
+					<small>{openRouterModels.length} models with tool calling. Free models may have rate limits.</small>
+				{:else}
+					<div class="row">
+						<input class="input" aria-label="Model" placeholder="e.g. anthropic/claude-sonnet-4.5" value={profile.model} disabled={busy || draftChanged} oninput={(event) => updateProfile({ model: event.currentTarget.value })} />
+						<button class="btn sm" type="button" onclick={loadOpenRouterModels} disabled={busy || modelsBusy || (!credential.trim() && !useConnection)}>{modelsBusy ? 'Loading…' : 'Browse'}</button>
+					</div>
+				{/if}
+				{#if modelsError}<small class="error" role="alert">{modelsError}</small>{/if}
+			</div>
+			<details class="advanced" open={!openRouterConnected && Boolean(credential)}>
+				<summary>{openRouterConnected ? 'Use a different API key' : 'Or paste an API key'}</summary>
+				<input class="input" type="password" autocomplete="off" aria-label="API key" placeholder="sk-or-…" bind:value={credential} disabled={busy} oninput={() => { modelsController?.abort(); openRouterModels = []; modelsError = ''; }} />
+				<small>Kept in memory for this session only.</small>
+			</details>
+		{:else}
+			<div class="field"><span class="label">Model</span>
+				<input class="input" aria-label="Model" placeholder="Model ID" value={profile.model} disabled={busy || draftChanged} oninput={(event) => updateProfile({ model: event.currentTarget.value })} />
+			</div>
+			{#if kind === 'opencode' || kind === 'custom'}
+				<div class="field"><span class="label">API format</span>
+					<Select label="API format" value={profile.protocol} options={protocolChoices.map((choice) => ({ value: choice.id, label: choice.label }))} disabled={busy || draftChanged} onchange={(next) => updateProfile({ protocol: next as ProviderProfile['protocol'] })} />
+				</div>
+			{/if}
+			{#if local}
+				<div class="field"><span class="label">Endpoint</span>
+					<input class="input" aria-label="Endpoint" value={profile.endpoint} disabled={busy || draftChanged} oninput={(event) => updateProfile({ endpoint: event.currentTarget.value })} />
+					<small>Direct browser connection; the endpoint must allow this origin (CORS). Use only trusted endpoints.</small>
+				</div>
+			{/if}
+			{#if kind !== 'ollama'}
+				<div class="field"><span class="label">API key</span>
+					<input class="input" type="password" autocomplete="off" aria-label="API key" bind:value={credential} disabled={busy} />
+					<small>Kept in memory for this session only.</small>
+				</div>
 			{/if}
 		{/if}
-		<small>Provider settings stay on this device. Keys remain in memory. Scene data you ask the AI to inspect may be sent to the selected provider.</small>
+		<small class="privacy">Settings stay on this device. Scene data you ask the AI to inspect is sent to the selected provider.</small>
+		<button class="btn primary sm done" type="button" onclick={() => (settings = false)} disabled={!ready}>Done</button>
 	</div>{/if}
 	<div class="context">Editing <strong>{doc.name}</strong> · {doc.selected?.name ?? 'No selection'} · {doc.tree.length} objects</div>
 	<div class="messages" role="log" aria-live="polite">
-		{#if messages.length === 0}<p class="muted">Ask AI to inspect, create, or change objects. Review its proposal before applying.</p>{/if}
+		{#if messages.length === 0}
+			<div class="intro">
+				<p class="muted">Ask AI to inspect, create, or change objects. Review its proposal before applying.</p>
+				{#if ready}<div class="chips">{#each suggestions as text}<button class="chip" type="button" onclick={() => (prompt = text)}>{text}</button>{/each}</div>
+				{:else}<button class="btn primary sm" type="button" onclick={() => (settings = true)}>Set up AI</button>{/if}
+			</div>
+		{/if}
 		{#each messages as message}<div class="message" class:user={message.role === 'user'} class:tool={message.role === 'tool'}><span>{message.role}</span><p>{message.text}</p></div>{/each}
 		{#if busy}<p class="muted">Working…</p>{/if}
 	</div>
@@ -229,19 +289,42 @@
 	</div>{/if}
 	{#if error}<p class="error" role="alert">{error}</p>{/if}
 	<form class="composer" onsubmit={(event) => { event.preventDefault(); void send(); }}>
-		<textarea class="input" aria-label="Ask AI" placeholder="Create a grouped pool table…" bind:value={prompt} disabled={busy}></textarea>
-		<div class="actions">{#if busy}<button type="button" class="btn sm" onclick={() => controller?.abort()}>Stop</button>{/if}<button type="submit" class="btn primary sm" disabled={busy || !prompt.trim()}>Send</button></div>
+		<textarea class="input" aria-label="Ask AI" placeholder={ready ? 'Create a grouped pool table…' : 'Set up a provider to start'} bind:value={prompt} disabled={busy} onkeydown={(event) => { if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); void send(); } }}></textarea>
+		<div class="actions"><small class="muted hint">Enter to send · Shift+Enter for a new line</small>{#if busy}<button type="button" class="btn sm" onclick={() => controller?.abort()}>Stop</button>{/if}<button type="submit" class="btn primary sm" disabled={busy || !prompt.trim()}>Send</button></div>
 	</form>
 </div>
 
 <style>
 	.ai-panel { height: 100%; display: flex; flex-direction: column; min-height: 0; font-size: 12px; }
-	.toolbar, .actions { display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
-	.toolbar { padding: 8px; border-bottom: 1px solid var(--border); }
-	.toolbar select { flex: 1; }
-	.settings { display: grid; gap: 8px; padding: 10px; border-bottom: 1px solid var(--border); max-height: 42%; overflow-y: auto; }
-	.settings label { display: grid; gap: 4px; }
+	.actions, .row { display: flex; gap: 8px; align-items: center; }
+	.actions { justify-content: flex-end; }
+	.hint { margin-right: auto; font-size: 10px; }
+	.head { display: flex; gap: 6px; align-items: center; padding: 8px; border-bottom: 1px solid var(--border); }
+	.status { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel-2); color: var(--muted); cursor: pointer; text-align: left; }
+	.status:hover { background: var(--panel-3); }
+	.status-text { flex: 1; min-width: 0; display: grid; line-height: 1.25; }
+	.status-text strong { color: var(--text); font-weight: 600; }
+	.status-text small { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--warning); }
+	.dot.on { background: var(--success); }
+	.settings { display: grid; gap: 12px; padding: 12px; border-bottom: 1px solid var(--border); background: var(--panel); max-height: 55%; overflow-y: auto; }
+	.field { display: grid; gap: 5px; }
+	.label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+	.row .input { flex: 1; }
+	.card { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel-2); }
+	.card.ok { border-color: rgb(62 207 142 / 0.35); }
+	.card-text { flex: 1; min-width: 0; display: grid; line-height: 1.3; }
+	.card-text small { color: var(--muted); }
+	.advanced summary { cursor: pointer; color: var(--muted); }
+	.advanced summary:hover { color: var(--text); }
+	.advanced .input { margin-top: 6px; }
 	.settings small, .context { color: var(--muted); line-height: 1.4; }
+	.done { justify-self: end; }
+	.intro { display: grid; gap: 10px; justify-items: start; }
+	.intro p { margin: 0; }
+	.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+	.chip { padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--panel-2); color: var(--text); font: inherit; cursor: pointer; }
+	.chip:hover { background: var(--panel-3); border-color: var(--accent); }
 	.context { padding: 8px 10px; border-bottom: 1px solid var(--border); }
 	.proposal pre { max-height: 240px; overflow: auto; padding: 8px; background: #0b0e14; white-space: pre-wrap; overflow-wrap: anywhere; }
 	.messages { flex: 1; min-height: 80px; overflow-y: auto; padding: 10px; display: grid; align-content: start; gap: 10px; }

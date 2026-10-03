@@ -36,7 +36,7 @@ export class ProviderConversation {
 		this.wire.push(...PROTOCOL_ADAPTERS[this.profile.protocol].toolResults(results));
 	}
 
-	async step(credential: string, tools: AgentTool[], signal: AbortSignal): Promise<{ text: string; calls: AgentCall[] }> {
+	async step(credential: string, tools: AgentTool[], signal: AbortSignal, useConnection = false): Promise<{ text: string; calls: AgentCall[] }> {
 		if (!this.profile.model.trim()) throw new Error('Choose a model first.');
 		const protocol = this.profile.protocol;
 		const adapter = PROTOCOL_ADAPTERS[protocol];
@@ -51,7 +51,7 @@ export class ProviderConversation {
 			if (url.username || url.password) throw new Error('Put credentials in the API key field, not in the endpoint URL.');
 			response = await fetch(endpoint, { method: 'POST', headers: { 'content-type': 'application/json', ...(credential ? protocol === 'messages' ? { 'x-api-key': credential, 'anthropic-version': '2023-06-01' } : { authorization: `Bearer ${credential}` } : {}) }, body: JSON.stringify(payload), signal });
 		} else {
-			response = await fetch('/api/studio/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-studio-session': this.sessionId }, body: JSON.stringify({ kind, protocol, credential, payload }), signal });
+			response = await fetch('/api/studio/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-studio-session': this.sessionId }, body: JSON.stringify({ kind, protocol, credential: useConnection ? '' : credential, useConnection, payload }), signal });
 		}
 		if (!response.ok) {
 			const message = await response.text();

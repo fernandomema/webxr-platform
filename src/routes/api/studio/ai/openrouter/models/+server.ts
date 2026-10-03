@@ -1,10 +1,11 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { getOpenRouterKey } from '$lib/server/openrouterConnection';
 import { parseOpenRouterModels } from '$lib/studio/ai/openrouterModels';
 
 const headers = { 'cache-control': 'no-store' };
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
 	if (Number(request.headers.get('content-length') ?? 0) > 2048) return json({ message: 'Request is too large.' }, { status: 413, headers });
 	if (!request.body) return json({ message: 'Invalid request.' }, { status: 400, headers });
 	const reader = request.body.getReader();
@@ -21,7 +22,15 @@ export const POST: RequestHandler = async ({ request }) => {
 		chunks.push(value);
 	}
 	let credential: unknown;
-	try { credential = JSON.parse(Buffer.concat(chunks).toString('utf8')).credential; }
+	try {
+		const parsed = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+		credential = parsed.credential;
+		if (parsed.useConnection === true) {
+			if (!locals.user) return json({ message: 'Sign in to use your OpenRouter connection.' }, { status: 401, headers });
+			credential = (await getOpenRouterKey(locals.user.id)) ?? undefined;
+			if (!credential) return json({ message: 'OpenRouter is not connected. Connect it in Settings.' }, { status: 409, headers });
+		}
+	}
 	catch { return json({ message: 'Invalid request.' }, { status: 400, headers }); }
 	if (typeof credential !== 'string' || !credential.trim() || credential.length > 500) {
 		return json({ message: 'Enter an OpenRouter API key.' }, { status: 400, headers });

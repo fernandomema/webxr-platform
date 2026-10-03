@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { getOpenRouterKey } from '$lib/server/openrouterConnection';
 
 const endpoints: Record<string, Record<string, string>> = {
 	openai: { responses: 'https://api.openai.com/v1/responses' },
@@ -12,7 +13,7 @@ const endpoints: Record<string, Record<string, string>> = {
 	openrouter: { chat: 'https://openrouter.ai/api/v1/chat/completions' }
 };
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
 	if (Number(request.headers.get('content-length') ?? 0) > 500_000) return json({ message: 'Request is too large.' }, { status: 413 });
 	if (!request.body) return json({ message: 'Missing request body.' }, { status: 400 });
 	const reader = request.body.getReader();
@@ -34,7 +35,13 @@ export const POST: RequestHandler = async ({ request }) => {
 	const kind = String(body.kind ?? '');
 	const protocol = String(body.protocol ?? '');
 	const endpoint = endpoints[kind]?.[protocol];
-	const credential = body.credential;
+	let credential = body.credential;
+	// The signed-in user's connected OpenRouter account replaces a pasted key; it never reaches the browser.
+	if (kind === 'openrouter' && body.useConnection === true) {
+		if (!locals.user) return json({ message: 'Sign in to use your OpenRouter connection.' }, { status: 401 });
+		credential = (await getOpenRouterKey(locals.user.id)) ?? undefined;
+		if (!credential) return json({ message: 'OpenRouter is not connected. Connect it in Settings.' }, { status: 409 });
+	}
 	if (!endpoint || typeof credential !== 'string' || !credential || credential.length > 500 || !body.payload || typeof body.payload !== 'object') {
 		return json({ message: 'Invalid provider configuration.' }, { status: 400 });
 	}

@@ -12,6 +12,7 @@ msgstr ""
 #~ msgstr ""
 
 #: src/routes/register/+page.svelte
+#: src/routes/settings/+page.svelte
 msgid "Email"
 msgstr "Email"
 
@@ -50,10 +51,12 @@ msgstr "Error al registrarse"
 #: src/lib/studio/components/Inspector.svelte
 #: src/lib/studio/components/SaveDialog.svelte
 #: src/routes/register/+page.svelte
+#: src/routes/settings/+page.svelte
 msgid "Name"
 msgstr "Nombre"
 
 #: src/routes/register/+page.svelte
+#: src/routes/settings/+page.svelte
 msgid "Username"
 msgstr "Usuario"
 
@@ -816,6 +819,7 @@ msgstr ""
 msgid "Try again"
 msgstr ""
 
+#: src/lib/studio/components/AiPanel.svelte
 #: src/lib/studio/components/MarketplacePanel.svelte
 #: src/lib/studio/components/PublishDialog.svelte
 #: src/lib/studio/components/PublishPanel.svelte
@@ -1386,6 +1390,7 @@ msgstr ""
 msgid "Publish “{0}”"
 msgstr ""
 
+#: src/lib/studio/components/AiPanel.svelte
 #: src/lib/studio/components/CommandPalette.svelte
 #: src/lib/studio/ui/Combobox.svelte
 #: src/lib/studio/ui/Select.svelte
@@ -1499,8 +1504,9 @@ msgstr ""
 msgid "Clear {0}"
 msgstr ""
 
-#~ msgid "Clear"
-#~ msgstr ""
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Clear"
+msgstr ""
 
 #: src/lib/studio/components/FieldEditor.svelte
 msgid "Pos"
@@ -1655,10 +1661,11 @@ msgid "Provider request failed."
 msgstr ""
 
 #: src/lib/studio/components/AiPanel.svelte
+#: src/lib/studio/components/AiPanel.svelte
 msgid "Provider"
 msgstr ""
 
-#: src/lib/studio/components/AiPanel.svelte
+#: src/routes/settings/+layout.svelte
 msgid "Settings"
 msgstr ""
 
@@ -1666,29 +1673,23 @@ msgstr ""
 msgid "Model ID"
 msgstr ""
 
-#: src/lib/studio/components/AiPanel.svelte
-msgid "API format<0/>"
-msgstr ""
+#~ msgid "API format<0/>"
+#~ msgstr ""
 
-#: src/lib/studio/components/AiPanel.svelte
-msgid "Endpoint<0/>"
-msgstr ""
+#~ msgid "Endpoint<0/>"
+#~ msgstr ""
 
-#: src/lib/studio/components/AiPanel.svelte
-msgid "Direct browser connection; this endpoint must allow this origin (CORS). Use only trusted endpoints."
-msgstr ""
+#~ msgid "Direct browser connection; this endpoint must allow this origin (CORS). Use only trusted endpoints."
+#~ msgstr ""
 
-#: src/lib/studio/components/AiPanel.svelte
-msgid "API key (this session only)<0/>"
-msgstr ""
+#~ msgid "API key (this session only)<0/>"
+#~ msgstr ""
 
-#: src/lib/studio/components/AiPanel.svelte
-msgid "Model<0/>"
-msgstr ""
+#~ msgid "Model<0/>"
+#~ msgstr ""
 
-#: src/lib/studio/components/AiPanel.svelte
-msgid "Provider settings stay on this device. Keys remain in memory. Scene data you ask the AI to inspect may be sent to the selected provider."
-msgstr ""
+#~ msgid "Provider settings stay on this device. Keys remain in memory. Scene data you ask the AI to inspect may be sent to the selected provider."
+#~ msgstr ""
 
 #: src/lib/studio/components/AiPanel.svelte
 msgid "No selection"
@@ -1765,6 +1766,7 @@ msgid "Untrusted project context: {0}"
 msgstr ""
 
 #: src/lib/studio/components/AiPanel.svelte
+#: src/routes/settings/connections/+page.svelte
 msgid "OpenRouter"
 msgstr ""
 
@@ -1772,44 +1774,34 @@ msgstr ""
 msgid "Could not load OpenRouter models."
 msgstr ""
 
-#: src/lib/studio/components/AiPanel.svelte
-msgid "Loading models…"
-msgstr ""
+#~ msgid "Loading models…"
+#~ msgstr ""
 
-#: src/lib/studio/components/AiPanel.svelte
-msgid "Load available models"
-msgstr ""
+#~ msgid "Load available models"
+#~ msgstr ""
 
-#. 0: profile.model
-#: src/lib/studio/components/AiPanel.svelte
-msgid "{0} (manual)"
-msgstr ""
+#~ msgid "{0} (manual)"
+#~ msgstr ""
 
 #: src/lib/studio/components/AiPanel.svelte
 msgid "Free"
 msgstr ""
 
-#. 0: item.name; 1: item.id
-#: src/lib/studio/components/AiPanel.svelte
-msgid "{0} · {1} · Free"
-msgstr ""
+#~ msgid "{0} · {1} · Free"
+#~ msgstr ""
 
 #: src/lib/studio/components/AiPanel.svelte
 msgid "Paid"
 msgstr ""
 
-#: src/lib/studio/components/AiPanel.svelte
-msgid "Available models <0/>"
-msgstr ""
+#~ msgid "Available models <0/>"
+#~ msgstr ""
 
-#. 0: openRouterModels.length
-#: src/lib/studio/components/AiPanel.svelte
-msgid "{0} text models with tool calling. Free labels reflect current OpenRouter catalogue prices; rate limits may still apply."
-msgstr ""
+#~ msgid "{0} text models with tool calling. Free labels reflect current OpenRouter catalogue prices; rate limits may still apply."
+#~ msgstr ""
 
-#: src/lib/studio/components/AiPanel.svelte
-msgid "Free models still require an OpenRouter API key and may have usage limits."
-msgstr ""
+#~ msgid "Free models still require an OpenRouter API key and may have usage limits."
+#~ msgstr ""
 
 #: src/lib/studio/components/AiPanel.svelte
 msgid "Chat Completions"
@@ -2176,8 +2168,9 @@ msgstr ""
 #~ msgid "Play · WebXR Platform"
 #~ msgstr ""
 
-#~ msgid "Sign out"
-#~ msgstr ""
+#: src/routes/settings/+page.svelte
+msgid "Sign out"
+msgstr ""
 
 #: src/lib/studio/components/AssetsPanel.svelte
 #: src/lib/studio/components/AssetsPanel.svelte
@@ -4171,6 +4164,8 @@ msgid "Worlds · {0}"
 msgstr ""
 
 #. 0: PLATFORM_NAME
+#. 0: PLATFORM_NAME
+#: src/routes/settings/+layout.svelte
 #: src/routes/worlds/+page.svelte
 msgid "{0} home"
 msgstr ""
@@ -4280,4 +4275,210 @@ msgstr ""
 
 #: src/lib/xr/interaction/desktop/DesktopHud.svelte
 msgid "Click to resume"
+msgstr ""
+
+#: src/routes/settings/+layout.svelte
+msgid "General"
+msgstr ""
+
+#: src/routes/settings/+layout.svelte
+#: src/routes/settings/connections/+page.svelte
+msgid "Connections"
+msgstr ""
+
+#. 0: PLATFORM_NAME
+#: src/routes/settings/+layout.svelte
+msgid "Back to {0}"
+msgstr ""
+
+#: src/routes/settings/+layout.svelte
+msgid "Settings sections"
+msgstr ""
+
+#. 0: PLATFORM_NAME
+#: src/routes/settings/+page.svelte
+msgid "Settings · {0}"
+msgstr ""
+
+#: src/routes/settings/+page.svelte
+msgid "Account"
+msgstr ""
+
+#: src/routes/settings/connections/+page.svelte
+msgid "Could not disconnect."
+msgstr ""
+
+#. 0: PLATFORM_NAME
+#: src/routes/settings/connections/+page.svelte
+msgid "Connections · {0}"
+msgstr ""
+
+#: src/routes/settings/connections/+page.svelte
+msgid "OpenRouter connected."
+msgstr ""
+
+#: src/routes/settings/connections/+page.svelte
+msgid "Could not connect OpenRouter. Please try again."
+msgstr ""
+
+#: src/routes/settings/connections/+page.svelte
+msgid "Connected — usage is billed to your OpenRouter account."
+msgstr ""
+
+#: src/routes/settings/connections/+page.svelte
+msgid "Not connected."
+msgstr ""
+
+#. 0: data.openrouter ? 'Connected — usage is billed to your OpenRouter account.' \\: 'Not connected.'
+#: src/routes/settings/connections/+page.svelte
+msgid "Powers the AI assistant in the Studio. {0}"
+msgstr ""
+
+#: src/routes/settings/connections/+page.svelte
+msgid "Your key is stored encrypted and is never sent to the browser."
+msgstr ""
+
+#: src/routes/settings/connections/+page.svelte
+msgid "Disconnecting…"
+msgstr ""
+
+#: src/routes/settings/connections/+page.svelte
+msgid "Disconnect"
+msgstr ""
+
+#: src/routes/settings/connections/+page.svelte
+msgid "Connect OpenRouter"
+msgstr ""
+
+#. 0: PLATFORM_NAME
+#: src/routes/settings/connections/+page.svelte
+msgid "Link outside accounts so {0} can use them for you."
+msgstr ""
+
+#~ msgid "Using your connected OpenRouter account. Paste a key below to override it for this session. <0>Manage</0>"
+#~ msgstr ""
+
+#~ msgid "Tip: <0>connect your OpenRouter account</0> to skip pasting a key."
+#~ msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Current"
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Create a grouped pool table"
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Describe what is in this scene"
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Arrange the selected objects in a circle"
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Provider settings"
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "No model chosen"
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Checking…"
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Account connected"
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Usage is billed to your OpenRouter account."
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Manage"
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Not connected"
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Connect once and use it everywhere, no key pasting."
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Connect"
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+#: src/lib/studio/components/AiPanel.svelte
+#: src/lib/studio/components/AiPanel.svelte
+#: src/lib/studio/components/AiPanel.svelte
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Model"
+msgstr ""
+
+#. 0: openRouterModels.length
+#: src/lib/studio/components/AiPanel.svelte
+msgid "{0} models with tool calling. Free models may have rate limits."
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Browse"
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Use a different API key"
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Or paste an API key"
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+#: src/lib/studio/components/AiPanel.svelte
+#: src/lib/studio/components/AiPanel.svelte
+msgid "API key"
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Kept in memory for this session only."
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+#: src/lib/studio/components/AiPanel.svelte
+msgid "API format"
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Endpoint"
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Direct browser connection; the endpoint must allow this origin (CORS). Use only trusted endpoints."
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Settings stay on this device. Scene data you ask the AI to inspect is sent to the selected provider."
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Done"
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Set up AI"
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Set up a provider to start"
+msgstr ""
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Enter to send · Shift+Enter for a new line"
 msgstr ""
