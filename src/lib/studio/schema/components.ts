@@ -126,12 +126,14 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 				{ value: 'button', label: 'Button' },
 				{ value: 'input', label: 'Text input' },
 				{ value: 'image', label: 'Image' },
-				{ value: 'video', label: 'Video' }
+				{ value: 'video', label: 'Video' },
+				{ value: 'slider', label: 'Slider' }
 			] },
 			{ key: 'visible', label: 'Visible', kind: 'bool', optional: true, default: true },
 			{ key: 'width', label: 'Width', kind: 'number', min: 1, step: 1, optional: true, default: 240, unit: 'px' },
 			{ key: 'height', label: 'Height', kind: 'number', min: 1, step: 1, optional: true, default: 44, unit: 'px' },
 			{ key: 'flexDirection', label: 'Direction', kind: 'enum', options: [{ value: 'column', label: 'Column' }, { value: 'row', label: 'Row' }], optional: true, default: 'column' },
+			{ key: 'overlayBottom', label: 'Overlay at bottom', kind: 'bool', optional: true, default: false, help: 'Containers only. Places this control over its parent’s bottom edge.' },
 			{ key: 'gap', label: 'Gap', kind: 'number', min: 0, step: 1, optional: true, default: 8, unit: 'px' },
 			{ key: 'margin', label: 'Margin', kind: 'number', min: 0, step: 1, optional: true, default: 0, unit: 'px' },
 			{ key: 'padding', label: 'Padding', kind: 'number', min: 0, step: 1, optional: true, default: 8, unit: 'px' },
@@ -146,7 +148,11 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 			{ key: 'playing', label: 'Playing', kind: 'bool', optional: true, default: false },
 			{ key: 'loop', label: 'Loop', kind: 'bool', optional: true, default: false },
 			{ key: 'muted', label: 'Muted', kind: 'bool', optional: true, default: false },
-			{ key: 'volume', label: 'Volume', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 1 }
+			{ key: 'volume', label: 'Volume', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 1 },
+			{ key: 'value', label: 'Slider value', kind: 'number', optional: true, default: 0 },
+			{ key: 'minValue', label: 'Slider minimum', kind: 'number', optional: true, default: 0 },
+			{ key: 'maxValue', label: 'Slider maximum', kind: 'number', optional: true, default: 100 },
+			{ key: 'step', label: 'Slider step', kind: 'number', min: 0, optional: true, default: 1 }
 		],
 		create: () => ({ type: 'uiElement', kind: 'container', flexDirection: 'column', visible: true, gap: 8, padding: 8 })
 	},

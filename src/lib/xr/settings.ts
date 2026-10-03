@@ -27,7 +27,16 @@ export interface XrSettings {
 	multiview: boolean;
 	/** Frames per second asked of the headset's display (one it lists as supported). Null keeps the headset's own. */
 	frameRate: number | null;
+	/** Desktop (mouse and keyboard): how fast the view turns with the mouse, as a multiple of the default. */
+	mouseSensitivity: number;
+	/** Desktop: moving the mouse up looks down. */
+	invertY: boolean;
+	/** Desktop: the camera's vertical field of view, in degrees. */
+	desktopFov: number;
 }
+
+export const MOUSE_SENSITIVITIES = [0.5, 1, 1.6, 2.5] as const;
+export const DESKTOP_FOVS = [46, 60, 75] as const;
 
 export const xrSettings: XrSettings = {
 	movementMode: 'teleport',
@@ -39,8 +48,11 @@ export const xrSettings: XrSettings = {
 	keyboardLayout: null,
 	foveation: 'high',
 	showPerformance: false,
-	multiview: false,
-	frameRate: null
+	multiview: true,
+	frameRate: null,
+	mouseSensitivity: 1,
+	invertY: false,
+	desktopFov: 46
 };
 
 const STORAGE_KEY = 'webxr-platform-settings';
@@ -62,6 +74,9 @@ export function loadSettings(): void {
 		if (typeof parsed.showPerformance === 'boolean') xrSettings.showPerformance = parsed.showPerformance;
 		if (typeof parsed.multiview === 'boolean') xrSettings.multiview = parsed.multiview;
 		if (typeof parsed.frameRate === 'number' && parsed.frameRate > 0) xrSettings.frameRate = parsed.frameRate;
+		if (typeof parsed.mouseSensitivity === 'number' && parsed.mouseSensitivity > 0 && parsed.mouseSensitivity <= 5) xrSettings.mouseSensitivity = parsed.mouseSensitivity;
+		if (typeof parsed.invertY === 'boolean') xrSettings.invertY = parsed.invertY;
+		if (typeof parsed.desktopFov === 'number' && parsed.desktopFov >= 30 && parsed.desktopFov <= 110) xrSettings.desktopFov = parsed.desktopFov;
 	} catch {
 		// unavailable/malformed storage — keep defaults
 	}

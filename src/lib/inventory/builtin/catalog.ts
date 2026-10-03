@@ -3,9 +3,11 @@
  * `builtin` inventory adapter lists them read-only; spawning one (or opening it in the Studio) gives a copy to edit.
  * Objects that already have a generator are built from it (record discs, with their own title, author and colours).
  */
-import type { Slot, SlotTree } from '../../ecs/types';
+import type { Component, Slot, SlotTree } from '../../ecs/types';
 import lobby from '../../xr/templates/lobby.json' with { type: 'json' };
 import { buildDisc } from '../../xr/templates/recordDisc.ts';
+import { PROP_ENTRIES, PROP_FOLDERS } from './props.ts';
+import { TOOLS, toolEquippable } from '../../../../scripts/workshop-tools.mjs';
 
 export interface BuiltinFolder {
 	id: string;
@@ -23,7 +25,8 @@ export interface BuiltinEntry {
 export const BUILTIN_FOLDERS: BuiltinFolder[] = [
 	{ id: 'basics', name: 'Basics' },
 	{ id: 'music', name: 'Music' },
-	{ id: 'tools', name: 'Tools' }
+	{ id: 'tools', name: 'Tools' },
+	...PROP_FOLDERS
 ];
 
 const slot = (id: string, name: string, components: Slot['components'], extra: Partial<Slot> = {}): Slot => ({
@@ -39,6 +42,35 @@ const shape = (id: string, name: string, meshId: 'box' | 'sphere' | 'cylinder', 
 
 const lobbySlots = lobby as unknown as SlotTree;
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
+
+/** Build a workshop tool as a standalone Starter Kit object, preserving its model and behavior. */
+function workshopTool(tool: (typeof TOOLS)[number]): SlotTree {
+	const rootId = tool.id;
+	const pieces = tool.parts as {
+		name: string;
+		mesh?: string;
+		color?: string;
+		collider?: boolean;
+		textDisplay?: { title: string; lines: string[]; color: string };
+		position?: Slot['position'];
+		rotation?: Slot['rotation'];
+		scale?: Slot['scale'];
+	}[];
+	const parts = pieces.map((piece, index) => slot(`${rootId}-part-${index}`, piece.name, ([
+		...(piece.mesh ? [{ type: 'meshRenderer' as const, meshRef: { kind: 'builtin' as const, id: piece.mesh }, ...(piece.color ? { color: piece.color } : {}) }] : []),
+		...(piece.collider ? [{ type: 'collider' as const, shape: 'box' as const }] : []),
+		...(piece.textDisplay ? [{ type: 'textDisplay' as const, ...piece.textDisplay }] : [])
+	] as unknown as Component[]), {
+		parentId: rootId,
+		position: piece.position ?? [0, 0, 0],
+		rotation: piece.rotation ?? [0, 0, 0, 1],
+		scale: piece.scale ?? [1, 1, 1]
+	}));
+	return clone([
+		slot(rootId, tool.name, ([{ type: 'container' }, { type: 'grabbable', scalable: false }, toolEquippable(), { type: 'codeBlock', code: tool.code }] as unknown as Component[])),
+		...parts
+	]);
+}
 
 /** An object that lives in the lobby, with its parts and what hangs from them, moved to the origin. */
 function fromLobby(rootId: string): SlotTree {
@@ -68,6 +100,7 @@ const SOURCES = {
 };
 
 const ENTRIES: BuiltinEntry[] = [
+	...PROP_ENTRIES,
 	{ id: 'cube', folderId: 'basics', name: 'Cube', build: () => shape('cube', 'Cube', 'box', '#8b7cf6', [0.3, 0.3, 0.3]) },
 	{ id: 'sphere', folderId: 'basics', name: 'Sphere', build: () => shape('sphere', 'Sphere', 'sphere', '#38bdf8', [0.3, 0.3, 0.3]) },
 	{ id: 'cylinder', folderId: 'basics', name: 'Cylinder', build: () => shape('cylinder', 'Cylinder', 'cylinder', '#f59e0b', [0.2, 0.3, 0.2]) },
@@ -128,7 +161,7 @@ const ENTRIES: BuiltinEntry[] = [
 			})
 		]
 	},
-	{ id: 'paint-brush', folderId: 'tools', name: 'Paint Brush', build: () => fromLobby('lobby-paint-brush') }
+	...TOOLS.map((tool) => ({ id: tool.id, folderId: 'tools', name: tool.name, build: () => workshopTool(tool) }))
 ];
 
 /** Whatever is spawned from the kit can be picked up and moved by its root, so an object made of parts (a record player) is grabbed as one. */

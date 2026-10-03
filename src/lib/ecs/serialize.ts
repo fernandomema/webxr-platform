@@ -35,11 +35,15 @@ export function instantiate(tree: SlotTree, origin: Vec3 = [0, 0, 0]): SlotTree 
 	const idMap = new Map<string, string>();
 	for (const slot of tree) idMap.set(slot.id, crypto.randomUUID());
 
+	const vector = (value: unknown, fallback: number[]) =>
+		Array.isArray(value) && value.length === fallback.length && value.every(Number.isFinite) ? value : fallback;
 	return tree.map((slot, i) => ({
 		...slot,
 		id: idMap.get(slot.id)!,
 		parentId: slot.parentId ? (idMap.get(slot.parentId) ?? null) : null,
-		position: i === 0 ? origin : slot.position
+		position: i === 0 ? origin : vector(slot.position, [0, 0, 0]) as Slot['position'],
+		rotation: vector(slot.rotation, [0, 0, 0, 1]) as Slot['rotation'],
+		scale: vector(slot.scale, [1, 1, 1]) as Slot['scale']
 	}));
 }
 

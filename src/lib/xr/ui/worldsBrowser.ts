@@ -37,10 +37,11 @@ export interface WorldsBrowser {
 	refresh(): Promise<void>;
 }
 
-type Category = 'official' | 'active' | 'published' | 'marketplace' | 'join';
+type Category = 'official' | 'dev' | 'active' | 'published' | 'marketplace' | 'join';
 
 const CATEGORIES: ReadonlyArray<{ id: Category; label: string }> = [
 	{ id: 'official', label: 'Official' },
+	...(import.meta.env.DEV ? [{ id: 'dev' as const, label: 'Dev' }] : []),
 	{ id: 'active', label: 'Active worlds' },
 	{ id: 'published', label: 'Published' },
 	{ id: 'marketplace', label: 'Marketplace' },
@@ -527,10 +528,24 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 
 	// --- Lists of worlds ---
 	function officialEntries(): WorldEntry[] {
-		return BUILTIN_WORLDS.map((world) => ({
+		return BUILTIN_WORLDS.filter((world) => world.id !== 'archive-film-test').map((world) => ({
 			key: `official-${world.id}`,
 			name: world.name,
 			subtitle: 'Official world',
+			description: world.description,
+			preview: () => builtinPreview(world),
+			primary: {
+				label: 'Go',
+				run: async () => { await callbacks.onLaunchBuiltinWorld(world); return `Welcome to the ${world.name}.`; }
+			}
+		}));
+	}
+
+	function devEntries(): WorldEntry[] {
+		return BUILTIN_WORLDS.filter((world) => world.id === 'archive-film-test').map((world) => ({
+			key: `dev-${world.id}`,
+			name: world.name,
+			subtitle: 'Development world',
 			description: world.description,
 			preview: () => builtinPreview(world),
 			primary: {
@@ -700,7 +715,7 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 			for (const [id, button] of categoryButtons) button.background = id === category ? C.accent : C.surface;
 			title.text = CATEGORIES.find((entry) => entry.id === category)?.label ?? '';
 			refreshButton.isVisible = category !== 'join';
-			grid.scroll.isVisible = category === 'official' || category === 'active' || category === 'published';
+			grid.scroll.isVisible = category === 'official' || category === 'dev' || category === 'active' || category === 'published';
 			market.scroll.isVisible = category === 'marketplace';
 			joinView.isVisible = category === 'join';
 			detail.isVisible = false;
@@ -708,6 +723,8 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 			void loadActiveSessions();
 			if (category === 'official') {
 				fillGrid(officialEntries(), '');
+			} else if (category === 'dev') {
+				fillGrid(devEntries(), 'No development worlds available.');
 			} else if (category === 'active') {
 				await loadActiveSessions();
 				if (token !== loadToken) return;

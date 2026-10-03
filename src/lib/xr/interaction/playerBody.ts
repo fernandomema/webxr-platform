@@ -7,6 +7,8 @@ const GRAVITY = 9.8; // m/s²
 const TERMINAL_SPEED = 25; // m/s
 const STEP_UP = 0.4; // tallest ledge walked onto
 const BODY_RADIUS = 0.3;
+const JUMP_SPEED = 3.6; // m/s: about 0.65 m high
+const DESKTOP_EYE_HEIGHT = 1.6;
 const VOID_Y = -20; // below this the player is put back at the spawn point
 const CACHE_MS = 500;
 /** Head height that seated mode pretends the player has. */
@@ -33,6 +35,8 @@ export interface PlayerBody {
 	 * The lift is measured when the mode is turned on (or when the headset first reports a height), so leaning does not fight it.
 	 */
 	setSeated(seated: boolean): void;
+	/** Desktop: a jump, if standing on something. */
+	jump(): void;
 	/** Gravity, standing on the floor, and putting the player back if they fall out of the world. Call every frame. */
 	update(dt: number): void;
 }
@@ -53,8 +57,10 @@ export function setupPlayerBody(
 	scene.collisionsEnabled = true;
 	scene.gravity = new Vector3(0, -0.18, 0);
 	desktopCamera.checkCollisions = true;
-	desktopCamera.applyGravity = true;
-	desktopCamera.ellipsoid = new Vector3(BODY_RADIUS, 0.8, BODY_RADIUS); // eye height is twice the half-height
+	// Walls are Babylon's (collisions); falling, standing and jumping are done below, with real acceleration, so a jump
+	// is the same height at any frame rate.
+	desktopCamera.applyGravity = false;
+	desktopCamera.ellipsoid = new Vector3(BODY_RADIUS, DESKTOP_EYE_HEIGHT / 2, BODY_RADIUS); // eye height is twice the half-height
 	const desktopStart = desktopCamera.position.clone();
 
 	/** Parts of something you can pick up (a brush handle, a cue) travel with it and must never block the player. */
@@ -119,8 +125,9 @@ export function setupPlayerBody(
 	}
 	let verticalSpeed = 0;
 
-	function floorHeightBelow(x: number, y: number, z: number): number | null {
-		const hit = scene.pickWithRay(new Ray(new Vector3(x, y, z), Vector3.Down(), 200), (mesh) => floors.has(mesh));
+	function floorHeightBelow(x: number, y: number, z: number, onDesktop = false): number | null {
+		// Walking, you also stand on what you cannot walk through (a platform, a stair); in VR only on floors.
+		const hit = scene.pickWithRay(new Ray(new Vector3(x, y, z), Vector3.Down(), 200), (mesh) => floors.has(mesh) || (onDesktop && solids.has(mesh)));
 		return hit?.hit && hit.pickedPoint ? hit.pickedPoint.y : null;
 	}
 
@@ -150,11 +157,49 @@ export function setupPlayerBody(
 		}
 	}
 
-	function updateDesktop(): void {
-		if (desktopCamera.position.y < VOID_Y) desktopCamera.position.copyFrom(desktopStart);
+	let grounded = false;
+	/** The head hit something above: a ceiling stops the rise. */
+	function headBlocked(dy: number): boolean {
+		const origin = desktopCamera.position;
+		const hit = scene.pickWithRay(new Ray(origin.clone(), Vector3.Up(), Math.max(0, dy) + 0.15), (mesh) => solids.has(mesh) || floors.has(mesh));
+		return Boolean(hit?.hit);
+	}
+
+	function updateDesktop(dt: number): void {
+		const camera = desktopCamera;
+		const step = Math.min(dt, 0.05); // a long frame (a tab in the background) must not fire the player through the floor
+		const feet = camera.position.y - DESKTOP_EYE_HEIGHT;
+		const ground = floorHeightBelow(camera.position.x, feet + STEP_UP, camera.position.z, true);
+		if (ground !== null && feet <= ground + 0.02 && verticalSpeed <= 0) {
+			grounded = true;
+			verticalSpeed = 0;
+			if (Math.abs(ground - feet) > 0.001) camera.position.y += ground - feet;
+		} else {
+			grounded = false;
+			verticalSpeed = Math.max(verticalSpeed - GRAVITY * step, -TERMINAL_SPEED);
+			let dy = verticalSpeed * step;
+			if (dy > 0 && headBlocked(dy)) {
+				verticalSpeed = 0;
+				dy = 0;
+			}
+			if (ground !== null && feet + dy < ground) {
+				dy = ground - feet;
+				verticalSpeed = 0;
+			}
+			camera.position.y += dy;
+		}
+		if (camera.position.y < VOID_Y) {
+			verticalSpeed = 0;
+			camera.position.copyFrom(desktopStart);
+		}
 	}
 
 	return {
+		jump() {
+			if (inXr() || !grounded) return;
+			verticalSpeed = JUMP_SPEED;
+			grounded = false;
+		},
 		setSeated(enabled) {
 			if (enabled === seated) return;
 			seated = enabled;
@@ -201,7 +246,7 @@ export function setupPlayerBody(
 			else {
 				// A new headset session starts from a fresh origin, so the lift has to be measured again.
 				if (seated) lift = null;
-				updateDesktop();
+				updateDesktop(dt);
 			}
 		}
 	};

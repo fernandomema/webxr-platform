@@ -292,7 +292,7 @@ export interface UIPanelComponent {
 /** A renderable UI control attached to a normal Slot in the scene hierarchy. */
 export interface UIElementComponent {
 	type: 'uiElement';
-	kind: 'container' | 'text' | 'button' | 'input' | 'image' | 'video';
+	kind: 'container' | 'text' | 'button' | 'input' | 'image' | 'video' | 'slider';
 	visible?: boolean;
 	width?: number;
 	height?: number;
@@ -318,6 +318,13 @@ export interface UIElementComponent {
 	volume?: number;
 	/** `video`: writing a new value seeks to it (the running position is read with `ui.getMedia`). */
 	currentTime?: number;
+	/** `container`: anchor this control panel over the bottom of its parent instead of in normal flow. */
+	overlayBottom?: boolean;
+	/** `slider`: displayed value and range. A submit UI event includes the final value after dragging. */
+	value?: number;
+	minValue?: number;
+	maxValue?: number;
+	step?: number;
 }
 
 /** A user interaction with a UI element. Delivered to the element's codeBlock and every ancestor's `onUIEvent`, on the host. */
@@ -328,6 +335,8 @@ export interface UIEvent {
 	slotId: string;
 	/** `input` only: the field's current text. */
 	text?: string;
+	/** `slider`: selected numeric value on change/submit events. */
+	value?: number;
 }
 
 export interface ScriptStateComponent {

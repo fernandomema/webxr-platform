@@ -7,6 +7,7 @@ import {
 	InputText,
 	Rectangle,
 	ScrollViewer,
+	Slider,
 	StackPanel,
 	TextBlock
 } from '@babylonjs/gui';
@@ -39,6 +40,7 @@ interface Entry {
 	stack?: StackPanel;
 	/** `input`: the last `component.text` pushed into the field, so a script can reset it without a keystroke being overwritten. */
 	appliedText?: string;
+	dragging?: boolean;
 }
 
 interface MarginSpacers {
@@ -55,6 +57,7 @@ interface VideoRuntime {
 	src: string;
 	appliedSeek: number | undefined;
 	dirty: boolean;
+	lastDrawnFrame: number;
 }
 
 const VIDEO_CANVAS_WIDTH = 1280;
@@ -94,6 +97,8 @@ function defaultHeight(component: UIElementComponent): string {
 			return '120px';
 		case 'video':
 			return '360px';
+		case 'slider':
+			return '24px';
 		default:
 			return '100%';
 	}
@@ -114,7 +119,7 @@ function shapeOf(slots: Slot[]): string {
 	return slots
 		.map((slot) => {
 			const component = findComponent(slot, 'uiElement');
-			return `${slot.id}:${component?.kind}:${Number((component?.margin ?? 0) > 0)}:${Number(component ? isScrollable(component) : 0)}`;
+			return `${slot.id}:${component?.kind}:${Number((component?.margin ?? 0) > 0)}:${Number(component ? isScrollable(component) : 0)}:${Number(component?.overlayBottom ?? false)}`;
 		})
 		.sort()
 		.join('|');
@@ -189,7 +194,7 @@ export function setupUIPanel(
 		const canvas = document.createElement('canvas');
 		canvas.width = VIDEO_CANVAS_WIDTH;
 		canvas.height = VIDEO_CANVAS_HEIGHT;
-		runtime = { video, canvas, image: null, src: '', appliedSeek: undefined, dirty: true };
+		runtime = { video, canvas, image: null, src: '', appliedSeek: undefined, dirty: true, lastDrawnFrame: -1 };
 		const created = runtime;
 		for (const type of ['loadeddata', 'seeked', 'emptied']) video.addEventListener(type, () => (created.dirty = true));
 		videos.set(slotId, runtime);
@@ -216,6 +221,7 @@ export function setupUIPanel(
 		if (src !== runtime.src) {
 			runtime.src = src;
 			runtime.appliedSeek = component.currentTime;
+			runtime.lastDrawnFrame = -1;
 			if (src) video.src = src;
 			else video.removeAttribute('src');
 			video.load();
@@ -238,12 +244,19 @@ export function setupUIPanel(
 		else video.pause();
 	}
 
-	const frameObserver: Observer<Scene> = scene.onBeforeRenderObservable.add(() => {
+	// Copy video frames only after the current render has finished. The engine's guiUploads observer runs before rendering;
+	// marking this panel dirty here lets it upload the new canvas before the next pass instead of during multiview drawing.
+	const frameObserver: Observer<Scene> = scene.onAfterRenderObservable.add(() => {
 		for (const runtime of videos.values()) {
 			if (!runtime.image) continue;
-			if (!runtime.video.paused || runtime.dirty) {
+			// A headset may render at 72–120 Hz while a video produces only about 24–30 new frames per second.
+			// Repainting the GUI texture for duplicate video frames wastes uploads and can destabilize multiview.
+			const frameTime = runtime.video.currentTime;
+			const frameCount = runtime.video.getVideoPlaybackQuality?.().totalVideoFrames ?? frameTime;
+			if (runtime.dirty || (!runtime.video.paused && frameCount !== runtime.lastDrawnFrame)) {
 				runtime.dirty = false;
 				drawVideoFrame(runtime);
+				runtime.lastDrawnFrame = frameCount;
 			}
 		}
 	});
@@ -340,7 +353,19 @@ export function setupUIPanel(
 				box.addControl(stack);
 			}
 			setSize(box, component);
-			for (const childSlot of getChildren(slot.id)) addWithMargin(stack, childSlot);
+			for (const childSlot of getChildren(slot.id)) {
+				const childComponent = findComponent(childSlot, 'uiElement');
+				if (!childComponent?.overlayBottom) {
+					addWithMargin(stack, childSlot);
+					continue;
+				}
+				const child = createElement(childSlot);
+				if (!child) continue;
+				child.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+				child.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+				child.zIndex = 10;
+				box.addControl(child);
+			}
 			control = box;
 		} else if (component.kind === 'button') {
 			const button = Button.CreateSimpleButton(`ui-${slot.id}`, component.text ?? slot.name);
@@ -373,6 +398,26 @@ export function setupUIPanel(
 			control = image;
 			setSize(control, component);
 			applyVideo(slot.id, component);
+		} else if (component.kind === 'slider') {
+			const slider = new Slider(`ui-${slot.id}`);
+			slider.minimum = component.minValue ?? 0;
+			slider.maximum = Math.max(slider.minimum, component.maxValue ?? 100);
+			slider.step = Math.max(0, component.step ?? 0);
+			slider.value = Math.min(slider.maximum, Math.max(slider.minimum, component.value ?? slider.minimum));
+			slider.color = component.color ?? '#7c3aed';
+			slider.background = component.background ?? '#4b5563';
+			slider.thumbColor = '#f8fafc';
+			slider.onPointerDownObservable.add(() => {
+				const entry = entries.get(slot.id);
+				if (entry) entry.dragging = true;
+			});
+			slider.onPointerUpObservable.add(() => {
+				const entry = entries.get(slot.id);
+				if (entry) entry.dragging = false;
+				onEvent({ type: 'submit', slotId: slot.id, value: slider.value });
+			});
+			control = slider;
+			setSize(control, component);
 		} else {
 			const text = new TextBlock(`ui-${slot.id}`, component.text ?? slot.name);
 			text.color = component.color ?? 'white';
@@ -477,6 +522,12 @@ export function setupUIPanel(
 				if (image.source !== src) image.source = src;
 			} else if (component.kind === 'video') {
 				applyVideo(slot.id, component);
+			} else if (component.kind === 'slider') {
+				const slider = entry.control as Slider;
+				slider.minimum = component.minValue ?? 0;
+				slider.maximum = Math.max(slider.minimum, component.maxValue ?? 100);
+				slider.step = Math.max(0, component.step ?? 0);
+				if (!entry.dragging && component.value !== undefined) slider.value = Math.min(slider.maximum, Math.max(slider.minimum, component.value));
 			} else {
 				const text = entry.control as TextBlock;
 				text.text = component.text ?? slot.name;
@@ -498,7 +549,7 @@ export function setupUIPanel(
 	build();
 	return {
 		dispose: () => {
-			scene.onBeforeRenderObservable.remove(frameObserver);
+			scene.onAfterRenderObservable.remove(frameObserver);
 			for (const timer of changeTimers.values()) clearTimeout(timer);
 			for (const runtime of videos.values()) {
 				runtime.video.pause();

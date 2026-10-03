@@ -2,6 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import type { MountedGame } from '$lib/xr/engine';
 	import XRLaunchOverlay from '$lib/xr/XRLaunchOverlay.svelte';
+	import DesktopHud from '$lib/xr/interaction/desktop/DesktopHud.svelte';
 	import type { WorldPackage } from '$lib/worlds/types';
 
 	interface Props {
@@ -28,6 +29,12 @@
 			launchState = 'vr';
 			launchError = error instanceof Error ? error.message : 'Could not enter VR';
 		}
+	}
+
+	/** Plays with mouse and keyboard: the click that chooses it is also what lets the game capture the mouse. */
+	function continueOnDesktop(): void {
+		launchState = 'playing';
+		game?.captureMouse();
 	}
 
 	/** Meta: inside an installed PWA, tapping the app icon counts as the user action a VR session needs. */
@@ -64,5 +71,6 @@
 	});
 </script>
 
-<XRLaunchOverlay state={launchState} error={launchError} onEnterVR={enterVR} onContinueDesktop={() => (launchState = 'playing')} />
+<XRLaunchOverlay state={launchState} error={launchError} onEnterVR={enterVR} onContinueDesktop={continueOnDesktop} />
+<DesktopHud />
 <canvas bind:this={canvas} class="h-screen w-screen touch-none outline-none"></canvas>

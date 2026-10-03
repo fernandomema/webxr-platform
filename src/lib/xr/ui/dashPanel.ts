@@ -20,7 +20,7 @@ import { ensureCloudAssets } from '$lib/assets/cloudSync';
 import { getLocalAssetStore } from '$lib/assets/store';
 import type { WorldPackage } from '$lib/worlds/types';
 import { gameState, getInventoryContext } from '../gameState';
-import { xrSettings, saveSettings, type FoveationLevel, type MovementMode, type RotationMode } from '../settings';
+import { xrSettings, saveSettings, DESKTOP_FOVS, MOUSE_SENSITIVITIES, type FoveationLevel, type MovementMode, type RotationMode } from '../settings';
 import { dashboardEditorOrder, dashboardItemLabel, moveDashboardItem, toggleDashboardItem, type DashboardItemId } from '../dashboardLayout';
 import { saveWithPreview } from '../inventorySave';
 import { typeWithKeyboard } from '../keyboard/guiInput';
@@ -56,6 +56,8 @@ export interface DashPanelCallbacks {
 	onSeatedModeChanged(): void;
 	/** Foveated rendering or the performance readout was changed (`xrSettings` already holds the new values). */
 	onPerformanceSettingsChanged(): void;
+	/** Mouse speed, inverted look or field of view (the desktop controls) was changed (`xrSettings` already holds the new values). */
+	onDesktopSettingsChanged(): void;
 	/** The display refresh rates the headset offers (empty until a headset session has started). */
 	frameRates(): number[];
 }
@@ -1181,6 +1183,20 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		{ label: 'Seated', active: () => xrSettings.seatedMode, select: () => setSeatedMode(true) }
 	]);
 
+	settingsSection('Desktop');
+	settingRow('mouse', 'Mouse speed', 'How fast the view turns with the mouse. Applies when playing with mouse and keyboard.', () => {
+		const names: Record<number, string> = { 0.5: 'Slow', 1: 'Normal', 1.6: 'Fast', 2.5: 'Fastest' };
+		return MOUSE_SENSITIVITIES.map((value) => pick('mouseSensitivity', value, names[value], () => callbacks.onDesktopSettingsChanged()));
+	});
+	settingRow('invertY', 'Look up and down', 'Normal: moving the mouse up looks up. Inverted: it looks down.', () => [
+		pick('invertY', false, 'Normal', () => callbacks.onDesktopSettingsChanged()),
+		pick('invertY', true, 'Inverted', () => callbacks.onDesktopSettingsChanged())
+	]);
+	settingRow('fov', 'Field of view', 'How much of the world fits on the screen. A wider view shows more around you, but stretches the edges.', () => {
+		const names: Record<number, string> = { 46: 'Normal', 60: 'Wide', 75: 'Wider' };
+		return DESKTOP_FOVS.map((value) => pick('desktopFov', value, names[value], () => callbacks.onDesktopSettingsChanged()));
+	});
+
 	settingsSection('Keyboard');
 	settingRow('keyboard', 'Keyboard layout', 'The keys of the in-world keyboard. Auto follows the language of the page.', () => {
 		const layouts = layoutIds().map((id) => getLayout(id)!);
@@ -1196,7 +1212,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	settingRow('refresh', 'Refresh rate', 'Frames per second the headset shows. Higher is smoother, but each frame must be drawn faster (8 ms at 120 Hz): if the world cannot keep up, it stutters.', () => {
 		const rates = callbacks.frameRates().slice(-3);
 		return [
-			pick('frameRate', null, 'Default', () => callbacks.onPerformanceSettingsChanged()),
+			pick('frameRate', null, 'Stable', () => callbacks.onPerformanceSettingsChanged()),
 			...rates.map((rate) => pick('frameRate', rate, `${rate} Hz`, () => callbacks.onPerformanceSettingsChanged()))
 		];
 	});

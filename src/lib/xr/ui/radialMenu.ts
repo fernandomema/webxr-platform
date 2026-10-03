@@ -1,4 +1,4 @@
-import { Vector3, WebXRControllerComponent, type Scene, type WebXRDefaultExperience, type WebXRInputSource } from '@babylonjs/core';
+import { Vector3, WebXRControllerComponent, type Scene, type TransformNode, type WebXRDefaultExperience, type WebXRInputSource } from '@babylonjs/core';
 import { extractSubtree } from '$lib/ecs/serialize';
 import { isEquippable } from '$lib/ecs/types';
 import { getInventoryAdapter } from '$lib/inventory/registry';
@@ -17,6 +17,85 @@ export interface RadialMenuNetworkHooks {
 	onUnequip?(hand: Hand, slotId: string): void;
 	getInspectTarget?(hand: Hand): string | null;
 	onInspect?(slotId: string): void;
+}
+
+export interface RadialContext {
+	sceneGraph: SceneGraph;
+	grabSystem: GrabSystem;
+	equipment: EquipmentSystem;
+	localPlayerId: () => string;
+	network?: RadialMenuNetworkHooks;
+}
+
+/**
+ * The options of a hand's radial menu. `slotId` is the object the menu is about (held or equipped in the hand, or, on
+ * desktop, the one aimed at); `inspectTarget` is what the laser is on, offered for inspection.
+ */
+export function buildRadialItems(
+	{ sceneGraph, grabSystem, equipment, localPlayerId, network }: RadialContext,
+	hand: Hand,
+	handNode: TransformNode,
+	target: { slotId: string | null; inspectTarget: string | null }
+): RadialItem[] {
+	const player = localPlayerId();
+	const { slotId, inspectTarget } = target;
+	const equippedSlotId = equipment.getEquippedSlot(player, hand);
+	const items: RadialItem[] = [];
+	if (slotId) {
+		const live = sceneGraph.getLive(slotId);
+		const isEquipped = equippedSlotId === slotId;
+		const equipItems: RadialItem[] = isEquipped
+			? [{
+				label: 'Unequip',
+				isEnabled: () => true,
+				onSelect: () => {
+					if (equipment.unequip(player, hand)) network?.onUnequip?.(hand, slotId);
+				}
+			}]
+			: live && isEquippable(live.slot)
+				? [{
+					label: 'Equip',
+					isEnabled: () => equipment.getEquippedSlot(player, hand) === null,
+					onSelect: () => {
+						if (equipment.equip(player, hand, handNode, slotId)) network?.onEquip?.(hand, slotId);
+					}
+				}]
+				: [];
+		items.push(
+			...sceneGraph.getRadialExtrasForSubtree(slotId),
+			...equipItems,
+			{
+				label: 'Save',
+				isEnabled: () => Boolean(gameState.currentInventoryAdapterId && getInventoryAdapter(gameState.currentInventoryAdapterId)?.saveItem),
+				onSelect: async () => {
+					const adapter = gameState.currentInventoryAdapterId ? getInventoryAdapter(gameState.currentInventoryAdapterId) : undefined;
+					if (!adapter?.saveItem) return;
+					const subtree = extractSubtree(sceneGraph.serialize(), slotId);
+					if (!subtree.length) return;
+					const { tree, kind } = forInventory(subtree);
+					await saveWithPreview(adapter, getInventoryContext(), gameState.currentInventoryFolderId, tree[0].name, tree, kind);
+				}
+			},
+			{
+				label: 'Delete',
+				isEnabled: () => true,
+				onSelect: () => {
+					if (equipment.unequip(player, hand)) network?.onUnequip?.(hand, slotId);
+					grabSystem.release(hand);
+					if (network?.onDelete) network.onDelete(slotId);
+					else sceneGraph.removeSlot(slotId);
+				}
+			}
+		);
+	}
+	if (inspectTarget) items.push({
+		label: 'Inspect',
+		isEnabled: () => network?.getInspectTarget?.(hand) === inspectTarget,
+		onSelect: () => {
+			if (network?.getInspectTarget?.(hand) === inspectTarget) network.onInspect?.(inspectTarget);
+		}
+	});
+	return items;
 }
 
 /** Joystick input adapter for the shared radial view. */
@@ -62,60 +141,7 @@ export function setupRadialMenuForHand(
 		const slotId = equippedSlotId ?? grabSystem.getHeldSlot(hand);
 		const inspectTarget = network?.onInspect ? network.getInspectTarget?.(hand) ?? null : null;
 		if (!slotId && !inspectTarget) return;
-		const items: RadialItem[] = [];
-		if (slotId) {
-			const live = sceneGraph.getLive(slotId);
-			const equipItems: RadialItem[] = equippedSlotId
-				? [{
-					label: 'Unequip',
-					isEnabled: () => true,
-					onSelect: () => {
-						if (equipment.unequip(player, hand)) network?.onUnequip?.(hand, slotId);
-					}
-				}]
-				: live && isEquippable(live.slot)
-					? [{
-						label: 'Equip',
-						isEnabled: () => equipment.getEquippedSlot(player, hand) === null,
-						onSelect: () => {
-							if (equipment.equip(player, hand, controller.grip ?? controller.pointer, slotId)) network?.onEquip?.(hand, slotId);
-						}
-					}]
-					: [];
-			items.push(
-				...sceneGraph.getRadialExtrasForSubtree(slotId),
-				...equipItems,
-				{
-					label: 'Save',
-					isEnabled: () => Boolean(gameState.currentInventoryAdapterId && getInventoryAdapter(gameState.currentInventoryAdapterId)?.saveItem),
-					onSelect: async () => {
-						const adapter = gameState.currentInventoryAdapterId ? getInventoryAdapter(gameState.currentInventoryAdapterId) : undefined;
-						if (!adapter?.saveItem) return;
-						const subtree = extractSubtree(sceneGraph.serialize(), slotId);
-						if (!subtree.length) return;
-						const { tree, kind } = forInventory(subtree);
-						await saveWithPreview(adapter, getInventoryContext(), gameState.currentInventoryFolderId, tree[0].name, tree, kind);
-					}
-				},
-				{
-					label: 'Delete',
-					isEnabled: () => true,
-					onSelect: () => {
-						if (equipment.unequip(player, hand)) network?.onUnequip?.(hand, slotId);
-						grabSystem.release(hand);
-						if (network?.onDelete) network.onDelete(slotId);
-						else sceneGraph.removeSlot(slotId);
-					}
-				}
-			);
-		}
-		if (inspectTarget) items.push({
-			label: 'Inspect',
-			isEnabled: () => network?.getInspectTarget?.(hand) === inspectTarget,
-			onSelect: () => {
-				if (network?.getInspectTarget?.(hand) === inspectTarget) network.onInspect?.(inspectTarget);
-			}
-		});
+		const items = buildRadialItems({ sceneGraph, grabSystem, equipment, localPlayerId, network }, hand, controller.grip ?? controller.pointer, { slotId, inspectTarget });
 		selectedIndex = 0;
 		view.open(controller.grip ?? controller.pointer, items);
 		menuSlotId = slotId;

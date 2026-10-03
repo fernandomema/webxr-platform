@@ -25,11 +25,18 @@
 				<p class="copy">Put on your headset and enter the shared world.</p>
 				{#if error}<p class="error">{error}</p>{/if}
 				<button class="primary" type="button" onclick={onEnterVR}>Enter VR</button>
+				<button class="secondary" type="button" onclick={onContinueDesktop}>Continue on desktop</button>
 			{:else}
 				<p class="eyebrow">Desktop mode</p>
 				<h1>Your space is ready</h1>
 				<p class="copy">WebXR is not available in this browser. You can continue with keyboard and mouse.</p>
 				<button class="primary" type="button" onclick={onContinueDesktop}>Continue on desktop</button>
+				<ul class="controls">
+					<li><kbd>W A S D</kbd> move · <kbd>Shift</kbd> run · <kbd>Space</kbd> jump</li>
+					<li><kbd>Click</kbd> grab and drag · <kbd>E</kbd> carry · <kbd>Wheel</kbd> push / pull</li>
+					<li><kbd>Right click</kbd> options · <kbd>M</kbd> menu · <kbd>I</kbd> inspector</li>
+					<li><kbd>Esc</kbd> release the mouse</li>
+				</ul>
 			{/if}
 		</div>
 	</div>
@@ -114,6 +121,36 @@
 
 	.primary:hover { background: #818cf8; }
 	.primary:focus-visible { outline: 3px solid #bfdbfe; outline-offset: 3px; }
+
+	.secondary {
+		margin-top: 10px;
+		background: transparent;
+		color: #cbd5e1;
+		box-shadow: inset 0 0 0 1px rgb(148 163 184 / 0.4);
+	}
+
+	.secondary:hover { color: white; box-shadow: inset 0 0 0 1px rgb(203 213 225 / 0.7); }
+	.secondary:focus-visible { outline: 3px solid #bfdbfe; outline-offset: 3px; }
+
+	.controls {
+		display: grid;
+		gap: 6px;
+		margin: 22px 0 0;
+		padding: 0;
+		color: #94a3b8;
+		font-size: 12.5px;
+		line-height: 1.4;
+		list-style: none;
+	}
+
+	kbd {
+		padding: 1px 6px;
+		border: 1px solid rgb(148 163 184 / 0.4);
+		border-radius: 5px;
+		background: rgb(30 41 59 / 0.8);
+		color: #e2e8f0;
+		font: 600 11px system-ui, sans-serif;
+	}
 
 	.spinner {
 		width: 26px;

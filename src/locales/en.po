@@ -1580,6 +1580,7 @@ msgid "WebXR is not available in this browser. You can continue with keyboard an
 msgstr "WebXR is not available in this browser. You can continue with keyboard and mouse."
 
 #: src/lib/xr/XRLaunchOverlay.svelte
+#: src/lib/xr/XRLaunchOverlay.svelte
 msgid "Continue on desktop"
 msgstr "Continue on desktop"
 
@@ -4199,3 +4200,84 @@ msgstr "GET JSON from a local route or HTTPS endpoint."
 #: src/lib/studio/CodeEditor.svelte
 msgid "POST JSON to a local route or HTTPS endpoint."
 msgstr "POST JSON to a local route or HTTPS endpoint."
+
+#: src/lib/xr/XRLaunchOverlay.svelte
+msgid "<0>W A S D</0> move · <1>Shift</1> run · <2>Space</2> jump"
+msgstr "<0>W A S D</0> move · <1>Shift</1> run · <2>Space</2> jump"
+
+#: src/lib/xr/XRLaunchOverlay.svelte
+msgid "<0>Click</0> grab and drag · <1>E</1> carry · <2>Wheel</2> push / pull"
+msgstr "<0>Click</0> grab and drag · <1>E</1> carry · <2>Wheel</2> push / pull"
+
+#: src/lib/xr/XRLaunchOverlay.svelte
+msgid "<0>Right click</0> options · <1>M</1> menu · <2>I</2> inspector"
+msgstr "<0>Right click</0> options · <1>M</1> menu · <2>I</2> inspector"
+
+#: src/lib/xr/XRLaunchOverlay.svelte
+msgid "<0>Esc</0> release the mouse"
+msgstr "<0>Esc</0> release the mouse"
+
+#: src/lib/xr/interaction/desktop/DesktopHud.svelte
+msgid "Click: use"
+msgstr "Click: use"
+
+#: src/lib/xr/interaction/desktop/DesktopHud.svelte
+msgid "Click: drop"
+msgstr "Click: drop"
+
+#: src/lib/xr/interaction/desktop/DesktopHud.svelte
+msgid "Wheel: push / pull"
+msgstr "Wheel: push / pull"
+
+#: src/lib/xr/interaction/desktop/DesktopHud.svelte
+#: src/lib/xr/interaction/desktop/DesktopHud.svelte
+msgid "Right click: options"
+msgstr "Right click: options"
+
+#: src/lib/xr/interaction/desktop/DesktopHud.svelte
+msgid "Hold click: grab  ·  E: carry  ·  Right click: options"
+msgstr "Hold click: grab  ·  E: carry  ·  Right click: options"
+
+#: src/lib/xr/interaction/desktop/DesktopHud.svelte
+msgid "Click"
+msgstr "Click"
+
+#: src/lib/xr/interaction/desktop/DesktopHud.svelte
+msgid "<0/> <1>Esc</1> Close"
+msgstr "<0/> <1>Esc</1> Close"
+
+#: src/lib/xr/interaction/desktop/DesktopHud.svelte
+msgid "Click an option · Right click to cancel"
+msgstr "Click an option · Right click to cancel"
+
+#: src/lib/xr/interaction/desktop/DesktopHud.svelte
+msgid "Move to an option and release"
+msgstr "Move to an option and release"
+
+#: src/lib/xr/interaction/desktop/DesktopHud.svelte
+msgid "<0>W</0><1>A</1><2>S</2><3>D</3> Move <4>Shift</4> Run <5>Space</5> Jump"
+msgstr "<0>W</0><1>A</1><2>S</2><3>D</3> Move <4>Shift</4> Run <5>Space</5> Jump"
+
+#: src/lib/xr/interaction/desktop/DesktopHud.svelte
+msgid "<0>Click</0> Click / grab and drag <1>E</1> Carry <2>Q</2> Drop"
+msgstr "<0>Click</0> Click / grab and drag <1>E</1> Carry <2>Q</2> Drop"
+
+#: src/lib/xr/interaction/desktop/DesktopHud.svelte
+msgid "<0>Wheel</0> Push / pull <1>Ctrl</1>+<2>Wheel</2> Scale <3>Shift</3>+<4>Wheel</4> Turn"
+msgstr "<0>Wheel</0> Push / pull <1>Ctrl</1>+<2>Wheel</2> Scale <3>Shift</3>+<4>Wheel</4> Turn"
+
+#: src/lib/xr/interaction/desktop/DesktopHud.svelte
+msgid "<0>Right click</0> Options of what you aim at or carry"
+msgstr "<0>Right click</0> Options of what you aim at or carry"
+
+#: src/lib/xr/interaction/desktop/DesktopHud.svelte
+msgid "<0>M</0> Menu <1>I</1> Inspector <2>Esc</2> Release the mouse"
+msgstr "<0>M</0> Menu <1>I</1> Inspector <2>Esc</2> Release the mouse"
+
+#: src/lib/xr/interaction/desktop/DesktopHud.svelte
+msgid "Paused"
+msgstr "Paused"
+
+#: src/lib/xr/interaction/desktop/DesktopHud.svelte
+msgid "Click to resume"
+msgstr "Click to resume"

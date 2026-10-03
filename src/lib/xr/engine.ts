@@ -31,11 +31,16 @@ import { DropZoneSystem } from './interaction/dropZoneSystem';
 import { GrabSystem } from './interaction/grabSystem';
 import { EquipmentSystem } from './interaction/equipmentSystem';
 import { PressableButtonSystem } from './interaction/pressableButtonSystem';
-import { setupPointerAndGrabControllers } from './interaction/pointerController';
+import { setupPointerAndGrabControllers, type PointerControllerNetworkHooks } from './interaction/pointerController';
 import { setupPanelToggle } from './interaction/panelToggle';
 import { setupRotationController } from './interaction/rotationController';
 import { setupMovementController } from './interaction/movementController';
 import { setupPlayerBody } from './interaction/playerBody';
+import { setupFpsController } from './interaction/desktop/fpsController';
+import { setupDesktopPanels } from './interaction/desktop/desktopPanels';
+import { setupDesktopHand } from './interaction/desktop/desktopHand';
+import { desktopHud, hudActions, resetDesktopHud } from './interaction/desktop/desktopHud.svelte';
+import type { RadialItem } from './ui/radialView';
 import { setupLocomotion } from './locomotion';
 import { setupHandControllerSwitch } from './interaction/handControllerSwitch';
 import { createDashPanel } from './ui/dashPanel';
@@ -48,6 +53,7 @@ import { setTextInputProvider } from './keyboard/service';
 import { createPerformanceOverlay } from './ui/performanceOverlay';
 import { uploadGuiBeforeDrawing } from './guiUploads';
 import { FOVEATION, loadSettings, saveSettings, xrSettings } from './settings';
+import { selectTargetFrameRate, XR_FRAMEBUFFER_SCALE } from './performance';
 import { sanitizeAvatarTree } from './avatar/sanitize';
 import { saveWithPreview } from './inventorySave';
 import { captureItemThumbnail, configureThumbnails } from './thumbnail/capture';
@@ -76,6 +82,8 @@ import { getInventoryContext } from './gameState';
 export interface MountedGame {
 	xrSupported: boolean;
 	enterVR(): Promise<void>;
+	/** Desktop: captures the mouse for looking around (it must be called from a click or key press). */
+	captureMouse(): void;
 	dispose(): void;
 }
 
@@ -95,6 +103,9 @@ export async function mountGame(
 	// generated impact sounds) has no backend and throws on use.
 	const engine = new Engine(canvas, true, { audioEngine: true });
 	const scene = new Scene(engine);
+	// The desktop pointer only acts on clicks, and XR controllers do their own ray casts. Babylon's default hover pick
+	// traverses every pickable mesh on every pointer move, which is wasted CPU work (and costly in large worlds).
+	scene.skipPointerMovePicking = true;
 
 	new HemisphericLight('light', new Vector3(0, 1, 0), scene);
 
@@ -102,7 +113,7 @@ export async function mountGame(
 	// Face the world facade: the initial view is turned 180 degrees around Y.
 	desktopCamera.setTarget(new Vector3(0, 1.4, 4));
 	desktopCamera.attachControl(canvas, true);
-	desktopCamera.speed = 1; // half Babylon's default of 2
+	desktopCamera.speed = 0.065; // walking speed; the FPS controller changes it for running
 	// Babylon's default near plane is 1 m, which cut off panels opened 1 m away and anything held close.
 	desktopCamera.minZ = 0.05;
 	// Keys that land on the page itself (nothing focused: the focus was taken by a panel's page and dropped) are the
@@ -226,6 +237,9 @@ export async function mountGame(
 		try {
 			xr = await scene.createDefaultXRExperienceAsync({
 				floorMeshes: floorMesh ? [floorMesh] : [],
+				// Quest is usually fill-rate bound. Rendering fewer pixels (with foveation below) preserves enough GPU
+				// headroom to hold the session refresh rate instead of oscillating around it.
+				outputCanvasOptions: { canvasOptions: { antialias: false, framebufferScaleFactor: XR_FRAMEBUFFER_SCALE } },
 				// Babylon's pointer-selection feature defaults to ONE "attached"
 				// controller at a time (switching between them), which made only one
 				// laser actually pick/grab at once — enable both simultaneously.
@@ -292,6 +306,14 @@ export async function mountGame(
 	let locomotion: ReturnType<typeof setupLocomotion> | null = null;
 	const playerBody = setupPlayerBody(scene, sceneGraph, xr, desktopCamera, { x: desktopCamera.position.x, z: desktopCamera.position.z });
 	playerBody.setSeated(xrSettings.seatedMode);
+	const inXr = () => xr?.baseExperience.state === WebXRState.IN_XR;
+	const fps = setupFpsController(scene, canvas, desktopCamera, playerBody, { isXr: inXr });
+	resetDesktopHud();
+	desktopHud.active = true;
+	if (xr) xr.baseExperience.onStateChangedObservable.add((state) => {
+		if (state === WebXRState.IN_XR) fps.exitLock();
+		if (state === WebXRState.IN_XR || state === WebXRState.NOT_IN_XR) desktopHud.active = state !== WebXRState.IN_XR;
+	});
 	let refreshTeleportFloors = () => {};
 	if (xr) {
 		new PressableButtonSystem(scene, sceneGraph, () => xr.input.controllers.map((c) => c.grip ?? c.pointer));
@@ -626,6 +648,7 @@ export async function mountGame(
 		onExitVr: async () => { await xr?.baseExperience.exitXRAsync(); },
 		onToggleInspector: () => inspector.root.setEnabled(!inspector.root.isEnabled()),
 		onSeatedModeChanged: () => playerBody.setSeated(xrSettings.seatedMode),
+		onDesktopSettingsChanged: () => fps.applySettings(),
 		onPerformanceSettingsChanged: () => applyPerformanceSettings(),
 		frameRates: () => supportedFrameRates
 	});
@@ -640,11 +663,13 @@ export async function mountGame(
 		await saveWithPreview(adapter, getInventoryContext(), folderId, world.name, copyScene(world.scene), 'world');
 	});
 	scene.onPointerObservable.add((event) => {
-		if (event.type !== PointerEventTypes.POINTERPICK || xr?.baseExperience.state === WebXRState.IN_XR) return;
+		// With the mouse captured the hand opens portals itself (see desktopHand.ts); this is for a free cursor.
+		if (event.type !== PointerEventTypes.POINTERPICK || inXr() || fps.locked) return;
 		const slotId = sceneGraph.getSlotIdForNode(event.pickInfo?.pickedMesh);
 		if (slotId && sceneGraph.getLive(slotId)?.slot.components.some((component) => component.type === 'worldPortal')) worldPortalMenu.open(slotId);
 	});
-	const pointerState = xr ? setupPointerAndGrabControllers(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, {
+	// The reactions to a trigger, a grab or a portal are the same whether a controller or the mouse's hand does it.
+	const pointerHooks: PointerControllerNetworkHooks = {
 		onWorldPortal: (slotId) => worldPortalMenu.open(slotId),
 		onUse: (slotId, hand, phase, value) => {
 			// A camera takes its pictures here, on the device of whoever holds it.
@@ -671,7 +696,8 @@ export async function mountGame(
 			if (gameState.role === 'host') hostAuthority?.broadcastSnapshot();
 			else guestSync?.requestRelease(grabberId, slotId);
 		}
-	}) : null;
+	};
+	const pointerState = xr ? setupPointerAndGrabControllers(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, pointerHooks) : null;
 	setupPanelToggle(scene, xr, dash.root, getActiveCamera, { keyboardKey: 'm', buttonIdPattern: /x-button|menu/i });
 	setupPanelToggle(scene, xr, inspector.root, getActiveCamera, { keyboardKey: 'i', buttonIdPattern: /a-button/i });
 	const radialNetwork = {
@@ -697,6 +723,44 @@ export async function mountGame(
 		setupRadialMenuForHand(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, 'left', /y-button/i, radialNetwork);
 		setupRadialMenuForHand(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, 'right', /b-button/i, radialNetwork);
 	}
+	// Mouse and keyboard. The menu and the inspector fill the screen instead of standing in the world, and the mouse plays
+	// the right hand: the same grabs, uses and radial menu a controller has (see interaction/desktop).
+	const desktopPanels = setupDesktopPanels(scene, desktopCamera, [{ name: 'Menu', root: dash.root }, { name: 'Inspector', root: inspector.root }], {
+		isXr: inXr,
+		onDockChange: (panel) => {
+			desktopHud.panelOpen = panel !== null;
+			desktopHud.panelName = panel?.name ?? '';
+			fps.setEnabled(panel === null);
+			if (panel) fps.exitLock();
+			else fps.requestLock();
+		}
+	});
+	hudActions.closePanel = () => desktopPanels.close();
+	const openPanel = (root: { setEnabled(enabled: boolean): void }) => root.setEnabled(true);
+	const desktopHand = setupDesktopHand({
+		scene,
+		camera: desktopCamera,
+		sceneGraph,
+		grabSystem,
+		equipment,
+		localPlayerId: () => localPlayerId,
+		fps,
+		isActive: () => !inXr() && desktopPanels.docked === null,
+		network: pointerHooks,
+		radial: {
+			onEquip: radialNetwork.onEquip,
+			onUnequip: radialNetwork.onUnequip,
+			onDelete: radialNetwork.onDelete,
+			onInspect: (slotId) => {
+				openPanel(inspector.root);
+				inspector.select(slotId);
+			}
+		},
+		globalItems: (): RadialItem[] => [
+			{ label: 'Menu', isEnabled: () => true, onSelect: () => openPanel(dash.root) },
+			{ label: 'Inspector', isEnabled: () => true, onSelect: () => openPanel(inspector.root) }
+		]
+	});
 	// Fixed foveated rendering (less detail at the edges of the view) applies to a headset session's layer, so it is set
 	// again every time one starts; the readout can be shown anywhere.
 	const performanceOverlay = createPerformanceOverlay(scene, getActiveCamera);
@@ -720,8 +784,8 @@ export async function mountGame(
 		if (!xr || xr.baseExperience.state !== WebXRState.IN_XR) return;
 		const sessionManager = xr.baseExperience.sessionManager;
 		supportedFrameRates = Array.from(sessionManager.supportedFrameRates ?? []).sort((a, b) => a - b);
-		const wanted = xrSettings.frameRate;
-		if (wanted === null || !supportedFrameRates.includes(wanted) || sessionManager.currentFrameRate === wanted) return;
+		const wanted = selectTargetFrameRate(supportedFrameRates, xrSettings.frameRate);
+		if (wanted === null || sessionManager.currentFrameRate === wanted) return;
 		sessionManager.updateTargetFrameRate(wanted).catch((error) => console.warn('[engine] the headset refused that refresh rate', error));
 	}
 	function applyPerformanceSettings(): void {
@@ -785,7 +849,12 @@ export async function mountGame(
 			if (!xr) return;
 			await xr.baseExperience.enterXRAsync('immersive-vr', 'local-floor', xr.renderTarget);
 		},
+		captureMouse: () => fps.requestLock(),
 		dispose() {
+			desktopHand.dispose();
+			desktopPanels.dispose();
+			fps.dispose();
+			resetDesktopHud();
 			window.removeEventListener('resize', onResize);
 			setTextInputProvider(null);
 			stopGuiUploads();

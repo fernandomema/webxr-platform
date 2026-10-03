@@ -778,7 +778,9 @@ export class SceneGraph {
 
 	/** Applies each codeBlock's tick() (own try/catch inside), integrates generic `velocity` components, and sweeps expired slots — call every frame, on every peer, solo included. Returns how many slots were removed by expiry. */
 	tick(dt: number): number {
-		for (const entry of this.live.values()) entry.runtime?.tick?.(dt);
+		// These cached component lists are invalidated whenever the graph changes. Large authored worlds contain hundreds
+		// of static decorative slots, so do not scan all of them several times on every headset frame.
+		for (const entry of this.slotsWith('codeBlock')) entry.runtime?.tick?.(dt);
 		this.updateModelPriorities(dt);
 
 		// Everything below is engine code, not user script, but it now runs
@@ -793,12 +795,11 @@ export class SceneGraph {
 
 		try {
 			const now = Date.now();
-			const expiredIds = [...this.live.entries()]
-				.filter(([, entry]) => {
-					const expires = findComponent(entry.slot, 'expires');
-					return expires && expires.expiresAt <= now;
-				})
-				.map(([id]) => id);
+			const expiredIds: string[] = [];
+			for (const entry of this.slotsWith('expires')) {
+				const expires = findComponent(entry.slot, 'expires');
+				if (expires && expires.expiresAt <= now) expiredIds.push(entry.slot.id);
+			}
 			for (const id of expiredIds) this.removeSlot(id);
 			return expiredIds.length;
 		} catch (err) {
@@ -824,7 +825,7 @@ export class SceneGraph {
 	 */
 	private integrateVelocities(dt: number): void {
 		if (!(this.options.isHost?.() ?? true)) return;
-		for (const entry of this.live.values()) {
+		for (const entry of this.slotsWith('velocity')) {
 			const velocity = findComponent(entry.slot, 'velocity');
 			if (!velocity) continue;
 			const [vx, vy, vz] = velocity.linear;
