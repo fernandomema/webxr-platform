@@ -3,6 +3,7 @@ import type { SceneGraph } from '../sceneGraph';
 import { isGrabbable } from '$lib/ecs/types';
 
 interface TwoPointState {
+	nodes: readonly [TransformNode, TransformNode];
 	initialDistance: number;
 	initialScale: Vector3;
 	initialDirection: Vector3;
@@ -37,6 +38,9 @@ export class GrabSystem {
 	private originalParent = new Map<string, TransformNode | null>();
 	private guard: GrabGuard | null = null;
 	private listeners: GrabListener[] = [];
+	private direction = Vector3.Zero();
+	private midpointDelta = Vector3.Zero();
+	private rotationDelta = Quaternion.Identity();
 
 	constructor(
 		scene: Scene,
@@ -189,6 +193,7 @@ export class GrabSystem {
 		// laser) keeps that distance instead of snapping to sit between the
 		// two hands.
 		this.twoPoint.set(slotId, {
+			nodes: [a, b],
 			initialDistance: length > 0.0001 ? length : 0.0001,
 			initialScale: live.node.scaling.clone(),
 			initialDirection: dir.normalizeToNew(),
@@ -204,22 +209,24 @@ export class GrabSystem {
 			const live = this.sceneGraph.getLive(slotId);
 			if (!grabbers || grabbers.size !== 2 || !live) continue;
 
-			const [a, b] = [...grabbers.values()];
+			const [a, b] = state.nodes;
 			const posA = a.absolutePosition;
 			const posB = b.absolutePosition;
-			const dir = posB.subtract(posA);
-			const distance = Math.max(dir.length(), 0.0001);
-			const midpointDelta = Vector3.Center(posA, posB).subtract(state.initialMidpoint);
+			posB.subtractToRef(posA, this.direction);
+			const distance = Math.max(this.direction.length(), 0.0001);
+			Vector3.CenterToRef(posA, posB, this.midpointDelta);
+			this.midpointDelta.subtractInPlace(state.initialMidpoint);
 
-			live.node.position = state.initialPosition.add(midpointDelta);
-			live.node.scaling = state.initialScale.scale(distance / state.initialDistance);
+			state.initialPosition.addToRef(this.midpointDelta, live.node.position);
+			state.initialScale.scaleToRef(distance / state.initialDistance, live.node.scaling);
 
-			const rotationDelta = Quaternion.FromUnitVectorsToRef(
+			Quaternion.FromUnitVectorsToRef(
 				state.initialDirection,
-				dir.normalizeToNew(),
-				new Quaternion()
+				this.direction.normalize(),
+				this.rotationDelta
 			);
-			live.node.rotationQuaternion = rotationDelta.multiply(state.initialRotation);
+			live.node.rotationQuaternion ??= Quaternion.Identity();
+			this.rotationDelta.multiplyToRef(state.initialRotation, live.node.rotationQuaternion);
 		}
 	}
 }

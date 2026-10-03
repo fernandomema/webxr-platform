@@ -65,6 +65,28 @@ test('a finger that starts inside the object is left to the relaxed hold instead
 
 import { solveThumb, solveGraspFull, withSwing } from '../src/lib/xr/avatar/grasp.ts';
 
+test('laser-held objects outside finger reach keep the relaxed hold without searching thumb poses', () => {
+	const hand = defaultHandModel('right');
+	let distanceChecks = 0;
+	const distant = {
+		kind: 'box', rotation: I, half: [0.02, 0.02, 0.02],
+		get center() { distanceChecks++; return [0, 0, 2]; }
+	};
+	assert.deepEqual(solveGraspFull(hand, [distant], holdingBends()), { bends: holdingBends(), thumbSwing: 0 });
+	assert.ok(distanceChecks <= hand.length, 'a distant shape only needs a reach check per finger');
+});
+
+test('distant object parts do not change the grasp, while a large shape with a nearby surface is still wrapped', () => {
+	const hand = defaultHandModel('right');
+	const handle = cylinder([0, -0.035, 0.07], 0.02, 0.06, [Math.SQRT1_2, 0, 0, Math.SQRT1_2]);
+	const nearby = solveGraspFull(hand, [handle], holdingBends());
+	assert.notDeepEqual(nearby.bends, holdingBends());
+	const distantParts = Array.from({ length: 40 }, (_, i) => box([i + 2, 0, 0], [0.02, 0.02, 0.02]));
+	assert.deepEqual(solveGraspFull(hand, [handle, ...distantParts], holdingBends()), nearby);
+	const large = box([0, -2.025, 0.07], [2, 2, 2]);
+	assert.notDeepEqual(solveGraspFull(hand, [large], holdingBends()).bends, holdingBends(), 'reach is measured from the surface, not the shape centre');
+});
+
 test('a thumb turns across the palm to reach an object its plain curl would miss', () => {
 	const thumb = defaultHandModel('right')[0];
 	// A bar lying across the palm, off to the side the thumb's own curl plane does not reach.

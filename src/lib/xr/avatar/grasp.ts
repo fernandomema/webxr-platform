@@ -184,6 +184,11 @@ export function solveGrasp(hand: HandModel, obstacles: readonly Primitive[], rel
 
 /** As `solveGrasp`, and also how far the thumb's curl plane was turned to reach the object (0 when it was not). */
 export function solveGraspFull(hand: HandModel, obstacles: readonly Primitive[], relaxed: readonly number[]): { bends: number[]; thumbSwing: number } {
+	// Every point of a finger stays within its total length of its base, whichever way its joints turn.
+	// Reject distant parts before the thumb's expensive pose search (especially objects held with a laser).
+	obstacles = obstacles.filter((shape) => hand.some((finger) =>
+		signedDistance(shape, finger.base) <= finger.lengths[0] + finger.lengths[1] + finger.lengths[2] + finger.radius + CONTACT_GAP
+	));
 	if (obstacles.length === 0) return { bends: [...relaxed], thumbSwing: 0 };
 	// The fingers first: the thumb then presses against the object opposite wherever they ended up.
 	const fingers = hand.map((finger, i) => (i === 0 ? null : solveFinger(finger, obstacles)));
@@ -267,6 +272,8 @@ export function palmShift(hand: HandModel, obstacles: readonly Primitive[], reac
 	const target = nearestSurfacePoint(obstacles, [(minX + maxX) / 2, y, (minZ + maxZ) / 2]);
 	const dx = target[0] - Math.min(maxX, Math.max(minX, target[0]));
 	const dz = target[2] - Math.min(maxZ, Math.max(minZ, target[2]));
+	// No vertical adjustment can bring this horizontal shift within reach.
+	if (Math.hypot(dx, dz) > reach) return null;
 	const free = (t: number) => palmGap(spheres, obstacles, [dx, t, dz]) >= PALM_GAP;
 	// Come down from above until the palm meets the object, so it lands on the side of the object facing it.
 	let above = reach;

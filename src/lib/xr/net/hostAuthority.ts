@@ -120,6 +120,7 @@ export class HostAuthority {
 	}
 
 	private broadcastOwnPresence(): void {
+		if (this.guests.size === 0) return;
 		const presence = this.getLocalPresence();
 		for (const { link } of this.guests.values()) link.sendState(presence);
 	}
@@ -335,6 +336,7 @@ export class HostAuthority {
 	}
 
 	private broadcastStateIfChanged(): void {
+		if (this.guests.size === 0) return;
 		const changed: SlotTransform[] = [];
 		const seen = new Set<string>();
 		for (const { id, position, rotation, scale, components } of this.sceneGraph.serialize()) {

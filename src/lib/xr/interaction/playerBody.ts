@@ -92,7 +92,8 @@ export function setupPlayerBody(
 		solids = new Set();
 		for (const entry of sceneGraph.allSlots()) {
 			if (entry.system) continue;
-			const mesh = entry.node as AbstractMesh;
+			// Model roots are transform containers: their proxy handles simple colliders, their geometry mesh colliders.
+			const mesh = (entry.node.metadata?.selectionMesh ?? entry.node) as AbstractMesh;
 			if (typeof mesh.getBoundingInfo !== 'function') continue;
 			const modelCollider = entry.slot.components.some((component) => component.type === 'collider' && component.shape === 'mesh');
 			const collisionMeshes = modelCollider ? entry.model?.instance?.root.getChildMeshes(false) ?? [] : [mesh];

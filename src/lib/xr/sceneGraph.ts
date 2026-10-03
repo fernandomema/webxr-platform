@@ -18,6 +18,7 @@ import type { MediaControlAction, Slot, SlotTree, UIEvent, Vec3, Quat } from '$l
 import { findComponent, isGrabbable } from '$lib/ecs/types';
 import { normalizeMeshRef, type AssetId, type MeshRef } from '$lib/assets/ref';
 import { needsRebuild } from './slotRebuild';
+import { batchMaterialUpdates, batchMeshDisposal } from './performance';
 import type { BlobAssetLibrary } from './blobAssetLibrary';
 import type { ModelInstance, ModelLease, ModelLibrary, ModelState } from './modelLibrary';
 import { setupMirrorSurface } from './specialSurfaces';
@@ -54,7 +55,7 @@ interface LiveSlot {
 	node: TransformNode;
 	/** System nodes (e.g. the Dash/Inspector panels) are grabbable like any Slot but excluded from serialize(). */
 	system?: boolean;
-	/** Present for a `meshRenderer` that points at a model asset: the node is an empty Mesh with an invisible pickable proxy, a placeholder, and (once loaded) the model. */
+	/** Present for a `meshRenderer` that points at a model asset: the TransformNode holds a pickable proxy, a placeholder, and (once loaded) the model. */
 	model?: {
 		assetId: AssetId;
 		lease: ModelLease;
@@ -136,6 +137,11 @@ export class SceneGraph {
 	/** Slots by the components they carry, and whole objects, for the systems that look every frame; rebuilt after the scene changes. */
 	private byComponent = new Map<string, LiveSlot[]>();
 	private subtrees = new Map<string, LiveSlot[]>();
+	private serializedMatrix = Matrix.Identity();
+	private serializedParentInverse = Matrix.Identity();
+	private serializedPosition = Vector3.Zero();
+	private serializedRotation = Quaternion.Identity();
+	private serializedScale = Vector3.One();
 
 	private invalidateIndexes(): void {
 		this.byComponent.clear();
@@ -183,13 +189,15 @@ export class SceneGraph {
 	}
 
 	load(tree: SlotTree): void {
-		for (const slot of tree) this.spawnNode(slot);
-		for (const slot of tree) {
-			if (!slot.parentId) continue;
-			const parent = this.parentNodeFor(slot);
-			const self = this.live.get(slot.id)?.node;
-			if (parent && self) self.parent = parent;
-		}
+		batchMaterialUpdates(this.scene, () => {
+			for (const slot of tree) this.spawnNode(slot);
+			for (const slot of tree) {
+				if (!slot.parentId) continue;
+				const parent = this.parentNodeFor(slot);
+				const self = this.live.get(slot.id)?.node;
+				if (parent && self) self.parent = parent;
+			}
+		});
 		for (const slot of tree) {
 			const node = this.live.get(slot.id)?.node;
 			if (node) this.activateCodeBlock(slot, node);
@@ -217,31 +225,36 @@ export class SceneGraph {
 		const idsToRemove = [...this.live.entries()]
 			.filter(([id, entry]) => id === slotId || this.isDescendantOf(entry.slot, slotId))
 			.map(([id]) => id);
-		for (const id of idsToRemove) {
-			const entry = this.live.get(id);
-			if (!entry) continue;
-			this.disposeRuntime(entry);
-			entry.node.dispose();
-			this.live.delete(id);
-		}
+		if (idsToRemove.length === 0) return;
+		batchMeshDisposal(this.scene, () => {
+			for (const id of idsToRemove) {
+				const entry = this.live.get(id);
+				if (!entry) continue;
+				this.disposeRuntime(entry);
+				entry.node.dispose();
+				this.live.delete(id);
+			}
+		});
 		this.invalidateIndexes();
 		this.syncUIPanels();
 		this.notifyChanged(idsToRemove);
 	}
 
 	dispose(): void {
-		for (const entry of this.live.values()) {
-			this.disposeRuntime(entry);
-			entry.node.dispose();
-		}
-		this.live.clear();
-		this.invalidateIndexes();
-		for (const source of this.primitiveSources.values()) source.dispose();
-		this.primitiveSources.clear();
-		this.primitiveMaterial?.dispose();
-		this.primitiveMaterial = null;
-		for (const material of Object.values(this.placeholderMaterials)) material?.dispose();
-		this.placeholderMaterials = {};
+		batchMaterialUpdates(this.scene, () => batchMeshDisposal(this.scene, () => {
+			for (const entry of this.live.values()) {
+				this.disposeRuntime(entry);
+				entry.node.dispose();
+			}
+			this.live.clear();
+			this.invalidateIndexes();
+			for (const source of this.primitiveSources.values()) source.dispose();
+			this.primitiveSources.clear();
+			this.primitiveMaterial?.dispose();
+			this.primitiveMaterial = null;
+			for (const material of Object.values(this.placeholderMaterials)) material?.dispose();
+			this.placeholderMaterials = {};
+		}));
 	}
 
 	/** One runtime failing to clean up (e.g. a media player with no audio engine) must not stop the rest of the scene from being torn down. */
@@ -475,18 +488,31 @@ export class SceneGraph {
 	private serializeEntry({ slot, node }: LiveSlot): Slot {
 		// A grabbed node is temporarily parented to a hand. Serialize it in
 		// its Slot parent space so remote peers receive the same world pose,
-		// without breaking the live grab relationship.
+		// without reparenting it: setParent walks the entire object's hierarchy
+		// and repeated decomposition also changes the live transform while held.
 		const expectedParent = this.parentNodeFor(slot);
-		const transientParent = node.parent;
-		if (transientParent !== expectedParent) node.setParent(expectedParent);
-		const serialized = {
+		let position = node.position;
+		let rotation = node.rotationQuaternion ?? Quaternion.FromEulerVector(node.rotation);
+		let scale = node.scaling;
+		if (node.parent !== expectedParent) {
+			// Match setParent's conversion of local TRS, including its pivot-independent semantics.
+			Matrix.ComposeToRef(scale, rotation, position, this.serializedMatrix);
+			if (node.parent) this.serializedMatrix.multiplyToRef(node.parent.computeWorldMatrix(true), this.serializedMatrix);
+			if (expectedParent) {
+				expectedParent.computeWorldMatrix(true).invertToRef(this.serializedParentInverse);
+				this.serializedMatrix.multiplyToRef(this.serializedParentInverse, this.serializedMatrix);
+			}
+			this.serializedMatrix.decompose(this.serializedScale, this.serializedRotation, this.serializedPosition);
+			position = this.serializedPosition;
+			rotation = this.serializedRotation;
+			scale = this.serializedScale;
+		}
+		return {
 			...slot,
-			position: node.position.asArray() as Slot['position'],
-			rotation: (node.rotationQuaternion ?? Quaternion.Identity()).asArray() as Slot['rotation'],
-			scale: node.scaling.asArray() as Slot['scale']
+			position: position.asArray() as Slot['position'],
+			rotation: rotation.asArray() as Slot['rotation'],
+			scale: scale.asArray() as Slot['scale']
 		};
-		if (transientParent !== expectedParent) node.setParent(transientParent);
-		return serialized;
 	}
 
 	/**
@@ -498,9 +524,11 @@ export class SceneGraph {
 	 */
 	reconcile(tree: SlotTree, ignoreSlotIds: Set<string> = new Set()): void {
 		const incomingIds = new Set(tree.map((s) => s.id));
-
-		for (const id of [...this.live.keys()]) {
-			if (!incomingIds.has(id) && !this.live.get(id)?.system) this.removeSlot(id);
+		const removedIds = [...this.live.keys()].filter((id) => !incomingIds.has(id) && !this.live.get(id)?.system);
+		if (removedIds.length > 0) {
+			batchMeshDisposal(this.scene, () => {
+				for (const id of removedIds) this.removeSlot(id);
+			});
 		}
 
 		for (const slot of tree) {
@@ -594,7 +622,7 @@ export class SceneGraph {
 		const worldWidth = uiPanel?.worldWidth ?? 1.2;
 		const node: TransformNode = mesh
 			? modelAssetId
-				? new Mesh(slot.id, this.scene) // empty: the visible parts are its children (see bindModel)
+				? new TransformNode(slot.id, this.scene) // only the children render or participate in picking
 				: this.createMesh(slot, ref!, mesh.color)
 			: uiPanel
 				? MeshBuilder.CreatePlane(slot.id, { width: worldWidth, height: worldWidth * uiPanel.height / uiPanel.width }, this.scene)
@@ -941,7 +969,7 @@ export class SceneGraph {
 	 * laser, hand grabs and selection always have something simple to hit.
 	 */
 	private bindModel(entry: LiveSlot, assetId: AssetId): void {
-		const root = entry.node as Mesh;
+		const root = entry.node;
 		const slotId = entry.slot.id;
 		const proxy = MeshBuilder.CreateBox(`${slotId}-hit`, { size: 1 }, this.scene);
 		proxy.parent = root;
@@ -1034,8 +1062,10 @@ export class SceneGraph {
 			for (const child of byParent.get(current.id) ?? []) visit(child);
 		};
 		visit(slot);
-		this.removeSlot(slot.id);
-		for (const item of order) this.addSlot(item);
+		batchMaterialUpdates(this.scene, () => {
+			this.removeSlot(slot.id);
+			for (const item of order) this.addSlot(item);
+		});
 	}
 
 	/** Changes the colour a slot's mesh is drawn in: its instance's own colour, or its own material's. */
@@ -1081,7 +1111,10 @@ export class SceneGraph {
 		const id = slot.id;
 		const shape = ref.kind === 'builtin' ? ref.id : 'box';
 		// A mirrored scale turns a mesh inside out, which instances of the same mesh cannot each do their own way.
-		if (INSTANCED_SHAPES.has(shape) && !slot.components.some((c) => OWN_SURFACE.has(c.type)) && slot.scale.every((v) => v > 0)) {
+		const opacity = findComponent(slot, 'meshRenderer')?.opacity;
+		const translucent = opacity !== undefined && opacity < 1;
+		// A see-through mesh needs a material of its own, so it cannot be an instance either.
+		if (INSTANCED_SHAPES.has(shape) && !translucent && !slot.components.some((c) => OWN_SURFACE.has(c.type)) && slot.scale.every((v) => v > 0)) {
 			const instance = this.primitiveSource(shape).createInstance(id);
 			instance.instancedBuffers.color = instanceColor(color);
 			return instance;
@@ -1112,9 +1145,13 @@ export class SceneGraph {
 				mesh = MeshBuilder.CreateBox(id, { size: 1 }, this.scene);
 				break;
 		}
-		if (color) {
+		if (color || translucent) {
 			const mat = new StandardMaterial(`${id}-mat`, this.scene);
-			mat.diffuseColor = Color3.FromHexString(color);
+			mat.diffuseColor = Color3.FromHexString(color ?? '#ffffff');
+			if (translucent) {
+				mat.alpha = Math.max(0, opacity ?? 1);
+				mat.backFaceCulling = false;
+			}
 			mesh.material = mat;
 		}
 		return mesh;

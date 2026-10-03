@@ -17,6 +17,8 @@ export interface MeshRendererComponent {
 	/** A built-in primitive, or a model addressed by the SHA-256 of its bytes (see $lib/assets/ref). */
 	meshRef: MeshRef;
 	color?: string;
+	/** 0 (invisible) to 1 (solid, the default). Below 1 the surface is see-through, like glass. */
+	opacity?: number;
 }
 
 export interface ColliderComponent {

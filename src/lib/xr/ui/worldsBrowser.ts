@@ -16,7 +16,7 @@ import { copyScene, validateWorldScene } from '$lib/worlds/package';
 import type { WorldPackage } from '$lib/worlds/types';
 import { gameState } from '../gameState';
 import type { SceneGraph } from '../sceneGraph';
-import { BUILTIN_WORLDS, type BuiltinWorld } from '../templates/builtinWorlds';
+import { BUILTIN_WORLDS, DEV_WORLD_IDS, type BuiltinWorld } from '../templates/builtinWorlds';
 import { captureItemThumbnail } from '../thumbnail/capture';
 
 /**
@@ -528,7 +528,7 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 
 	// --- Lists of worlds ---
 	function officialEntries(): WorldEntry[] {
-		return BUILTIN_WORLDS.filter((world) => world.id !== 'archive-film-test').map((world) => ({
+		return BUILTIN_WORLDS.filter((world) => !DEV_WORLD_IDS.includes(world.id)).map((world) => ({
 			key: `official-${world.id}`,
 			name: world.name,
 			subtitle: 'Official world',
@@ -542,7 +542,7 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 	}
 
 	function devEntries(): WorldEntry[] {
-		return BUILTIN_WORLDS.filter((world) => world.id === 'archive-film-test').map((world) => ({
+		return BUILTIN_WORLDS.filter((world) => DEV_WORLD_IDS.includes(world.id)).map((world) => ({
 			key: `dev-${world.id}`,
 			name: world.name,
 			subtitle: 'Development world',

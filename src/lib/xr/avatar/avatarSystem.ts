@@ -3,8 +3,10 @@ import { findComponent, type AvatarComponent, type Vec3 } from '$lib/ecs/types';
 import type { SceneGraph } from '../sceneGraph';
 import type { HandPose, TransformPose } from './defaultAvatar';
 import { readHandPoses } from './localHands';
-import { defaultHandModel, fingerJoints as fingerPoints, holdingBends, palmShift, shiftPrimitives, solveGraspFull, withSwing, type FingerModel, type HandModel } from './grasp';
+import { defaultHandModel, fingerJoints as fingerPoints, withSwing, type FingerModel, type HandModel } from './grasp';
 import { graspObstacles } from './graspShapes';
+import { GraspSolver } from './graspSolver';
+import type { GraspPose } from './graspPose';
 import { FINGER_NAMES, OPEN_HAND, bendsFromCurls, conjugate, easeValues, handFrameFromKnuckles, parseBends, parseCurls, parseThumbDirections, rotateVector as rotateBy } from './fingers';
 import { detectHumanoidMap, fingerJoints, missingRequiredBones, pruneHumanoidMap, type HumanoidBone } from './humanoid';
 import { mirrorRenderHooks } from '../mirrorHooks';
@@ -42,13 +44,7 @@ export interface AvatarSystemOptions {
  * A grasp worked out for a hand: the finger angles, how far the thumb turned across the palm to press on the object, and
  * how far the hand was moved (in its own frame) to rest its palm on the object. `model` is the hand it was solved for.
  */
-interface Grasp {
-	key: string;
-	bends: number[];
-	thumbSwing: number;
-	shift: V3 | null;
-	model: HandModel;
-}
+type Grasp = GraspPose;
 
 /** How far a hand may be moved to rest on what it grabbed, in metres at the avatar's own size. */
 const PALM_REACH = 0.1;
@@ -88,8 +84,6 @@ interface Rig {
 	feet: { left?: Foot; right?: Foot };
 	/** Each hand's fingers as measured on this model (lengths in the root's own units), for closing them round an object. */
 	handModels: { left: HandModel; right: HandModel };
-	/** The last grasp worked out per hand, kept until the object moves in the hand. */
-	grasps: { left: Grasp | null; right: Grasp | null };
 	/** How far each hand is moved onto what it grabbed (in the hand's frame), eased. */
 	shift: { left: V3; right: V3 };
 	/** The body's horizontal velocity, eased, used to aim each step ahead. */
@@ -171,6 +165,7 @@ export class AvatarSystem {
 	private rigs = new Map<string, Rig>();
 	private driven = new Set<string>();
 	private controllersHidden = false;
+	private graspSolver = new GraspSolver();
 	private readonly observer;
 	private readonly mirrorObservers;
 	/** The local player's avatar, whose head is hidden from their own eyes but shown in a mirror. */
@@ -235,6 +230,7 @@ export class AvatarSystem {
 		mirrorRenderHooks.before.remove(this.mirrorObservers[0]);
 		mirrorRenderHooks.after.remove(this.mirrorObservers[1]);
 		this.setControllersHidden(false);
+		this.graspSolver.dispose();
 		this.rigs.clear();
 		this.poses.clear();
 		this.driven.clear();
@@ -278,6 +274,8 @@ export class AvatarSystem {
 			if (!pose) continue;
 			let rig = this.rigs.get(entry.slot.id);
 			if (!rig || rig.root !== entry.node) {
+				this.graspSolver.clear(`${entry.slot.id}:left`);
+				this.graspSolver.clear(`${entry.slot.id}:right`);
 				rig = this.buildRig(entry.slot.id, entry.node, avatar, instance.boneNodes) ?? undefined;
 				if (!rig) continue;
 				this.rigs.set(entry.slot.id, rig);
@@ -289,7 +287,11 @@ export class AvatarSystem {
 		this.driven = seen;
 		if (!localDriven) this.localRig = null;
 		for (const [slotId, rig] of this.rigs) {
-			if (!this.sceneGraph.getLive(slotId) || this.sceneGraph.getLive(slotId)?.node !== rig.root) this.rigs.delete(slotId);
+			if (!this.sceneGraph.getLive(slotId) || this.sceneGraph.getLive(slotId)?.node !== rig.root) {
+				this.rigs.delete(slotId);
+				this.graspSolver.clear(`${slotId}:left`);
+				this.graspSolver.clear(`${slotId}:right`);
+			}
 		}
 		this.setControllersHidden(localDriven);
 	}
@@ -449,7 +451,6 @@ export class AvatarSystem {
 			knuckles: { left: knuckles('left'), right: knuckles('right') },
 			feet: {},
 			handModels: { left: measureHandModel('left'), right: measureHandModel('right') },
-			grasps: { left: null, right: null },
 			shift: { left: [0, 0, 0], right: [0, 0, 0] },
 			velocity: [0, 0, 0],
 			lastRoot: null,
@@ -610,33 +611,33 @@ export class AvatarSystem {
 	 * stays where it was caught, so the hand is moved to rest on it; an equipped one sits where its author placed it.
 	 */
 	private graspFor(rig: Rig, side: 'left' | 'right', ownerId: string, hand: HandPose, frame: Q4): Grasp | null {
-		if (parseBends(hand.bend)) return null;
+		const handId = `${rig.slotId}:${side}`;
+		if (parseBends(hand.bend)) {
+			this.graspSolver.clear(handId);
+			return null;
+		}
 		const held = this.options.getHeldSlots?.(ownerId)?.[side];
 		const slotId = held?.slotId;
 		const entry = slotId ? this.sceneGraph.getLive(slotId) : undefined;
 		// Equipped objects opt in with Auto grip; grabbed ones are wrapped unless their Grabbable says not to.
 		const wanted = !entry ? false : held!.via === 'equip' ? findComponent(entry.slot, 'equippable')?.autoGrip === true : findComponent(entry.slot, 'grabbable')?.autoGrip !== false;
 		if (!slotId || !entry || !wanted) {
-			rig.grasps[side] = null;
+			this.graspSolver.clear(handId);
 			return null;
 		}
 		const handWorld = Matrix.Compose(Vector3.One(), Quaternion.FromArray(frame), Vector3.FromArray(hand.position));
 		const obstacles = graspObstacles(this.sceneGraph, slotId, handWorld);
 		const unit = rig.root.scaling.x || 1;
 		const key = `${held!.via}|${unit.toFixed(2)}|${obstacles.map((shape) => `${shape.kind}:${[...shape.center, ...shape.rotation, ...shape.half].map((v) => Math.round(v * 200)).join(',')}`).join(';')}`;
-		let cached = rig.grasps[side];
-		if (!cached || cached.key !== key) {
+		return this.graspSolver.sample(handId, `${slotId}|${held!.via}`, key, () => {
 			const model = rig.handModels[side].map((f): FingerModel => ({
 				...f,
 				base: [f.base[0] * unit, f.base[1] * unit, f.base[2] * unit],
 				lengths: [f.lengths[0] * unit, f.lengths[1] * unit, f.lengths[2] * unit],
 				radius: f.radius * unit
 			}));
-			const shift = held!.via === 'grab' ? palmShift(model, obstacles, PALM_REACH * unit) : null;
-			cached = { key, shift, model, ...solveGraspFull(model, shift ? shiftPrimitives(obstacles, shift) : obstacles, holdingBends()) };
-			rig.grasps[side] = cached;
-		}
-		return cached;
+			return { model, obstacles, reach: held!.via === 'grab' ? PALM_REACH * unit : null };
+		});
 	}
 
 	/**

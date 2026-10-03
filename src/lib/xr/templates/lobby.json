@@ -2260,6 +2260,33 @@
 		]
 	},
 	{
+		"id": "lobby-disc-rack-drop-zone-1",
+		"parentId": "lobby-disc-rack",
+		"name": "Disc Rack Drop Zone 1",
+		"position": [0, 0.3499, 0.1583],
+		"rotation": [-0.1564, 0, 0, 0.9877],
+		"scale": [1, 0.32, 0.28],
+		"components": [{ "type": "dropZone", "align": "nearest", "yawStep": 90 }]
+	},
+	{
+		"id": "lobby-disc-rack-drop-zone-2",
+		"parentId": "lobby-disc-rack",
+		"name": "Disc Rack Drop Zone 2",
+		"position": [0, 0.6923, 0.047],
+		"rotation": [-0.1564, 0, 0, 0.9877],
+		"scale": [1, 0.32, 0.28],
+		"components": [{ "type": "dropZone", "align": "nearest", "yawStep": 90 }]
+	},
+	{
+		"id": "lobby-disc-rack-drop-zone-3",
+		"parentId": "lobby-disc-rack",
+		"name": "Disc Rack Drop Zone 3",
+		"position": [0, 1.0347, -0.0642],
+		"rotation": [-0.1564, 0, 0, 0.9877],
+		"scale": [1, 0.32, 0.28],
+		"components": [{ "type": "dropZone", "align": "nearest", "yawStep": 90 }]
+	},
+	{
 		"id": "lobby-disc-rack-sleeve-1",
 		"parentId": "lobby-disc-rack",
 		"name": "Record Sleeve 1",

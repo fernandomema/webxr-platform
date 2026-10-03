@@ -1,3 +1,29 @@
+import type { Scene } from '@babylonjs/core';
+
+/** Coalesces material invalidation during synchronous construction/teardown, preserving an enclosing batch. */
+export function batchMaterialUpdates<T>(scene: Scene, update: () => T): T {
+	const wasBlocked = scene.blockMaterialDirtyMechanism;
+	scene.blockMaterialDirtyMechanism = true;
+	try {
+		return update();
+	} finally {
+		// Babylon marks all materials dirty once when this flag returns to false.
+		scene.blockMaterialDirtyMechanism = wasBlocked;
+	}
+}
+
+/** Clears render lists once for synchronous bulk disposal, including nested subtree removals. */
+export function batchMeshDisposal<T>(scene: Scene, dispose: () => T): T {
+	const wasBlocked = scene.blockfreeActiveMeshesAndRenderingGroups;
+	// Babylon clears the lists when blocking begins; each mesh can then skip the same scene-wide cleanup.
+	scene.blockfreeActiveMeshesAndRenderingGroups = true;
+	try {
+		return dispose();
+	} finally {
+		scene.blockfreeActiveMeshesAndRenderingGroups = wasBlocked;
+	}
+}
+
 /** Conservative Quest defaults: leave GPU headroom instead of chasing the headset's highest refresh rate. */
 export const XR_FRAMEBUFFER_SCALE = 0.8;
 export const MIN_STORE_FRAME_RATE = 72;

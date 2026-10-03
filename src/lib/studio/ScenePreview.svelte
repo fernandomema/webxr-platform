@@ -139,6 +139,7 @@
 		ground.material = groundMaterial;
 		ground.isPickable = false;
 		ground.layerMask = EDITOR_ONLY; // the grid is for the editor; the live camera view shows only the scene
+		ground.freezeWorldMatrix();
 
 		const boxes = scene.getBoundingBoxRenderer();
 		boxes.frontColor = new Color3(0.49, 0.42, 0.96);
@@ -306,7 +307,7 @@
 		if (highlighted) highlighted.showBoundingBox = false;
 		highlighted = null;
 		const node = id ? sceneGraph.getLive(id)?.node : null;
-		// A model's root is an empty mesh; its invisible box proxy is what outlines the selection.
+		// A model's root is a transform container; its invisible box proxy outlines the selection.
 		const target = (node?.metadata?.selectionMesh as AbstractMesh | undefined) ?? node;
 		if (target instanceof AbstractMesh) {
 			target.showBoundingBox = true;

@@ -4,11 +4,14 @@ import {
 	MeshBuilder,
 	StandardMaterial,
 	Color3,
+	PointerEventTypes,
 	WebXRControllerComponent,
 	type Scene,
 	type WebXRDefaultExperience,
 	type WebXRInputSource,
-	type Mesh
+	type Mesh,
+	type AbstractMesh,
+	type PickingInfo
 } from '@babylonjs/core';
 import type { SceneGraph } from '../sceneGraph';
 import type { GrabSystem } from './grabSystem';
@@ -20,6 +23,10 @@ import { isEquippable } from '$lib/ecs/types';
 
 const HAND_GRAB_RADIUS = 0.15;
 const LASER_MAX_LENGTH = 5;
+const LASER_COLOR = Color3.FromHexString('#60a5fa');
+const LASER_GRAB_COLOR = Color3.FromHexString('#f97316');
+const DOT_COLOR = Color3.FromHexString('#93c5fd');
+const DOT_GRAB_COLOR = Color3.FromHexString('#fdba74');
 
 /**
  * Takes a controller out of (or back into) Babylon's teleportation while its stick pushes a held object: in teleport
@@ -67,6 +74,7 @@ interface LaserVisual {
 	beamMaterial: StandardMaterial;
 	dotMaterial: StandardMaterial;
 	ray: Ray;
+	targetSlotId: string | null;
 }
 
 /**
@@ -110,7 +118,7 @@ function createLaserVisual(scene: Scene, parent: WebXRInputSource['pointer']): L
 	dot.isPickable = false;
 	dot.setEnabled(false);
 
-	return { beam, dot, beamMaterial: beamMat, dotMaterial: dotMat, ray: new Ray(Vector3.Zero(), Vector3.Forward()) };
+	return { beam, dot, beamMaterial: beamMat, dotMaterial: dotMat, ray: new Ray(Vector3.Zero(), Vector3.Forward()), targetSlotId: null };
 }
 
 /**
@@ -157,6 +165,22 @@ export function setupPointerAndGrabControllers(
 	const stickY = new Map<string, number>();
 	const pushing = new Set<EquipHand>();
 	const pushRay = new Ray(Vector3.Zero(), Vector3.Forward());
+	const pushPosition = Vector3.Zero();
+	const pushDelta = Vector3.Zero();
+	const pointerPicks = new Map<string, PickingInfo>();
+	const pickable = (mesh: AbstractMesh) => mesh.isPickable && mesh.isEnabled() && mesh.isVisible;
+
+	// Babylon already picks for GUI delivery on every XR frame. Capture the original result even if a panel consumes
+	// the event; drawing our own beam must not repeat that full-scene raycast. Near interaction uses a different pick.
+	scene.onPrePointerObservable.add((info) => {
+		if (info.nearInteractionPickingInfo || !info.originalPickingInfo) return;
+		const pointerId = (info.event as PointerEvent).pointerId;
+		if (typeof pointerId !== 'number') return;
+		const controller = pointerSelection.getXRControllerByPointerId(pointerId);
+		if (controller) pointerPicks.set(grabberIdFor(controller), info.originalPickingInfo);
+	}, PointerEventTypes.POINTERMOVE);
+	// Results are valid for this render only. A detached/near-only pointer falls back to our raycast next frame.
+	scene.onAfterRenderObservable.add(() => pointerPicks.clear());
 
 	/**
 	 * While a hand holds an object with its laser (and it alone), its stick brings the object closer (back) or pushes it
@@ -187,10 +211,13 @@ export function setupPointerAndGrabControllers(
 		if (!node) return;
 		controller.getWorldPointerRayToRef(pushRay);
 		node.computeWorldMatrix(true);
-		const position = node.getAbsolutePosition().clone();
-		const along = Vector3.Dot(position.subtract(pushRay.origin), pushRay.direction);
+		pushPosition.copyFrom(node.getAbsolutePosition());
+		pushPosition.subtractToRef(pushRay.origin, pushDelta);
+		const along = Vector3.Dot(pushDelta, pushRay.direction);
 		const next = pushedDistance(along, y, dt);
-		node.setAbsolutePosition(position.add(pushRay.direction.scale(next - along)));
+		pushRay.direction.scaleToRef(next - along, pushDelta);
+		pushPosition.addInPlace(pushDelta);
+		node.setAbsolutePosition(pushPosition);
 		const live = slotId ? sceneGraph.getLive(slotId) : undefined;
 		if (y > 0 && next <= PUSH_RANGE.min && slotId && live && isEquippable(live.slot)) {
 			if (!equipment.equip(localPlayerId(), hand, controller.grip ?? controller.pointer, slotId)) return;
@@ -350,6 +377,7 @@ export function setupPointerAndGrabControllers(
 			visual?.beam.dispose();
 			visual?.dot.dispose();
 			visuals.delete(grabberId);
+			pointerPicks.delete(grabberId);
 			laserActive.delete(grabberId);
 		});
 	});
@@ -364,6 +392,7 @@ export function setupPointerAndGrabControllers(
 
 			const active = laserActive.get(grabberId) ?? true;
 			if (!active) {
+				visual.targetSlotId = null;
 				visual.beam.setEnabled(false);
 				visual.dot.setEnabled(false);
 				continue;
@@ -375,12 +404,14 @@ export function setupPointerAndGrabControllers(
 			// pickable" eligibility check rather than adding to it — without the
 			// explicit isEnabled()/isVisible checks here, the laser kept hitting a
 			// hidden (setEnabled(false)) panel as if it were still there.
-			const hit = scene.pickWithRay(visual.ray, (mesh) => mesh.isPickable && mesh.isEnabled() && mesh.isVisible);
+			const pick = pointerPicks.get(grabberId) ?? scene.pickWithRay(visual.ray, pickable);
+			const hit = pick?.hit && pick.distance <= LASER_MAX_LENGTH && pick.pickedMesh && pickable(pick.pickedMesh) ? pick : null;
 
 			const hitSlotId = sceneGraph.getSlotIdForNode(hit?.pickedMesh);
+			visual.targetSlotId = hitSlotId;
 			const canGrab = Boolean(hitSlotId && sceneGraph.resolveGrabTarget(hitSlotId));
-			visual.beamMaterial.emissiveColor = Color3.FromHexString(canGrab ? '#f97316' : '#60a5fa');
-			visual.dotMaterial.emissiveColor = Color3.FromHexString(canGrab ? '#fdba74' : '#93c5fd');
+			visual.beamMaterial.emissiveColor.copyFrom(canGrab ? LASER_GRAB_COLOR : LASER_COLOR);
+			visual.dotMaterial.emissiveColor.copyFrom(canGrab ? DOT_GRAB_COLOR : DOT_COLOR);
 
 			const length = hit?.pickedPoint ? Vector3.Distance(visual.ray.origin, hit.pickedPoint) : LASER_MAX_LENGTH;
 			visual.beam.setEnabled(true);
@@ -400,11 +431,7 @@ export function setupPointerAndGrabControllers(
 		getLaserTarget(hand) {
 			const controller = controllers.get(hand);
 			if (!controller || !visuals.has(hand) || !laserActive.get(hand)) return null;
-			const ray = new Ray(Vector3.Zero(), Vector3.Forward(), LASER_MAX_LENGTH);
-			controller.getWorldPointerRayToRef(ray);
-			ray.length = LASER_MAX_LENGTH;
-			const hit = scene.pickWithRay(ray, (mesh) => mesh.isPickable && mesh.isEnabled() && mesh.isVisible);
-			const slotId = sceneGraph.getSlotIdForNode(hit?.pickedMesh);
+			const slotId = visuals.get(hand)?.targetSlotId;
 			return slotId && sceneGraph.slotIds({ withoutAvatars: true }).includes(slotId) ? slotId : null;
 		}
 	};
