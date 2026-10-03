@@ -1,6 +1,8 @@
 import { PROTOCOL_ADAPTERS } from './adapters';
-export type ProviderKind = 'openai' | 'claude' | 'opencode' | 'openrouter' | 'ollama' | 'custom';
+export type ProviderKind = 'openai' | 'claude' | 'opencode' | 'openrouter' | 'freellmapi' | 'ollama' | 'custom';
 export type ProviderProtocol = 'responses' | 'messages' | 'chat';
+
+const PROTOCOL_PATHS: Record<ProviderProtocol, string> = { chat: 'chat/completions', responses: 'responses', messages: 'messages' };
 
 export interface ProviderProfile {
 	kind: ProviderKind;
@@ -21,6 +23,12 @@ export interface AgentCall {
 	arguments: unknown;
 }
 
+export class FreeLLMAPIConnectionError extends Error {
+	constructor() {
+		super('Could not connect to FreeLLMAPI. Check that it is running, its CORS settings, and your browser local network permission.');
+		this.name = 'FreeLLMAPIConnectionError';
+	}
+}
 
 export class ProviderConversation {
 	private wire: unknown[] = [];
@@ -44,12 +52,21 @@ export class ProviderConversation {
 
 		const kind = this.profile.kind;
 		let response: Response;
-		if (kind === 'ollama' || kind === 'custom') {
-			const endpoint = this.profile.endpoint.trim() || (kind === 'ollama' ? 'http://localhost:11434/api/chat' : '');
+		if (kind === 'ollama' || kind === 'custom' || kind === 'freellmapi') {
+			let endpoint = this.profile.endpoint.trim() || defaultProfile(kind).endpoint;
 			const url = new URL(endpoint);
-			if (url.protocol !== 'https:' && !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)) throw new Error('Remote custom endpoints must use HTTPS.');
+			if (url.protocol !== 'https:' && !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)) throw new Error('Remote endpoints must use HTTPS.');
 			if (url.username || url.password) throw new Error('Put credentials in the API key field, not in the endpoint URL.');
-			response = await fetch(endpoint, { method: 'POST', headers: { 'content-type': 'application/json', ...(credential ? protocol === 'messages' ? { 'x-api-key': credential, 'anthropic-version': '2023-06-01' } : { authorization: `Bearer ${credential}` } : {}) }, body: JSON.stringify(payload), signal });
+			if (kind === 'freellmapi') {
+				url.pathname = `${url.pathname.replace(/\/+$/, '')}/${PROTOCOL_PATHS[protocol]}`;
+				endpoint = url.toString();
+			}
+			try {
+				response = await fetch(endpoint, { method: 'POST', headers: { 'content-type': 'application/json', ...(credential ? protocol === 'messages' ? { 'x-api-key': credential, 'anthropic-version': '2023-06-01' } : { authorization: `Bearer ${credential}` } : {}) }, body: JSON.stringify(payload), signal });
+			} catch (caught) {
+				if (kind !== 'freellmapi' || signal.aborted || !(caught instanceof TypeError)) throw caught;
+				throw new FreeLLMAPIConnectionError();
+			}
 		} else {
 			response = await fetch('/api/studio/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-studio-session': this.sessionId }, body: JSON.stringify({ kind, protocol, credential: useConnection ? '' : credential, useConnection, payload }), signal });
 		}
@@ -68,8 +85,8 @@ export class ProviderConversation {
 export function defaultProfile(kind: ProviderKind): ProviderProfile {
 	return {
 		kind,
-		model: '',
+		model: kind === 'freellmapi' ? 'auto' : '',
 		protocol: kind === 'openai' ? 'responses' : kind === 'claude' ? 'messages' : 'chat',
-		endpoint: kind === 'ollama' ? 'http://localhost:11434/api/chat' : ''
+		endpoint: kind === 'ollama' ? 'http://localhost:11434/api/chat' : kind === 'freellmapi' ? 'http://127.0.0.1:31415/v1' : ''
 	};
 }

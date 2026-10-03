@@ -2,7 +2,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import type { StudioDocument } from '../state/document.svelte';
 	import type { OpenRouterModel } from '../ai/openrouterModels';
-	import { ProviderConversation, defaultProfile, type ProviderKind, type ProviderProfile } from '../ai/providers';
+	import { ProviderConversation, FreeLLMAPIConnectionError, defaultProfile, type ProviderKind, type ProviderProfile } from '../ai/providers';
 	import Select, { type SelectGroup, type SelectOption } from '../ui/Select.svelte';
 	import Icon from '../ui/Icon.svelte';
 	import { introducedErrors } from '../ai/validation';
@@ -12,16 +12,17 @@
 	interface Props { doc: StudioDocument; projectKey: string }
 	let { doc, projectKey }: Props = $props();
 	type Message = { role: 'user' | 'assistant' | 'tool'; text: string };
-	const kinds: ProviderKind[] = ['openrouter', 'openai', 'claude', 'opencode', 'ollama', 'custom'];
-	const labels: Record<ProviderKind, string> = { openrouter: 'OpenRouter', openai: 'OpenAI API', claude: 'Claude API', opencode: 'OpenCode Go', ollama: 'Ollama', custom: 'Custom' };
+	const kinds: ProviderKind[] = ['openrouter', 'openai', 'claude', 'opencode', 'freellmapi', 'ollama', 'custom'];
+	const labels: Record<ProviderKind, string> = { openrouter: 'OpenRouter', openai: 'OpenAI API', claude: 'Claude API', opencode: 'OpenCode Go', freellmapi: 'FreeLLMAPI', ollama: 'Ollama', custom: 'Custom' };
 	const protocolChoices = $derived([
 		{ id: 'chat', label: 'Chat Completions' },
 		{ id: 'responses', label: 'Responses' },
 		{ id: 'messages', label: 'Messages' }
 	]);
-	let profiles = $state<Record<ProviderKind, ProviderProfile>>({ openrouter: defaultProfile('openrouter'), openai: defaultProfile('openai'), claude: defaultProfile('claude'), opencode: defaultProfile('opencode'), ollama: defaultProfile('ollama'), custom: defaultProfile('custom') });
+	let profiles = $state<Record<ProviderKind, ProviderProfile>>({ openrouter: defaultProfile('openrouter'), openai: defaultProfile('openai'), claude: defaultProfile('claude'), opencode: defaultProfile('opencode'), freellmapi: defaultProfile('freellmapi'), ollama: defaultProfile('ollama'), custom: defaultProfile('custom') });
 	let kind = $state<ProviderKind>('openrouter');
 	let credential = $state('');
+	const credentials: Partial<Record<ProviderKind, string>> = {};
 	let openRouterConnected = $state(false);
 	let prompt = $state('');
 	let messages = $state<Message[]>([]);
@@ -33,6 +34,7 @@
 	let connectionChecked = $state(false);
 	let busy = $state(false);
 	let error = $state('');
+	let studioOrigin = $state('');
 	let draft = $state.raw<StudioDraft | null>(null);
 	let base = $state('');
 	let conversation: ProviderConversation | null = null;
@@ -44,8 +46,9 @@
 	const profile = $derived(profiles[kind]);
 	// A connected OpenRouter account (Settings → Connections) stands in for a pasted key.
 	const useConnection = $derived(kind === 'openrouter' && openRouterConnected && !credential.trim());
-	const local = $derived(kind === 'ollama' || kind === 'custom');
-	const ready = $derived(Boolean(profile.model.trim()) && (local || Boolean(credential.trim()) || useConnection));
+	const credentialOptional = $derived(kind === 'ollama' || kind === 'custom');
+	const direct = $derived(credentialOptional || kind === 'freellmapi');
+	const ready = $derived(Boolean(profile.model.trim()) && (credentialOptional || Boolean(credential.trim()) || useConnection));
 	const modelOptions = $derived.by<(SelectOption | SelectGroup)[]>(() => {
 		const free = openRouterModels.filter((item) => item.free).map((item) => ({ value: item.id, label: `${item.name} · ${item.id}` }));
 		const paid = openRouterModels.filter((item) => !item.free).map((item) => ({ value: item.id, label: `${item.name} · ${item.id}` }));
@@ -71,20 +74,25 @@
 	});
 
 	onMount(() => {
+		studioOrigin = window.location.origin;
 		void fetch('/api/connections/openrouter').then(async (response) => {
 			if (response.ok) openRouterConnected = Boolean((await response.json()).connected);
 		}).catch(() => { /* Signed-out or offline: fall back to a pasted key. */ }).finally(() => {
 			connectionChecked = true;
 			// First run: show setup. Once a model and credential exist the panel opens straight to chat.
 			settings = !ready;
-			if (kind === 'openrouter' && useConnection) void loadOpenRouterModels();
+			if (kind === 'openrouter' && (credential.trim() || useConnection)) void loadOpenRouterModels();
 		});
 		try {
 			const saved = JSON.parse(localStorage.getItem('studio:ai:profiles') ?? '{}') as Partial<Record<ProviderKind, ProviderProfile>>;
 			for (const id of kinds) if (saved[id]?.kind === id) profiles[id] = { ...defaultProfile(id), model: saved[id]!.model, protocol: saved[id]!.protocol, endpoint: saved[id]!.endpoint };
 			const selected = localStorage.getItem('studio:ai:kind');
 			if (kinds.includes(selected as ProviderKind)) kind = selected as ProviderKind;
-		} catch { /* Preferences are optional; credentials are never persisted. */ }
+		} catch { /* Preferences are optional. */ }
+		try {
+			for (const id of kinds) credentials[id] = localStorage.getItem(`studio:ai:credential:${id}`) ?? '';
+		} catch { /* Storage may be disabled. */ }
+		credential = credentials[kind] ?? '';
 	});
 	onDestroy(() => { controller?.abort(); modelsController?.abort(); });
 
@@ -109,13 +117,25 @@
 			localStorage.setItem('studio:ai:kind', kind);
 		} catch { /* Preferences are optional. */ }
 	}
+	function updateCredential(value: string) {
+		credential = value;
+		credentials[kind] = value;
+		if (kind === 'openrouter') {
+			modelsController?.abort(); openRouterModels = []; modelsError = '';
+		}
+		try {
+			const storageKey = `studio:ai:credential:${kind}`;
+			if (value.trim()) localStorage.setItem(storageKey, value);
+			else localStorage.removeItem(storageKey);
+		} catch { /* Storage may be disabled; retain the key in memory. */ }
+	}
 	function resetProposal() { draft = null; conversation = null; base = ''; error = ''; reviewOpen = false; proposalVersion++; }
 	function selectKind(next: ProviderKind) {
 		if (next === kind) return;
 		if (busy || draft?.changed) return;
 		modelsController?.abort(); openRouterModels = []; modelsError = '';
-		kind = next; credential = ''; messages = []; resetProposal(); saveProfile();
-		if (next === 'openrouter' && openRouterConnected) void loadOpenRouterModels();
+		kind = next; credential = credentials[next] ?? ''; messages = []; resetProposal(); saveProfile();
+		if (next === 'openrouter' && (credential.trim() || useConnection)) void loadOpenRouterModels();
 	}
 	function updateProfile(patch: Partial<ProviderProfile>) {
 		if (busy || draft?.changed) return;
@@ -159,7 +179,7 @@
 		if (!request || busy) return;
 		if (stale) { error = 'The document changed. Discard the proposal before continuing.'; return; }
 		if (!profile.model.trim()) { error = 'Enter a model in provider settings.'; settings = true; return; }
-		if (!['ollama', 'custom'].includes(kind) && !credential.trim() && !useConnection) { error = 'Enter an API key for this session.'; settings = true; return; }
+		if (!credentialOptional && !credential.trim() && !useConnection) { error = 'Enter an API key for this provider.'; settings = true; return; }
 		const signature = JSON.stringify(profile);
 		if (conversation && signature !== activeSignature) resetProposal();
 		if (!draft) { draft = new StudioDraft(doc.tree, doc.selectedId); base = JSON.stringify(doc.tree); }
@@ -196,7 +216,12 @@
 			}
 			if (!finished && !abort.signal.aborted) error = 'The agent reached its step limit. Review its changes or ask it to continue.';
 		} catch (caught) {
-			if (!abort.signal.aborted) error = caught instanceof Error ? caught.message : 'Provider request failed.';
+			if (!abort.signal.aborted) {
+				if (caught instanceof FreeLLMAPIConnectionError) {
+					error = 'Could not connect to FreeLLMAPI. Check the provider settings.';
+					settings = true;
+				} else error = caught instanceof Error ? caught.message : 'Provider request failed.';
+			}
 		} finally { if (abort.signal.aborted) conversation = null; busy = false; controller = null; proposalVersion++; }
 	}
 </script>
@@ -238,28 +263,35 @@
 			</div>
 			<details class="advanced" open={!openRouterConnected && Boolean(credential)}>
 				<summary>{openRouterConnected ? 'Use a different API key' : 'Or paste an API key'}</summary>
-				<input class="input" type="password" autocomplete="off" aria-label="API key" placeholder="sk-or-…" bind:value={credential} disabled={busy} oninput={() => { modelsController?.abort(); openRouterModels = []; modelsError = ''; }} />
-				<small>Kept in memory for this session only.</small>
+				<input class="input" type="password" autocomplete="off" aria-label="API key" placeholder="sk-or-…" value={credential} disabled={busy} oninput={(event) => updateCredential(event.currentTarget.value)} />
+				<small>Saved in this browser. Clear the field to remove the saved key.</small>
 			</details>
 		{:else}
 			<div class="field"><span class="label">Model</span>
-				<input class="input" aria-label="Model" placeholder="Model ID" value={profile.model} disabled={busy || draftChanged} oninput={(event) => updateProfile({ model: event.currentTarget.value })} />
+				<input class="input" aria-label="Model" placeholder={kind === 'freellmapi' ? 'auto or auto:fast' : 'Model ID'} value={profile.model} disabled={busy || draftChanged} oninput={(event) => updateProfile({ model: event.currentTarget.value })} />
+				{#if kind === 'freellmapi'}<small>Use auto for your active routing chain, or auto:fast to prioritize speed.</small>{/if}
 			</div>
-			{#if kind === 'opencode' || kind === 'custom'}
+			{#if kind === 'opencode' || kind === 'custom' || kind === 'freellmapi'}
 				<div class="field"><span class="label">API format</span>
 					<Select label="API format" value={profile.protocol} options={protocolChoices.map((choice) => ({ value: choice.id, label: choice.label }))} disabled={busy || draftChanged} onchange={(next) => updateProfile({ protocol: next as ProviderProfile['protocol'] })} />
 				</div>
 			{/if}
-			{#if local}
-				<div class="field"><span class="label">Endpoint</span>
-					<input class="input" aria-label="Endpoint" value={profile.endpoint} disabled={busy || draftChanged} oninput={(event) => updateProfile({ endpoint: event.currentTarget.value })} />
-					<small>Direct browser connection; the endpoint must allow this origin (CORS). Use only trusted endpoints.</small>
+			{#if direct}
+				<div class="field"><span class="label">{kind === 'freellmapi' ? 'Base URL' : 'Endpoint'}</span>
+					<input class="input" aria-label={kind === 'freellmapi' ? 'Base URL' : 'Endpoint'} value={profile.endpoint} disabled={busy || draftChanged} oninput={(event) => updateProfile({ endpoint: event.currentTarget.value })} />
+					{#if kind === 'freellmapi'}
+						<small>FreeLLMAPI must allow this Studio origin in DASHBOARD_ORIGINS (CORS). Restart FreeLLMAPI after changing it.</small>
+						{#if studioOrigin}<code class="connection-config">DASHBOARD_ORIGINS={studioOrigin}</code>{/if}
+						<small>A local Base URL connects to the device running your browser. Allow local network access for this Studio if your browser asks.</small>
+					{:else}
+						<small>Direct browser connection; the endpoint must allow this origin (CORS). Use only trusted endpoints.</small>
+					{/if}
 				</div>
 			{/if}
 			{#if kind !== 'ollama'}
 				<div class="field"><span class="label">API key</span>
-					<input class="input" type="password" autocomplete="off" aria-label="API key" bind:value={credential} disabled={busy} />
-					<small>Kept in memory for this session only.</small>
+					<input class="input" type="password" autocomplete="off" aria-label="API key" value={credential} disabled={busy} oninput={(event) => updateCredential(event.currentTarget.value)} />
+					<small>Saved in this browser. Clear the field to remove the saved key.</small>
 				</div>
 			{/if}
 		{/if}
@@ -309,6 +341,7 @@
 	.dot.on { background: var(--success); }
 	.settings { display: grid; gap: 12px; padding: 12px; border-bottom: 1px solid var(--border); background: var(--panel); max-height: 55%; overflow-y: auto; }
 	.field { display: grid; gap: 5px; }
+	.connection-config { user-select: all; overflow-wrap: anywhere; padding: 6px 8px; border-radius: var(--radius); background: var(--panel-2); color: var(--text); font-size: 11px; }
 	.label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
 	.row .input { flex: 1; }
 	.card { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel-2); }

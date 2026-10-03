@@ -736,7 +736,13 @@ export class SceneGraph {
 		if (!codeBlock) return;
 		const handlers = createCodeBlockHandlers(slot.id, node, codeBlock.code, this.buildCodeBlockHost());
 		const entry = this.live.get(slot.id);
-		if (entry) entry.runtime = { ...(entry.runtime ?? { dispose: () => {} }), ...handlers };
+		if (!entry) {
+			handlers.dispose();
+			return;
+		}
+		const previous = entry.runtime;
+		// The surface the slot may also have (a panel, a mesh) is disposed first, then what the script left running.
+		entry.runtime = { ...(previous ?? { dispose: () => {} }), ...handlers, dispose: () => { try { previous?.dispose(); } finally { handlers.dispose(); } } };
 	}
 
 	private buildCodeBlockHost(): CodeBlockHost {

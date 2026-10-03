@@ -227,3 +227,33 @@ test('two-point grabs move, rotate and scale without replacing the transform buf
 		closeArray(node.position.asArray(), [1, 0, 3]);
 	} finally { graph.dispose(); f.dispose(); }
 });
+
+test('leaving a world (reconciling to another scene) stops the tracks its scripts started, and a surface on the same slot is still disposed', async () => {
+	const f = fixture();
+	const tracks = [];
+	const audio = { analyze: async () => ({}), playTrack: async () => { const track = { stopped: false, stop() { this.stopped = true; } }; tracks.push(track); return track; } };
+	const graph = new SceneGraph(f.scene, { audio });
+	try {
+		const music = createSlot({ id: 'music', components: [{ type: 'codeBlock', code: "return { async onSpawn() { await ctx.audio.playTrack({ kind: 'url', url: '/song.mp3' }); } };" }] });
+		const other = createSlot({ id: 'other', position: [5, 0, 0], components: [] });
+		graph.load([music, other]);
+		await new Promise((resolve) => setImmediate(resolve));
+		assert.equal(tracks.length, 1);
+		assert.equal(tracks[0].stopped, false, 'the song plays while its world is here');
+		// Another world: the song's slot is gone.
+		graph.reconcile([createSlot({ id: 'elsewhere' })]);
+		assert.equal(tracks[0].stopped, true, 'the song stops with its world');
+		// A world that keeps the slot keeps the song.
+		const keeper = createSlot({ id: 'keeper', components: [{ type: 'codeBlock', code: "return { async onSpawn() { await ctx.audio.playTrack('x'); } };" }] });
+		graph.reconcile([keeper]);
+		await new Promise((resolve) => setImmediate(resolve));
+		assert.equal(tracks.length, 2);
+		graph.reconcile([keeper, createSlot({ id: 'extra' })]);
+		assert.equal(tracks[1].stopped, false, 'still the same world');
+		// Disposing the whole graph (the engine shutting down) stops everything too.
+		graph.dispose();
+		assert.equal(tracks[1].stopped, true);
+	} finally {
+		f.dispose();
+	}
+});

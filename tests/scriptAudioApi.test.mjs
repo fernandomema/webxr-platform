@@ -39,3 +39,50 @@ test('without an audio host, the calls reject with a clear message instead of cr
 	await new Promise((resolve) => setImmediate(resolve));
 	assert.match(runtime.getDebugLog()[0].message, /Audio is not available/);
 });
+
+/** A fake audio host whose tracks record when they are stopped; `resolve` lets a test finish a track that was still loading. */
+function trackingAudio({ deferred = false } = {}) {
+	const tracks = [];
+	const waiting = [];
+	return {
+		tracks,
+		release: () => waiting.splice(0).forEach((resolve) => resolve()),
+		analyze: async () => ({ duration: 1 }),
+		playTrack: async () => {
+			if (deferred) await new Promise((resolve) => waiting.push(resolve));
+			const track = { stopped: 0, time: () => 0, stop() { this.stopped += 1; } };
+			tracks.push(track);
+			return track;
+		}
+	};
+}
+
+test('removing a code block stops the tracks it started', async () => {
+	const audio = trackingAudio();
+	const runtime = run(`return { async onSpawn() { await ctx.audio.playTrack('a'); await ctx.audio.playTrack('b'); } };`, audio);
+	await new Promise((resolve) => setImmediate(resolve));
+	assert.equal(audio.tracks.length, 2);
+	assert.deepEqual(audio.tracks.map((track) => track.stopped), [0, 0], 'they play until the block goes');
+	runtime.dispose();
+	assert.deepEqual(audio.tracks.map((track) => track.stopped), [1, 1], 'and stop with it');
+	runtime.dispose();
+	assert.deepEqual(audio.tracks.map((track) => track.stopped), [1, 1], 'disposing twice does no harm');
+});
+
+test('a track that finishes loading after its code block was removed is stopped at once', async () => {
+	const audio = trackingAudio({ deferred: true });
+	const runtime = run(`return { async onSpawn() { await ctx.audio.playTrack('slow'); } };`, audio);
+	await new Promise((resolve) => setImmediate(resolve));
+	assert.equal(audio.tracks.length, 0, 'still loading');
+	runtime.dispose();
+	audio.release();
+	await new Promise((resolve) => setImmediate(resolve));
+	assert.equal(audio.tracks.length, 1);
+	assert.equal(audio.tracks[0].stopped, 1, 'it never plays on');
+});
+
+test('a block that failed to compile can still be disposed', () => {
+	const runtime = run(`throw new Error('broken');`, trackingAudio());
+	assert.equal(typeof runtime.dispose, 'function');
+	assert.doesNotThrow(() => runtime.dispose());
+});

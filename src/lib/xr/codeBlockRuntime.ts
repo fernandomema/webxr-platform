@@ -3,7 +3,7 @@ import { requestScriptJson } from './scriptNet';
 import { Vector3, Quaternion, type TransformNode } from '@babylonjs/core';
 import type { Slot, UIEvent, Vec3, Quat } from '$lib/ecs/types';
 import type { UIMediaState } from './uiPanelSurface';
-import type { ScriptAudio } from './scriptAudio';
+import type { AudioTrackHandle, ScriptAudio } from './scriptAudio';
 
 /** What SceneGraph exposes to a codeBlock's compiled handlers — narrow, read-mostly, no Babylon types leak into `ctx`. */
 export interface CodeBlockHost {
@@ -115,6 +115,14 @@ export interface CodeBlockLogEntry {
 /** What `createCodeBlockHandlers` actually returns — the script-authored handlers plus a runtime-owned debug feed the Inspector can read (see WorldObjectActions.svelte, which shows it in the in-game inspector). Not part of `CodeBlockHandlers` because scripts never provide `getDebugLog` themselves. */
 export interface CodeBlockRuntime extends CodeBlockHandlers {
 	getDebugLog(): CodeBlockLogEntry[];
+	/** Called when the slot goes away (a world is left, the slot is deleted or rebuilt): stops what the script started and still runs, such as tracks it is playing. */
+	dispose(): void;
+}
+
+/** What a code block has started that outlives a call, so that removing the block can end it. */
+interface ScriptScope {
+	disposed: boolean;
+	tracks: Set<AudioTrackHandle>;
 }
 
 const MAX_LOG_ENTRIES = 30;
@@ -230,7 +238,7 @@ function requireAudio(host: CodeBlockHost): ScriptAudio {
 	return host.audio;
 }
 
-function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, pushLog: (level: 'log' | 'error', hook: string, message: string) => void) {
+function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, pushLog: (level: 'log' | 'error', hook: string, message: string) => void, scope: ScriptScope) {
 	return {
 		self: {
 			id: slotId,
@@ -360,7 +368,14 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 			 * seconds on the audio clock, the one to sync gameplay or visuals to. Options: `volume` (0-1), `loop`, `offset` (seconds).
 			 * Runs on the peer that calls it, so gate it behind `world.isHost()` when only one player should hear it.
 			 */
-			playTrack: (source: unknown, options?: { volume?: number; loop?: boolean; offset?: number }) => requireAudio(host).playTrack(source, options)
+			playTrack: async (source: unknown, options?: { volume?: number; loop?: boolean; offset?: number }) => {
+				const handle = await requireAudio(host).playTrack(source, options);
+				// The track belongs to this code block: when the block is removed (a world is left) it stops, even if it only
+				// finished loading after that. A script that outlives its slot would otherwise keep a song playing in another world.
+				if (scope.disposed) handle.stop();
+				else scope.tracks.add(handle);
+				return handle;
+			}
 		},
 		net: {
 			/** GET JSON from a local route or an external HTTPS endpoint. Gate shared work behind world.isHost(). */
@@ -436,7 +451,13 @@ export function createCodeBlockHandlers(slotId: string, node: TransformNode, cod
 	};
 	const getDebugLog = () => debugLog.slice();
 
-	const ctx = buildCtx(slotId, node, host, pushLog);
+	const scope: ScriptScope = { disposed: false, tracks: new Set() };
+	const dispose = () => {
+		scope.disposed = true;
+		for (const track of scope.tracks) track.stop();
+		scope.tracks.clear();
+	};
+	const ctx = buildCtx(slotId, node, host, pushLog, scope);
 	let handlers: CodeBlockHandlers = {};
 	try {
 		// eslint-disable-next-line no-new-func -- intentional: bounded API, no real sandbox (see plan/ecs/types.ts docs)
@@ -446,7 +467,7 @@ export function createCodeBlockHandlers(slotId: string, node: TransformNode, cod
 		const message = err instanceof Error ? err.message : String(err);
 		console.error(`[codeBlock:${slotId}] failed to compile/run`, err);
 		pushLog('error', 'compile', message);
-		return { getDebugLog };
+		return { getDebugLog, dispose };
 	}
 
 	const safe = <K extends keyof CodeBlockHandlers>(key: K): CodeBlockHandlers[K] => {
@@ -507,6 +528,7 @@ export function createCodeBlockHandlers(slotId: string, node: TransformNode, cod
 				return [];
 			}
 		},
-		getDebugLog
+		getDebugLog,
+		dispose
 	};
 }
