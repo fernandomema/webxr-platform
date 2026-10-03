@@ -15,6 +15,12 @@ export const UI = {
 	accent: '#a78bfa'
 } as const;
 
+/** The effect switches of the control screen: button id and name, in the order they are laid out. */
+export const OPTION_BUTTONS: [string, string][] = [
+	['bt-opt-tunnel', 'Tunnel'], ['bt-opt-towers', 'Towers'], ['bt-opt-lasers', 'Lasers'], ['bt-opt-grid', 'Floor lines'],
+	['bt-opt-sun', 'Sun'], ['bt-opt-glow', 'Glow'], ['bt-opt-sparks', 'Sparks'], ['bt-opt-lights', 'Lights']
+];
+
 const card = (id: string, parentId: string, width: number) =>
 	ui(id, parentId, 'container', { width, height: 172, flexDirection: 'column', padding: 6, background: UI.card, cornerRadius: 22, borderColor: UI.cardBorder, borderWidth: 3 });
 
@@ -105,8 +111,8 @@ export function buildConsole(code: string): Slot[] {
 		createSlot({
 			id: root,
 			name: 'Beat Turntable Console',
-			position: [DECK.x, 1.55, DECK.z + 0.5],
-			components: [{ type: 'uiPanel', width: 680, height: 470, worldWidth: 1.15, background: '#0a0f22' }, { type: 'codeBlock', code }]
+			position: [DECK.x, 1.6, DECK.z + 0.5],
+			components: [{ type: 'uiPanel', width: 680, height: 720, worldWidth: 1.15, background: '#0a0f22' }, { type: 'codeBlock', code }]
 		}),
 		ui('bt-title', root, 'text', { text: 'BEAT TURNTABLE', height: 62, fontSize: 46, fontWeight: 'bold', textAlign: 'center', color: '#c4b5fd' }),
 		ui('bt-sub', root, 'text', { text: 'A rhythm game that listens to your records', height: 30, fontSize: 20, textAlign: 'center', color: '#64748b' }),
@@ -116,6 +122,15 @@ export function buildConsole(code: string): Slot[] {
 		ui('bt-difficulty-row', root, 'container', { width: 600, height: 64, flexDirection: 'row', gap: 10 }),
 		...buttons.map(([id, text]) =>
 			ui(id, 'bt-difficulty-row', 'button', { width: 190, height: 60, text, fontSize: 26, fontWeight: 'bold', textAlign: 'center', cornerRadius: 18, background: id === 'bt-diff-normal' ? '#7c3aed' : '#1e293b' })
+		),
+		ui('bt-opt-label', root, 'text', { text: 'EFFECTS  -  turn some off if the game lags', height: 36, margin: 8, fontSize: 20, fontWeight: 'bold', textAlign: 'center', color: UI.label }),
+		...[OPTION_BUTTONS.slice(0, 4), OPTION_BUTTONS.slice(4)].flatMap((row, index) => [
+			ui(`bt-opt-row-${index}`, root, 'container', { width: 600, height: 50, flexDirection: 'row', gap: 8, margin: 3 }),
+			...row.map(([id, text]) => ui(id, `bt-opt-row-${index}`, 'button', { width: 144, height: 48, text: `${text}  ON`, fontSize: 19, fontWeight: 'bold', textAlign: 'center', cornerRadius: 14, background: '#2563eb' }))
+		]),
+		ui('bt-opt-presets', root, 'container', { width: 600, height: 50, flexDirection: 'row', gap: 10, margin: 3 }),
+		...[['bt-opt-all', 'All on'], ['bt-opt-lite', 'Lite'], ['bt-opt-off', 'All off']].map(([id, text]) =>
+			ui(id, 'bt-opt-presets', 'button', { width: 193, height: 48, text, fontSize: 21, fontWeight: 'bold', textAlign: 'center', cornerRadius: 14, background: '#374151' })
 		)
 	];
 }

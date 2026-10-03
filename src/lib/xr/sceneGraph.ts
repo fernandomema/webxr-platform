@@ -826,6 +826,7 @@ export class SceneGraph {
 		// These cached component lists are invalidated whenever the graph changes. Large authored worlds contain hundreds
 		// of static decorative slots, so do not scan all of them several times on every headset frame.
 		for (const entry of this.slotsWith('codeBlock')) entry.runtime?.tick?.(dt);
+		this.flushUISync();
 		this.updateModelPriorities(dt);
 
 		// Everything below is engine code, not user script, but it now runs
@@ -929,9 +930,31 @@ export class SceneGraph {
 		// so a LOCAL mutation (e.g. a script updating its own scoreboard) also
 		// redraws immediately, not just once a broadcast round-trips back.
 		entry.runtime?.sync?.(entry.slot);
-		this.syncUIPanels();
+		// A panel is redrawn from its elements, so only a change to one of them calls for it, and once per frame however many
+		// fields a script wrote (a score board rewrites several every update): see `flushUISync`.
+		if (componentType === 'uiElement' || componentType === 'uiPanel') this.markUIDirty(entry);
 		this.notifyChanged([slotId]);
 		return true;
+	}
+
+	private uiDirty = new Set<string>();
+
+	/** Remembers the panel that `entry` is part of (or is) as needing a redraw before the next frame. */
+	private markUIDirty(entry: LiveSlot): void {
+		let current: LiveSlot | undefined = entry;
+		while (current && !findComponent(current.slot, 'uiPanel')) current = current.slot.parentId ? this.live.get(current.slot.parentId) : undefined;
+		if (current) this.uiDirty.add(current.slot.id);
+	}
+
+	/** Redraws the panels whose elements changed since the last frame. Run after the scripts, so their writes show the same frame. */
+	private flushUISync(): void {
+		if (this.uiDirty.size === 0) return;
+		const ids = [...this.uiDirty];
+		this.uiDirty.clear();
+		for (const id of ids) {
+			const entry = this.live.get(id);
+			if (entry) entry.runtime?.sync?.(entry.slot);
+		}
 	}
 
 	/** Switches a slot (and everything below it) on or off for every player. Host/solo only; the caller broadcasts. Returns whether the state changed. */

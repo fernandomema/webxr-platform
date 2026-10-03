@@ -4,7 +4,7 @@ import { LEVEL_LOGIC_SOURCE } from './beatTurntableLogic.ts';
 import { BEAT_TURNTABLE, BLUE, RED, box } from './beatTurntableParts.ts';
 import { STAGE_FX_SOURCE, buildStageSlots } from './beatTurntableStage.ts';
 import { buildDeckSlots } from './beatTurntableDesk.ts';
-import { UI, buildConsole, buildHud, buildJudge, buildResults } from './beatTurntableUi.ts';
+import { OPTION_BUTTONS, UI, buildConsole, buildHud, buildJudge, buildResults } from './beatTurntableUi.ts';
 
 /**
  * Beat Turntable: a rhythm game in the spirit of Beat Saber that is started with a record. Put a disc on the turntable and the
@@ -30,7 +30,8 @@ function buildNote(hand: 0 | 1, index: number): Slot[] {
 	const id = `bt-note-${hand}-${index}`;
 	const color = hand === 0 ? BLUE : RED;
 	return [
-		box(id, `Note ${hand}-${index}`, [0, -50, 0], [0.28, 0.28, 0.28], color),
+		// The engine flies it: the script gives it a `velocity` when it enters the lane.
+		box(id, `Note ${hand}-${index}`, [0, -50, 0], [0.28, 0.28, 0.28], color, { components: [{ type: 'velocity', linear: [0, 0, 0] }] }),
 		// Children are in the cube's own units: the arrow is a bar on the front face pointing up, the dot is for any direction.
 		box(`${id}-arrow`, 'Note Arrow', [0, 0.12, -0.52], [0.16, 0.5, 0.06], WHITE, { parentId: id }),
 		box(`${id}-dot`, 'Note Dot', [0, 0, -0.52], [0.3, 0.3, 0.06], WHITE, { parentId: id }),
@@ -166,7 +167,7 @@ function accuracyNow() {
 /** The score board while a song is on: the score counts up to its value, the rest follows the game. */
 function flushHud(dt, force) {
   hudTimer += dt;
-  if (!force && hudTimer < 0.05) return;
+  if (!force && hudTimer < 0.08) return;
   hudTimer = 0;
   if (score < shownScore) shownScore = score;
   else if (shownScore < score) shownScore += Math.max(1, Math.ceil((score - shownScore) * 0.35));
@@ -297,6 +298,7 @@ function showBoard() {
 function parkNote(hand, index) {
   const id = noteSlot(hand, index);
   ctx.world.setSlotEnabled(id, false, false);
+  set(id, 'velocity', 'linear', [0, 0, 0], false);
 }
 
 function releaseNotes() {
@@ -321,6 +323,8 @@ function init() {
     }
   }
   paintDifficulty();
+  paintOptions();
+  fxApplyEffects();
   hideResults();
 }
 
@@ -390,16 +394,25 @@ function startPlay() {
   }), 'playback');
 }
 
-function spawnNote(note) {
+/**
+ * Puts a block on the lane and sets it flying: the engine moves it from here on (a \`velocity\`, towards the player at the
+ * lane's speed), so the script only needs to know where it is, which it works out from the song's clock.
+ */
+function spawnNote(note, now, dt, speed) {
   const index = free[note.hand].pop();
   if (index === undefined) return;
   const id = noteSlot(note.hand, index);
   ctx.world.setSlotEnabled(id, true, false);
-  // Enabling a slot switches its children on too: show the arrow or the dot, not both.
+  // Enabling a slot switches its children on too: show the arrow or the dot, not both, and the glow only if it is wanted.
   ctx.world.setSlotEnabled(id + '-arrow', note.dir !== 8, false);
   ctx.world.setSlotEnabled(id + '-dot', note.dir === 8, false);
+  ctx.world.setSlotEnabled(id + '-glow', !!fx.on.glow, false);
   const angle = note.dir === 8 ? 0 : noteAngle(note.dir);
-  active.push({ note: note, hand: note.hand, index: index, id: id, x: COL_X[note.col], y: ROW_Y[note.row], rotation: ctx.math.quatFromAxisAngle([0, 0, 1], angle), placed: false });
+  const x = COL_X[note.col], y = ROW_Y[note.row];
+  // The engine moves it by one frame before it is drawn, so it starts one frame early.
+  ctx.world.setWorldPose(id, { position: [x, y, HIT_Z + (note.t - now - dt) * speed], rotation: ctx.math.quatFromAxisAngle([0, 0, 1], angle) }, false);
+  set(id, 'velocity', 'linear', [0, 0, -speed], false);
+  active.push({ note: note, hand: note.hand, index: index, id: id, x: x, y: y });
 }
 
 function removeNote(entry) {
@@ -409,7 +422,8 @@ function removeNote(entry) {
 }
 
 function burstAt(position, color) {
-  ctx.world.spawn({ name: 'Particle Burst', position: position, components: [{ type: 'particleBurst', color: color, count: 24, durationMs: 700 }, { type: 'expires', expiresAt: Date.now() + 700 }] });
+  if (!fx.on.sparks) return;
+  ctx.world.spawn({ name: 'Particle Burst', position: position, components: [{ type: 'particleBurst', color: color, count: 14, durationMs: 700 }, { type: 'expires', expiresAt: Date.now() + 700 }] });
 }
 
 function soundAt(position, frequency, volume, durationMs) {
@@ -463,15 +477,13 @@ function play(dt) {
   clock += dt;
   const now = track ? track.time() : clock;
   const settings = DIFFICULTIES[difficulty];
-  while (nextSpawn < level.length && level[nextSpawn].t - now <= settings.travel) spawnNote(level[nextSpawn++]);
-  trackSabers(dt);
   const speed = FIELD / settings.travel;
+  while (nextSpawn < level.length && level[nextSpawn].t - now <= settings.travel) spawnNote(level[nextSpawn++], now, dt, speed);
+  trackSabers(dt);
   for (let i = active.length - 1; i >= 0; i--) {
     const entry = active[i];
     const untilHit = entry.note.t - now;
     const position = [entry.x, entry.y, HIT_Z + untilHit * speed];
-    ctx.world.setWorldPose(entry.id, entry.placed ? { position: position } : { position: position, rotation: entry.rotation }, false);
-    entry.placed = true;
     if (untilHit < -HIT_WINDOW) { fail(entry, position, false); continue; }
     if (Math.abs(untilHit) > HIT_WINDOW) continue;
     for (let hand = 0; hand < 2; hand++) {
@@ -551,6 +563,36 @@ function chooseDifficulty(id) {
   if (discId && state !== 'analyzing') beginSession(discId);
 }
 
+// The buttons of the control screen, in the order of the effects: button id and name.
+const OPTIONS = {};
+${JSON.stringify(OPTION_BUTTONS)}.forEach((button, index) => { OPTIONS[FX_EFFECTS[index]] = button; });
+const LITE = { tunnel: true, grid: true, sun: true, towers: false, lasers: false, glow: false, sparks: false, lights: false };
+
+function paintOptions() {
+  for (const key of FX_EFFECTS) {
+    const on = !!fx.on[key];
+    hud(OPTIONS[key][0], 'text', OPTIONS[key][1] + (on ? '  ON' : '  OFF'));
+    hud(OPTIONS[key][0], 'background', on ? '#2563eb' : '#1e293b');
+    hud(OPTIONS[key][0], 'color', on ? '#ffffff' : '#64748b');
+  }
+}
+
+/** Switches effects on or off (a map of name to boolean) and, from the buttons, remembers the choice for this player. */
+function setEffects(next, save) {
+  for (const key of FX_EFFECTS) if (typeof next[key] === 'boolean') fx.on[key] = next[key];
+  fxApplyEffects();
+  paintOptions();
+  if (save && player) guard(ctx.storage.player(player).set('effects', Object.assign({}, fx.on)), 'save effects');
+}
+
+function pressOption(slotId) {
+  for (const key of FX_EFFECTS) if (OPTIONS[key][0] === slotId) { setEffects({ [key]: !fx.on[key] }, true); return true; }
+  if (slotId === 'bt-opt-all') { setEffects(Object.fromEntries(FX_EFFECTS.map((key) => [key, true])), true); return true; }
+  if (slotId === 'bt-opt-lite') { setEffects(LITE, true); return true; }
+  if (slotId === 'bt-opt-off') { setEffects(Object.fromEntries(FX_EFFECTS.map((key) => [key, false])), true); return true; }
+  return false;
+}
+
 /** The turntable at work: the record spins, the arm comes down onto it and the light turns red while a song is on. */
 function deckTick(dt) {
   const busy = state === 'analyzing' || state === 'countdown' || state === 'playing';
@@ -573,12 +615,15 @@ return {
     try {
       const saved = await ctx.storage.player(who).get('difficulty', 'normal');
       if (saved !== difficulty && DIFFICULTIES[saved] && state !== 'playing') { difficulty = saved; paintDifficulty(); }
+      const effects = await ctx.storage.player(who).get('effects', null);
+      if (effects && typeof effects === 'object') setEffects(effects, false);
     } catch (error) {
       ctx.log('storage: ' + (error && error.message ? error.message : error));
     }
   },
   onUIEvent(event) {
     if (event.type !== 'press') return;
+    if (pressOption(event.slotId)) return;
     for (const id of DIFFICULTY_IDS) if (event.slotId === BUTTONS[id]) chooseDifficulty(id);
   },
   tick(dt) {

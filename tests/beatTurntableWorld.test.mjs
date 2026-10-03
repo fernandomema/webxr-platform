@@ -7,6 +7,7 @@ import { isBuiltinMeshId } from '../src/lib/assets/ref.ts';
 import { eulerToQuat } from '../src/lib/math/euler.ts';
 import { DECK, deckIds } from '../src/lib/xr/templates/beatTurntableDesk.ts';
 import { STAGE, stageIds } from '../src/lib/xr/templates/beatTurntableStage.ts';
+import { OPTION_BUTTONS } from '../src/lib/xr/templates/beatTurntableUi.ts';
 
 const logic = loadLevelLogic();
 const find = (slot, type) => slot.components.find((c) => c.type === type);
@@ -204,7 +205,13 @@ function runWorld({ analysis = fakeAnalysis(), swing = 'perfect', storage = true
 				if (component) component[field] = value;
 			},
 			setSlotEnabled: (id, value) => { enabled.set(id, value); return true; },
-			setWorldPose: (id, pose) => { poses.set(id, { ...(poses.get(id) ?? {}), ...pose }); return true; },
+			setWorldPose: (id, pose) => {
+				poses.set(id, { ...(poses.get(id) ?? {}), ...pose });
+				const slot = slots.get(id);
+				if (slot && pose.position) slot.position = [...pose.position];
+				if (slot && pose.rotation) slot.rotation = [...pose.rotation];
+				return true;
+			},
 			spawn: (partial) => { spawned.push(partial); }
 		},
 		math: { quatFromAxisAngle: (axis, angle) => [0, 0, Math.sin(angle / 2), Math.cos(angle / 2)], quatMultiply: (a) => a },
@@ -227,7 +234,9 @@ function runWorld({ analysis = fakeAnalysis(), swing = 'perfect', storage = true
 	const handlers = new Function('ctx', BEAT_TURNTABLE_SCRIPT)(ctx);
 	const text = (id) => find(slots.get(id), 'uiElement').text;
 	const socket = find(slots.get(BEAT_TURNTABLE.socketId), 'socket');
-	const state = { slots, enabled, poses, submitted, saved, logs, spawned, handlers, ctx, text, socket, handle, get trackStopped() { return trackStopped; }, get trackStarted() { return trackStarted; }, bladePoses };
+	/** Where each block is: its slot's data, which the script sets once and the engine then moves. */
+	const notePoses = () => [...slots.values()].filter((slot) => /^bt-note-\d-\d+$/.test(slot.id)).map((slot) => [slot.id, { position: slot.position, rotation: slot.rotation }]);
+	const state = { notePoses, slots, enabled, poses, submitted, saved, logs, spawned, handlers, ctx, text, socket, handle, get trackStopped() { return trackStopped; }, get trackStarted() { return trackStarted; }, bladePoses };
 
 	/** One frame: the sabers move (to cut every note, or to stay out of the way), then the script ticks. */
 	state.frame = async (swingMode = swing) => {
@@ -239,9 +248,9 @@ function runWorld({ analysis = fakeAnalysis(), swing = 'perfect', storage = true
 			// The saber of each hand follows the nearest block of its colour and sweeps through it along its arrow, so its speed
 			// and direction are those of a real swing and it never jumps.
 			const nearest = [null, null];
-			for (const [id, pose] of poses) {
+			for (const [id, pose] of notePoses()) {
 				const match = /^bt-note-(\d)-\d+$/.exec(id);
-				if (!match || enabled.get(id) === false || !pose.position) continue;
+				if (!match || enabled.get(id) !== true) continue;
 				const hand = Number(match[1]);
 				const distance = Math.abs(pose.position[2] - BEAT_TURNTABLE.hitZ);
 				if (distance <= 2.2 && (!nearest[hand] || distance < nearest[hand].distance)) nearest[hand] = { id, pose, distance };
@@ -257,6 +266,11 @@ function runWorld({ analysis = fakeAnalysis(), swing = 'perfect', storage = true
 			});
 		}
 		handlers.tick(DT);
+		// The engine's part: slots with a velocity move by it every frame.
+		for (const slot of slots.values()) {
+			const velocity = slot.components.find((c) => c.type === 'velocity');
+			if (velocity && velocity.linear.some((v) => v !== 0)) slot.position = slot.position.map((v, i) => v + velocity.linear[i] * DT);
+		}
 		await tick();
 	};
 	return state;
@@ -345,9 +359,9 @@ test('a bad cut with the wrong saber breaks the combo and is not a hit', async (
 	let frames = 0;
 	while (!/^Rank/.test(world.text('bt-status')) && frames < 60 * 70) {
 		await world.frame('none');
-		for (const [id, pose] of world.poses) {
+		for (const [id, pose] of world.notePoses()) {
 			const match = /^bt-note-(\d)-\d+$/.exec(id);
-			if (!match || world.enabled.get(id) === false || !pose.position || Math.abs(pose.position[2] - BEAT_TURNTABLE.hitZ) > 0.3) continue;
+			if (!match || world.enabled.get(id) !== true || Math.abs(pose.position[2] - BEAT_TURNTABLE.hitZ) > 0.3) continue;
 			const wrong = 1 - Number(match[1]);
 			const [x, y, z] = pose.position;
 			world.bladePoses[wrong].position = [x, y + 0.2, z];
@@ -477,6 +491,7 @@ test('the stage only moves while the song plays', async () => {
 	// At rest nothing moves, and the script does not even touch the slots.
 	for (let i = 0; i < 120; i++) await world.frame('none');
 	assert.deepEqual(fxPoses(), [], 'the idle stage is still');
+	assert.ok([...world.slots.values()].filter((slot) => slot.id.startsWith('bt-fx-')).every((slot) => !slot.components.some((c) => c.type === 'velocity' && c.linear.some((v) => v !== 0))), 'nothing is set flying');
 	const restColour = colour(`${middle}-l`);
 	assert.notEqual(restColour, '#0b1026', 'but it is lit, in resting colours');
 	// Not during the analysis or the count-in either.
@@ -489,12 +504,12 @@ test('the stage only moves while the song plays', async () => {
 	assert.equal(world.trackStarted, 1);
 	const start = world.slots.get(middle).position[2];
 	for (let i = 0; i < 30; i++) await world.frame('none');
-	assert.ok(world.poses.get(middle).position[2] < start, 'the frames come towards the player');
+	assert.ok(world.slots.get(middle).position[2] < start, 'the frames come towards the player');
 	const quiet = world.poses.get(stageIds.bar(0, 3)).position[1];
 	// Frames wrap instead of passing through the player.
 	let lowest = Infinity;
-	for (let i = 0; i < 60 * 8; i++) { await world.frame('none'); lowest = Math.min(lowest, world.poses.get(stageIds.frame(0)).position[2]); }
-	assert.ok(lowest >= STAGE.frameNear - 1e-6, `a frame never gets closer than ${STAGE.frameNear} m (was ${lowest})`);
+	for (let i = 0; i < 60 * 8; i++) { await world.frame('none'); lowest = Math.min(lowest, world.slots.get(stageIds.frame(0)).position[2]); }
+	assert.ok(lowest >= STAGE.frameNear - 0.2, `a frame never gets closer than ${STAGE.frameNear} m, give or take the frame it takes to wrap (was ${lowest})`);
 	const loudY = world.poses.get(stageIds.bar(0, 3)).position[1];
 	assert.ok(loudY > quiet + 1, `the towers rise with the music: ${quiet} -> ${loudY}`);
 	assert.notEqual(colour(`${middle}-l`), restColour, 'the frames change colour');
@@ -502,29 +517,139 @@ test('the stage only moves while the song plays', async () => {
 	// When the record comes off, the music stops and so does the stage: the towers sink and then it is still again.
 	world.socket.occupantId = '';
 	for (let i = 0; i < 60 * 3; i++) await world.frame('none');
-	const frozen = world.poses.get(middle).position[2];
+	const frozen = world.slots.get(middle).position[2];
 	const laser = world.poses.get(stageIds.laser(0)).rotation;
 	for (let i = 0; i < 120; i++) await world.frame('none');
-	assert.equal(world.poses.get(middle).position[2], frozen, 'the frames stop');
+	assert.equal(world.slots.get(middle).position[2], frozen, 'the frames stop');
 	assert.deepEqual(world.poses.get(stageIds.laser(0)).rotation, laser, 'the lasers stop');
 	assert.ok(world.poses.get(stageIds.bar(0, 3)).position[1] < quiet + 0.2, 'the towers have sunk');
 	assert.deepEqual(world.logs, []);
 });
 
-test('while the song plays the stage never moves more slots a frame than it should, and does not rewrite a colour that is already there', async () => {
+test('while the song plays the script does little per frame: the engine flies the blocks and the flow, the rest runs at 30 Hz', async () => {
 	const world = runWorld({ swing: 'none' });
 	await startGame(world);
 	for (let i = 0; i < 60 * 6 + 120; i++) await world.frame('none');
-	let writes = 0;
-	const base = world.ctx.world.setComponentField;
-	world.ctx.world.setComponentField = (...args) => { writes += 1; return base(...args); };
-	let moves = 0;
-	const move = world.ctx.world.setWorldPose;
-	world.ctx.world.setWorldPose = (...args) => { moves += 1; return move(...args); };
-	const frames = 60;
+	const calls = { pose: 0, field: 0, notePose: 0 };
+	const field = world.ctx.world.setComponentField;
+	world.ctx.world.setComponentField = (...args) => { calls.field += 1; return field(...args); };
+	const pose = world.ctx.world.setWorldPose;
+	world.ctx.world.setWorldPose = (id, ...rest) => { calls.pose += 1; if (id.startsWith('bt-note-')) calls.notePose += 1; return pose(id, ...rest); };
+	const frames = 120;
 	for (let i = 0; i < frames; i++) await world.frame('none');
-	assert.ok(moves / frames <= STAGE.frames + STAGE.gridLines + STAGE.lasers + 2 * STAGE.barsPerSide + 28 + 4, `${moves / frames} moves a frame`);
-	assert.ok(writes / frames <= 40, `${writes / frames} field writes a frame`);
+	assert.ok(calls.pose / frames <= 12, `${calls.pose / frames} poses a frame`);
+	assert.ok(calls.field / frames <= 25, `${calls.field / frames} field writes a frame`);
+	// A block is placed once, when it enters the lane; after that only the engine moves it.
+	assert.ok(calls.notePose <= 12, `${calls.notePose} block poses in ${frames} frames`);
+	const flying = [...world.slots.values()].filter((slot) => /^bt-note-\d-\d+$/.test(slot.id) && slot.components.find((c) => c.type === 'velocity').linear[2] < 0);
+	for (const note of flying) assert.ok(world.enabled.get(note.id) === true, 'only visible blocks have a velocity');
+});
+
+test('the blocks fly at the lane speed and arrive at the hit line on the beat', async () => {
+	const world = runWorld({ swing: 'none' });
+	await startGame(world);
+	for (let i = 0; i < 60 * 6 + 5; i++) await world.frame('none');
+	const settings = logic.DIFFICULTIES.normal;
+	const speed = BEAT_TURNTABLE.field / settings.travel;
+	const seen = new Map();
+	for (let i = 0; i < 60 * 10; i++) {
+		await world.frame('none');
+		for (const [id, pose] of world.notePoses()) {
+			if (world.enabled.get(id) !== true) continue;
+			const velocity = world.slots.get(id).components.find((c) => c.type === 'velocity').linear;
+			assert.ok(Math.abs(velocity[2] + speed) < 1e-9 && velocity[0] === 0 && velocity[1] === 0, 'towards the player at the lane speed');
+			if (!seen.has(id)) seen.set(id, pose.position[2]);
+		}
+	}
+	assert.ok(seen.size > 4, 'blocks came');
+	for (const start of seen.values()) assert.ok(Math.abs(start - (BEAT_TURNTABLE.hitZ + settings.travel * speed)) < speed * 0.05, `a block enters the lane at the far end (${start})`);
+});
+
+test('every effect can be switched off from the screen, hides its slots and is remembered', async () => {
+	const world = runWorld({ swing: 'none' });
+	world.handlers.onPlayerReady({ id: 'me', name: 'Me' });
+	await tick();
+	await world.frame('none');
+	const press = (id) => world.handlers.onUIEvent({ type: 'press', slotId: id });
+	const text = (id) => world.text(id);
+	const groups = {
+		tunnel: Array.from({ length: STAGE.frames }, (_, i) => stageIds.frame(i)),
+		towers: [0, 1].flatMap((side) => Array.from({ length: STAGE.barsPerSide }, (_, k) => stageIds.bar(side, k))),
+		lasers: Array.from({ length: STAGE.lasers }, (_, i) => stageIds.laser(i)),
+		grid: Array.from({ length: STAGE.gridLines }, (_, i) => stageIds.grid(i)),
+		sun: [stageIds.sun],
+		glow: ['bt-saber-0-halo', 'bt-saber-1-halo'],
+		lights: ['bt-light-0', 'bt-light-1']
+	};
+	assert.equal(OPTION_BUTTONS.length, 8);
+	for (const [id] of OPTION_BUTTONS) assert.equal(find(byId.get(id), 'uiElement').kind, 'button');
+	for (const [id, label] of OPTION_BUTTONS) assert.equal(text(id), `${label}  ON`, 'everything starts on');
+	for (const [effect, ids] of Object.entries(groups)) for (const id of ids) assert.equal(world.enabled.get(id), true, `${id} (${effect}) is shown`);
+	// Each button turns its effect off and on again.
+	const keys = ['tunnel', 'towers', 'lasers', 'grid', 'sun', 'glow', 'sparks', 'lights'];
+	keys.forEach((key, index) => {
+		const [button, label] = OPTION_BUTTONS[index];
+		press(button);
+		assert.equal(text(button), `${label}  OFF`, `${key} is off`);
+		for (const id of groups[key] ?? []) assert.equal(world.enabled.get(id), false, `${id} is hidden`);
+		for (const [other, ids] of Object.entries(groups)) if (other !== key) for (const id of ids) assert.equal(world.enabled.get(id), true, `${id} stays shown`);
+		press(button);
+		assert.equal(text(button), `${label}  ON`);
+		for (const id of groups[key] ?? []) assert.equal(world.enabled.get(id), true, `${id} is back`);
+	});
+	await tick();
+	// The choice is saved for the player, and the presets set several at once.
+	press('bt-opt-towers');
+	await tick();
+	assert.equal(world.saved.get('effects').towers, false);
+	assert.equal(world.saved.get('effects').tunnel, true);
+	press('bt-opt-lite');
+	assert.deepEqual(keys.map((key) => !!world.slots && text(OPTION_BUTTONS[keys.indexOf(key)][0]).endsWith('ON')), [true, false, false, true, true, false, false, false]);
+	press('bt-opt-off');
+	for (const [effect, ids] of Object.entries(groups)) for (const id of ids) assert.equal(world.enabled.get(id), false, `${id} (${effect}) is hidden with everything off`);
+	press('bt-opt-all');
+	for (const [effect, ids] of Object.entries(groups)) for (const id of ids) assert.equal(world.enabled.get(id), true, `${id} (${effect}) is back`);
+	assert.deepEqual(world.logs, []);
+});
+
+test('a returning player gets the effects they chose, and a disabled effect costs the script nothing', async () => {
+	const world = runWorld({ swing: 'none' });
+	world.saved.set('effects', { tunnel: false, towers: false, lasers: false, grid: false, sun: false, glow: false, sparks: false, lights: false });
+	world.handlers.onPlayerReady({ id: 'me', name: 'Me' });
+	for (let i = 0; i < 5; i++) await tick();
+	await world.frame('none');
+	assert.equal(world.enabled.get(stageIds.frame(0)), false);
+	assert.equal(world.enabled.get(stageIds.bar(0, 0)), false);
+	assert.match(world.text('bt-opt-tunnel'), /OFF$/);
+	await startGame(world);
+	for (let i = 0; i < 60 * 6 + 5; i++) await world.frame('none');
+	let writes = 0;
+	const field = world.ctx.world.setComponentField;
+	world.ctx.world.setComponentField = (id, ...rest) => { if (id.startsWith('bt-fx-')) writes += 1; return field(id, ...rest); };
+	let moves = 0;
+	const pose = world.ctx.world.setWorldPose;
+	world.ctx.world.setWorldPose = (id, ...rest) => { if (id.startsWith('bt-fx-') && !id.startsWith('bt-fx-frame') && !id.startsWith('bt-fx-grid')) moves += 1; return pose(id, ...rest); };
+	for (let i = 0; i < 120; i++) await world.frame('none');
+	assert.equal(writes, 0, 'no colour written to a hidden effect');
+	assert.equal(moves, 0, 'no tower or laser moved');
+	// No sparks without the effect, and no glow on the blocks that fly.
+	assert.ok(!world.spawned.some((entry) => entry.components[0].type === 'particleBurst'));
+	for (const [id] of [...world.enabled].filter(([id, on]) => on && /^bt-note-\d-\d+$/.test(id))) assert.equal(world.enabled.get(`${id}-glow`), false);
+});
+
+test('sparks appear on a cut only while the effect is on', async () => {
+	for (const sparks of [true, false]) {
+		const world = runWorld();
+		world.handlers.onPlayerReady({ id: 'me', name: 'Me' });
+		await tick();
+		await world.frame();
+		if (!sparks) world.handlers.onUIEvent({ type: 'press', slotId: 'bt-opt-sparks' });
+		await startGame(world);
+		for (let i = 0; i < 60 * 6 + 60 * 8; i++) await world.frame();
+		const bursts = world.spawned.filter((entry) => entry.components[0].type === 'particleBurst');
+		assert.equal(bursts.length > 0, sparks, `sparks ${sparks ? 'on' : 'off'}: ${bursts.length} bursts`);
+		if (sparks) assert.ok(bursts.every((entry) => entry.components[0].count <= 14), 'small bursts');
+	}
 });
 
 test('the turntable works while a song is on: the record spins, the arm comes down, the light turns red', async () => {

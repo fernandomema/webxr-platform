@@ -7,17 +7,18 @@ import pulse from './pulse.json';
 import avatarShowcase from './avatarShowcase.json';
 import { buildMirrorMaze } from './mirrorMaze';
 import { buildBeatTurntable } from './beatTurntable';
+import { buildArchiveJukebox } from './archiveJukebox';
 
 /** The worlds that ship with the app: always there to go to, and the starting points for the Studio's world templates. */
 export interface BuiltinWorld {
-	id: 'lobby' | 'workshop' | 'pop-up-store' | 'pulse' | 'avatarShowcase' | 'archive-film-test' | 'mirror-maze' | 'beat-turntable';
+	id: 'lobby' | 'workshop' | 'pop-up-store' | 'pulse' | 'avatarShowcase' | 'archive-film-test' | 'mirror-maze' | 'beat-turntable' | 'archive-jukebox';
 	name: string;
 	description: string;
 	scene: SlotTree;
 }
 
 /** Worlds listed under the Development category instead of the official ones. */
-export const DEV_WORLD_IDS: readonly BuiltinWorld['id'][] = ['archive-film-test', 'mirror-maze'];
+export const DEV_WORLD_IDS: readonly BuiltinWorld['id'][] = ['archive-film-test', 'mirror-maze', 'archive-jukebox'];
 
 export const BUILTIN_WORLDS: readonly BuiltinWorld[] = [
 	{
@@ -187,6 +188,12 @@ return {
 				components: [{ type: 'textDisplay', title: 'Night of the Living Dead (1968)', lines: ['Directed by George A. Romero · Archive.org lists Public Domain', 'Source: archive.org/details/Night.Of.The.Living.Dead_1080p'], color: '#f4f4f5', scale: 0.75 }]
 			})
 		]
+	},
+	{
+		id: 'archive-jukebox',
+		name: 'Archive Jukebox',
+		description: 'Search music on archive.org and press any song onto a record disc that you can play or take to a turntable.',
+		scene: buildArchiveJukebox()
 	},
 	{
 		id: 'mirror-maze',
