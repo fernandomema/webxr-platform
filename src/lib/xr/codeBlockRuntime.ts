@@ -3,6 +3,7 @@ import { requestScriptJson } from './scriptNet';
 import { Vector3, Quaternion, type TransformNode } from '@babylonjs/core';
 import type { Slot, UIEvent, Vec3, Quat } from '$lib/ecs/types';
 import type { UIMediaState } from './uiPanelSurface';
+import type { ScriptAudio } from './scriptAudio';
 
 /** What SceneGraph exposes to a codeBlock's compiled handlers — narrow, read-mostly, no Babylon types leak into `ctx`. */
 export interface CodeBlockHost {
@@ -34,6 +35,8 @@ export interface CodeBlockHost {
 	setSlotEnabled(slotId: string, enabled: boolean, broadcast?: boolean): boolean;
 	/** Persistent storage and leaderboards. Absent where the engine provides none; scripts then see them as unavailable. */
 	storage?: WorldStorageService;
+	/** Audio analysis and clock-accurate playback. Absent where the engine has no audio. */
+	audio?: ScriptAudio;
 	/** Imports a Poly Haven model into this device's asset store and local inventory. Host/solo only. */
 	importPolyHavenModel(id: string, name: string): Promise<string>;
 }
@@ -222,6 +225,11 @@ function requireStorage(host: CodeBlockHost): WorldStorageService {
 	return host.storage;
 }
 
+function requireAudio(host: CodeBlockHost): ScriptAudio {
+	if (!host.audio) throw new Error('Audio is not available here');
+	return host.audio;
+}
+
 function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, pushLog: (level: 'log' | 'error', hook: string, message: string) => void) {
 	return {
 		self: {
@@ -339,7 +347,20 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 						{ type: 'expires', expiresAt: Date.now() + durationMs + 500 }
 					]
 				});
-			}
+			},
+			/**
+			 * Decodes an audio source (`{ kind: 'url', url }`, an asset ref, or an `audioPlayer`'s `source`) and resolves with
+			 * `{ duration, bpm, bpmConfidence, onsets: [{ t, strength, band: 'low' | 'mid' | 'high' }], energy: { hop, low, mid, high } }`.
+			 * Onset times are in seconds; band energy sample `i` is at `i * hop`. Cached per source. Async: a long track takes a moment.
+			 */
+			analyze: (source: unknown) => requireAudio(host).analyze(source),
+			/**
+			 * Starts playing an audio source now, not positioned in the world, and resolves with a handle:
+			 * `{ time(), duration, playing, ended, pause(), resume(), stop(), setVolume(v) }`. `time()` is the track's position in
+			 * seconds on the audio clock, the one to sync gameplay or visuals to. Options: `volume` (0-1), `loop`, `offset` (seconds).
+			 * Runs on the peer that calls it, so gate it behind `world.isHost()` when only one player should hear it.
+			 */
+			playTrack: (source: unknown, options?: { volume?: number; loop?: boolean; offset?: number }) => requireAudio(host).playTrack(source, options)
 		},
 		net: {
 			/** GET JSON from a local route or an external HTTPS endpoint. Gate shared work behind world.isHost(). */

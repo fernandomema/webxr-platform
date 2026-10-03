@@ -31,6 +31,7 @@ import { setupStroke } from './strokeRenderer';
 import { setupSkybox } from './skyboxRenderer';
 import { setupWorldGlobe } from './worldGlobe';
 import { setupImpactSound } from './impactSoundEffects';
+import type { ScriptAudio } from './scriptAudio';
 import { setupTextDisplay } from './textDisplaySurface';
 import { setupScoreboard } from './scoreboardSurface';
 import { setupUIPanel, type UIMediaState, type UIPanelBinding } from './uiPanelSurface';
@@ -107,6 +108,8 @@ export interface SceneGraphOptions {
 	resolvePlayer?: (grabberId: string) => { id: string; name: string };
 	/** Persistent storage and leaderboards for `ctx.storage` / `ctx.leaderboards` (see worldStorageService.ts). */
 	storage?: WorldStorageService;
+	/** Audio analysis and clock-accurate playback for `ctx.audio.analyze` / `ctx.audio.playTrack` (see scriptAudio.ts). */
+	audio?: ScriptAudio;
 	/** Where model bytes come from. Without it, a slot that points at a model stays a placeholder. */
 	models?: ModelLibrary;
 	/** Where asset-backed media (audio) gets its bytes. */
@@ -771,6 +774,7 @@ export class SceneGraph {
 				return changed;
 			},
 			storage: this.options.storage,
+			audio: this.options.audio,
 			getEquipHolder: (slotId) => this.equipQuery?.getHolderOfSlotOrAncestor(slotId) ?? null,
 			getUIMedia: (slotId) => this.getUIMedia(slotId),
 			getUIInputText: (slotId) => this.getUIInputText(slotId),

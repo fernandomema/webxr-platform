@@ -24,6 +24,7 @@ import { PeerResolver } from '$lib/assets/p2p';
 import { getLocalAssetStore } from '$lib/assets/store';
 import { importGlb } from '$lib/assets/importGlb';
 import { BlobAssetLibrary } from './blobAssetLibrary';
+import { createScriptAudio } from './scriptAudio';
 import { ModelLibrary } from './modelLibrary';
 import { SceneGraph } from './sceneGraph';
 import { SocketSystem } from './interaction/socketSystem';
@@ -140,6 +141,7 @@ export async function mountGame(
 	];
 	const models = new ModelLibrary(scene, { store: getLocalAssetStore(), getResolvers: () => assetResolvers });
 	const mediaAssets = new BlobAssetLibrary({ store: getLocalAssetStore(), getResolvers: () => assetResolvers });
+	const scriptAudio = createScriptAudio(mediaAssets);
 	// Previews of what is saved are drawn as a second scene on this engine (a second WebGL context would be costly on a headset).
 	configureThumbnails({ engine, getResolvers: () => assetResolvers });
 	configureThumbnailSources(() => assetResolvers);
@@ -155,6 +157,7 @@ export async function mountGame(
 	let viewerCamera: () => { globalPosition: Vector3 } = () => desktopCamera;
 	const sceneGraph = new SceneGraph(scene, {
 		storage: worldStorage,
+		audio: scriptAudio,
 		models,
 		mediaAssets,
 		getViewerPosition: () => viewerCamera().globalPosition,
@@ -897,6 +900,7 @@ export async function mountGame(
 			worldPortalMenu.dispose();
 			voice.dispose();
 			sceneGraph.dispose();
+			scriptAudio.dispose();
 			models.dispose();
 			mediaAssets.dispose();
 			window.removeEventListener('keydown', passStrayKey);

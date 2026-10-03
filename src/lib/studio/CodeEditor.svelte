@@ -53,6 +53,8 @@
 		{ label: 'ctx.leaderboards.best(name, player)', detail: '(name, player) => Promise<{ score, rank } | null>', documentation: 'A player\'s best score and rank.' },
 		{ label: 'ctx.leaderboards.top(name, { limit })', detail: '(name, options?) => Promise<{ rank, displayName, score, isMe }[]>', documentation: 'The best rows of a board.' },
 		{ label: 'ctx.leaderboards.showOn(scoreboardId, name)', detail: '(scoreboardSlotId, name, options?) => Promise', documentation: 'Fill a scoreboard slot with a board\'s top rows.' },
+		{ label: 'ctx.audio.analyze(source)', detail: '(source: SourceRef) => Promise<{ duration, bpm, bpmConfidence, onsets, energy }>', documentation: 'Decode an audio source and read its onsets ({ t, strength, band: low | mid | high }), tempo and band energy. Cached per source.' },
+		{ label: 'ctx.audio.playTrack(source)', detail: '(source: SourceRef, { volume?, loop?, offset? }) => Promise<{ time(), duration, playing, ended, pause(), resume(), stop(), setVolume(v) }>', documentation: 'Play an audio source now, not positioned in the world. time() is the position on the audio clock, for syncing gameplay or visuals.' },
 		{ label: 'ctx.world.isHost()', detail: '() => boolean', documentation: 'Check whether this peer is authoritative.' },
 		{ label: 'ctx.hierarchy.getChildren(id)', detail: '(id: string | null) => Slot[]', documentation: 'Return direct children of a slot.' },
 		{ label: 'ctx.math.vecAdd(a, b)', detail: '(a: Vec3, b: Vec3) => Vec3', documentation: 'Add two vectors.' },

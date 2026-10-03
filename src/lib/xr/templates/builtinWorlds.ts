@@ -6,17 +6,18 @@ import popUpStore from './popUpStore.json';
 import pulse from './pulse.json';
 import avatarShowcase from './avatarShowcase.json';
 import { buildMirrorMaze } from './mirrorMaze';
+import { buildBeatTurntable } from './beatTurntable';
 
 /** The worlds that ship with the app: always there to go to, and the starting points for the Studio's world templates. */
 export interface BuiltinWorld {
-	id: 'lobby' | 'workshop' | 'pop-up-store' | 'pulse' | 'avatarShowcase' | 'archive-film-test' | 'mirror-maze';
+	id: 'lobby' | 'workshop' | 'pop-up-store' | 'pulse' | 'avatarShowcase' | 'archive-film-test' | 'mirror-maze' | 'beat-turntable';
 	name: string;
 	description: string;
 	scene: SlotTree;
 }
 
 /** Worlds listed under the Development category instead of the official ones. */
-export const DEV_WORLD_IDS: readonly BuiltinWorld['id'][] = ['archive-film-test', 'mirror-maze'];
+export const DEV_WORLD_IDS: readonly BuiltinWorld['id'][] = ['archive-film-test', 'mirror-maze', 'beat-turntable'];
 
 export const BUILTIN_WORLDS: readonly BuiltinWorld[] = [
 	{
@@ -192,6 +193,12 @@ return {
 		name: 'Mirror Maze',
 		description: 'A maze of mirrors, glass and silver walls that look alike: false corridors, 45° turns that are not there and a disorienting central room. Find the way out.',
 		scene: buildMirrorMaze()
+	},
+	{
+		id: 'beat-turntable',
+		name: 'Beat Turntable',
+		description: 'A rhythm game played with records: put a disc on the turntable and cut the blocks that the song itself calls for. Scores are kept per song.',
+		scene: buildBeatTurntable()
 	},
 	{ id: 'lobby', name: 'Lobby', description: 'A glowing spawn pad, a welcome sign, a mirror, a paint brush and a record player.', scene: lobby as SlotTree },
 	{
