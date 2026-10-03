@@ -14,8 +14,15 @@ export interface LoadedWorld {
 	revisionNumber: number | null;
 }
 
+/** The published world (and revision) the current scene was launched from. Persistent storage is keyed by `publicationId`; the server re-verifies it on every request, so this is never trusted on its own. */
+export interface PublicationContext {
+	publicationId: string;
+	revisionId: string | null;
+}
+
 export interface GameState {
 	loadedWorld: LoadedWorld | null;
+	publication: PublicationContext | null;
 	worldId: string | null;
 	worldName: string | null;
 	roomCode: string | null;
@@ -32,6 +39,7 @@ export interface GameState {
 
 export const gameState: GameState = {
 	loadedWorld: null,
+	publication: null,
 	worldId: null,
 	worldName: null,
 	roomCode: null,

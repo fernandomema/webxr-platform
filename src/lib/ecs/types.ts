@@ -526,6 +526,8 @@ export interface Slot {
 	rotation: Quat;
 	scale: Vec3;
 	components: Component[];
+	/** Switched off: neither this slot nor anything below it is drawn, picked, grabbed or hit by rays. Its code blocks keep running. Set by a script with `ctx.world.setSlotEnabled`. */
+	disabled?: boolean;
 }
 
 /** A flat list of slots forming one or more trees via parentId — the on-disk/over-the-wire shape. */

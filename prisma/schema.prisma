@@ -24,6 +24,7 @@ model user {
   accounts        account[]
   worlds          world[]
   publications    publishedWorld[]
+  leaderboardEntries leaderboardEntry[]
   marketplaceItems marketplaceItem[]
   marketplacePurchases marketplacePurchase[]
   cloudItems      cloudInventoryItem[]
@@ -111,6 +112,8 @@ model worldSession {
   world      world     @relation(fields: [worldId], references: [id], onDelete: Cascade)
   hostUserId String
   roomCode   String    @unique
+  /// The published world this session runs, when it was launched from one. Guests only ever store data for this publication.
+  publicationId String?
   startedAt  DateTime  @default(now())
   endedAt    DateTime? // null = currently active
 
@@ -208,6 +211,8 @@ model publishedWorld {
   /// The 360° preview (an `image` asset) of the latest revision, when it has one.
   thumbnailAssetId String?
   revisions        publishedWorldRevision[]
+  storageEntries   worldStorageEntry[]
+  leaderboards     leaderboard[]
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -428,4 +433,48 @@ model feedbackVote {
 
   @@id([entryId, userId])
   @@index([userId])
+}
+
+// Persistent data of a published world. Keyed by the publication (not a revision), so publishing an update keeps it.
+// scope 'world' rows are shared by every session (accountId is '', so it has no foreign key; player rows are removed with the publication); scope 'player' rows belong to one account.
+model worldStorageEntry {
+  publicationId String
+  publication   publishedWorld @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+  scope         String // world | player
+  accountId     String @default("")
+  key           String
+  value         Json
+  version       Int @default(1)
+  updatedAt     DateTime @updatedAt
+
+  @@id([publicationId, scope, accountId, key])
+  @@index([accountId])
+}
+
+// Created by the first submit to a name. `order` decides which score wins: 'high' (points) or 'low' (times).
+model leaderboard {
+  id            String @id @default(cuid())
+  publicationId String
+  publication   publishedWorld @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+  name          String
+  order         String // high | low
+  seasonId      String @default("")
+  entries       leaderboardEntry[]
+  createdAt     DateTime @default(now())
+
+  @@unique([publicationId, name, seasonId])
+}
+
+model leaderboardEntry {
+  leaderboardId String
+  leaderboard   leaderboard @relation(fields: [leaderboardId], references: [id], onDelete: Cascade)
+  accountId     String
+  account       user @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  displayName   String
+  score         Float
+  updatedAt     DateTime @updatedAt
+
+  @@id([leaderboardId, accountId])
+  @@index([leaderboardId, score])
+  @@index([accountId])
 }

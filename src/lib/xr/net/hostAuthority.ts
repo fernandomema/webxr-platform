@@ -5,6 +5,7 @@ import type { EquipmentSystem } from '../interaction/equipmentSystem';
 import { isEquipHand } from '../interaction/equipmentRegistry';
 import { SignalingClient, type SignalingMessage } from './signalingClient';
 import { PeerLink } from './peerConnection';
+import type { PlayerApiCall, PlayerApiResult } from '$lib/worldStorage/ops';
 import type { PlayerInfo, SlotTransform, WorldStateMessage, WorldSyncMessage } from './protocol';
 import { createGhostRig, type GhostRig, type TransformPose } from '../avatar/defaultAvatar';
 import { validateWorldPackage, MAX_SHARED_SCENE_BYTES } from '$lib/worlds/package';
@@ -49,6 +50,8 @@ export class HostAuthority {
 	private lastTransforms = new Map<string, string>();
 	private presenceSequence = 0;
 	private avatars: AvatarHooks | null = null;
+	private storageHooks: { getPublicationId(): string | null; onPlayerReady(player: PlayerInfo): void } | null = null;
+	private pendingApi = new Map<string, { guestId: string; resolve(result: PlayerApiResult): void; timer: ReturnType<typeof setTimeout> }>();
 	/** Stand-ins of the guests' keyboards while they type. */
 	private keyboards: RemoteKeyboards;
 
@@ -77,6 +80,27 @@ export class HostAuthority {
 
 	setAvatarHooks(hooks: AvatarHooks): void {
 		this.avatars = hooks;
+	}
+
+	setStorageHooks(hooks: { getPublicationId(): string | null; onPlayerReady(player: PlayerInfo): void }): void {
+		this.storageHooks = hooks;
+	}
+
+	/** Asks a connected guest to run `call` with its own account. Resolves with an error result, never rejects, when the guest is gone or silent. */
+	relayPlayerApi(playerId: string, call: PlayerApiCall): Promise<PlayerApiResult> {
+		const publicationId = this.storageHooks?.getPublicationId();
+		const found = [...this.guests.entries()].find(([, entry]) => entry.player.playerId === playerId);
+		if (!found || !publicationId) return Promise.resolve({ ok: false, error: 'That player is not connected' });
+		const [guestId, entry] = found;
+		const requestId = crypto.randomUUID();
+		return new Promise((resolve) => {
+			const timer = setTimeout(() => {
+				this.pendingApi.delete(requestId);
+				resolve({ ok: false, error: 'The player did not answer' });
+			}, 15_000);
+			this.pendingApi.set(requestId, { guestId, resolve, timer });
+			entry.link.send({ kind: 'player-api-request', requestId, publicationId, call });
+		});
 	}
 
 	/** The id the equipment registry uses for a player: a guest's connection id, or the host's own id. */
@@ -173,6 +197,12 @@ export class HostAuthority {
 		const entry = this.guests.get(guestId);
 		if (!entry) return;
 		this.guests.delete(guestId);
+		for (const [requestId, pending] of this.pendingApi) {
+			if (pending.guestId !== guestId) continue;
+			clearTimeout(pending.timer);
+			this.pendingApi.delete(requestId);
+			pending.resolve({ ok: false, error: 'That player left' });
+		}
 		this.grabSystem.release(`${guestId}:left`);
 		this.grabSystem.release(`${guestId}:right`);
 		// Whatever they had equipped goes back into the world at its current pose.
@@ -247,6 +277,7 @@ export class HostAuthority {
 				// A player id is what owns an avatar, so one that is already taken cannot be claimed.
 				const taken = msg.player.playerId === this.localPlayer.playerId || [...this.guests.entries()].some(([id, other]) => id !== guestId && other.player.playerId === msg.player.playerId);
 				entry.player = { ...msg.player, playerId: taken ? guestId : msg.player.playerId, role: 'guest' };
+				this.storageHooks?.onPlayerReady(entry.player);
 				this.sendSnapshotToGuest(guestId);
 				this.broadcastSnapshot();
 				break;
@@ -261,6 +292,14 @@ export class HostAuthority {
 					console.warn('[avatar] rejected a guest avatar', error);
 				}
 				this.broadcastSnapshot();
+				break;
+			}
+			case 'player-api-response': {
+				const pending = this.pendingApi.get(msg.requestId);
+				if (!pending || pending.guestId !== guestId) break; // only the guest that was asked can answer
+				clearTimeout(pending.timer);
+				this.pendingApi.delete(msg.requestId);
+				pending.resolve(msg.result);
 				break;
 			}
 			case 'snapshot-ack':
@@ -374,7 +413,8 @@ export class HostAuthority {
 			revision: this.revision,
 			tree: this.sceneGraph.serialize(),
 			players: this.getPlayers(),
-			equipped: this.equipment.registry.list()
+			equipped: this.equipment.registry.list(),
+			publicationId: this.storageHooks?.getPublicationId() ?? null
 		});
 	}
 
@@ -385,7 +425,7 @@ export class HostAuthority {
 		for (const { id, position, rotation, scale } of tree) this.lastTransforms.set(id, JSON.stringify({ id, position, rotation, scale }));
 		this.revision++;
 		for (const { link } of this.guests.values()) {
-			link.send({ kind: 'scene-snapshot', revision: this.revision, tree, players: this.getPlayers(), equipped: this.equipment.registry.list() });
+			link.send({ kind: 'scene-snapshot', revision: this.revision, tree, players: this.getPlayers(), equipped: this.equipment.registry.list(), publicationId: this.storageHooks?.getPublicationId() ?? null });
 		}
 	}
 

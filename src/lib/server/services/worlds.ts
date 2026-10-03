@@ -66,11 +66,18 @@ export async function getActiveSessionByRoomCode(roomCode: string) {
  */
 export async function startHostingSession(
 	user: SessionUser | null,
-	params: { worldId?: string; name?: string; visibility: HostedWorldVisibility; sceneSnapshot: SlotTree }
+	params: { worldId?: string; name?: string; visibility: HostedWorldVisibility; sceneSnapshot: SlotTree; publicationId?: unknown }
 ) {
 	if (!user) throw new UnauthorizedError();
 	if (params.visibility !== 'private' && params.visibility !== 'public') throw new BadRequestError('This visibility is not available yet');
 	try { validateWorldScene(params.sceneSnapshot); } catch (err) { throw new BadRequestError(err instanceof Error ? err.message : 'Invalid world scene'); }
+
+	let publicationId: string | null = null;
+	if (params.publicationId !== undefined && params.publicationId !== null) {
+		if (typeof params.publicationId !== 'string') throw new BadRequestError('Invalid publication');
+		if (!await prisma.publishedWorld.findUnique({ where: { id: params.publicationId }, select: { id: true } })) throw new BadRequestError('Unknown publication');
+		publicationId = params.publicationId;
+	}
 
 	let world = params.worldId ? await prisma.world.findUnique({ where: { id: params.worldId } }) : null;
 	if (world && world.hostUserId !== user.id) throw new ForbiddenError();
@@ -102,7 +109,7 @@ export async function startHostingSession(
 	});
 
 	const session = await prisma.worldSession.create({
-		data: { worldId: world.id, hostUserId: user.id, roomCode: generateRoomCode() }
+		data: { worldId: world.id, hostUserId: user.id, roomCode: generateRoomCode(), publicationId }
 	});
 
 	return { world, session };

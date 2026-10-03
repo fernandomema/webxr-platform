@@ -10,7 +10,8 @@ export const POST: RequestHandler = async ({ locals, params, request }) => {
 		const result = await startHostingSession(locals.user, {
 			worldId: params.id,
 			visibility: body.visibility,
-			sceneSnapshot: body.sceneSnapshot
+			sceneSnapshot: body.sceneSnapshot,
+			publicationId: body.publicationId
 		});
 		return json(result);
 	} catch (err) {

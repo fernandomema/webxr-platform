@@ -5,6 +5,7 @@ import type { EquipmentSystem } from '../interaction/equipmentSystem';
 import type { MediaControlAction, Slot, UIEvent } from '$lib/ecs/types';
 import { SignalingClient, type SignalingMessage } from './signalingClient';
 import { PeerLink } from './peerConnection';
+import type { PlayerApiResult } from '$lib/worldStorage/ops';
 import type { PlayerInfo, WorldStateMessage, WorldSyncMessage } from './protocol';
 import { migrateSlotTree } from '$lib/assets/ref';
 import { createGhostRig, type GhostRig, type TransformPose } from '../avatar/defaultAvatar';
@@ -35,6 +36,7 @@ export class GuestSync {
 	private latestTransforms: Extract<WorldStateMessage, { kind: 'scene-state' }> | null = null;
 	private disposed = false;
 	private avatars: AvatarHooks | null = null;
+	private storageHooks: { onPublication(publicationId: string | null): void; handlePlayerApi(publicationId: string, call: unknown): Promise<PlayerApiResult> } | null = null;
 	private assetPeer: AssetPeer | null = null;
 	readonly hostProxy: TransformNode;
 	/** Stand-ins of the other players' keyboards while they type. */
@@ -142,6 +144,10 @@ export class GuestSync {
 		this.avatars = hooks;
 	}
 
+	setStorageHooks(hooks: { onPublication(publicationId: string | null): void; handlePlayerApi(publicationId: string, call: unknown): Promise<PlayerApiResult> }): void {
+		this.storageHooks = hooks;
+	}
+
 	/** Tells the host which avatar this player wears. The host rebuilds it after checking it. */
 	sendAvatar(slots: SlotTree): void {
 		this.link?.send({ kind: 'avatar-set-request', slots });
@@ -202,6 +208,7 @@ export class GuestSync {
 				this.onSceneChanged?.();
 				if (this.latestTransforms && this.latestTransforms.revision > msg.revision) this.sceneGraph.applyTransforms(this.latestTransforms.transforms, this.locallyGrabbed);
 				this.syncPlayers(msg.players);
+				if (msg.publicationId !== undefined) this.storageHooks?.onPublication(typeof msg.publicationId === 'string' ? msg.publicationId : null);
 				this.link?.send({ kind: 'snapshot-ack', revision: msg.revision });
 				break;
 			case 'transform-correction':
@@ -213,6 +220,12 @@ export class GuestSync {
 			case 'player-left':
 				this.removeAvatar(msg.playerId);
 				break;
+			case 'player-api-request': {
+				const requestId = msg.requestId;
+				void (this.storageHooks?.handlePlayerApi(msg.publicationId, msg.call) ?? Promise.resolve<PlayerApiResult>({ ok: true, unavailable: true }))
+					.then((result) => this.link?.send({ kind: 'player-api-response', requestId, result }));
+				break;
+			}
 			case 'interaction-result':
 				if (!msg.accepted && msg.slotId) {
 					this.locallyGrabbed.delete(msg.slotId);

@@ -84,6 +84,16 @@ export async function getPublishedWorld(publicationId: string, revisionId?: stri
   };
 }
 
+/** Confirms a publication (and, when given, that the revision belongs to it). Persistent storage trusts this, never the `source` a world package declares about itself. */
+export async function resolvePublicationContext(publicationId: string, revisionId?: string) {
+  const publication = await prisma.publishedWorld.findUnique({ where: { id: publicationId }, select: { id: true, latestRevision: true } });
+  if (!publication) throw new NotFoundError();
+  if (!revisionId) return { publicationId: publication.id, revisionId: null, revisionNumber: publication.latestRevision };
+  const revision = await prisma.publishedWorldRevision.findFirst({ where: { id: revisionId, publicationId }, select: { id: true, number: true } });
+  if (!revision) throw new NotFoundError();
+  return { publicationId: publication.id, revisionId: revision.id, revisionNumber: revision.number };
+}
+
 export interface PublishedWorldApp {
   publicationId: string;
   worldName: string;

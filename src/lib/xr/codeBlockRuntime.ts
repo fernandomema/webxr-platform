@@ -1,3 +1,4 @@
+import type { WorldStorageService } from './worldStorageService';
 import { requestScriptJson } from './scriptNet';
 import { Vector3, Quaternion, type TransformNode } from '@babylonjs/core';
 import type { Slot, UIEvent, Vec3, Quat } from '$lib/ecs/types';
@@ -29,6 +30,10 @@ export interface CodeBlockHost {
 	getUIMedia(slotId: string): UIMediaState | undefined;
 	/** Current text, on this peer, of the `input` uiElement `slotId`. */
 	getUIInputText(slotId: string): string | undefined;
+	/** Switches a slot and everything below it on or off for every player. Host/solo only (`false` on a guest). */
+	setSlotEnabled(slotId: string, enabled: boolean, broadcast?: boolean): boolean;
+	/** Persistent storage and leaderboards. Absent where the engine provides none; scripts then see them as unavailable. */
+	storage?: WorldStorageService;
 	/** Imports a Poly Haven model into this device's asset store and local inventory. Host/solo only. */
 	importPolyHavenModel(id: string, name: string): Promise<string>;
 }
@@ -68,6 +73,12 @@ export interface RadialItemDef {
 
 export interface CodeBlockHandlers {
 	onSpawn?(): void;
+	/**
+	 * A participant is identified and their saved data can be restored: fired for the local player once the
+	 * world is up, and for each guest when it joins. Runs once, on the host (or solo player); `player` is the
+	 * same `{ id, name }` that `ctx.storage.player(player)` takes. May be async; a rejection is logged.
+	 */
+	onPlayerReady?(player: { id: string; name: string }): void | Promise<void>;
 	onGrab?(): void;
 	onRelease?(): void;
 	/** Fired by PressableButtonSystem once a `pressableButton` component's depression crosses its threshold — see interaction/pressableButtonSystem.ts. Unrelated to grabbing. */
@@ -206,6 +217,11 @@ function formatLogArgs(args: unknown[]): string {
 		.join(' ');
 }
 
+function requireStorage(host: CodeBlockHost): WorldStorageService {
+	if (!host.storage) throw new Error('Storage is not available here');
+	return host.storage;
+}
+
 function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, pushLog: (level: 'log' | 'error', hook: string, message: string) => void) {
 	return {
 		self: {
@@ -254,6 +270,8 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 				};
 				host.requestSpawn(spawned);
 			},
+			/** Switches a slot (and everything below it) on or off for all players: hidden, not pickable, not grabbable. Host/solo only; returns whether it changed. Its code blocks keep running. */
+			setSlotEnabled: (targetId: string, enabled: boolean, broadcast = true): boolean => host.setSlotEnabled(targetId, enabled, broadcast),
 			deleteSelf: () => host.requestDelete(slotId),
 			deleteSlot: (id: string) => host.requestDelete(id),
 			/** `broadcast: false` updates this peer only (no snapshot to guests) — for per-frame updates, followed by a broadcasting call once in a while. */
@@ -329,6 +347,39 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 			/** POST a JSON body and read the JSON response. */
 			postJson: (url: string, body: unknown) => requestScriptJson(url, 'POST', body)
 		},
+		storage: {
+			/** False when nothing can be saved (a published world played without an account): reads return your default, writes do nothing. */
+			get available(): boolean {
+				return host.storage?.available ?? false;
+			},
+			/** Data of one player (from `onPlayerReady`, `world.getPlayer` or an event), saved per account and per published world. Async; use stable ids such as "generator-2", never node ids. */
+			player: (player: { id: string } | string) => requireStorage(host).player(player),
+			/** Data shared by every session of this published world. */
+			get world() {
+				return requireStorage(host).world;
+			}
+		},
+		leaderboards: {
+			get available(): boolean {
+				return host.storage?.available ?? false;
+			},
+			/** Keeps the player's best: the first submit to a name creates the board (`order: 'high'` for points, `'low'` for times). */
+			submit: (name: string, player: { id: string } | string, score: number, options?: { order?: 'high' | 'low' }) => requireStorage(host).boards.submit(name, player, score, options),
+			best: (name: string, player: { id: string } | string) => requireStorage(host).boards.best(name, player),
+			/** Rows `{ rank, displayName, score, isMe }`, best first. */
+			top: (name: string, options?: { limit?: number }) => requireStorage(host).boards.top(name, options),
+			/** Fills the `rows` of a `scoreboard` slot with a board's top entries (one score column, so give it `columns: ['Score']`). Host/solo only, like `world.setComponentField`. Returns the rows. */
+			showOn: async (scoreboardSlotId: string, name: string, options?: { limit?: number }) => {
+				const rows = await requireStorage(host).boards.top(name, options);
+				host.setComponentField(
+					scoreboardSlotId,
+					'scoreboard',
+					'rows',
+					rows.map((row) => ({ name: `${row.rank}. ${row.displayName}`, cells: [String(row.score)], isLeader: row.rank === 1, highlight: row.isMe }))
+				);
+				return rows;
+			}
+		},
 		assets: {
 			/** Imports a Poly Haven model as a reusable local object and returns its content-addressed asset id. */
 			importPolyHavenModel: (id: string, name: string) => host.importPolyHavenModel(id, name)
@@ -383,7 +434,16 @@ export function createCodeBlockHandlers(slotId: string, node: TransformNode, cod
 		return ((...args: unknown[]) => {
 			try {
 				// @ts-expect-error -- generic passthrough wrapper over heterogeneous handler signatures
-				return fn(...args);
+				const result = fn(...args);
+				// An async handler's failure arrives later as a rejected promise: it goes to the log like a thrown one.
+				if (result && typeof (result as Promise<unknown>).then === 'function') {
+					(result as Promise<unknown>).then(undefined, (err: unknown) => {
+						const message = err instanceof Error ? err.message : String(err);
+						console.error(`[codeBlock:${slotId}] ${key} rejected`, err);
+						pushLog('error', key, message);
+					});
+				}
+				return result;
 			} catch (err) {
 				const message = err instanceof Error ? err.message : String(err);
 				console.error(`[codeBlock:${slotId}] ${key} threw`, err);
@@ -393,7 +453,13 @@ export function createCodeBlockHandlers(slotId: string, node: TransformNode, cod
 	};
 
 	try {
-		handlers.onSpawn?.();
+		const spawned = handlers.onSpawn?.() as unknown;
+		if (spawned && typeof (spawned as Promise<unknown>).then === 'function') {
+			(spawned as Promise<unknown>).then(undefined, (err: unknown) => {
+				console.error(`[codeBlock:${slotId}] onSpawn rejected`, err);
+				pushLog('error', 'onSpawn', err instanceof Error ? err.message : String(err));
+			});
+		}
 	} catch (err) {
 		const message = err instanceof Error ? err.message : String(err);
 		console.error(`[codeBlock:${slotId}] onSpawn threw`, err);
@@ -401,6 +467,7 @@ export function createCodeBlockHandlers(slotId: string, node: TransformNode, cod
 	}
 
 	return {
+		onPlayerReady: safe('onPlayerReady'),
 		onGrab: safe('onGrab'),
 		onRelease: safe('onRelease'),
 		onPress: safe('onPress'),

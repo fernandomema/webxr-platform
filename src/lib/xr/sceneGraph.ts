@@ -34,6 +34,7 @@ import { setupImpactSound } from './impactSoundEffects';
 import { setupTextDisplay } from './textDisplaySurface';
 import { setupScoreboard } from './scoreboardSurface';
 import { setupUIPanel, type UIMediaState, type UIPanelBinding } from './uiPanelSurface';
+import type { WorldStorageService } from './worldStorageService';
 import { createCodeBlockHandlers, type CodeBlockHost, type RadialItemDef, type CodeBlockLogEntry, type HandEvent, type TriggerEvent, type RaycastHit } from './codeBlockRuntime';
 
 /**
@@ -78,6 +79,7 @@ interface LiveSlot {
 		onRelease?: () => void;
 		onPress?: () => void;
 		onUIEvent?: (event: UIEvent) => void;
+		onPlayerReady?: (player: { id: string; name: string }) => void | Promise<void>;
 		onEquip?: (event: HandEvent) => void;
 		onUnequip?: (event: HandEvent) => void;
 		onTrigger?: (event: TriggerEvent) => boolean | void;
@@ -103,6 +105,8 @@ export interface SceneGraphOptions {
 	isHost?: () => boolean;
 	/** codeBlock's `world.getPlayer(grabberId)` — resolves a GrabSystem grabberId to a stable player id + display name. */
 	resolvePlayer?: (grabberId: string) => { id: string; name: string };
+	/** Persistent storage and leaderboards for `ctx.storage` / `ctx.leaderboards` (see worldStorageService.ts). */
+	storage?: WorldStorageService;
 	/** Where model bytes come from. Without it, a slot that points at a model stays a placeholder. */
 	models?: ModelLibrary;
 	/** Where asset-backed media (audio) gets its bytes. */
@@ -588,6 +592,7 @@ export class SceneGraph {
 		entry.node.position = Vector3.FromArray(slot.position);
 		entry.node.rotationQuaternion = Quaternion.FromArray(slot.rotation);
 		entry.node.scaling = Vector3.FromArray(slot.scale);
+		if (entry.node.isEnabled(false) === !!slot.disabled) entry.node.setEnabled(!slot.disabled);
 	}
 
 	/** Applies frequent pose updates without re-sending component payloads such as world packages. */
@@ -632,6 +637,7 @@ export class SceneGraph {
 		node.rotationQuaternion = Quaternion.FromArray(slot.rotation);
 		node.scaling = Vector3.FromArray(slot.scale);
 		node.metadata = { ...(node.metadata ?? {}), slotId: slot.id };
+		if (slot.disabled) node.setEnabled(false);
 
 		const entry: LiveSlot = { slot, node };
 		this.live.set(slot.id, entry);
@@ -758,6 +764,13 @@ export class SceneGraph {
 			findNear: (worldPos, radius) => this.findSlotsNear(worldPos, radius),
 			raycast: (origin, direction, maxDistance) => this.raycastScene(origin, direction, maxDistance),
 			resolvePlayer: (grabberId) => this.options.resolvePlayer?.(grabberId) ?? { id: grabberId, name: 'Player' },
+			setSlotEnabled: (slotId, enabled, broadcast = true) => {
+				if (!(this.options.isHost?.() ?? true)) return false;
+				const changed = this.setSlotEnabled(slotId, enabled);
+				if (changed && broadcast) this.options.onSlotMutated?.(slotId);
+				return changed;
+			},
+			storage: this.options.storage,
 			getEquipHolder: (slotId) => this.equipQuery?.getHolderOfSlotOrAncestor(slotId) ?? null,
 			getUIMedia: (slotId) => this.getUIMedia(slotId),
 			getUIInputText: (slotId) => this.getUIInputText(slotId),
@@ -915,6 +928,23 @@ export class SceneGraph {
 		this.syncUIPanels();
 		this.notifyChanged([slotId]);
 		return true;
+	}
+
+	/** Switches a slot (and everything below it) on or off for every player. Host/solo only; the caller broadcasts. Returns whether the state changed. */
+	setSlotEnabled(slotId: string, enabled: boolean): boolean {
+		const entry = this.live.get(slotId);
+		if (!entry || entry.system || !!entry.slot.disabled === !enabled) return false;
+		if (enabled) delete entry.slot.disabled;
+		else entry.slot.disabled = true;
+		entry.node.setEnabled(enabled);
+		this.invalidateIndexes();
+		this.notifyChanged([slotId]);
+		return true;
+	}
+
+	/** Tells every code block a participant is identified and ready (its saved data can be restored). */
+	dispatchPlayerReady(player: { id: string; name: string }): void {
+		for (const entry of this.slotsWith('codeBlock')) entry.runtime?.onPlayerReady?.(player);
 	}
 
 	private syncUIPanels(): void {

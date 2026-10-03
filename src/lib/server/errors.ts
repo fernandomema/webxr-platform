@@ -11,3 +11,6 @@ export class MissingAssetsError extends Error {
 	}
 }
 export class QuotaExceededError extends Error {}
+/** A rule on the stored data did not hold (stale version, not enough to spend). */
+export class ConflictError extends Error {}
+export class TooManyRequestsError extends Error {}

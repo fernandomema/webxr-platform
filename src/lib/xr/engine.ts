@@ -65,10 +65,11 @@ import { loadBaseAvatar } from './avatar/baseAvatar';
 import type { AvatarHooks } from './avatar/avatarHooks';
 import { HostAuthority } from './net/hostAuthority';
 import { GuestSync } from './net/guestSync';
+import { WorldStorageService } from './worldStorageService';
 import { ProximityVoice } from './net/voice';
 import { parseIceServers } from './net/peerConnection';
 import { authClient } from '$lib/auth-client';
-import { gameState, type LoadedWorld } from './gameState';
+import { gameState, type LoadedWorld, type PublicationContext } from './gameState';
 import type { HostedWorldVisibility } from '$lib/worldVisibility';
 import type { PlayerInfo } from './net/protocol';
 import { PUBLIC_STUN_URLS } from '$env/static/public';
@@ -142,8 +143,18 @@ export async function mountGame(
 	// Previews of what is saved are drawn as a second scene on this engine (a second WebGL context would be costly on a headset).
 	configureThumbnails({ engine, getResolvers: () => assetResolvers });
 	configureThumbnailSources(() => assetResolvers);
+	const worldStorage = new WorldStorageService({
+		getLocalPlayerId: () => localPlayerId,
+		getPlayerName: (playerId) => playerId === localPlayerId ? (gameState.userName ?? 'Player') : (hostAuthority?.getPlayerDisplayName(playerId) ?? 'Player'),
+		getPublication: () => gameState.publication,
+		getRoomCode: () => gameState.roomCode,
+		getRole: () => gameState.role,
+		isSignedIn: () => !!gameState.userId,
+		relay: (playerId, call) => hostAuthority?.relayPlayerApi(playerId, call) ?? Promise.resolve({ ok: false, error: 'No session is hosted' })
+	});
 	let viewerCamera: () => { globalPosition: Vector3 } = () => desktopCamera;
 	const sceneGraph = new SceneGraph(scene, {
+		storage: worldStorage,
 		models,
 		mediaAssets,
 		getViewerPosition: () => viewerCamera().globalPosition,
@@ -376,6 +387,8 @@ export async function mountGame(
 		gameState.worldVisibility = null;
 		gameState.sessionStartedAt = null;
 		gameState.loadedWorld = null;
+		gameState.publication = null;
+		worldStorage.reset();
 		gameState.role = 'solo';
 	}
 
@@ -399,6 +412,11 @@ export async function mountGame(
 		hostAuthority?.broadcastSnapshot();
 	}
 
+	/** The local player is identified: world scripts may now restore what they saved for them. */
+	function announceLocalPlayerReady(): void {
+		sceneGraph.dispatchPlayerReady({ id: localPlayerId, name: gameState.userName ?? 'Player' });
+	}
+
 	async function leaveCurrentSession(): Promise<void> {
 		const wasGuest = guestSync !== null;
 		equipment.releaseAll(); // nothing stays equipped across worlds
@@ -418,7 +436,7 @@ export async function mountGame(
 		}
 	}
 
-	async function launchScene(name: string, snapshot: SlotTree, visibility: HostedWorldVisibility | 'solo', loaded: LoadedWorld | null = null): Promise<void> {
+	async function launchScene(name: string, snapshot: SlotTree, visibility: HostedWorldVisibility | 'solo', loaded: LoadedWorld | null = null, publication: PublicationContext | null = null): Promise<void> {
 		validateWorldScene(snapshot);
 		snapshot = migrateSlotTree(snapshot);
 		if (visibility === 'friends' || visibility === 'friends-plus') throw new Error('Friend-only access is not available yet');
@@ -434,7 +452,7 @@ export async function mountGame(
 			const res = await fetch('/api/worlds', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ name, visibility, sceneSnapshot: snapshot })
+				body: JSON.stringify({ name, visibility, sceneSnapshot: snapshot, publicationId: publication?.publicationId })
 			});
 			if (!res.ok) throw new Error('Could not host the world');
 			const result = await res.json() as { world: { id: string }; session: { roomCode: string; startedAt: string } };
@@ -447,6 +465,7 @@ export async function mountGame(
 			await leaveCurrentSession();
 			didLeave = true;
 			gameState.loadedWorld = loaded;
+			gameState.publication = publication;
 			sceneGraph.reconcile(copyScene(snapshot));
 			refreshTeleportFloors();
 			void applyLocalAvatar();
@@ -454,6 +473,7 @@ export async function mountGame(
 				// Kept so that hosting it later, or saving it, starts from its own name.
 				gameState.worldName = name;
 				refreshWorldsTab();
+				announceLocalPlayerReady();
 				return;
 			}
 			gameState.worldId = worldId;
@@ -468,6 +488,11 @@ export async function mountGame(
 				{ localTrack: track, onRemoteStream: (guestId, stream, targetNode) => voice.addPeer(guestId, stream, targetNode) }
 			);
 			hostAuthority.setAvatarHooks(hostAvatarHooks);
+			hostAuthority.setStorageHooks({
+				getPublicationId: () => gameState.publication?.publicationId ?? null,
+				onPlayerReady: (player) => sceneGraph.dispatchPlayerReady({ id: player.playerId, name: player.displayName })
+			});
+			announceLocalPlayerReady();
 			refreshWorldsTab();
 			if (worldId) void uploadWorldPreview(worldId, snapshot);
 		} catch (error) {
@@ -500,7 +525,7 @@ export async function mountGame(
 	}
 
 	async function hostCurrentWorld(visibility: HostedWorldVisibility): Promise<void> {
-		await launchScene(gameState.worldName ?? 'My Lobby', sceneGraph.serialize({ withoutAvatars: true }), visibility, gameState.loadedWorld);
+		await launchScene(gameState.worldName ?? 'My Lobby', sceneGraph.serialize({ withoutAvatars: true }), visibility, gameState.loadedWorld, gameState.publication);
 	}
 
 	async function stopHostingWorld(): Promise<void> {
@@ -516,7 +541,8 @@ export async function mountGame(
 		const loaded: LoadedWorld | null = source?.kind === 'inventory' && source.worldLineageId
 			? { adapterId: source.adapterId, worldLineageId: source.worldLineageId, folderId: source.folderId ?? null, name: world.name, revisionNumber: source.revisionNumber ?? null }
 			: null;
-		await launchScene(world.name, world.scene, visibility, loaded);
+		const publication: PublicationContext | null = source?.kind === 'published' ? { publicationId: source.worldId, revisionId: source.revisionId ?? null } : null;
+		await launchScene(world.name, world.scene, visibility, loaded, publication);
 	}
 
 	function spawnWorldOrbPackage(world: WorldPackage): void {
@@ -539,6 +565,7 @@ export async function mountGame(
 		gameState.worldVisibility = null;
 		gameState.sessionStartedAt = null;
 		gameState.loadedWorld = null;
+		gameState.publication = null;
 		gameState.role = 'guest';
 
 		guestSync = new GuestSync(
@@ -566,6 +593,10 @@ export async function mountGame(
 			() => void applyLocalAvatar()
 		);
 		guestSync.setAvatarHooks(guestAvatarHooks);
+		guestSync.setStorageHooks({
+			onPublication: (publicationId) => { gameState.publication = publicationId ? { publicationId, revisionId: null } : null; },
+			handlePlayerApi: (publicationId, call) => worldStorage.handleRelayed(publicationId, call)
+		});
 	}
 
 	function spawnFromInventory(slotData: SlotTree): void {

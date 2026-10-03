@@ -1,5 +1,6 @@
 import type { MediaControlAction, Slot, SlotTree, UIEvent } from '$lib/ecs/types';
 import type { KeyboardPresence } from '../keyboard/presence';
+import type { PlayerApiCall, PlayerApiResult } from '$lib/worldStorage/ops';
 import type { HandPose, TransformPose } from '../avatar/defaultAvatar';
 
 export type SlotTransform = Pick<Slot, 'id' | 'position' | 'rotation' | 'scale'>;
@@ -15,7 +16,8 @@ export type PlayerInfo = {
 
 /** Messages carried over the reliable world-sync DataChannel. */
 export type WorldSyncMessage =
-	| { kind: 'scene-snapshot'; revision: number; tree: SlotTree; players: PlayerInfo[]; equipped?: EquippedEntry[] }
+	/** `publicationId` is the published world the host runs, so a guest's own storage calls target it (the server re-checks it against the room). */
+	| { kind: 'scene-snapshot'; revision: number; tree: SlotTree; players: PlayerInfo[]; equipped?: EquippedEntry[]; publicationId?: string | null }
 	| { kind: 'transform-correction'; revision: number; transforms: SlotTransform[] }
 	| { kind: 'player-hello'; player: PlayerInfo }
 	/** A guest's chosen avatar. The host validates and rebuilds it; it is never applied as sent. */
@@ -33,7 +35,10 @@ export type WorldSyncMessage =
 	| { kind: 'spawn-request'; requestId: string; slot: Slot }
 	| { kind: 'delete-request'; requestId: string; slotId: string }
 	| { kind: 'media-control-request'; requestId: string; slotId: string; action: MediaControlAction }
-	| { kind: 'ui-event-request'; requestId: string; event: UIEvent };
+	| { kind: 'ui-event-request'; requestId: string; event: UIEvent }
+	/** Host to guest: run this storage/leaderboard call with the guest's own account. */
+	| { kind: 'player-api-request'; requestId: string; publicationId: string; call: PlayerApiCall }
+	| { kind: 'player-api-response'; requestId: string; result: PlayerApiResult };
 
 /** High-frequency state messages sent on the unordered/unreliable channel. */
 export type WorldStateMessage =
