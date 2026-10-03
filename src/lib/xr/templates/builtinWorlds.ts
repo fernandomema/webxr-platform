@@ -17,7 +17,7 @@ export interface BuiltinWorld {
 }
 
 /** Worlds listed under the Development category instead of the official ones. */
-export const DEV_WORLD_IDS: readonly BuiltinWorld['id'][] = ['archive-film-test', 'mirror-maze', 'beat-turntable'];
+export const DEV_WORLD_IDS: readonly BuiltinWorld['id'][] = ['archive-film-test', 'mirror-maze'];
 
 export const BUILTIN_WORLDS: readonly BuiltinWorld[] = [
 	{
@@ -194,12 +194,6 @@ return {
 		description: 'A maze of mirrors, glass and silver walls that look alike: false corridors, 45° turns that are not there and a disorienting central room. Find the way out.',
 		scene: buildMirrorMaze()
 	},
-	{
-		id: 'beat-turntable',
-		name: 'Beat Turntable',
-		description: 'A rhythm game played with records: put a disc on the turntable and cut the blocks that the song itself calls for. Scores are kept per song.',
-		scene: buildBeatTurntable()
-	},
 	{ id: 'lobby', name: 'Lobby', description: 'A glowing spawn pad, a welcome sign, a mirror, a paint brush and a record player.', scene: lobby as SlotTree },
 	{
 		id: 'workshop',
@@ -219,6 +213,12 @@ return {
 		name: 'Feedback Center',
 		description: 'An indoor feedback center: vote ideas and bugs up or down, send suggestions and share how you feel.',
 		scene: pulse as SlotTree
+	},
+	{
+		id: 'beat-turntable',
+		name: 'Beat Turntable',
+		description: 'A rhythm game played with records: put a disc on the turntable and cut the blocks that the song itself calls for. Scores are kept per song.',
+		scene: buildBeatTurntable()
 	}
 ];
 

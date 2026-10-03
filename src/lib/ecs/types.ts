@@ -307,6 +307,13 @@ export interface UIElementComponent {
 	text?: string;
 	fontSize?: number;
 	fontWeight?: 'normal' | 'bold';
+	/** `text` and `button`: where the text sits across the element. Text is left-aligned unless set. */
+	textAlign?: 'left' | 'center' | 'right';
+	/** `container` and `button`: rounds the corners, in pixels. */
+	cornerRadius?: number;
+	/** `container`: an outline of this colour and width in pixels (it needs both). */
+	borderColor?: string;
+	borderWidth?: number;
 	/** `container`: 'scroll' clips children to `height` and adds a scrollbar. */
 	overflow?: 'visible' | 'scroll';
 	/** `image` / `video`: a browser-loadable URL (video: MP4/WebM). */

@@ -4,6 +4,9 @@ import { existsSync } from 'node:fs';
 import { BEAT_TURNTABLE, BEAT_TURNTABLE_SCRIPT, buildBeatTurntable } from '../src/lib/xr/templates/beatTurntable.ts';
 import { loadLevelLogic } from '../src/lib/xr/templates/beatTurntableLogic.ts';
 import { isBuiltinMeshId } from '../src/lib/assets/ref.ts';
+import { eulerToQuat } from '../src/lib/math/euler.ts';
+import { DECK, deckIds } from '../src/lib/xr/templates/beatTurntableDesk.ts';
+import { STAGE, stageIds } from '../src/lib/xr/templates/beatTurntableStage.ts';
 
 const logic = loadLevelLogic();
 const find = (slot, type) => slot.components.find((c) => c.type === type);
@@ -21,7 +24,7 @@ function fakeAnalysis(duration = 40) {
 }
 
 test('the world is a valid scene with unique ids, known parents and built-in meshes', () => {
-	assert.ok(tree.length > 50 && tree.length < 400);
+	assert.ok(tree.length > 50 && tree.length < 600);
 	assert.equal(byId.size, tree.length, 'ids are unique');
 	for (const slot of tree) {
 		assert.equal(slot.position.length, 3);
@@ -74,7 +77,7 @@ test('the leaderboard slot is a scoreboard with one score column, and the script
 	assert.doesNotThrow(() => new Function('ctx', BEAT_TURNTABLE_SCRIPT));
 	// Every slot id the script names exists in the tree.
 	const named = new Set([...BEAT_TURNTABLE_SCRIPT.matchAll(/'(bt-[a-z0-9-]+)'/g)].map((match) => match[1]));
-	for (const id of named) assert.ok(byId.has(id) || /^bt-(note|diff)/.test(id), `the script uses ${id}`);
+	for (const id of named) assert.ok(byId.has(id) || id.endsWith('-') || /^bt-(note|diff)/.test(id), `the script uses ${id}`);
 });
 
 test('the level of a song is deterministic and the same for the same difficulty', () => {
@@ -204,7 +207,7 @@ function runWorld({ analysis = fakeAnalysis(), swing = 'perfect', storage = true
 			setWorldPose: (id, pose) => { poses.set(id, { ...(poses.get(id) ?? {}), ...pose }); return true; },
 			spawn: (partial) => { spawned.push(partial); }
 		},
-		math: { quatFromAxisAngle: (axis, angle) => [0, 0, Math.sin(angle / 2), Math.cos(angle / 2)] },
+		math: { quatFromAxisAngle: (axis, angle) => [0, 0, Math.sin(angle / 2), Math.cos(angle / 2)], quatMultiply: (a) => a },
 		audio: {
 			analyze: async () => analysis,
 			playTrack: async () => { trackStarted += 1; trackTime = 0; return handle; }
@@ -212,6 +215,7 @@ function runWorld({ analysis = fakeAnalysis(), swing = 'perfect', storage = true
 		leaderboards: {
 			available: storage,
 			submit: async (name, who, score, options) => { submitted.push({ name, who, score, options }); return null; },
+			best: async (name, who) => ({ score: submitted.filter((entry) => entry.name === name).reduce((max, entry) => Math.max(max, entry.score), 0), rank: 3 }),
 			showOn: async () => []
 		},
 		storage: {
@@ -391,4 +395,319 @@ test('a disc with no audio is refused instead of breaking the game', async () =>
 	await world.frame();
 	assert.match(world.text('bt-status'), /cannot be played/);
 	assert.equal(world.trackStarted, 0);
+});
+
+// --- The look of the world ------------------------------------------------------------------------------------------------
+
+test('the stage has a sky and every animated part the script moves', () => {
+	const sky = tree.filter((slot) => find(slot, 'skybox'));
+	assert.equal(sky.length, 1, 'one skybox');
+	assert.ok(find(sky[0], 'skybox').stars > 0.5, 'a starry sky');
+	for (let i = 0; i < STAGE.frames; i++) for (const part of ['', '-l', '-r', '-t', '-b']) assert.ok(byId.has(`${stageIds.frame(i)}${part}`), `frame ${i}${part}`);
+	for (const side of [0, 1]) for (let k = 0; k < STAGE.barsPerSide; k++) assert.ok(find(byId.get(stageIds.bar(side, k)), 'meshRenderer'));
+	for (let i = 0; i < STAGE.lasers; i++) assert.equal(byId.get(`${stageIds.laser(i)}-beam`).parentId, stageIds.laser(i));
+	for (let i = 0; i < STAGE.gridLines; i++) assert.ok(byId.has(stageIds.grid(i)));
+	assert.ok(byId.has(stageIds.sun) && byId.has(stageIds.hitLine));
+	assert.ok(tree.filter((slot) => find(slot, 'pointLight')).length >= 2, 'coloured lights on the lane');
+	for (const slot of tree.filter((candidate) => candidate.id.startsWith('bt-fx-') && find(candidate, 'meshRenderer'))) assert.ok(!find(slot, 'collider'), `${slot.id} cannot be bumped into`);
+});
+
+test('the disc table is gone: a rack of sockets holds the records, and the turntable stands on a hi-fi stand', () => {
+	assert.ok(!tree.some((slot) => /desk/i.test(slot.name)), 'no desk any more');
+	assert.ok(byId.has('bt-stand-top') && byId.has('bt-platter') && byId.has(deckIds.armPivot));
+	const sockets = [];
+	for (let row = 0; row < DECK.rackRows; row++) for (let slot = 0; slot < DECK.rackSlots; slot++) sockets.push(byId.get(deckIds.rackSocket(row, slot)));
+	assert.equal(sockets.length, 8);
+	const seen = new Set();
+	for (const socket of sockets) {
+		const component = find(socket, 'socket');
+		assert.deepEqual(component.accepts, ['disc']);
+		assert.equal(component.playMedia, false, 'a disc on the rack stays silent');
+		assert.deepEqual(component.snap.rotation, [...DECK.rackSnap]);
+		assert.deepEqual(socket.scale, [1, 1, 1]);
+		const key = socket.position.join(',');
+		assert.ok(!seen.has(key), 'sockets do not share a spot');
+		seen.add(key);
+	}
+	// A seated disc is already where its socket would put it, standing on its edge, and the socket knows it.
+	const quat = eulerToQuat([...DECK.rackSnap]);
+	for (let i = 0; i < 4; i++) assert.ok(Math.abs(quat[i] - DECK.rackQuat[i]) < 1e-9, 'the seated rotation is the snap rotation');
+	const seated = sockets.filter((socket) => find(socket, 'socket').occupantId);
+	assert.equal(seated.length, 2);
+	for (const socket of seated) {
+		const disc = byId.get(find(socket, 'socket').occupantId);
+		assert.equal(disc.parentId, socket.id);
+		assert.deepEqual(disc.position, [0, 0, 0]);
+		assert.deepEqual(disc.rotation, [...DECK.rackQuat]);
+	}
+	// Nothing stands where a disc goes: every socket is clear of the stand and of the sabers.
+	for (const socket of sockets) assert.ok(Math.hypot(socket.position[0] - DECK.x, socket.position[2] - DECK.z) > 1.2);
+	// Neighbouring sockets are further apart than their radius, or a released disc could pick the wrong one.
+	const radius = find(sockets[0], 'socket').radius;
+	for (const a of sockets) for (const b of sockets) if (a !== b) assert.ok(Math.hypot(a.position[0] - b.position[0], a.position[1] - b.position[1], a.position[2] - b.position[2]) > radius, `${a.id} and ${b.id} overlap`);
+	const turntable = byId.get(BEAT_TURNTABLE.socketId);
+	for (const socket of sockets) assert.ok(Math.hypot(...socket.position.map((v, i) => v - turntable.position[i])) > radius + find(turntable, 'socket').radius, 'the rack does not compete with the turntable');
+});
+
+test('the score board is made of cards and uses the new element styling', () => {
+	const hud = byId.get(BEAT_TURNTABLE.hudId);
+	assert.ok(find(hud, 'uiPanel'));
+	for (const id of ['bt-hud-card-score', 'bt-hud-card-combo', 'bt-hud-card-acc']) {
+		const card = find(byId.get(id), 'uiElement');
+		assert.equal(card.kind, 'container');
+		assert.ok(card.cornerRadius > 0 && card.borderWidth > 0 && card.borderColor, `${id} is a rounded, outlined card`);
+	}
+	for (const id of ['bt-hud-score', 'bt-hud-combo', 'bt-hud-detail', 'bt-hud-mult', 'bt-hud-rank', 'bt-hud-best', 'bt-hud-title', 'bt-judge-text', 'bt-status']) assert.equal(find(byId.get(id), 'uiElement').textAlign, 'center', `${id} is centred`);
+	assert.equal(find(byId.get('bt-hud-fill'), 'uiElement').width, 0, 'the progress bar starts empty');
+	assert.equal(byId.get('bt-hud-fill-pad').parentId, 'bt-hud-fill', 'and keeps its height through an invisible child');
+	assert.ok(tree.every((slot) => !find(slot, 'uiElement') || slot.id.startsWith('bt-')));
+});
+
+test('the stage only moves while the song plays', async () => {
+	const analysis = fakeAnalysis();
+	// A song that is silent for three seconds, then loud in every band.
+	const hop = 0.0232;
+	const loud = (from) => Array.from({ length: Math.ceil(40 / hop) }, (_, i) => (i * hop >= from ? 0.95 : 0.02));
+	analysis.energy = { hop, low: loud(3), mid: loud(3), high: loud(3) };
+	const world = runWorld({ analysis, swing: 'none' });
+	world.handlers.onPlayerReady({ id: 'me', name: 'Me' });
+	const colour = (id) => find(world.slots.get(id), 'meshRenderer').color;
+	const fxPoses = () => [...world.poses.keys()].filter((id) => id.startsWith('bt-fx-'));
+	const middle = stageIds.frame(4);
+	// At rest nothing moves, and the script does not even touch the slots.
+	for (let i = 0; i < 120; i++) await world.frame('none');
+	assert.deepEqual(fxPoses(), [], 'the idle stage is still');
+	const restColour = colour(`${middle}-l`);
+	assert.notEqual(restColour, '#0b1026', 'but it is lit, in resting colours');
+	// Not during the analysis or the count-in either.
+	world.socket.occupantId = 'bt-disc-1';
+	for (let i = 0; i < 60 * 5; i++) await world.frame('none');
+	assert.equal(world.trackStarted, 0);
+	assert.deepEqual(fxPoses(), [], 'the stage waits for the music');
+	// It starts with the song.
+	for (let i = 0; i < 90; i++) await world.frame('none');
+	assert.equal(world.trackStarted, 1);
+	const start = world.slots.get(middle).position[2];
+	for (let i = 0; i < 30; i++) await world.frame('none');
+	assert.ok(world.poses.get(middle).position[2] < start, 'the frames come towards the player');
+	const quiet = world.poses.get(stageIds.bar(0, 3)).position[1];
+	// Frames wrap instead of passing through the player.
+	let lowest = Infinity;
+	for (let i = 0; i < 60 * 8; i++) { await world.frame('none'); lowest = Math.min(lowest, world.poses.get(stageIds.frame(0)).position[2]); }
+	assert.ok(lowest >= STAGE.frameNear - 1e-6, `a frame never gets closer than ${STAGE.frameNear} m (was ${lowest})`);
+	const loudY = world.poses.get(stageIds.bar(0, 3)).position[1];
+	assert.ok(loudY > quiet + 1, `the towers rise with the music: ${quiet} -> ${loudY}`);
+	assert.notEqual(colour(`${middle}-l`), restColour, 'the frames change colour');
+	assert.ok(world.poses.get(stageIds.laser(0)).rotation, 'the lasers sweep');
+	// When the record comes off, the music stops and so does the stage: the towers sink and then it is still again.
+	world.socket.occupantId = '';
+	for (let i = 0; i < 60 * 3; i++) await world.frame('none');
+	const frozen = world.poses.get(middle).position[2];
+	const laser = world.poses.get(stageIds.laser(0)).rotation;
+	for (let i = 0; i < 120; i++) await world.frame('none');
+	assert.equal(world.poses.get(middle).position[2], frozen, 'the frames stop');
+	assert.deepEqual(world.poses.get(stageIds.laser(0)).rotation, laser, 'the lasers stop');
+	assert.ok(world.poses.get(stageIds.bar(0, 3)).position[1] < quiet + 0.2, 'the towers have sunk');
+	assert.deepEqual(world.logs, []);
+});
+
+test('while the song plays the stage never moves more slots a frame than it should, and does not rewrite a colour that is already there', async () => {
+	const world = runWorld({ swing: 'none' });
+	await startGame(world);
+	for (let i = 0; i < 60 * 6 + 120; i++) await world.frame('none');
+	let writes = 0;
+	const base = world.ctx.world.setComponentField;
+	world.ctx.world.setComponentField = (...args) => { writes += 1; return base(...args); };
+	let moves = 0;
+	const move = world.ctx.world.setWorldPose;
+	world.ctx.world.setWorldPose = (...args) => { moves += 1; return move(...args); };
+	const frames = 60;
+	for (let i = 0; i < frames; i++) await world.frame('none');
+	assert.ok(moves / frames <= STAGE.frames + STAGE.gridLines + STAGE.lasers + 2 * STAGE.barsPerSide + 28 + 4, `${moves / frames} moves a frame`);
+	assert.ok(writes / frames <= 40, `${writes / frames} field writes a frame`);
+});
+
+test('the turntable works while a song is on: the record spins, the arm comes down, the light turns red', async () => {
+	const world = runWorld({ swing: 'none' });
+	world.handlers.onPlayerReady({ id: 'me', name: 'Me' });
+	for (let i = 0; i < 20; i++) await world.frame('none');
+	assert.equal(find(world.slots.get(deckIds.led), 'meshRenderer').color, '#22c55e', 'green at rest');
+	world.socket.occupantId = 'bt-disc-1';
+	for (let i = 0; i < 90; i++) await world.frame('none');
+	assert.equal(find(world.slots.get(deckIds.led), 'meshRenderer').color, '#ef4444');
+	const spin = (id) => world.poses.get(id)?.rotation;
+	const a = spin('bt-disc-1');
+	for (let i = 0; i < 10; i++) await world.frame('none');
+	assert.notDeepEqual(spin('bt-disc-1'), a, 'the record turns');
+	assert.ok(spin(deckIds.armPivot), 'the arm moves onto the record');
+	world.socket.occupantId = '';
+	for (let i = 0; i < 20; i++) await world.frame('none');
+	assert.equal(find(world.slots.get(deckIds.led), 'meshRenderer').color, '#22c55e');
+});
+
+test('the score board counts up, shows combo, multiplier and accuracy, flashes judgements and shows the result', async () => {
+	const world = runWorld();
+	world.handlers.onPlayerReady({ id: 'me', name: 'Me' });
+	await startGame(world);
+	assert.match(world.text('bt-hud-title'), /Remembering a Heartbeat\s+-\s+Normal/);
+	for (let i = 0; i < 60 * 6 + 5; i++) await world.frame();
+	const seen = { judgements: new Set(), scores: [], mults: new Set() };
+	let frames = 0;
+	while (!/^Rank/.test(world.text('bt-status')) && frames < 60 * 70) {
+		await world.frame();
+		frames++;
+		seen.judgements.add(world.text('bt-judge-text'));
+		seen.scores.push(Number(world.text('bt-hud-score').replaceAll(',', '')));
+		seen.mults.add(world.text('bt-hud-mult'));
+	}
+	assert.ok(seen.judgements.has('PERFECT') || seen.judgements.has('GREAT'), `judgements: ${[...seen.judgements]}`);
+	assert.ok(seen.scores.every((value, index) => index === 0 || value >= seen.scores[index - 1]), 'the score only goes up');
+	assert.ok(new Set(seen.scores).size > 20, 'and counts up in steps rather than jumping');
+	assert.ok(seen.mults.has('x8'), `the multiplier reaches x8: ${[...seen.mults]}`);
+	for (let i = 0; i < 10; i++) await tick();
+	assert.match(world.text('bt-hud-rank'), /^RANK [SA]$/, 'the board keeps the rank it ended on');
+	assert.match(world.text('bt-hud-detail'), /^\d+%$/);
+	assert.equal(find(world.slots.get('bt-hud-fill'), 'uiElement').width, 940, 'the bar is full at the end');
+	// Taking the record off puts the board back as it was.
+	world.socket.occupantId = '';
+	await world.frame();
+	assert.equal(world.text('bt-hud-score-label'), 'SCORE');
+	assert.equal(world.text('bt-hud-score'), '0');
+	assert.equal(find(world.slots.get('bt-hud-fill'), 'uiElement').width, 0);
+	assert.equal(world.text('bt-judge-text'), '');
+	assert.deepEqual(world.logs, []);
+});
+
+test('a bad cut and a miss are called out, and the judgement clears itself', async () => {
+	const world = runWorld({ swing: 'none' });
+	await startGame(world);
+	for (let i = 0; i < 60 * 6 + 5; i++) await world.frame('none');
+	const said = new Set();
+	for (let i = 0; i < 60 * 20; i++) { await world.frame('none'); said.add(world.text('bt-judge-text')); }
+	assert.ok(said.has('MISS'), `judgements: ${[...said]}`);
+	assert.ok(said.has(''), 'the word fades after a moment');
+});
+
+// --- Results, sabers, sign, category ------------------------------------------------------------------------------------
+
+const impactSounds = (world) => world.spawned.filter((entry) => entry.components[0].type === 'impactSound');
+
+test('at the end of a song a result screen appears with the numbers of the run and a win sound', async () => {
+	const world = runWorld();
+	world.handlers.onPlayerReady({ id: 'me', name: 'Me' });
+	await startGame(world);
+	assert.equal(world.enabled.get(BEAT_TURNTABLE.resultsId), false, 'hidden while playing');
+	for (let i = 0; i < 60 * 6 + 5; i++) await world.frame();
+	assert.equal(world.enabled.get(BEAT_TURNTABLE.resultsId), false);
+	let frames = 0;
+	while (!/^Rank/.test(world.text('bt-status')) && frames < 60 * 70) { await world.frame(); frames++; }
+	assert.equal(world.enabled.get(BEAT_TURNTABLE.resultsId), true, 'shown at the end');
+	for (let i = 0; i < 60 * 4; i++) await world.frame();
+	for (let i = 0; i < 10; i++) await tick();
+	assert.match(world.text('bt-res-title'), /PERFECT RUN|SONG CLEARED/);
+	assert.match(world.text('bt-res-song'), /Remembering a Heartbeat\s+-\s+Normal/);
+	assert.match(world.text('bt-res-rank'), /^[SA]$/);
+	assert.equal(find(world.slots.get('bt-res-rank'), 'uiElement').color, world.text('bt-res-rank') === 'S' ? '#facc15' : '#4ade80');
+	const score = Number(world.text('bt-res-score').replaceAll(',', ''));
+	assert.equal(score, world.submitted[0].score, 'the score on the screen is the one that was submitted');
+	assert.match(world.text('bt-res-acc'), /^\d+%$/);
+	assert.ok(Number(world.text('bt-res-combo')) > 30);
+	assert.match(world.text('bt-res-cuts'), /^\d+ \/ \d+$/);
+	assert.match(world.text('bt-res-best'), /NEW PERSONAL BEST/);
+	assert.match(world.text('bt-res-footer'), /Leaderboard rank #3/);
+	// The win sound: a rising arpeggio then a chord, as separate plucks over the first seconds.
+	const jingle = impactSounds(world).map((sound) => sound.components[0]).filter((note) => note.durationMs >= 400);
+	assert.ok(jingle.length >= 7, `${jingle.length} notes`);
+	const freqs = jingle.map((note) => note.frequency);
+	assert.deepEqual(freqs.slice(0, 4), [523, 659, 784, 1047], 'rising arpeggio');
+	assert.ok(jingle.every((note) => note.durationMs >= 400 && note.volume > 0 && note.pitchDrop === 0), 'long, clean tones, not hit sounds');
+	assert.ok(world.spawned.some((entry) => entry.components[0].type === 'particleBurst' && entry.position[2] > 4), 'and sparks over the screen');
+	// Taking the record off hides it again and silences what was still to play.
+	world.socket.occupantId = '';
+	await world.frame();
+	assert.equal(world.enabled.get(BEAT_TURNTABLE.resultsId), false);
+	assert.deepEqual(world.logs, []);
+});
+
+test('a poor run gets a different headline and a falling jingle instead of the win sound', async () => {
+	const world = runWorld({ swing: 'none' });
+	world.handlers.onPlayerReady({ id: 'me', name: 'Me' });
+	await startGame(world);
+	let frames = 0;
+	while (!/^Rank/.test(world.text('bt-status')) && frames < 60 * 70) { await world.frame('none'); frames++; }
+	for (let i = 0; i < 60 * 3; i++) await world.frame('none');
+	assert.equal(world.text('bt-res-title'), 'TRY AGAIN');
+	assert.equal(world.text('bt-res-rank'), 'D');
+	assert.equal(world.text('bt-res-score'), '0');
+	const freqs = impactSounds(world).map((sound) => sound.components[0]).filter((note) => note.durationMs >= 400).map((note) => note.frequency);
+	assert.deepEqual(freqs, [392, 349, 311, 262], 'descending, nothing to celebrate');
+	assert.equal(world.text('bt-res-missed'), String(Number(world.text('bt-res-cuts').split(' / ')[1])));
+});
+
+test('the results screen says so when scores cannot be saved', async () => {
+	const world = runWorld({ storage: false, swing: 'none' });
+	world.handlers.onPlayerReady({ id: 'me', name: 'Me' });
+	await startGame(world);
+	let frames = 0;
+	while (!/Rank/.test(world.text('bt-status')) && frames < 60 * 70) { await world.frame('none'); frames++; }
+	for (let i = 0; i < 10; i++) await tick();
+	assert.match(world.text('bt-res-footer'), /not saved/);
+});
+
+test('the results screen sits in front of the player, clear of the lane, the score board and the judgement', () => {
+	const results = byId.get(BEAT_TURNTABLE.resultsId);
+	const panel = find(results, 'uiPanel');
+	assert.ok(panel.worldWidth >= 2 && panel.worldWidth <= 2.6);
+	assert.ok(results.position[2] > BEAT_TURNTABLE.playerZ + 1.5 && results.position[2] < BEAT_TURNTABLE.hudZ - 1, 'between the player and the score board');
+	const height = panel.worldWidth * (panel.height / panel.width);
+	assert.ok(results.position[1] - height / 2 > 0.9 && results.position[1] + height / 2 < 3.2, 'at a comfortable height');
+	assert.equal(results.parentId, null);
+});
+
+test('the sabers lie under the leaderboard, handles towards the player and blades towards the stage', () => {
+	const board = byId.get(BEAT_TURNTABLE.boardId);
+	const boardFrame = byId.get('bt-board-frame');
+	const stand = byId.get('bt-saber-stand');
+	const xs = [];
+	for (const hand of [0, 1]) {
+		const saber = byId.get(`bt-saber-${hand}`);
+		assert.deepEqual(saber.rotation, [0, 0, 0, 1], 'blade along +Z, the way of the stage');
+		const handle = byId.get(`bt-saber-${hand}-handle`);
+		const blade = byId.get(`bt-saber-${hand}-blade`);
+		assert.ok(handle.position[2] < blade.position[2], 'handle nearer the player than the blade');
+		xs.push(saber.position[0]);
+		const tipZ = saber.position[2] + blade.position[2] + blade.scale[2] / 2;
+		const handleZ = saber.position[2] - handle.scale[2] / 2;
+		assert.ok(handleZ > BEAT_TURNTABLE.playerZ, 'the handle is in front of where the player stands, not behind');
+		assert.ok(handleZ - BEAT_TURNTABLE.playerZ < 0.5, 'and within reach of it');
+		assert.ok(tipZ < boardFrame.position[2] - boardFrame.scale[2] / 2, 'the blade stops short of the board');
+		assert.ok(saber.position[1] > stand.position[1] && saber.position[1] < board.position[1] - 0.4, 'above the stand, below the board');
+		assert.ok(Math.abs(saber.position[0] - board.position[0]) < board.scale[0] / 2, 'under the board');
+	}
+	assert.ok(xs[1] - xs[0] >= 0.3, 'room for a hand between them');
+	assert.ok(Math.abs(stand.position[0] - board.position[0]) < 0.1, 'the stand is centred under the board');
+	// Nothing else is in the way: no hi-fi stand or rack part within reach of the sabers.
+	for (const slot of tree) if (/^bt-(stand|rack)-/.test(slot.id)) assert.ok(Math.abs(slot.position[0] - xs[0]) > 2, `${slot.id} is far from the sabers`);
+});
+
+test('the rack sign faces the stand and reads the right way round', () => {
+	const sign = byId.get('bt-rack-sign');
+	// Rotate the sign's front (its -Z side) and its up by the sign's quaternion.
+	const rotate = ([x, y, z, w], [vx, vy, vz]) => {
+		const t = [2 * (y * vz - z * vy), 2 * (z * vx - x * vz), 2 * (x * vy - y * vx)];
+		return [vx + w * t[0] + (y * t[2] - z * t[1]), vy + w * t[1] + (z * t[0] - x * t[2]), vz + w * t[2] + (x * t[1] - y * t[0])].map((v) => Math.round(v * 1000) / 1000);
+	};
+	assert.deepEqual(rotate(sign.rotation, [0, 0, -1]).map((v) => v + 0), [1, 0, 0], 'the front looks towards +X');
+	assert.deepEqual(rotate(sign.rotation, [0, 1, 0]), [0, 1, 0], 'upright');
+	// Its viewer stands on that side: the sign is on the +X side of the rack's back, facing the hi-fi stand.
+	assert.ok(DECK.x > sign.position[0]);
+});
+
+test('Beat Turntable is an official world, not a development one', async () => {
+	const { readFile } = await import('node:fs/promises');
+	const source = await readFile(new URL('../src/lib/xr/templates/builtinWorlds.ts', import.meta.url), 'utf8');
+	const dev = /DEV_WORLD_IDS[^=]*=\s*\[([^\]]*)\]/.exec(source)[1];
+	assert.ok(!dev.includes('beat-turntable'), `dev worlds are ${dev}`);
+	assert.ok(dev.includes('mirror-maze'), 'the others stay');
+	assert.match(source, /id: 'beat-turntable'/);
 });

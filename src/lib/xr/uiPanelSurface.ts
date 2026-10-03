@@ -111,6 +111,21 @@ function setSize(control: Control, component: UIElementComponent): void {
 	control.isVisible = component.visible !== false;
 }
 
+const TEXT_ALIGN: Record<NonNullable<UIElementComponent['textAlign']>, number> = {
+	left: Control.HORIZONTAL_ALIGNMENT_LEFT,
+	center: Control.HORIZONTAL_ALIGNMENT_CENTER,
+	right: Control.HORIZONTAL_ALIGNMENT_RIGHT
+};
+
+/** The look of a container's box: its fill, rounded corners and outline. */
+function styleBox(box: Rectangle, component: UIElementComponent): void {
+	box.background = component.background ?? 'transparent';
+	box.cornerRadius = Math.max(0, component.cornerRadius ?? 0);
+	const outlined = !!component.borderColor && (component.borderWidth ?? 0) > 0;
+	box.thickness = outlined ? component.borderWidth! : 0;
+	if (outlined) box.color = component.borderColor!;
+}
+
 function isScrollable(component: UIElementComponent): boolean {
 	return component.kind === 'container' && component.overflow === 'scroll' && component.height !== undefined;
 }
@@ -326,10 +341,9 @@ export function setupUIPanel(
 		let appliedText: string | undefined;
 		if (component.kind === 'container') {
 			const box = new Rectangle(`ui-${slot.id}`);
-			box.thickness = 0;
 			// Keep the full rectangle as the background surface and inset only its children.
 			box.descendantsOnlyPadding = true;
-			if (component.background) box.background = component.background;
+			styleBox(box, component);
 
 			stack = new StackPanel(`ui-${slot.id}-layout`);
 			stack.width = '100%';
@@ -371,11 +385,13 @@ export function setupUIPanel(
 			const button = Button.CreateSimpleButton(`ui-${slot.id}`, component.text ?? slot.name);
 			button.color = component.color ?? 'white';
 			button.background = component.background ?? '#2563eb';
-			button.cornerRadius = 6;
+			button.cornerRadius = component.cornerRadius ?? 6;
 			button.thickness = 0;
 			if (button.textBlock) {
 				button.textBlock.fontSize = component.fontSize ?? 24;
+				button.textBlock.fontWeight = component.fontWeight === 'bold' ? 'bold' : 'normal';
 				button.textBlock.textWrapping = true;
+				if (component.textAlign) button.textBlock.textHorizontalAlignment = TEXT_ALIGN[component.textAlign];
 			}
 			button.onPointerClickObservable.add(() => onEvent({ type: 'press', slotId: slot.id }));
 			control = button;
@@ -424,7 +440,7 @@ export function setupUIPanel(
 			text.fontSize = component.fontSize ?? 24;
 			text.fontWeight = component.fontWeight === 'bold' ? 'bold' : 'normal';
 			text.textWrapping = true;
-			text.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+			text.textHorizontalAlignment = TEXT_ALIGN[component.textAlign ?? 'left'];
 			control = text;
 			setSize(control, component);
 		}
@@ -494,7 +510,7 @@ export function setupUIPanel(
 			if (component.kind === 'container') {
 				const box = entry.control as Rectangle;
 				box.descendantsOnlyPadding = true;
-				box.background = component.background ?? 'transparent';
+				styleBox(box, component);
 				if (entry.stack) {
 					entry.stack.isVertical = component.flexDirection !== 'row';
 					entry.stack.spacing = component.gap ?? 0;
@@ -503,6 +519,9 @@ export function setupUIPanel(
 				const button = entry.control as Button;
 				button.textBlock!.text = component.text ?? slot.name;
 				button.textBlock!.fontSize = component.fontSize ?? 24;
+				button.textBlock!.fontWeight = component.fontWeight === 'bold' ? 'bold' : 'normal';
+				button.textBlock!.textHorizontalAlignment = TEXT_ALIGN[component.textAlign ?? 'center'];
+				button.cornerRadius = component.cornerRadius ?? 6;
 				button.color = component.color ?? 'white';
 				button.background = component.background ?? '#2563eb';
 			} else if (component.kind === 'input') {
@@ -534,6 +553,7 @@ export function setupUIPanel(
 				text.color = component.color ?? 'white';
 				text.fontSize = component.fontSize ?? 24;
 				text.fontWeight = component.fontWeight === 'bold' ? 'bold' : 'normal';
+				text.textHorizontalAlignment = TEXT_ALIGN[component.textAlign ?? 'left'];
 			}
 		}
 		for (const [slotId, spacers] of margins) {

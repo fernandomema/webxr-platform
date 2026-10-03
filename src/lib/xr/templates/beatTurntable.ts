@@ -1,7 +1,10 @@
 import type { Slot, SlotTree } from '../../ecs/types';
 import { createSlot } from '../../ecs/types.ts';
-import { buildDisc } from './recordDisc.ts';
 import { LEVEL_LOGIC_SOURCE } from './beatTurntableLogic.ts';
+import { BEAT_TURNTABLE, BLUE, RED, box } from './beatTurntableParts.ts';
+import { STAGE_FX_SOURCE, buildStageSlots } from './beatTurntableStage.ts';
+import { buildDeckSlots } from './beatTurntableDesk.ts';
+import { UI, buildConsole, buildHud, buildJudge, buildResults } from './beatTurntableUi.ts';
 
 /**
  * Beat Turntable: a rhythm game in the spirit of Beat Saber that is started with a record. Put a disc on the turntable and the
@@ -10,159 +13,41 @@ import { LEVEL_LOGIC_SOURCE } from './beatTurntableLogic.ts';
  * arrow. Scores go to a leaderboard per song and difficulty and to the player's saved stats (`ctx.leaderboards`, `ctx.storage`).
  *
  * The player stands at (0, 0, 2), facing +Z, as the desktop camera does. Blocks come from far +Z to the hit line at z = 2.75.
- * The control desk (turntable, sabers, console) is to the left and the leaderboard to the right.
+ * The turntable and the record rack are to the left; the leaderboard is to the right, with the sabers on a stand under it. The
+ * score board floats above the lane, a result screen opens in front of the player when a song ends, and the stage around the
+ * lane (beatTurntableStage.ts) moves only while the song plays.
  *
- * Everything game-specific lives here and in the logic file; the engine only provides the generic audio, storage and
- * leaderboard APIs the script calls.
+ * Everything game-specific lives in these files; the engine only provides the generic audio, storage, leaderboard and UI
+ * APIs the script calls.
  */
 
-export const BEAT_TURNTABLE = {
-	socketId: 'bt-socket',
-	boardId: 'bt-board',
-	hudId: 'bt-hud',
-	consoleId: 'bt-console',
-	/** Notes in each hand's pool: enough for the densest level to have every block on screen. */
-	poolSize: 14,
-	playerZ: 2,
-	hitZ: 2.75,
-	/** Distance the blocks travel, from where they appear to the hit line. */
-	field: 11,
-	colX: [-0.6, -0.2, 0.2, 0.6],
-	rowY: [0.85, 1.2, 1.55],
-	difficultyButtons: ['bt-diff-easy', 'bt-diff-normal', 'bt-diff-hard']
-} as const;
+export { BEAT_TURNTABLE };
 
-const BLUE = '#2563eb';
-const RED = '#dc2626';
-const DESK = { x: -1.6, z: 2.6, top: 0.8 };
-
-const noteId = (hand: number, index: number) => `bt-note-${hand}-${index}`;
-
-const box = (id: string, name: string, position: [number, number, number], scale: [number, number, number], color: string, extra: Partial<Slot> = {}, collider = false): Slot =>
-	createSlot({
-		id,
-		name,
-		position,
-		scale,
-		...extra,
-		components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'box' }, color }, ...(collider ? [{ type: 'collider' as const, shape: 'box' as const }] : []), ...(extra.components ?? [])]
-	});
-
-const cylinder = (id: string, name: string, position: [number, number, number], diameter: number, height: number, color: string): Slot =>
-	createSlot({ id, name, position, scale: [diameter, height, diameter], components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'cylinder' }, color }] });
-
-function buildSaber(hand: 0 | 1): Slot[] {
-	const id = `bt-saber-${hand}`;
-	const color = hand === 0 ? BLUE : RED;
-	const pose = { position: [0, 0, 0.04] as [number, number, number], rotation: [15, 0, 0] as [number, number, number] };
-	return [
-		createSlot({
-			id,
-			name: hand === 0 ? 'Blue Saber' : 'Red Saber',
-			// Lying on the rack with the blade pointing towards the player.
-			position: [DESK.x, 0.955, 1.55 + hand * 0.3],
-			rotation: [0, Math.SQRT1_2, 0, Math.SQRT1_2],
-			components: [{ type: 'container' }, { type: 'grabbable', scalable: false }, { type: 'equippable', left: pose, right: pose }]
-		}),
-		box(`${id}-handle`, 'Saber Handle', [0, 0, 0], [0.03, 0.03, 0.2], '#27272a', { parentId: id }, true),
-		box(`${id}-guard`, 'Saber Guard', [0, 0, 0.11], [0.075, 0.016, 0.016], '#a1a1aa', { parentId: id }),
-		box(`${id}-blade`, 'Saber Blade', [0, 0, 0.56], [0.03, 0.03, 0.9], color, { parentId: id })
-	];
-}
+const WHITE = '#f8fafc';
 
 /** One block of a hand's pool. Parked out of sight and switched off until the script gives it a note. */
 function buildNote(hand: 0 | 1, index: number): Slot[] {
-	const id = noteId(hand, index);
-	const white = '#f8fafc';
+	const id = `bt-note-${hand}-${index}`;
+	const color = hand === 0 ? BLUE : RED;
 	return [
-		box(id, `Note ${hand}-${index}`, [0, -50, 0], [0.28, 0.28, 0.28], hand === 0 ? BLUE : RED),
+		box(id, `Note ${hand}-${index}`, [0, -50, 0], [0.28, 0.28, 0.28], color),
 		// Children are in the cube's own units: the arrow is a bar on the front face pointing up, the dot is for any direction.
-		box(`${id}-arrow`, 'Note Arrow', [0, 0.12, -0.52], [0.16, 0.5, 0.06], white, { parentId: id }),
-		box(`${id}-dot`, 'Note Dot', [0, 0, -0.52], [0.3, 0.3, 0.06], white, { parentId: id })
+		box(`${id}-arrow`, 'Note Arrow', [0, 0.12, -0.52], [0.16, 0.5, 0.06], WHITE, { parentId: id }),
+		box(`${id}-dot`, 'Note Dot', [0, 0, -0.52], [0.3, 0.3, 0.06], WHITE, { parentId: id }),
+		box(`${id}-glow`, 'Note Glow', [0, 0, 0], [1.35, 1.35, 1.35], color, { parentId: id }, false, 0.22)
 	];
 }
 
-const uiPanel = (id: string, name: string, position: [number, number, number], width: number, height: number, worldWidth: number, extra: Slot['components'] = []): Slot =>
-	createSlot({ id, name, position, components: [{ type: 'uiPanel', width, height, worldWidth, background: '#0b1020' }, ...extra] });
-
-const uiText = (id: string, parentId: string, text: string, width: number, height: number, fontSize: number, color = '#f4f4f5'): Slot =>
-	createSlot({ id, parentId, name: id, components: [{ type: 'uiElement', kind: 'text', width, height, text, fontSize, color }] });
-
-function buildConsole(code: string): Slot[] {
-	const root = BEAT_TURNTABLE.consoleId;
-	const buttons: [string, string][] = [['bt-diff-easy', 'Easy'], ['bt-diff-normal', 'Normal'], ['bt-diff-hard', 'Hard']];
-	return [
-		uiPanel(root, 'Beat Turntable Console', [DESK.x, 1.5, DESK.z + 0.5], 640, 420, 1.1, [
-			{ type: 'uiElement', kind: 'container', flexDirection: 'column', gap: 6, padding: 12, width: 620, height: 400 },
-			{ type: 'codeBlock', code }
-		]),
-		uiText('bt-title', root, 'Beat Turntable', 600, 48, 34, '#a78bfa'),
-		uiText('bt-status', root, 'Place a disc on the turntable to play its song.', 600, 130, 24),
-		uiText('bt-info', root, 'Blue saber: left side. Red saber: right side.', 600, 60, 20, '#a1a1aa'),
-		createSlot({ id: 'bt-difficulty-row', parentId: root, name: 'Difficulty', components: [{ type: 'uiElement', kind: 'container', flexDirection: 'row', gap: 10, width: 600, height: 64 }] }),
-		...buttons.map(([id, label]) =>
-			createSlot({ id, parentId: 'bt-difficulty-row', name: label, components: [{ type: 'uiElement', kind: 'button', width: 190, height: 60, text: label, fontSize: 26, background: id === 'bt-diff-normal' ? '#7c3aed' : '#374151' }] })
-		)
-	];
+function buildNotes(): Slot[] {
+	const notes: Slot[] = [];
+	for (const hand of [0, 1] as const) for (let index = 0; index < BEAT_TURNTABLE.poolSize; index++) notes.push(...buildNote(hand, index));
+	return notes;
 }
 
-function buildHud(): Slot[] {
-	const root = BEAT_TURNTABLE.hudId;
+/** The leaderboard of the song on the turntable, on a framed board to the right of the lane. */
+function buildBoard(): Slot[] {
 	return [
-		uiPanel(root, 'Score', [0, 2.35, 6.5], 800, 240, 2.2, [{ type: 'uiElement', kind: 'container', flexDirection: 'column', gap: 4, padding: 10, width: 780, height: 220 }]),
-		uiText('bt-hud-score', root, '0', 760, 110, 84, '#f4f4f5'),
-		uiText('bt-hud-combo', root, '', 760, 60, 40, '#facc15'),
-		uiText('bt-hud-detail', root, '', 760, 40, 24, '#a1a1aa')
-	];
-}
-
-function buildTurntable(): Slot[] {
-	const { x, z, top } = DESK;
-	const y = (above: number) => top + above;
-	return [
-		box('bt-desk', 'Desk', [x, top / 2 - 0.025, z], [1.3, top - 0.05, 0.8], '#1f2937', {}, true),
-		box('bt-desk-top', 'Desk Top', [x, top - 0.025, z], [1.4, 0.05, 0.9], '#374151', {}, true),
-		box('bt-plinth', 'Turntable Plinth', [x, y(0.04), z], [0.78, 0.08, 0.58], '#111827', {}, true),
-		cylinder('bt-platter', 'Turntable Platter', [x, y(0.087), z], 0.36, 0.014, '#9ca3af'),
-		cylinder('bt-mat', 'Turntable Mat', [x, y(0.096), z], 0.33, 0.004, '#171717'),
-		box('bt-arm-base', 'Tonearm Base', [x + 0.27, y(0.1), z + 0.17], [0.05, 0.035, 0.05], '#d4d4d8'),
-		box('bt-arm', 'Tonearm', [x + 0.17, y(0.12), z + 0.095], [0.01, 0.01, 0.25], '#e5e7eb', { rotation: [0, 0.4472, 0, 0.8944] }),
-		cylinder('bt-led', 'Status LED', [x - 0.3, y(0.085), z - 0.2], 0.02, 0.01, '#22c55e'),
-		// The socket is what makes the turntable a turntable: the disc sits at its origin, on the mat. The song is played by the
-		// script (with a clock it can read), so the disc must not also play itself.
-		createSlot({
-			id: BEAT_TURNTABLE.socketId,
-			name: 'Turntable Socket',
-			position: [x, y(0.107), z],
-			components: [{ type: 'socket', accepts: ['disc'], radius: 0.25, snap: { position: [0, 0, 0], rotation: [0, 0, 0] }, playMedia: false }]
-		})
-	];
-}
-
-/** The records on the shelf next to the turntable. Both are bundled songs, so the world needs no account or upload. */
-function buildDiscs(): Slot[] {
-	const { x, z, top } = DESK;
-	const base = { y: top + 0.0065 };
-	return [
-		...buildDisc(
-			{ id: 'bt-disc-1', title: 'Remembering a Heartbeat', author: 'Hampus Naeselius', labelColor: '#9f1239', source: { kind: 'url', url: '/audio/hampus-naeselius-remembering-a-heartbeat-epidemic-fantasy.mp3' } },
-			{ position: [x - 0.45, base.y + 0.003, z + 0.25] }
-		),
-		...buildDisc(
-			{ id: 'bt-disc-2', title: 'Ambient', author: 'Ambient 1', labelColor: '#0f766e', source: { kind: 'url', url: '/audio/ambient1.mp3' } },
-			{ position: [x - 0.45, base.y + 0.003, z - 0.2] }
-		)
-	];
-}
-
-function buildStage(): Slot[] {
-	const centre = BEAT_TURNTABLE.playerZ + BEAT_TURNTABLE.field / 2 + 1;
-	return [
-		createSlot({ id: 'bt-floor', name: 'Floor', position: [0, -0.05, 0], components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'ground' }, color: '#0b0f1a' }, { type: 'collider', shape: 'box' }] }),
-		box('bt-rail-0', 'Lane Rail Left', [-0.9, 0.02, centre], [0.03, 0.03, 14], BLUE),
-		box('bt-rail-1', 'Lane Rail Right', [0.9, 0.02, centre], [0.03, 0.03, 14], RED),
-		box('bt-hit-line', 'Hit Line', [0, 0.02, BEAT_TURNTABLE.hitZ], [1.9, 0.01, 0.03], '#e5e7eb'),
-		createSlot({ id: 'bt-back-wall', name: 'Back Wall', position: [0, 3, 17], components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'plane' }, color: '#0a0a18' }], scale: [16, 6, 1] }),
+		box('bt-board-frame', 'Leaderboard Frame', [1.9, 1.5, 3.63], [1.72, 1.05, 0.04], '#2a3a78'),
 		createSlot({
 			id: BEAT_TURNTABLE.boardId,
 			name: 'Leaderboard',
@@ -178,6 +63,7 @@ function buildStage(): Slot[] {
 
 /** The script that runs the game, as the body of a code block: the shared rules first, then the game loop. */
 export const BEAT_TURNTABLE_SCRIPT = `${LEVEL_LOGIC_SOURCE}
+${STAGE_FX_SOURCE}
 const SOCKET = '${BEAT_TURNTABLE.socketId}';
 const BOARD = '${BEAT_TURNTABLE.boardId}';
 const SABERS = ['bt-saber-0-blade', 'bt-saber-1-blade'];
@@ -195,6 +81,11 @@ const MIN_ALIGNMENT = 0.3;
 const COUNTDOWN = 6;
 const COLORS = ['#2563eb', '#dc2626'];
 const MAX_SONGS_SAVED = 60;
+const TRACK_WIDTH = ${UI.trackWidth};
+const ARM_PLAYING = 0.62;
+const DISC_SPIN = 3.49;
+const MULT_COLORS = { 1: '#ffffff', 2: '#60a5fa', 4: '#c084fc', 8: '#facc15' };
+const RANK_COLORS = { S: '#facc15', A: '#4ade80', B: '#60a5fa', C: '#fb923c', D: '#f87171' };
 
 const set = (id, type, field, value, broadcast) => ctx.world.setComponentField(id, type, field, value, broadcast !== false);
 const say = (id, value, broadcast) => set(id, 'uiElement', 'text', value, broadcast);
@@ -225,6 +116,15 @@ let hits = 0;
 let bad = 0;
 let missed = 0;
 let sabers = [null, null];
+let hudTimer = 0;
+let shownScore = 0;
+let judgeTimer = 0;
+let songBest = 0;
+let armAngle = 0;
+let discAngle = 0;
+const hudCache = {};
+let cues = [];
+let cueClock = 0;
 
 function readDisc(id) {
   const slot = id ? ctx.hierarchy.getSlot(id) : null;
@@ -248,9 +148,143 @@ function paintDifficulty() {
   for (const id of DIFFICULTY_IDS) set(BUTTONS[id], 'uiElement', 'background', id === difficulty ? '#7c3aed' : '#374151');
 }
 
+const fmt = (n) => String(Math.round(n)).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',');
+
+/** Writes a uiElement field on this peer, only when it is not already what is shown (every write redraws the panel). */
+function hud(id, field, value) {
+  const key = id + '.' + field;
+  if (hudCache[key] === value) return;
+  hudCache[key] = value;
+  set(id, 'uiElement', field, value, false);
+}
+
+function accuracyNow() {
+  const judged = hits + bad + missed;
+  return judged ? Math.min(1, score / maxScore(judged)) : 1;
+}
+
+/** The score board while a song is on: the score counts up to its value, the rest follows the game. */
+function flushHud(dt, force) {
+  hudTimer += dt;
+  if (!force && hudTimer < 0.05) return;
+  hudTimer = 0;
+  if (score < shownScore) shownScore = score;
+  else if (shownScore < score) shownScore += Math.max(1, Math.ceil((score - shownScore) * 0.35));
+  const mult = multiplierFor(combo);
+  const accuracy = accuracyNow();
+  hud('bt-hud-score', 'text', fmt(shownScore));
+  hud('bt-hud-combo', 'text', String(combo));
+  hud('bt-hud-combo', 'color', MULT_COLORS[mult]);
+  hud('bt-hud-mult', 'text', 'x' + mult);
+  hud('bt-hud-mult', 'color', MULT_COLORS[mult]);
+  hud('bt-hud-detail', 'text', Math.round(accuracy * 100) + '%');
+  const rank = state === 'playing' && hits + bad + missed > 0 ? rankFor(accuracy) : '';
+  hud('bt-hud-rank', 'text', rank ? 'RANK ' + rank : '');
+  if (rank) hud('bt-hud-rank', 'color', RANK_COLORS[rank]);
+  const length = analysis && analysis.duration ? analysis.duration : 0;
+  const position = state === 'playing' && track && length ? Math.min(1, track.time() / length) : state === 'results' ? 1 : 0;
+  hud('bt-hud-fill', 'width', Math.round(TRACK_WIDTH * position));
+}
+
 function showHud() {
-  say('bt-hud-score', String(score), false);
-  say('bt-hud-combo', combo > 1 ? 'x' + multiplierFor(combo) + '   combo ' + combo : '', false);
+  flushHud(0, true);
+}
+
+function resetHud() {
+  shownScore = 0;
+  songBest = 0;
+  hud('bt-hud-best', 'text', '');
+  hud('bt-hud-title', 'text', 'Beat Turntable');
+  hud('bt-judge-text', 'text', '');
+  showHud();
+}
+
+function judge(text, color) {
+  hud('bt-judge-text', 'text', text);
+  hud('bt-judge-text', 'color', color);
+  judgeTimer = 0.55;
+}
+
+/** What the score board keeps showing once the song is over: the final numbers, with the full bar. */
+function freezeHud(result, ratio) {
+  const rank = rankFor(ratio);
+  shownScore = result.score;
+  hud('bt-hud-score', 'text', fmt(result.score));
+  hud('bt-hud-detail', 'text', Math.round(ratio * 100) + '%');
+  hud('bt-hud-rank', 'text', 'RANK ' + rank);
+  hud('bt-hud-rank', 'color', RANK_COLORS[rank]);
+  hud('bt-hud-fill', 'width', TRACK_WIDTH);
+}
+
+const RESULT_TITLES = { S: 'PERFECT RUN', A: 'SONG CLEARED', B: 'SONG CLEARED', C: 'SONG CLEARED', D: 'TRY AGAIN' };
+
+function hideResults() {
+  cues = [];
+  ctx.world.setSlotEnabled('bt-results', false, false);
+}
+
+/** The result screen: the rank, the score, the numbers of the run, and the jingle that goes with them. */
+function showResults(result, ratio) {
+  const rank = rankFor(ratio);
+  const colour = RANK_COLORS[rank];
+  hud('bt-res-title', 'text', RESULT_TITLES[rank]);
+  hud('bt-res-title', 'color', colour);
+  hud('bt-res-song', 'text', disc.title + '   -   ' + DIFFICULTIES[difficulty].label);
+  hud('bt-res-rank', 'text', rank);
+  hud('bt-res-rank', 'color', colour);
+  hud('bt-res-score', 'text', fmt(result.score));
+  hud('bt-res-best', 'text', '');
+  hud('bt-res-acc', 'text', Math.round(ratio * 100) + '%');
+  hud('bt-res-combo', 'text', String(result.combo));
+  hud('bt-res-cuts', 'text', hits + ' / ' + level.length);
+  hud('bt-res-missed', 'text', String(missed + bad));
+  hud('bt-res-missed', 'color', missed + bad === 0 ? '#4ade80' : '#f87171');
+  hud('bt-res-footer', 'text', player && (ctx.leaderboards.available || ctx.storage.available) ? 'Saving your score...' : 'Scores are not saved here.');
+  ctx.world.setSlotEnabled('bt-results', true, false);
+  playJingle(rank);
+}
+
+/** The win sound, as notes of the synthesised percussive sound (a pluck each): a rising arpeggio and a chord, a sad slide for a poor run. */
+function playJingle(rank) {
+  const tone = (t, f, d, v) => cues.push({ t: t, kind: 'tone', f: f, d: d, v: v });
+  const spark = (t, x, color) => cues.push({ t: t, kind: 'burst', x: x, color: color });
+  cueClock = 0;
+  if (rank === 'D') {
+    tone(0, 392, 500, 0.5); tone(0.28, 349, 500, 0.5); tone(0.56, 311, 500, 0.5); tone(0.9, 262, 900, 0.5);
+    return;
+  }
+  const notes = [523, 659, 784, 1047];
+  notes.forEach((f, i) => tone(i * 0.13, f, 420, 0.5));
+  [784, 1047, 1319].forEach((f) => tone(0.62, f, 1100, 0.55));
+  if (rank === 'S' || rank === 'A') {
+    [1319, 1568, 2093, 1568, 2093, 2637].forEach((f, i) => tone(0.95 + i * 0.09, f, 500, 0.35));
+  }
+  const colour = RANK_COLORS[rank];
+  spark(0.62, -0.9, colour); spark(0.62, 0.9, colour);
+  if (rank === 'S') { spark(0.95, -1.2, '#facc15'); spark(1.1, 1.2, '#facc15'); spark(1.25, 0, '#ffffff'); }
+}
+
+function runCues(dt) {
+  if (!cues.length) return;
+  cueClock += dt;
+  while (cues.length && cues[0].t <= cueClock) {
+    const cue = cues.shift();
+    if (cue.kind === 'tone') soundAt([0, 1.6, 3.4], cue.f, cue.v, cue.d);
+    else burstAt([cue.x, 2.3, 4.4], cue.color);
+  }
+}
+
+async function loadBest(mine) {
+  songBest = 0;
+  if (!player) return;
+  try {
+    const songs = await ctx.storage.player(player).get('songs', {});
+    const entry = songs[disc.key + '-' + difficulty];
+    songBest = entry ? entry.best : 0;
+  } catch (error) {
+    ctx.log('storage: ' + (error && error.message ? error.message : error));
+  }
+  if (mine === session) hud('bt-hud-best', 'text', songBest ? 'BEST ' + fmt(songBest) : '');
 }
 
 function showBoard() {
@@ -287,12 +321,15 @@ function init() {
     }
   }
   paintDifficulty();
+  hideResults();
 }
 
 function beginSession(id) {
   session += 1;
   const mine = session;
   stopPlay();
+  fxRestart();
+  hideResults();
   disc = readDisc(id);
   if (!disc) { state = 'idle'; setStatus('This record cannot be played here.'); return; }
   state = 'analyzing';
@@ -323,9 +360,13 @@ function buildLevel() {
   lastShown = -1;
   const tempo = analysis.bpm ? Math.round(analysis.bpm) + ' BPM, ' : '';
   say('bt-info', tempo + level.length + ' blocks - ' + DIFFICULTIES[difficulty].label + '. Grab both sabers!');
-  score = 0; combo = 0;
+  score = 0; combo = 0; hits = 0; bad = 0; missed = 0;
+  hud('bt-hud-title', 'text', disc.title + '   -   ' + DIFFICULTIES[difficulty].label);
+  hud('bt-judge-text', 'text', '');
+  shownScore = 0;
   showHud();
   showBoard();
+  loadBest(session);
 }
 
 function startPlay() {
@@ -335,6 +376,7 @@ function startPlay() {
   nextSpawn = 0;
   score = 0; combo = 0; bestCombo = 0; hits = 0; bad = 0; missed = 0;
   sabers = [null, null];
+  fxRestart();
   setStatus('"' + disc.title + '"');
   showHud();
   guard(ctx.audio.playTrack(disc.source, { volume: 0.9 }).then((handle) => {
@@ -370,8 +412,9 @@ function burstAt(position, color) {
   ctx.world.spawn({ name: 'Particle Burst', position: position, components: [{ type: 'particleBurst', color: color, count: 24, durationMs: 700 }, { type: 'expires', expiresAt: Date.now() + 700 }] });
 }
 
-function soundAt(position, frequency, volume) {
-  ctx.world.spawn({ name: 'Impact Sound', position: position, components: [{ type: 'impactSound', frequency: frequency, pitchDrop: frequency * 0.4, noiseMix: 0.25, durationMs: 140, volume: volume }, { type: 'expires', expiresAt: Date.now() + 700 }] });
+function soundAt(position, frequency, volume, durationMs) {
+  const length = durationMs || 140;
+  ctx.world.spawn({ name: 'Impact Sound', position: position, components: [{ type: 'impactSound', frequency: frequency, pitchDrop: durationMs ? 0 : frequency * 0.4, noiseMix: durationMs ? 0.04 : 0.25, durationMs: length, volume: volume }, { type: 'expires', expiresAt: Date.now() + length + 600 }] });
 }
 
 function trackSabers(dt) {
@@ -400,7 +443,11 @@ function cut(entry, position, accuracy) {
   burstAt(position, COLORS[entry.hand]);
   soundAt(position, 480 + Math.min(combo, 20) * 14, 0.5);
   removeNote(entry);
-  showHud();
+  fxHit(entry.hand);
+  if (combo % 25 === 0) judge('COMBO ' + combo, '#facc15');
+  else if (accuracy >= 0.9) judge('PERFECT', '#facc15');
+  else if (accuracy >= 0.7) judge('GREAT', '#4ade80');
+  else judge('GOOD', '#60a5fa');
 }
 
 function fail(entry, position, wrongCut) {
@@ -408,7 +455,8 @@ function fail(entry, position, wrongCut) {
   if (wrongCut) bad += 1; else missed += 1;
   soundAt(position, 130, 0.4);
   removeNote(entry);
-  showHud();
+  if (wrongCut) judge('BAD CUT', '#f87171');
+  else judge('MISS', '#fb7185');
 }
 
 function play(dt) {
@@ -445,16 +493,23 @@ function play(dt) {
 }
 
 async function saveResult(mine, result) {
-  if (!player) return 'Scores are not saved here.';
-  if (!ctx.leaderboards.available && !ctx.storage.available) return 'Scores are not saved: sign in and publish the world to keep them.';
-  let line = '';
+  if (!player) return { line: 'Scores are not saved here.' };
+  if (!ctx.leaderboards.available && !ctx.storage.available) return { line: 'Scores are not saved: sign in and publish the world to keep them.' };
   await ctx.leaderboards.submit(board, player, result.score, { order: 'high' });
-  if (mine !== session) return '';
+  if (mine !== session) return null;
+  let rank = 0;
+  try {
+    const mineBest = await ctx.leaderboards.best(board, player);
+    rank = mineBest ? mineBest.rank : 0;
+  } catch (error) {
+    ctx.log('rank: ' + (error && error.message ? error.message : error));
+  }
   const handle = ctx.storage.player(player);
   const songs = await handle.get('songs', {});
   const key = disc.key + '-' + difficulty;
   const before = songs[key] || { best: 0, combo: 0, plays: 0 };
-  line = result.score > before.best ? 'New personal best!' : 'Your best: ' + before.best;
+  const isBest = result.score > before.best;
+  if (isBest) hud('bt-hud-best', 'text', 'NEW BEST!');
   songs[key] = { best: Math.max(before.best, result.score), combo: Math.max(before.combo, result.combo), plays: before.plays + 1, at: Date.now() };
   const keys = Object.keys(songs);
   if (keys.length > MAX_SONGS_SAVED) {
@@ -463,7 +518,7 @@ async function saveResult(mine, result) {
   }
   await handle.set('songs', songs);
   if (mine === session) showBoard();
-  return line;
+  return { line: isBest ? 'New personal best!' : 'Your best: ' + before.best, isBest: isBest, best: before.best, rank: rank, plays: before.plays + 1 };
 }
 
 function finish() {
@@ -475,9 +530,17 @@ function finish() {
   const ratio = perfect > 0 ? result.score / perfect : 0;
   const summary = 'Rank ' + rankFor(ratio) + ' - ' + result.score + ' points';
   setStatus(summary);
+  freezeHud(result, ratio);
+  showResults(result, ratio);
   say('bt-info', hits + ' of ' + level.length + ' cut, ' + (missed + bad) + ' missed. Best combo ' + bestCombo + '. Take the record off to stop.');
-  say('bt-hud-detail', Math.round(ratio * 100) + '% of a perfect run', false);
-  guard(saveResult(mine, result).then((line) => { if (mine === session && line) setStatus(summary + '\\n' + line); }), 'save');
+  guard(saveResult(mine, result).then((info) => {
+    if (mine !== session || !info) return;
+    setStatus(summary + '\\n' + info.line);
+    hud('bt-res-best', 'text', info.isBest ? 'NEW PERSONAL BEST!' : info.best ? 'Personal best: ' + fmt(info.best) : '');
+    hud('bt-res-best', 'color', info.isBest ? '#facc15' : '#94a3b8');
+    const place = info.rank ? 'Leaderboard rank #' + info.rank + '   -   ' : info.isBest === undefined ? info.line + '   -   ' : '';
+    hud('bt-res-footer', 'text', place + 'Take the record off to pick another song');
+  }), 'save');
 }
 
 function chooseDifficulty(id) {
@@ -486,6 +549,21 @@ function chooseDifficulty(id) {
   paintDifficulty();
   if (player) guard(ctx.storage.player(player).set('difficulty', id), 'save difficulty');
   if (discId && state !== 'analyzing') beginSession(discId);
+}
+
+/** The turntable at work: the record spins, the arm comes down onto it and the light turns red while a song is on. */
+function deckTick(dt) {
+  const busy = state === 'analyzing' || state === 'countdown' || state === 'playing';
+  const target = busy ? ARM_PLAYING : 0;
+  if (Math.abs(target - armAngle) > 0.002) {
+    armAngle += (target - armAngle) * Math.min(1, dt * 2.5);
+    ctx.world.setWorldPose('bt-arm-pivot', { rotation: ctx.math.quatFromAxisAngle([0, 1, 0], armAngle) }, false);
+  }
+  if (busy && discId) {
+    discAngle = (discAngle + dt * DISC_SPIN) % (Math.PI * 2);
+    ctx.world.setWorldPose(discId, { rotation: ctx.math.quatFromAxisAngle([0, 1, 0], discAngle) }, false);
+  }
+  fxColor('bt-led', busy ? '#ef4444' : '#22c55e');
 }
 
 return {
@@ -516,9 +594,10 @@ return {
         disc = null;
         setStatus('Place a disc on the turntable to play its song.');
         say('bt-info', 'Blue saber: left side. Red saber: right side.');
-        say('bt-hud-detail', '', false);
-        score = 0; combo = 0;
-        showHud();
+        score = 0; combo = 0; hits = 0; bad = 0; missed = 0;
+        analysis = null;
+        hideResults();
+        resetHud();
       }
     }
     if (state === 'countdown') {
@@ -529,33 +608,19 @@ return {
     } else if (state === 'playing') {
       play(dt);
     }
+    fxTick(dt);
+    deckTick(dt);
+    runCues(dt);
+    if (state !== 'results') flushHud(dt, false);
+    if (judgeTimer > 0) {
+      judgeTimer -= dt;
+      if (judgeTimer <= 0) hud('bt-judge-text', 'text', '');
+    }
   }
 };
 `;
 
-/** The Beat Turntable world: a stage, a control desk with the turntable and sabers, and the script that plays it. */
+/** The Beat Turntable world: the stage, the deck with the turntable, rack and sabers, the panels, and the script that plays it. */
 export function buildBeatTurntable(): SlotTree {
-	return [
-		...buildStage(),
-		...buildTurntable(),
-		...buildDiscs(),
-		...buildSaberRack(),
-		...buildConsole(BEAT_TURNTABLE_SCRIPT),
-		...buildHud(),
-		...buildNotes()
-	];
-}
-
-function buildNotes(): Slot[] {
-	const notes: Slot[] = [];
-	for (const hand of [0, 1] as const) for (let index = 0; index < BEAT_TURNTABLE.poolSize; index++) notes.push(...buildNote(hand, index));
-	return notes;
-}
-
-function buildSaberRack(): Slot[] {
-	return [
-		box('bt-rack', 'Saber Rack', [DESK.x, 0.92, 1.7], [0.7, 0.03, 0.7], '#1f2937', {}, true),
-		...buildSaber(0),
-		...buildSaber(1)
-	];
+	return [...buildStageSlots(), ...buildDeckSlots(), ...buildBoard(), ...buildConsole(BEAT_TURNTABLE_SCRIPT), ...buildHud(), ...buildJudge(), ...buildResults(), ...buildNotes()];
 }
