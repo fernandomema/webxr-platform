@@ -191,7 +191,7 @@ return {
 	},
 	{
 		id: 'archive-jukebox',
-		name: 'Archive Jukebox',
+		name: 'Archive.org Sounds',
 		description: 'Search music on archive.org and press any song onto a record disc that you can play or take to a turntable.',
 		scene: buildArchiveJukebox()
 	},

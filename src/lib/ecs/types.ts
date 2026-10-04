@@ -456,6 +456,8 @@ export interface RecordDiscComponent {
 	labelColor: string;
 	/** The vinyl itself; the groove tones follow from it. Near-black when absent. */
 	vinylColor?: string;
+	/** A picture (a browser-loadable URL) for the centre label, drawn over `labelColor`. Absent: the label is the colour and the title. */
+	labelImage?: string;
 }
 
 /** Marks a grabbable object as something a `socket` can take. */

@@ -47,6 +47,19 @@ export function instantiate(tree: SlotTree, origin: Vec3 = [0, 0, 0]): SlotTree 
 	}));
 }
 
+/**
+ * A tree as it should start when it comes out of storage: nothing playing. `playing` is the state of an audio player at the
+ * moment it was saved (a disc saved while it sat on a record player), not part of what the object is, so a spawned copy does
+ * not sound until something starts it (a socket, a script, its own `autoplay`).
+ */
+export function atRest(tree: SlotTree): SlotTree {
+	return tree.map((slot) =>
+		slot.components.some((component) => component.type === 'audioPlayer' && component.playing)
+			? { ...slot, components: slot.components.map((component) => (component.type === 'audioPlayer' && component.playing ? { ...component, playing: false } : component)) }
+			: slot
+	);
+}
+
 export function toJSON(tree: SlotTree): string {
 	return JSON.stringify(tree);
 }

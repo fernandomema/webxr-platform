@@ -13,6 +13,7 @@ import {
 } from '@babylonjs/gui';
 import { findComponent, type Slot, type UIElementComponent, type UIEvent, type UIPanelComponent } from '$lib/ecs/types';
 import { typeWithKeyboard } from './keyboard/guiInput';
+import { hasInteractiveControls } from './uiPanelInteractivity';
 
 /** Playback state of a `video` element on this peer, as read by `ctx.ui.getMedia`. */
 export interface UIMediaState {
@@ -476,6 +477,8 @@ export function setupUIPanel(
 			addWithMargin(rootStack, slot);
 		}
 		knownShape = shapeOf(slots);
+		// Only a panel with something to press takes the pointer; a picture or a label is part of what it is on (and is grabbed with it).
+		mesh.metadata = { ...(mesh.metadata ?? {}), interactive: hasInteractiveControls(slots) };
 
 		// Drop the state of elements that no longer exist.
 		for (const [slotId, runtime] of videos) {

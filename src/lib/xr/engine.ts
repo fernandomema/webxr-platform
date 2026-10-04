@@ -16,7 +16,7 @@ import {
 } from '@babylonjs/core';
 import lobbyTemplate from './templates/lobby.json';
 import { createSlot, type SlotTree } from '$lib/ecs/types';
-import { instantiate } from '$lib/ecs/serialize';
+import { atRest, instantiate } from '$lib/ecs/serialize';
 import { isBuiltinMesh, migrateSlotTree } from '$lib/assets/ref';
 import type { AssetResolver } from '$lib/assets/resolve';
 import { CloudResolver } from '$lib/assets/cloud';
@@ -616,7 +616,7 @@ export async function mountGame(
 		// child, e.g. an entire saved Bowling Alley coming back empty).
 		const camera = getActiveCamera();
 		const spawnPosition = camera.globalPosition.add(camera.getForwardRay().direction.scale(0.6));
-		const tree = instantiate(slotData, [spawnPosition.x, spawnPosition.y, spawnPosition.z]);
+		const tree = instantiate(atRest(slotData), [spawnPosition.x, spawnPosition.y, spawnPosition.z]);
 		for (const slot of tree) {
 			sceneGraph.addSlot(slot);
 			if (gameState.role === 'guest') guestSync?.requestSpawn(slot);

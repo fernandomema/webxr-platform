@@ -66,3 +66,38 @@ test('every disc in the lobby is exactly what buildDisc makes from its readable 
     assert.deepEqual(actual, rebuilt, `${root.id} drifted from the disc generator`);
   }
 });
+
+test('a disc carries a preview camera above and in front of it, looking down at the label', () => {
+  const slots = buildDisc(params);
+  const camera = slots.find((slot) => find(slot, 'previewCamera'));
+  assert.equal(camera.parentId, 'd');
+  assert.ok(camera.position[1] > 0 && camera.position[2] > 0);
+  const [x, y, z, w] = camera.rotation;
+  const forward = [2 * (x * z + w * y), 2 * (y * z - w * x), 1 - 2 * (x * x + y * y)];
+  assert.ok(forward[1] < 0 && forward[2] < 0, 'it looks down and away from the player side');
+});
+
+test('a label picture keeps the title strip and follows labelImage when it is edited', () => {
+  const slots = buildDisc({ ...params, labelImage: 'https://example.com/a.jpg' });
+  assert.ok(slots.some((slot) => slot.name === 'Disc Label Text'));
+  const next = setField(slots, 'd', 'labelImage', 'https://example.com/b.jpg');
+  assert.equal(find(next.find((slot) => slot.name === 'Disc Label Picture'), 'uiElement').src, 'https://example.com/b.jpg');
+});
+
+test('a disc saved while playing comes out of storage silent', async () => {
+  const { atRest } = await import('../src/lib/ecs/serialize.ts');
+  const playing = buildDisc(params, { playing: true });
+  assert.equal(find(playing[0], 'audioPlayer').playing, true);
+  const spawned = atRest(playing);
+  assert.equal(find(spawned[0], 'audioPlayer').playing, false);
+  assert.equal(find(playing[0], 'audioPlayer').playing, true, 'the saved copy is not touched');
+  assert.equal(spawned[1], playing[1], 'slots without audio are kept as they are');
+});
+
+test('a panel with a picture and text is only a surface; one with a button takes the pointer', async () => {
+  const { hasInteractiveControls } = await import('../src/lib/xr/uiPanelInteractivity.ts');
+  const slots = buildDisc({ ...params, labelImage: 'https://example.com/a.jpg' });
+  assert.equal(hasInteractiveControls(slots), false);
+  const button = { id: 'b', parentId: 'd', name: 'b', position: [0, 0, 0], rotation: [0, 0, 0, 1], scale: [1, 1, 1], components: [{ type: 'uiElement', kind: 'button' }] };
+  assert.equal(hasInteractiveControls([...slots, button]), true);
+});

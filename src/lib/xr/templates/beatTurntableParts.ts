@@ -55,5 +55,5 @@ export const uiPanel = (id: string, name: string, position: Vec3, width: number,
 type Element = Partial<Extract<Slot['components'][number], { type: 'uiElement' }>>;
 
 /** A uiElement slot: `kind` and the look in `element`. */
-export const ui = (id: string, parentId: string | null, kind: 'container' | 'text' | 'button', element: Element): Slot =>
+export const ui = (id: string, parentId: string | null, kind: 'container' | 'text' | 'button' | 'image', element: Element): Slot =>
 	createSlot({ id, parentId, name: id, components: [{ type: 'uiElement', kind, ...element }] });

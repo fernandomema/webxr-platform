@@ -283,7 +283,8 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 			{ key: 'title', label: 'Title', kind: 'text', default: 'Untitled' },
 			{ key: 'author', label: 'Author', kind: 'text', default: 'Unknown' },
 			{ key: 'labelColor', label: 'Label colour', kind: 'color', default: '#6366f1', help: 'The centre label and the rim.' },
-			{ key: 'vinylColor', label: 'Vinyl colour', kind: 'color', optional: true, default: '#0b0b10' }
+			{ key: 'vinylColor', label: 'Vinyl colour', kind: 'color', optional: true, default: '#0b0b10' },
+			{ key: 'labelImage', label: 'Label image', kind: 'text', optional: true, default: '', help: 'An image URL for the centre label. Set it when the disc is made; editing it later only changes a disc that already has a label image.' }
 		],
 		create: () => ({ type: 'recordDisc', title: 'Untitled', author: 'Unknown', labelColor: '#6366f1' })
 	},

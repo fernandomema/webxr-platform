@@ -67,6 +67,7 @@ test('an item lists its songs in one format, preferring MP3', () => {
 test('file urls go through the CORS host with every part escaped', () => {
 	assert.equal(logic.fileUrl('my item', 'disc 1/Track #1.mp3'), 'https://cors.archive.org/cors/my%20item/disc%201/Track%20%231.mp3');
 	assert.equal(logic.metadataUrl('a/b'), 'https://archive.org/metadata/a%2Fb');
+	assert.equal(logic.coverUrl('my item'), 'https://cors.archive.org/cors/my%20item/__ia_thumb.jpg');
 });
 
 test('pressing a song spawns a whole disc pointing at its file', async () => {
@@ -90,8 +91,58 @@ test('pressing a song spawns a whole disc pointing at its file', async () => {
 	assert.ok(root && find(root, 'insertable') && find(root, 'grabbable'));
 	assert.equal(find(root, 'audioPlayer').source.url, 'https://cors.archive.org/cors/item-1/One%20%221%22.mp3');
 	assert.equal(find(root, 'recordDisc').title, 'One \\ "1"');
-	assert.equal(spawned.length, 10);
-	assert.ok(spawned.every((slot) => slot.id.startsWith('aj-disc-') && (slot.parentId === null || slot.parentId === root.id)));
+	assert.equal(find(root, 'recordDisc').labelImage, 'https://cors.archive.org/cors/item-1/__ia_thumb.jpg');
+	const picture = spawned.find((slot) => slot.name === 'Disc Label Picture');
+	assert.equal(find(picture, 'uiElement').src, 'https://cors.archive.org/cors/item-1/__ia_thumb.jpg');
+	const circle = spawned.find((slot) => slot.id === picture.parentId);
+	assert.ok(circle && find(circle, 'uiElement').cornerRadius === find(circle, 'uiElement').width / 2, 'the picture is cut round');
+	assert.ok(spawned.some((slot) => slot.id === circle.parentId && find(slot, 'uiPanel')));
+	assert.equal(find(spawned.find((slot) => slot.name === 'Disc Label Text'), 'textDisplay').title, 'One \\ "1"', 'the title stays');
+	assert.ok(spawned.some((slot) => find(slot, 'previewCamera')));
+	assert.ok(spawned.every((slot) => slot.id.startsWith('aj-disc-')));
 	assert.equal(new Set(spawned.map((slot) => slot.id)).size, spawned.length);
-	assert.ok(!JSON.stringify(spawned).includes('__'), 'no token is left');
+	assert.ok(!/__(ID|TITLE|AUTHOR|URL|COLOR|IMAGE)__/.test(JSON.stringify(spawned)), 'no token is left');
+});
+
+test('a disc on the player spins, the arm comes down and the panel says what plays', () => {
+	const { code } = find(byId.get(ARCHIVE_JUKEBOX.panelId), 'codeBlock');
+	const fields = new Map();
+	const poses = [];
+	const disc = { id: 'disc-1', name: 'Disc', components: [{ type: 'recordDisc', title: 'Song' }] };
+	const socket = { id: ARCHIVE_JUKEBOX.socketId, components: [{ type: 'socket', occupantId: 'disc-1' }] };
+	const ctx = {
+		hierarchy: { getSlot: (id) => (id === socket.id ? socket : id === disc.id ? disc : null) },
+		math: { quatFromAxisAngle: (axis, angle) => [axis, angle] },
+		world: { setWorldPose: (id, pose) => poses.push([id, pose.rotation[1]]), setComponentField: (id, type, field, value) => fields.set(`${id}.${field}`, value) }
+	};
+	const handlers = new Function('ctx', `return (function () {${code}\n})();`)(ctx);
+	handlers.tick(0.1);
+	handlers.tick(0.1);
+	assert.match(fields.get(`${ARCHIVE_JUKEBOX.nowId}.text`), /Song/);
+	assert.equal(fields.get(`${ARCHIVE_JUKEBOX.ledId}.color`), '#ef4444');
+	const angles = poses.filter(([id]) => id === 'disc-1').map(([, angle]) => angle);
+	assert.ok(angles.length === 2 && angles[1] > angles[0]);
+	assert.ok(poses.some(([id]) => id === ARCHIVE_JUKEBOX.armId));
+	socket.components[0].occupantId = '';
+	handlers.tick(0.1);
+	assert.match(fields.get(`${ARCHIVE_JUKEBOX.nowId}.text`), /nothing/);
+});
+
+test('every listed item shows its archive.org cover in its row', async () => {
+	const { code } = find(byId.get(ARCHIVE_JUKEBOX.panelId), 'codeBlock');
+	const fields = new Map();
+	const ctx = {
+		net: { fetchJson: async (url) => (url.includes('advancedsearch') ? { response: { numFound: 1, docs: [{ identifier: 'item-2', title: 'Album' }] } } : { files: [{ name: 'a.mp3', format: 'VBR MP3' }, { name: 'b.mp3', format: 'VBR MP3' }] }) },
+		world: { spawn: () => {}, setComponentField: (id, type, field, value) => fields.set(`${id}.${field}`, value) }
+	};
+	const handlers = new Function('ctx', `return (function () {${code}\n})();`)(ctx);
+	handlers.onUIEvent({ type: 'press', slotId: ARCHIVE_JUKEBOX.searchId });
+	await new Promise((resolve) => setTimeout(resolve, 5));
+	assert.equal(fields.get('aj-thumb-0.src'), 'https://cors.archive.org/cors/item-2/__ia_thumb.jpg');
+	assert.equal(fields.get('aj-rowbox-0.visible'), true);
+	assert.equal(fields.get('aj-thumb-1.src'), '');
+	handlers.onUIEvent({ type: 'press', slotId: 'aj-row-0' });
+	await new Promise((resolve) => setTimeout(resolve, 5));
+	assert.equal(fields.get('aj-thumb-1.src'), 'https://cors.archive.org/cors/item-2/__ia_thumb.jpg');
+	assert.equal(fields.get('aj-rowbox-2.visible'), false);
 });

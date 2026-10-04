@@ -1,16 +1,18 @@
 import type { Slot, SlotTree } from '../../ecs/types';
 import { createSlot } from '../../ecs/types.ts';
 import { buildDisc } from './recordDisc.ts';
-import { box, ui, uiPanel } from './beatTurntableParts.ts';
+import { box, cylinder, group, ui } from './beatTurntableParts.ts';
+import { buildArchiveDecor } from './archiveJukeboxDecor.ts';
 
 /**
- * Archive Jukebox: a development world to look for music on archive.org and press it onto a record. The panel searches the
+ * Archive.org Sounds (the Archive Jukebox): a development world to look for music on archive.org and press it onto a record. The panel searches the
  * Internet Archive (`ctx.net.fetchJson`), lists what it finds, and when a song is chosen the script spawns a disc whose
- * `audioPlayer` points at that file (`ctx.world.spawn`). The disc is an ordinary record: put it on the player beside the
+ * `audioPlayer` points at that file (`ctx.world.spawn`), with the item's archive.org cover on its centre label. The disc is an ordinary record: put it on the player beside the
  * panel, or carry it to a turntable such as the one in Beat Turntable.
  *
  * The player stands at (0, 0, 2), facing +Z, as the desktop camera does. The panel is in front of them, the player of records
- * and the tray where new discs appear are on the table below it.
+ * and the tray where new discs appear are on the table below it. The room is a record library (see archiveJukeboxDecor.ts), and
+ * the player is a turntable that spins whatever disc sits on it while the tonearm swings over it.
  */
 
 /**
@@ -72,6 +74,14 @@ function audioFiles(meta) {
     .map((file) => ({ name: String(file.name), title: first(file.title) || baseName(String(file.name)), format: String(file.format), size: Number(file.size) || 0 }));
 }
 
+/**
+ * The cover archive.org keeps for an item: the thumbnail it makes from the item's own art, as a file of the item. It is read
+ * from the CORS host because /services/img sends no CORS headers, and a texture of the panel needs them.
+ */
+function coverUrl(id) {
+  return ARCHIVE_FILES + '/' + encodeURIComponent(id) + '/__ia_thumb.jpg';
+}
+
 function metadataUrl(id) {
   return ARCHIVE_ORIGIN + '/metadata/' + encodeURIComponent(id);
 }
@@ -102,6 +112,7 @@ interface ArchiveLogic {
 	parseSearch(json: unknown): { total: number; items: { id: string; title: string; creator: string }[] };
 	audioFiles(meta: unknown): { name: string; title: string; format: string; size: number }[];
 	metadataUrl(id: string): string;
+	coverUrl(id: string): string;
 	fileUrl(id: string, name: string): string;
 	clip(text: string, length: number): string;
 	hashText(text: string): number;
@@ -110,7 +121,7 @@ interface ArchiveLogic {
 /** Evaluates the archive rules: what the world's script does at load, for code that wants to call them directly. */
 export function loadArchiveLogic(): ArchiveLogic {
 	// eslint-disable-next-line no-new-func -- the same source text that the world's code block runs.
-	return new Function(`${ARCHIVE_LOGIC_SOURCE}\nreturn { searchUrl, parseSearch, audioFiles, metadataUrl, fileUrl, clip, hashText };`)() as ArchiveLogic;
+	return new Function(`${ARCHIVE_LOGIC_SOURCE}\nreturn { searchUrl, parseSearch, audioFiles, metadataUrl, coverUrl, fileUrl, clip, hashText };`)() as ArchiveLogic;
 }
 
 export const ARCHIVE_JUKEBOX = {
@@ -122,76 +133,110 @@ export const ARCHIVE_JUKEBOX = {
 	backId: 'aj-back',
 	nextId: 'aj-next',
 	pageId: 'aj-page',
+	nowId: 'aj-now',
+	socketId: 'aj-socket',
+	armId: 'aj-arm-pivot',
+	ledId: 'aj-led',
 	rows: 6,
 	rowId: (index: number) => `aj-row-${index}`,
+	/** Each row is a box with the cover of its item (the thumb) and the button. */
+	boxId: (index: number) => `aj-rowbox-${index}`,
+	thumbId: (index: number) => `aj-thumb-${index}`,
 	/** The table: a record player on the left and, on the right, the tray where the new discs appear. */
 	tableTop: 0.8,
 	tableZ: 3.1,
-	playerX: -0.5,
-	trayX: 0.5
+	playerX: -0.55,
+	trayX: 0.55
 } as const;
 
 /** Colours for the labels of the discs: one is picked from the item's name, so an item always gets the same one. */
 const LABEL_COLORS = ['#9f1239', '#0f766e', '#1d4ed8', '#a16207', '#7e22ce', '#be185d', '#047857', '#c2410c'];
 
-const TOKENS = { id: '__ID__', title: '__TITLE__', author: '__AUTHOR__', url: '__URL__', color: '__COLOR__' } as const;
+const TOKENS = { id: '__ID__', title: '__TITLE__', author: '__AUTHOR__', url: '__URL__', color: '__COLOR__', image: '__IMAGE__' } as const;
 
 /** The disc to copy for each song: the very same parts as every other record, with tokens where the song goes. */
 function discTemplate(): Slot[] {
-	return buildDisc({ id: TOKENS.id, title: TOKENS.title, author: TOKENS.author, labelColor: TOKENS.color, source: { kind: 'url', url: TOKENS.url } });
+	return buildDisc({ id: TOKENS.id, title: TOKENS.title, author: TOKENS.author, labelColor: TOKENS.color, labelImage: TOKENS.image, source: { kind: 'url', url: TOKENS.url } });
 }
 
-const ROW_WIDTH = 940;
+/** The panel lays its content out in 92% of its width (920 px of 1000), so every row stays inside that. */
+const ROW_WIDTH = 880;
+const THUMB = 60;
 
 function buildPanel(code: string): Slot[] {
 	const { panelId: root, rows } = ARCHIVE_JUKEBOX;
 	const slots: Slot[] = [
 		createSlot({
 			id: root,
-			name: 'Archive Jukebox Panel',
+			name: 'Archive.org Sounds Panel',
 			position: [0, 1.6, 4.6],
-			components: [{ type: 'uiPanel', width: 1000, height: 780, worldWidth: 2.2, background: '#0b1020' }, { type: 'codeBlock', code }]
+			components: [{ type: 'uiPanel', width: 1000, height: 900, worldWidth: 2.2, background: '#1a110c' }, { type: 'codeBlock', code }]
 		}),
-		ui('aj-title', root, 'text', { text: 'ARCHIVE JUKEBOX', height: 56, fontSize: 42, fontWeight: 'bold', textAlign: 'center', color: '#fbbf24' }),
-		ui('aj-sub', root, 'text', { text: 'Find a song on archive.org and press it onto a disc', height: 30, fontSize: 20, textAlign: 'center', color: '#94a3b8' }),
+		ui('aj-title', root, 'text', { text: 'ARCHIVE.ORG SOUNDS', height: 56, fontSize: 42, fontWeight: 'bold', textAlign: 'center', color: '#fbbf24' }),
+		ui('aj-sub', root, 'text', { text: 'Music from the Internet Archive (archive.org): press a song onto a disc', height: 30, fontSize: 20, textAlign: 'center', color: '#c8b08a' }),
+		ui(ARCHIVE_JUKEBOX.nowId, root, 'text', { text: 'Now playing: nothing. Put a disc on the player.', height: 36, fontSize: 22, textAlign: 'center', color: '#fde68a' }),
 		ui('aj-search-row', root, 'container', { width: ROW_WIDTH, height: 60, margin: 6, flexDirection: 'row', gap: 10 }),
 		createSlot({
 			id: ARCHIVE_JUKEBOX.inputId,
 			parentId: 'aj-search-row',
 			name: 'Search',
-			components: [{ type: 'uiElement', kind: 'input', placeholder: 'Search music (artist, song, genre)', width: 740, height: 56, fontSize: 24 }]
+			components: [{ type: 'uiElement', kind: 'input', placeholder: 'Search music (artist, song, genre)', width: 690, height: 56, fontSize: 24 }]
 		}),
-		ui(ARCHIVE_JUKEBOX.searchId, 'aj-search-row', 'button', { width: 190, height: 56, text: 'Search', fontSize: 26, fontWeight: 'bold', textAlign: 'center', cornerRadius: 16, background: '#d97706' }),
-		ui(ARCHIVE_JUKEBOX.statusId, root, 'text', { text: 'Type something and press Search, or Search with an empty box for the most popular music.', height: 56, fontSize: 21, textAlign: 'center', color: '#e2e8f0' })
+		ui(ARCHIVE_JUKEBOX.searchId, 'aj-search-row', 'button', { width: 180, height: 56, text: 'Search', fontSize: 26, fontWeight: 'bold', textAlign: 'center', cornerRadius: 16, background: '#b45309' }),
+		ui(ARCHIVE_JUKEBOX.statusId, root, 'text', { text: 'Type something and press Search, or Search with an empty box for the most popular music.', height: 56, fontSize: 21, textAlign: 'center', color: '#f5e6c4' })
 	];
 	for (let index = 0; index < rows; index++) {
-		slots.push(ui(ARCHIVE_JUKEBOX.rowId(index), root, 'button', { width: ROW_WIDTH, height: 64, margin: 3, text: '', fontSize: 22, textAlign: 'left', cornerRadius: 14, background: '#1e293b', visible: false }));
+		slots.push(
+			ui(ARCHIVE_JUKEBOX.boxId(index), root, 'container', { width: ROW_WIDTH, height: THUMB + 10, margin: 2, flexDirection: 'row', gap: 10, visible: false }),
+			ui(ARCHIVE_JUKEBOX.thumbId(index), ARCHIVE_JUKEBOX.boxId(index), 'image', { width: THUMB, height: THUMB + 4 }),
+			ui(ARCHIVE_JUKEBOX.rowId(index), ARCHIVE_JUKEBOX.boxId(index), 'button', { width: ROW_WIDTH - THUMB - 10, height: THUMB + 4, text: '', fontSize: 22, textAlign: 'left', cornerRadius: 14, background: '#3b2a1e' })
+		);
 	}
 	slots.push(
 		ui('aj-nav-row', root, 'container', { width: ROW_WIDTH, height: 60, margin: 8, flexDirection: 'row', gap: 10 }),
-		ui(ARCHIVE_JUKEBOX.prevId, 'aj-nav-row', 'button', { width: 220, height: 56, text: 'Previous', fontSize: 24, textAlign: 'center', cornerRadius: 16, background: '#374151' }),
-		ui(ARCHIVE_JUKEBOX.backId, 'aj-nav-row', 'button', { width: 220, height: 56, text: 'Back to results', fontSize: 22, textAlign: 'center', cornerRadius: 16, background: '#374151', visible: false }),
-		ui(ARCHIVE_JUKEBOX.pageId, 'aj-nav-row', 'text', { width: 240, height: 56, text: '', fontSize: 22, textAlign: 'center', color: '#94a3b8' }),
-		ui(ARCHIVE_JUKEBOX.nextId, 'aj-nav-row', 'button', { width: 220, height: 56, text: 'Next', fontSize: 24, textAlign: 'center', cornerRadius: 16, background: '#374151' })
+		ui(ARCHIVE_JUKEBOX.prevId, 'aj-nav-row', 'button', { width: 200, height: 56, text: 'Previous', fontSize: 24, textAlign: 'center', cornerRadius: 16, background: '#5b4330' }),
+		ui(ARCHIVE_JUKEBOX.backId, 'aj-nav-row', 'button', { width: 200, height: 56, text: 'Back to results', fontSize: 22, textAlign: 'center', cornerRadius: 16, background: '#5b4330', visible: false }),
+		ui(ARCHIVE_JUKEBOX.pageId, 'aj-nav-row', 'text', { width: 200, height: 56, text: '', fontSize: 22, textAlign: 'center', color: '#94a3b8' }),
+		ui(ARCHIVE_JUKEBOX.nextId, 'aj-nav-row', 'button', { width: 200, height: 56, text: 'Next', fontSize: 24, textAlign: 'center', cornerRadius: 16, background: '#5b4330' }),
+		ui('aj-credit', root, 'text', { text: 'Music, covers and metadata courtesy of the Internet Archive (archive.org). Each recording belongs to its uploader and rights holder.', height: 30, fontSize: 16, textAlign: 'center', color: '#8a7455' })
 	);
 	return slots;
 }
 
-/** The table under the panel: a record player (a socket that plays the disc put on it) and the tray for new discs. */
+/** The table under the panel: a turntable (a socket that plays the disc put on it) and the tray for new discs. */
 function buildTable(): Slot[] {
-	const { tableTop: top, tableZ: z, playerX, trayX } = ARCHIVE_JUKEBOX;
+	const { tableTop: top, tableZ: z, playerX: x, trayX } = ARCHIVE_JUKEBOX;
+	const above = (height: number) => top + height;
+	const WOOD = '#4a3224';
 	return [
-		box('aj-table-top', 'Table Top', [0, top - 0.02, z], [1.7, 0.04, 0.8], '#4a3224', {}, true),
-		...[[-0.8, -0.35], [0.8, -0.35], [-0.8, 0.35], [0.8, 0.35]].map(([dx, dz], index) => box(`aj-table-leg-${index}`, 'Table Leg', [dx, (top - 0.02) / 2, z + dz], [0.05, top - 0.02, 0.05], '#1f2937', {}, true)),
-		box('aj-player-base', 'Record Player', [playerX, top + 0.04, z], [0.7, 0.08, 0.6], '#111827', {}, true),
-		box('aj-tray', 'Disc Tray', [trayX, top + 0.01, z], [0.7, 0.02, 0.6], '#7c2d12', {}, true),
-		box('aj-tray-sign', 'Tray Label', [trayX, top + 0.021, z - 0.26], [0.5, 0.002, 0.06], '#fbbf24'),
+		box('aj-table-top', 'Table Top', [0, top - 0.02, z], [2, 0.04, 0.8], WOOD, {}, true),
+		box('aj-table-edge', 'Table Edge', [0, top - 0.055, z], [2.04, 0.03, 0.84], '#2b1d14'),
+		...[[-0.95, -0.35], [0.95, -0.35], [-0.95, 0.35], [0.95, 0.35]].map(([dx, dz], index) => box(`aj-table-leg-${index}`, 'Table Leg', [dx, (top - 0.02) / 2, z + dz], [0.06, top - 0.02, 0.06], '#2b1d14', {}, true)),
+		box('aj-table-shelf', 'Table Shelf', [0, 0.25, z], [1.9, 0.03, 0.7], '#2b1d14'),
+		box('aj-player-base', 'Turntable Plinth', [x, above(0.04), z], [0.78, 0.08, 0.58], '#111827', {}, true),
+		box('aj-player-trim', 'Turntable Trim', [x, above(0.081), z], [0.8, 0.004, 0.6], '#d4a017'),
+		cylinder('aj-platter', 'Turntable Platter', [x, above(0.087), z], 0.36, 0.014, '#9ca3af'),
+		cylinder('aj-mat', 'Turntable Mat', [x, above(0.096), z], 0.33, 0.004, '#171717'),
+		cylinder('aj-spindle', 'Spindle', [x, above(0.112), z], 0.008, 0.026, '#e5e7eb'),
+		cylinder('aj-arm-base', 'Tonearm Base', [x + 0.27, above(0.1), z + 0.17], 0.06, 0.035, '#d4d4d8'),
+		// The arm swings on its base: parked beside the platter, and over the record while one is on.
+		group(ARCHIVE_JUKEBOX.armId, 'Tonearm Pivot', [x + 0.27, above(0.122), z + 0.17]),
+		box('aj-arm', 'Tonearm', [0, 0, -0.14], [0.012, 0.012, 0.3], '#e5e7eb', { parentId: ARCHIVE_JUKEBOX.armId }),
+		box('aj-arm-head', 'Tonearm Head', [0, -0.004, -0.3], [0.024, 0.014, 0.04], '#27272a', { parentId: ARCHIVE_JUKEBOX.armId }),
+		box('aj-arm-weight', 'Tonearm Weight', [0, 0, 0.04], [0.034, 0.034, 0.034], '#a1a1aa', { parentId: ARCHIVE_JUKEBOX.armId }),
+		cylinder(ARCHIVE_JUKEBOX.ledId, 'Status LED', [x - 0.3, above(0.085), z - 0.22], 0.02, 0.01, '#22c55e'),
+		cylinder('aj-knob-0', 'Turntable Knob', [x - 0.3, above(0.085), z - 0.1], 0.045, 0.02, '#d4d4d8'),
+		cylinder('aj-knob-1', 'Turntable Knob', [x - 0.3, above(0.085), z], 0.045, 0.02, '#d4d4d8'),
+		// The disc sits at the socket's origin, on the mat.
 		createSlot({
-			id: 'aj-socket',
+			id: ARCHIVE_JUKEBOX.socketId,
 			name: 'Record Player Socket',
-			position: [playerX, top + 0.087, z],
+			position: [x, above(0.107), z],
 			components: [{ type: 'socket', accepts: ['disc'], radius: 0.25, snap: { position: [0, 0, 0], rotation: [0, 0, 0] } }]
-		})
+		}),
+		box('aj-tray', 'Disc Tray', [trayX, top + 0.01, z], [0.7, 0.02, 0.6], '#7c2d12', {}, true),
+		box('aj-tray-rim', 'Disc Tray Rim', [trayX, top + 0.025, z + 0.29], [0.7, 0.03, 0.02], '#d4a017'),
+		box('aj-tray-sign', 'Tray Label', [trayX, top + 0.021, z - 0.26], [0.5, 0.002, 0.06], '#fbbf24')
 	];
 }
 
@@ -205,6 +250,14 @@ const DISC_TEMPLATE = ${JSON.stringify(JSON.stringify(discTemplate()))};
 const LABEL_COLORS = ${JSON.stringify(LABEL_COLORS)};
 const TRAY = [${ARCHIVE_JUKEBOX.trayX}, ${ARCHIVE_JUKEBOX.tableTop + 0.03}, ${ARCHIVE_JUKEBOX.tableZ}];
 const TOKENS = ${JSON.stringify(TOKENS)};
+const NOW = '${ARCHIVE_JUKEBOX.nowId}';
+const BOX_IDS = ${JSON.stringify(Array.from({ length: ARCHIVE_JUKEBOX.rows }, (_, index) => ARCHIVE_JUKEBOX.boxId(index)))};
+const THUMB_IDS = ${JSON.stringify(Array.from({ length: ARCHIVE_JUKEBOX.rows }, (_, index) => ARCHIVE_JUKEBOX.thumbId(index)))};
+const SOCKET = '${ARCHIVE_JUKEBOX.socketId}';
+const ARM = '${ARCHIVE_JUKEBOX.armId}';
+const LED = '${ARCHIVE_JUKEBOX.ledId}';
+const ARM_PLAYING = 0.62;
+const DISC_SPIN = 3.49;
 
 const set = (id, field, value, broadcast) => ctx.world.setComponentField(id, 'uiElement', field, value, broadcast !== false);
 const say = (text) => set(IDS.status, 'text', text);
@@ -221,11 +274,19 @@ let tracks = [];
 let trackPage = 0;
 let request = 0;
 let spawned = 0;
+let seated = '';
+let armAngle = 0;
+let discAngle = 0;
+let ledColor = '';
 
-function paintRows(labels) {
+/** Fills the rows: a label and a cover (an address, or '' for none) for each. */
+function paintRows(labels, covers) {
   for (let i = 0; i < ROWS; i++) {
-    set(ROW_IDS[i], 'visible', i < labels.length);
+    const shown = i < labels.length;
+    set(BOX_IDS[i], 'visible', shown);
+    set(ROW_IDS[i], 'visible', shown);
     set(ROW_IDS[i], 'text', labels[i] || '');
+    set(THUMB_IDS[i], 'src', shown ? covers[i] : '');
   }
 }
 
@@ -238,7 +299,7 @@ function paintNav(pageText, canPrev, canNext, canBack) {
 
 function showResults() {
   mode = 'results';
-  paintRows(items.map((entry) => clip(entry.title, 44) + (entry.creator ? '  -  ' + clip(entry.creator, 24) : '')));
+  paintRows(items.map((entry) => clip(entry.title, 40) + (entry.creator ? '  -  ' + clip(entry.creator, 22) : '')), items.map((entry) => coverUrl(entry.id)));
   const pages = Math.max(1, Math.ceil(total / ROWS));
   paintNav('Page ' + page + ' / ' + pages, page > 1, page < pages, false);
 }
@@ -246,7 +307,7 @@ function showResults() {
 function showTracks() {
   mode = 'tracks';
   const from = trackPage * ROWS;
-  paintRows(tracks.slice(from, from + ROWS).map((track, index) => String(from + index + 1) + '.  ' + clip(track.title, 52)));
+  paintRows(tracks.slice(from, from + ROWS).map((track, index) => String(from + index + 1) + '.  ' + clip(track.title, 46)), tracks.slice(from, from + ROWS).map(() => coverUrl(item.id)));
   const pages = Math.max(1, Math.ceil(tracks.length / ROWS));
   paintNav((trackPage + 1) + ' / ' + pages, trackPage > 0, trackPage < pages - 1, true);
 }
@@ -293,7 +354,7 @@ function makeDisc(track) {
   const color = LABEL_COLORS[hashText(item.id) % LABEL_COLORS.length];
   const plain = (text) => JSON.stringify(text).slice(1, -1);
   let text = DISC_TEMPLATE;
-  for (const [token, value] of [[TOKENS.id, 'aj-disc-' + stamp], [TOKENS.title, title], [TOKENS.author, author], [TOKENS.url, fileUrl(item.id, track.name)], [TOKENS.color, color]]) {
+  for (const [token, value] of [[TOKENS.id, 'aj-disc-' + stamp], [TOKENS.title, title], [TOKENS.author, author], [TOKENS.url, fileUrl(item.id, track.name)], [TOKENS.color, color], [TOKENS.image, coverUrl(item.id)]]) {
     text = text.split(token).join(plain(value));
   }
   const slots = JSON.parse(text);
@@ -305,7 +366,38 @@ function makeDisc(track) {
   say('Pressed "' + title + '". The disc is on the tray: put it on the player.');
 }
 
+function socketOccupant() {
+  const slot = ctx.hierarchy.getSlot(SOCKET);
+  const socket = slot && slot.components.find((c) => c.type === 'socket');
+  return (socket && socket.occupantId) || '';
+}
+
+/** Says what is on the player now. */
+function paintNow(id) {
+  const slot = id ? ctx.hierarchy.getSlot(id) : null;
+  const info = slot && slot.components.find((c) => c.type === 'recordDisc');
+  set(NOW, 'text', slot ? 'Now playing: ' + clip(info && info.title ? info.title : slot.name, 40) : 'Now playing: nothing. Put a disc on the player.');
+}
+
+/** The player at work: the record spins, the arm comes down onto it and the light turns red while a disc is on. */
+function playerTick(dt) {
+  const occupant = socketOccupant();
+  if (occupant !== seated) { seated = occupant; paintNow(occupant); }
+  const target = seated ? ARM_PLAYING : 0;
+  if (Math.abs(target - armAngle) > 0.002) {
+    armAngle += (target - armAngle) * Math.min(1, dt * 2.5);
+    ctx.world.setWorldPose(ARM, { rotation: ctx.math.quatFromAxisAngle([0, 1, 0], armAngle) }, false);
+  }
+  if (seated) {
+    discAngle = (discAngle + dt * DISC_SPIN) % (Math.PI * 2);
+    ctx.world.setWorldPose(seated, { rotation: ctx.math.quatFromAxisAngle([0, 1, 0], discAngle) }, false);
+  }
+  const color = seated ? '#ef4444' : '#22c55e';
+  if (color !== ledColor) { ledColor = color; ctx.world.setComponentField(LED, 'meshRenderer', 'color', color, false); }
+}
+
 return {
+  tick(dt) { playerTick(dt); },
   onUIEvent(event) {
     if (event.slotId === INPUT) {
       typed = event.text || '';
@@ -329,17 +421,18 @@ return {
 };
 `;
 
-/** The Archive Jukebox world: the search panel and the table where the discs appear. */
+/** The Archive.org Sounds world: the search panel and the table where the discs appear. */
 export function buildArchiveJukebox(): SlotTree {
 	return [
-		createSlot({ id: 'aj-skybox', name: 'Skybox', components: [{ type: 'skybox', topColor: '#0f172a', horizonColor: '#78350f', bottomColor: '#020617', stars: 0.3 }] }),
+		createSlot({ id: 'aj-skybox', name: 'Skybox', components: [{ type: 'skybox', topColor: '#1c1410', horizonColor: '#4a3224', bottomColor: '#0c0806', stars: 0 }] }),
 		createSlot({
 			id: 'aj-floor',
 			name: 'Floor',
 			position: [0, -0.05, 0],
-			components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'ground' }, color: '#27272a' }, { type: 'collider', shape: 'box' }]
+			components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'ground' }, color: '#2b1d14' }, { type: 'collider', shape: 'box' }]
 		}),
 		...buildPanel(ARCHIVE_JUKEBOX_SCRIPT),
-		...buildTable()
+		...buildTable(),
+		...buildArchiveDecor(ARCHIVE_JUKEBOX.tableTop, ARCHIVE_JUKEBOX.tableZ)
 	];
 }
