@@ -15,6 +15,7 @@ import {
 	type WebXRDefaultExperience
 } from '@babylonjs/core';
 import lobbyTemplate from './templates/lobby.json';
+import { getBuiltinWorld } from './templates/builtinWorlds';
 import { createSlot, type SlotTree } from '$lib/ecs/types';
 import { atRest, instantiate } from '$lib/ecs/serialize';
 import { isBuiltinMesh, migrateSlotTree } from '$lib/assets/ref';
@@ -229,7 +230,11 @@ export async function mountGame(
 			};
 		}
 	});
-	sceneGraph.load(lobbyTemplate as SlotTree);
+	const startupParams = new URLSearchParams(window.location.search);
+	const startupBuiltin = !initialRoomCode && !options.initialWorld && !startupParams.has('studioPlay')
+		? getBuiltinWorld(startupParams.get('world') ?? '') : undefined;
+	// A direct world link only needs a temporary floor during input setup. Avoid starting lobby media that would be disposed mid-load.
+	sceneGraph.load((startupBuiltin ? lobbyTemplate.filter((slot) => slot.id === 'floor') : lobbyTemplate) as SlotTree);
 
 	const floorMesh = sceneGraph.getLive('floor')?.node as AbstractMesh | undefined;
 	// Controller profiles + models (Meta/Oculus Touch) are served from /static/xr-input-profiles instead of
@@ -852,6 +857,9 @@ export async function mountGame(
 
 	// "Play" in the Studio hands its scene over through localStorage and opens `/play?studioPlay=<key>`.
 	const studioPlayKey = new URLSearchParams(window.location.search).get('studioPlay');
+	if (startupBuiltin) {
+		void launchScene(startupBuiltin.name, structuredClone(startupBuiltin.scene), 'solo').catch((error) => console.error('Could not open the built-in world', error));
+	}
 	if (studioPlayKey && !initialRoomCode && !options.initialWorld) {
 		void (async () => {
 			const storageKey = `studio:play:${studioPlayKey}`;

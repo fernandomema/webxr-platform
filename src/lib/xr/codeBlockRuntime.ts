@@ -249,7 +249,13 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 			getWorldPosition: () => getWorldPosition(node),
 			getWorldRotation: () => getWorldRotation(node),
 			setWorldPosition: (v: Vec3) => setWorldPosition(node, v),
-			setWorldRotation: (q: Quat) => setWorldRotation(node, q)
+			setWorldRotation: (q: Quat) => setWorldRotation(node, q),
+			/** Local decorative animation on this peer; does not mutate authored transforms or broadcast a pose. */
+			setLocalTransform: (pose: { position?: Vec3; rotation?: Quat; scale?: Vec3 }) => {
+				if (pose.position?.length === 3 && pose.position.every(Number.isFinite)) node.position.copyFromFloats(...pose.position);
+				if (pose.rotation?.length === 4 && pose.rotation.every(Number.isFinite)) node.rotationQuaternion = Quaternion.FromArray(pose.rotation);
+				if (pose.scale?.length === 3 && pose.scale.every((value) => Number.isFinite(value) && value > 0)) node.scaling.copyFromFloats(...pose.scale);
+			}
 		},
 		hierarchy: {
 			getSlot: (id: string) => host.getSlot(id),

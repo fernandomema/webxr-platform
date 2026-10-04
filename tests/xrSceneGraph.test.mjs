@@ -28,6 +28,44 @@ const { setupPlayerBody } = await import(moduleUrl(compile(await readFile(new UR
 const { GrabSystem } = await import(moduleUrl(compile(await readFile(new URL('xr/interaction/grabSystem.ts', libUrl), 'utf8'))));
 
 const assetId = `sha256:${'1'.repeat(64)}`;
+
+test('local script animation updates the node without overwriting its authored transform', () => {
+	const engine = new NullEngine();
+	const scene = new Scene(engine);
+	const graph = new SceneGraph(scene, {});
+	try {
+		const authored = createSlot({ id: 'animated', name: 'Animated Group', position: [1, 2, 3], components: [{ type: 'codeBlock', code: `
+			return { tick() {
+				ctx.self.setLocalTransform({position:[4,5,6],rotation:[0,0,1,0],scale:[2,3,4]});
+				ctx.self.setLocalTransform({position:[NaN,0,0],scale:[0,Infinity,-1]});
+			} };
+		` }] });
+		graph.load([authored]);
+		const entry = graph.getLive('animated');
+		entry.runtime.tick(1 / 72);
+		assert.deepEqual(entry.node.position.asArray(), [4, 5, 6]);
+		assert.deepEqual(entry.node.scaling.asArray(), [2, 3, 4]);
+		assert.deepEqual(entry.node.rotationQuaternion.asArray(), [0, 0, 1, 0]);
+		assert.deepEqual(entry.slot.position, [1, 2, 3]);
+		assert.deepEqual(entry.slot.scale, [1, 1, 1]);
+		assert.deepEqual(graph.getCodeBlockDebugLog('animated'), []);
+	} finally { graph.dispose(); scene.dispose(); engine.dispose(); }
+});
+
+test('self-lit primitives keep their color without lights and accept live color edits', () => {
+	const engine = new NullEngine();
+	const scene = new Scene(engine);
+	const graph = new SceneGraph(scene, {});
+	try {
+		graph.load([createSlot({ id: 'star', name: 'Star', components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'sphere' }, color: '#ffe6b0', unlit: true }] })]);
+		const mesh = graph.getLive('star').node;
+		assert.equal(mesh.material.disableLighting, true);
+		assert.equal(mesh.material.emissiveColor.toHexString().toLowerCase(), '#ffe6b0');
+		graph.setComponentField('star', 'meshRenderer', 'color', '#72d6d3');
+		assert.equal(mesh.material.emissiveColor.toHexString().toLowerCase(), '#72d6d3');
+	} finally { graph.dispose(); scene.dispose(); engine.dispose(); }
+});
+
 function fixture() {
 	const engine = new NullEngine();
 	const scene = new Scene(engine);

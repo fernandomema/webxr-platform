@@ -80,7 +80,8 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		glyph: '◇',
 		fields: [
 			{ key: 'meshRef', label: 'Mesh', kind: 'mesh', help: `A built-in shape (${BUILTIN_MESH_IDS.join(', ')}) or a model already imported into this project. Models cannot be loaded from a URL.` },
-			{ key: 'color', label: 'Color', kind: 'color', optional: true, default: '#8b7cf6' }
+			{ key: 'color', label: 'Color', kind: 'color', optional: true, default: '#8b7cf6' },
+			{ key: 'unlit', label: 'Self-lit', kind: 'bool', optional: true, default: false, help: 'Draw a primitive at its own color, independent of scene lighting.' }
 		],
 		create: () => ({ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'box' }, color: '#8b7cf6' })
 	},
@@ -450,6 +451,25 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 			{ key: 'drag', label: 'Drag', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 0.2 }
 		],
 		create: () => ({ type: 'velocity', linear: [0, 0, 0], drag: 0.2 })
+	},
+	{
+		type: 'particleEmitter',
+		label: 'Particle Emitter',
+		group: 'World',
+		description: 'A persistent cloud of soft particles. Stops emitting when its object is hidden.',
+		glyph: '✳',
+		fields: [
+			{ key: 'color', label: 'Color', kind: 'color' },
+			{ key: 'capacity', label: 'Capacity', kind: 'number', min: 1, max: 1000, step: 1, optional: true, default: 120 },
+			{ key: 'rate', label: 'Particles per second', kind: 'number', min: 0, max: 200, step: 1, optional: true, default: 12 },
+			{ key: 'radius', label: 'Radius', kind: 'number', min: 0, max: 30, step: 0.1, optional: true, default: 1 },
+			{ key: 'size', label: 'Size', kind: 'number', min: 0.01, max: 5, step: 0.01, optional: true, default: 0.1 },
+			{ key: 'lifetime', label: 'Lifetime', kind: 'number', min: 0.1, max: 30, step: 0.1, optional: true, default: 5, unit: 's' },
+			{ key: 'speed', label: 'Speed', kind: 'number', min: 0, max: 10, step: 0.01, optional: true, default: 0.12 },
+			{ key: 'opacity', label: 'Opacity', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 0.5 },
+			{ key: 'active', label: 'Active', kind: 'bool', optional: true, default: true }
+		],
+		create: () => ({ type: 'particleEmitter', color: '#d4b4ff', capacity: 120, rate: 12, radius: 1, size: 0.1, lifetime: 5, speed: 0.12, opacity: 0.5 })
 	},
 	{
 		type: 'particleBurst',

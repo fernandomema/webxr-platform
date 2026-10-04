@@ -9,19 +9,26 @@ import { buildMirrorMaze } from './mirrorMaze';
 import { buildBeatTurntable } from './beatTurntable';
 import { buildArchiveJukebox } from './archiveJukebox';
 import { buildPolyHeavenMaterials } from './polyHeavenMaterials';
+import { buildWishEngine } from './wishEngine';
 
 /** The worlds that ship with the app: always there to go to, and the starting points for the Studio's world templates. */
 export interface BuiltinWorld {
-	id: 'lobby' | 'workshop' | 'pop-up-store' | 'pulse' | 'avatarShowcase' | 'archive-film-test' | 'mirror-maze' | 'beat-turntable' | 'archive-jukebox' | 'polyheaven-materials';
+	id: 'lobby' | 'workshop' | 'pop-up-store' | 'pulse' | 'avatarShowcase' | 'archive-film-test' | 'mirror-maze' | 'beat-turntable' | 'archive-jukebox' | 'polyheaven-materials' | 'wish-engine';
 	name: string;
 	description: string;
 	scene: SlotTree;
 }
 
 /** Worlds listed under the Development category instead of the official ones. */
-export const DEV_WORLD_IDS: readonly BuiltinWorld['id'][] = ['archive-film-test', 'mirror-maze', 'archive-jukebox', 'polyheaven-materials'];
+export const DEV_WORLD_IDS: readonly BuiltinWorld['id'][] = ['archive-film-test', 'mirror-maze', 'archive-jukebox', 'polyheaven-materials', 'wish-engine'];
 
 export const BUILTIN_WORLDS: readonly BuiltinWorld[] = [
+	{
+		id: 'wish-engine',
+		name: 'The Wish Engine',
+		description: 'Offer a coin to an ancient genie. Restore light, time and the stars as a forgotten observatory unfolds into an impossible sky.',
+		scene: buildWishEngine()
+	},
 	{
 		id: 'archive-film-test',
 		name: 'Archive.org Film Test',

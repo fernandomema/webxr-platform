@@ -1,5 +1,6 @@
 import type { SlotTree } from '$lib/ecs/types';
 import { createSlot } from '$lib/ecs/types';
+import { buildWishEngine } from '$lib/xr/templates/wishEngine';
 
 export interface StudioTemplate {
 	id: string;
@@ -11,6 +12,14 @@ export interface StudioTemplate {
 }
 
 export const TEMPLATES: StudioTemplate[] = [
+	{
+		id: 'wish-engine',
+		label: 'The Wish Engine',
+		description: 'An interactive genie cabinet, three rituals and an unfolding celestial observatory.',
+		kind: 'world',
+		defaultName: 'The Wish Engine',
+		build: buildWishEngine
+	},
 	{
 		id: 'blank-world',
 		label: 'Blank world',

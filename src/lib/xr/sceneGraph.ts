@@ -31,6 +31,7 @@ import { setupSurfaceMask } from './surfaceMaskRenderer';
 import { setupStroke } from './strokeRenderer';
 import { setupMaterialSurfaces, type MaterialSurfaces } from './materialSurface';
 import { setupSkybox } from './skyboxRenderer';
+import { setupParticleEmitter } from './particleEmitter';
 import { setupWorldGlobe } from './worldGlobe';
 import { setupImpactSound } from './impactSoundEffects';
 import type { ScriptAudio } from './scriptAudio';
@@ -715,6 +716,8 @@ export class SceneGraph {
 			);
 			entry.runtime = { dispose };
 		}
+		const particleEmitter = findComponent(slot, 'particleEmitter');
+		if (particleEmitter) entry.runtime = setupParticleEmitter(this.scene, node, particleEmitter);
 		const pointLight = findComponent(slot, 'pointLight');
 		if (pointLight) {
 			const light = new PointLight(`${slot.id}-light`, Vector3.Zero(), this.scene);
@@ -1168,7 +1171,11 @@ export class SceneGraph {
 		}
 		// By class name: the material may come from another copy of Babylon's module than this file's import.
 		const material = mesh.material;
-		if (material?.getClassName() === 'StandardMaterial') (material as StandardMaterial).diffuseColor = Color3.FromHexString(color);
+		if (material?.getClassName() === 'StandardMaterial') {
+			const standard = material as StandardMaterial;
+			standard.diffuseColor = Color3.FromHexString(color);
+			if (standard.disableLighting) standard.emissiveColor = standard.diffuseColor;
+		}
 		// A material with a colour map shows the map as it is; the colour only stands in for it when there is none.
 		else if (material?.getClassName() === 'PBRMaterial' && !(material as PBRMaterial).albedoTexture) (material as PBRMaterial).albedoColor = Color3.FromHexString(color);
 	}
@@ -1229,9 +1236,10 @@ export class SceneGraph {
 		const shape = ref.kind === 'builtin' ? ref.id : 'box';
 		// A mirrored scale turns a mesh inside out, which instances of the same mesh cannot each do their own way.
 		const opacity = findComponent(slot, 'meshRenderer')?.opacity;
+		const unlit = findComponent(slot, 'meshRenderer')?.unlit === true;
 		const translucent = opacity !== undefined && opacity < 1;
 		// A see-through mesh needs a material of its own, so it cannot be an instance either.
-		if (INSTANCED_SHAPES.has(shape) && !translucent && !slot.components.some((c) => OWN_SURFACE.has(c.type) || c.type === 'material') && slot.scale.every((v) => v > 0)) {
+		if (INSTANCED_SHAPES.has(shape) && !translucent && !unlit && !slot.components.some((c) => OWN_SURFACE.has(c.type) || c.type === 'material') && slot.scale.every((v) => v > 0)) {
 			const instance = this.primitiveSource(shape).createInstance(id);
 			instance.instancedBuffers.color = instanceColor(color);
 			return instance;
@@ -1263,9 +1271,13 @@ export class SceneGraph {
 				break;
 		}
 		// A slot with a `material` gets its PBR one right after (see syncMaterial).
-		if ((color || translucent) && !findComponent(slot, 'material')) {
+		if ((color || translucent || unlit) && !findComponent(slot, 'material')) {
 			const mat = new StandardMaterial(`${id}-mat`, this.scene);
 			mat.diffuseColor = Color3.FromHexString(color ?? '#ffffff');
+			if (unlit) {
+				mat.disableLighting = true;
+				mat.emissiveColor = mat.diffuseColor;
+			}
 			if (translucent) {
 				mat.alpha = Math.max(0, opacity ?? 1);
 				mat.backFaceCulling = false;

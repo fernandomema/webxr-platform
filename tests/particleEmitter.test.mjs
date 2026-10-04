@@ -1,0 +1,57 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { NullEngine, Scene, TransformNode } from '@babylonjs/core';
+import { setupParticleEmitter } from '../src/lib/xr/particleEmitter.ts';
+import { needsRebuild } from '../src/lib/xr/slotRebuild.ts';
+import { createSlot } from '../src/lib/ecs/types.ts';
+
+test('persistent particles follow their parent, stop when hidden, resume and dispose completely', () => {
+	const engine = new NullEngine();
+	const scene = new Scene(engine);
+	const parent = new TransformNode('parent', scene);
+	const node = new TransformNode('emitter', scene);
+	node.parent = parent;
+	const initial = { type: 'particleEmitter', color: '#c0a0ff', rate: 12, capacity: 100 };
+	const observerCount = scene.onBeforeRenderObservable.observers.length;
+	const binding = setupParticleEmitter(scene, node, initial);
+	const system = scene.particleSystems[0];
+	let starts = 0, stops = 0;
+	system.onStartedObservable.add(() => starts++);
+	system.onStoppedObservable.add(() => stops++);
+	assert.equal(system.emitter.parent, node);
+	scene.onBeforeRenderObservable.notifyObservers(scene);
+	assert.ok(system.isStarted());
+	parent.setEnabled(false);
+	scene.onBeforeRenderObservable.notifyObservers(scene);
+	assert.equal(stops, 1);
+	parent.setEnabled(true);
+	scene.onBeforeRenderObservable.notifyObservers(scene);
+	assert.equal(starts, 2);
+	binding.sync(createSlot({ name: 'Emitter', components: [{ ...initial, active: false, rate: 3 }] }));
+	scene.onBeforeRenderObservable.notifyObservers(scene);
+	assert.equal(stops, 2);
+	assert.equal(system.emitRate, 3);
+	binding.dispose();
+	assert.equal(scene.particleSystems.length, 0);
+	assert.equal(scene.onBeforeRenderObservable.observers.filter((o) => !o._willBeUnregistered).length, observerCount);
+	assert.ok(!scene.meshes.some((mesh) => mesh.name === 'emitter-origin-emitter'));
+	scene.dispose(); engine.dispose();
+});
+
+test('emitter edits update live except for its fixed capacity; hostile numeric values are bounded', () => {
+	const initial = createSlot({ id: 'p', name: 'Particles', components: [{ type: 'particleEmitter', color: '#fff000', capacity: 20, rate: 5 }] });
+	const next = structuredClone(initial);
+	next.components[0].rate = 10;
+	assert.equal(needsRebuild(initial, next), false);
+	next.components[0].capacity = 50;
+	assert.equal(needsRebuild(initial, next), true);
+	const engine = new NullEngine();
+	const scene = new Scene(engine);
+	const node = new TransformNode('n', scene);
+	const binding = setupParticleEmitter(scene, node, { type: 'particleEmitter', color: 'bad', rate: Infinity, capacity: 1e8, radius: -2, size: NaN, lifetime: -5 });
+	const system = scene.particleSystems[0];
+	assert.equal(system.getCapacity(), 1000);
+	assert.equal(system.emitRate, 12);
+	assert.ok(system.minLifeTime > 0 && Number.isFinite(system.maxSize));
+	binding.dispose(); scene.dispose(); engine.dispose();
+});

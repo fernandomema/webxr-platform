@@ -28,6 +28,7 @@ const CONSTRUCTED: Partial<Record<Component['type'], Construction>> = {
 	worldPortal: { liveKeys: [] },
 	uiPanel: { rebuildKeys: ['width', 'height', 'worldWidth'] },
 	particleBurst: { liveKeys: [] },
+	particleEmitter: { rebuildKeys: ['capacity'] },
 	skybox: { rebuildKeys: ['reflectionPreset', 'reflectionCapture', 'reflectionPx', 'reflectionNx', 'reflectionPy', 'reflectionNy', 'reflectionPz', 'reflectionNz', 'toneMapping'] },
 	pointLight: { rebuildKeys: [] },
 	stroke: { rebuildKeys: [] },

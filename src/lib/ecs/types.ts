@@ -19,6 +19,8 @@ export interface MeshRendererComponent {
 	color?: string;
 	/** 0 (invisible) to 1 (solid, the default). Below 1 the surface is see-through, like glass. */
 	opacity?: number;
+	/** Draw the primitive at its own color regardless of scene lighting (stars, lamps, signs). */
+	unlit?: boolean;
 }
 
 /**
@@ -177,6 +179,20 @@ export interface ParticleBurstComponent {
 	color?: string;
 	count?: number;
 	durationMs?: number;
+}
+
+/** A persistent, bounded cloud of soft particles attached to this slot. */
+export interface ParticleEmitterComponent {
+	type: 'particleEmitter';
+	color: string;
+	capacity?: number;
+	rate?: number;
+	radius?: number;
+	size?: number;
+	lifetime?: number;
+	speed?: number;
+	opacity?: number;
+	active?: boolean;
 }
 
 /**
@@ -536,6 +552,7 @@ export type Component =
 	| CodeBlockComponent
 	| ExpiresComponent
 	| ParticleBurstComponent
+	| ParticleEmitterComponent
 	| StrokeComponent
 	| SurfaceMaskComponent
 	| SkyboxComponent
