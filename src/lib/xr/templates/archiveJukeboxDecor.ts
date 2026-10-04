@@ -29,7 +29,7 @@ const LEFT_FACING: [number, number, number, number] = [0, -0.7071, 0, 0.7071];
 const RIGHT_FACING: [number, number, number, number] = [0, 0.7071, 0, 0.7071];
 
 /** A framed sign on a wall: `facing` says which way it looks (the plane's front is its -Z side). */
-function sign(id: string, name: string, position: [number, number, number], facing: 'back' | 'left' | 'right', width: number, height: number, title: string, lines: string[]): Slot[] {
+export function sign(id: string, name: string, position: [number, number, number], facing: 'back' | 'left' | 'right', width: number, height: number, title: string, lines: string[]): Slot[] {
 	const side = facing !== 'back';
 	const out = facing === 'left' ? 0.03 : facing === 'right' ? -0.03 : 0;
 	return [

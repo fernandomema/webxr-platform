@@ -8,17 +8,18 @@ import avatarShowcase from './avatarShowcase.json';
 import { buildMirrorMaze } from './mirrorMaze';
 import { buildBeatTurntable } from './beatTurntable';
 import { buildArchiveJukebox } from './archiveJukebox';
+import { buildPolyHeavenMaterials } from './polyHeavenMaterials';
 
 /** The worlds that ship with the app: always there to go to, and the starting points for the Studio's world templates. */
 export interface BuiltinWorld {
-	id: 'lobby' | 'workshop' | 'pop-up-store' | 'pulse' | 'avatarShowcase' | 'archive-film-test' | 'mirror-maze' | 'beat-turntable' | 'archive-jukebox';
+	id: 'lobby' | 'workshop' | 'pop-up-store' | 'pulse' | 'avatarShowcase' | 'archive-film-test' | 'mirror-maze' | 'beat-turntable' | 'archive-jukebox' | 'polyheaven-materials';
 	name: string;
 	description: string;
 	scene: SlotTree;
 }
 
 /** Worlds listed under the Development category instead of the official ones. */
-export const DEV_WORLD_IDS: readonly BuiltinWorld['id'][] = ['archive-film-test', 'mirror-maze', 'archive-jukebox'];
+export const DEV_WORLD_IDS: readonly BuiltinWorld['id'][] = ['archive-film-test', 'mirror-maze', 'archive-jukebox', 'polyheaven-materials'];
 
 export const BUILTIN_WORLDS: readonly BuiltinWorld[] = [
 	{
@@ -194,6 +195,12 @@ return {
 		name: 'Archive.org Sounds',
 		description: 'Search music on archive.org and press any song onto a record disc that you can play or take to a turntable.',
 		scene: buildArchiveJukebox()
+	},
+	{
+		id: 'polyheaven-materials',
+		name: 'PolyHeaven materials',
+		description: 'A shop of free PBR materials from Poly Haven: pick one to press a material orb, put it in the Material Applicator and paint walls and objects with it.',
+		scene: buildPolyHeavenMaterials()
 	},
 	{
 		id: 'mirror-maze',

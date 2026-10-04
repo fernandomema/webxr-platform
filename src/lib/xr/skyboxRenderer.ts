@@ -1,4 +1,4 @@
-import { Color3, CubeTexture, Effect, HemisphericLight, ImageProcessingConfiguration, Mesh, MeshBuilder, ReflectionProbe, ShaderMaterial, type Scene, type TransformNode } from '@babylonjs/core';
+import { Color3, CubeTexture, Effect, HemisphericLight, ImageProcessingConfiguration, Mesh, MeshBuilder, ReflectionProbe, RenderTargetTexture, ShaderMaterial, type AbstractMesh, type Scene, type TransformNode } from '@babylonjs/core';
 import type { Slot, SkyboxComponent } from '$lib/ecs/types';
 import { POLYGON_QUEST_PROBE } from '$lib/assets/builtin';
 import type { SourceRef } from '$lib/assets/ref';
@@ -108,14 +108,37 @@ export function setupSkybox(scene: Scene, node: TransformNode, initial: SkyboxCo
 	} else if (initial.reflectionCapture) {
 		const capture = new ReflectionProbe('skybox-reflection-capture', 128, scene);
 		capture.position = node.getAbsolutePosition().clone();
-		capture.refreshRate = 30;
-		const included = (mesh: Mesh) => mesh.name !== 'studio-ground' && mesh.isVisible;
-		capture.renderList = scene.meshes.filter((mesh): mesh is Mesh => mesh instanceof Mesh && included(mesh));
+		// Drawn once, and again a moment after the scene changes (and once more, when its textures have had time to arrive), not
+		// every few frames: a capture redrawn while a headset draws both eyes at once (multiview) makes the view flash.
+		capture.refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONCE;
+		let recapture: ReturnType<typeof setTimeout> | null = null;
+		let settle: ReturnType<typeof setTimeout> | null = null;
+		const scheduleCapture = () => {
+			if (recapture) clearTimeout(recapture);
+			if (settle) clearTimeout(settle);
+			recapture = setTimeout(() => { if (!disposed) capture.refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONCE; }, 1500);
+			settle = setTimeout(() => { if (!disposed) capture.refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONCE; }, 6000);
+		};
+		// Instances too: most of a world's shapes are instances of a few hidden meshes, and the room is what there is to reflect.
+		const included = (mesh: AbstractMesh) => mesh.name !== 'studio-ground' && mesh.isVisible && (mesh instanceof Mesh || mesh.getClassName() === 'InstancedMesh');
+		capture.renderList = scene.meshes.filter(included);
 		const meshObserver = scene.onNewMeshAddedObservable.add((mesh) => {
-			if (mesh instanceof Mesh && included(mesh)) capture.renderList?.push(mesh);
+			if (included(mesh)) capture.renderList?.push(mesh);
+			scheduleCapture();
+		});
+		const removedObserver = scene.onMeshRemovedObservable.add((mesh) => {
+			const list = capture.renderList;
+			const index = list ? list.indexOf(mesh) : -1;
+			if (list && index >= 0) list.splice(index, 1);
 		});
 		const poseObserver = scene.onBeforeRenderObservable.add(() => capture.position.copyFrom(node.getAbsolutePosition()));
-		stopMeshWatch = () => scene.onNewMeshAddedObservable.remove(meshObserver);
+		scheduleCapture();
+		stopMeshWatch = () => {
+			scene.onNewMeshAddedObservable.remove(meshObserver);
+			scene.onMeshRemovedObservable.remove(removedObserver);
+			if (recapture) clearTimeout(recapture);
+			if (settle) clearTimeout(settle);
+		};
 		stopPoseWatch = () => scene.onBeforeRenderObservable.remove(poseObserver);
 		capture.cubeTexture.level = 0.8;
 		probe = capture;

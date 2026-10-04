@@ -21,6 +21,36 @@ export interface MeshRendererComponent {
 	opacity?: number;
 }
 
+/**
+ * A physically based surface for the slot's `meshRenderer`: what it is made of, as texture maps. Each map is a `SourceRef`, so it
+ * can be an asset of this world or a picture at any https address (a texture library's CDN, for instance), with nothing
+ * imported. Maps are the usual PBR set: `albedo` (colour, sRGB), `normal` (OpenGL convention) and `arm` (ambient occlusion in
+ * red, roughness in green and metallic in blue, as most texture libraries pack them). Only built-in shapes take a material; a
+ * model keeps its own.
+ */
+export interface MaterialComponent {
+	type: 'material';
+	albedo?: SourceRef;
+	normal?: SourceRef;
+	arm?: SourceRef;
+	/** Multiplies the roughness of `arm` (1 by default), or is the roughness itself without it (0.7). 0-1. */
+	roughness?: number;
+	/** Multiplies the metallic of `arm` (1 by default), or is the metallic itself without it (0). 0-1. */
+	metallic?: number;
+	/** How many times the maps repeat across the mesh (1 by default). Used when `mapping` is not `world`. */
+	tiling?: number;
+	/**
+	 * How the maps are laid on the mesh. `mesh` (the default) stretches them over each face, repeated `tiling` times: right for a
+	 * ball that shows the material. `world` lays them by real size, `size` metres per repeat, however the object is scaled, so a
+	 * wall and a cube show the same grain at the same scale (the mesh's coordinates are generated from its size).
+	 */
+	mapping?: 'mesh' | 'world';
+	/** The real size, in metres, that one repeat of the maps covers. Read when `mapping` is `world` (1 by default). */
+	size?: number;
+	/** What this material is, for people (a library's name for it). */
+	label?: string;
+}
+
 export interface ColliderComponent {
 	type: 'collider';
 	shape: 'box' | 'sphere' | 'mesh';
@@ -211,7 +241,7 @@ export interface SkyboxComponent {
 	reflectionNy?: SourceRef;
 	reflectionPz?: SourceRef;
 	reflectionNz?: SourceRef;
-	/** Capture the scene from this slot to provide live environment reflections. */
+	/** Capture the scene from this slot as the environment that shiny surfaces reflect: taken on load and again a moment after the scene changes. */
 	reflectionCapture?: boolean;
 	/** Legacy built-in preset, kept for saved Polygon Quest worlds. */
 	reflectionPreset?: 'polygon-quest';
@@ -492,6 +522,7 @@ export interface BoneAttachComponent {
 
 export type Component =
 	| MeshRendererComponent
+	| MaterialComponent
 	| ColliderComponent
 	| GrabbableComponent
 	| EquippableComponent

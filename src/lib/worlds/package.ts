@@ -4,6 +4,7 @@ import type { HostedWorldVisibility } from '$lib/worldVisibility';
 import type { WorldPackage, WorldSource } from './types';
 import { ASSET_LIMITS } from '$lib/assets/manifest';
 import { collectAssetIds, isAssetId, isBuiltinMeshId } from '$lib/assets/ref';
+import { isValidMaterialMap } from '$lib/xr/materialSources';
 
 export const MAX_WORLD_BYTES = 1_500_000;
 export const MAX_SHARED_SCENE_BYTES = 7_000_000;
@@ -50,6 +51,14 @@ function validateAssetRefs(scene: SlotTree): void {
 				if (source === undefined || source === null) continue; // legacy `url` form; upgraded on read
 				const valid = (source.kind === 'asset' && isAssetId(source.assetId)) || (source.kind === 'url' && typeof source.url === 'string' && source.url.length <= 2048);
 				if (!valid) throw new Error('Invalid audio source');
+				continue;
+			}
+			if (component?.type === 'material') {
+				// A map is an asset, or a picture at any https address.
+				for (const key of ['albedo', 'normal', 'arm']) {
+					const source = (component as Record<string, unknown>)[key];
+					if (source !== undefined && !isValidMaterialMap(source)) throw new Error('Invalid material map');
+				}
 				continue;
 			}
 			if (component?.type === 'skybox') {

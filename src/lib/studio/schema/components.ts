@@ -85,6 +85,25 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		create: () => ({ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'box' }, color: '#8b7cf6' })
 	},
 	{
+		type: 'material',
+		label: 'Material',
+		group: 'Render',
+		description: 'Textured PBR surface for the Mesh Renderer of a built-in shape: colour, normal and ambient-occlusion/roughness/metallic maps, each an image asset or a picture at any https address.',
+		glyph: '◍',
+		fields: [
+			{ key: 'albedo', label: 'Colour map', kind: 'asset', assetType: 'image', optional: true },
+			{ key: 'normal', label: 'Normal map', kind: 'asset', assetType: 'image', optional: true, help: 'OpenGL convention (green up).' },
+			{ key: 'arm', label: 'AO / roughness / metallic map', kind: 'asset', assetType: 'image', optional: true, help: 'Occupancy in red, roughness in green and metallic in blue.' },
+			{ key: 'roughness', label: 'Roughness', kind: 'number', min: 0, max: 1, step: 0.05, optional: true },
+			{ key: 'metallic', label: 'Metallic', kind: 'number', min: 0, max: 1, step: 0.05, optional: true },
+			{ key: 'mapping', label: 'Mapping', kind: 'enum', options: [{ value: 'mesh', label: 'Stretch over the mesh' }, { value: 'world', label: 'By real size' }], optional: true, default: 'mesh', help: 'By real size lays the maps out at the same scale on any object, however it is scaled.' },
+			{ key: 'tiling', label: 'Tiling', kind: 'number', min: 0.1, max: 50, step: 0.1, optional: true, default: 1, help: 'How many times the maps repeat across the mesh (stretch mapping).' },
+			{ key: 'size', label: 'Size of one repeat', kind: 'number', min: 0.01, max: 100, step: 0.05, unit: 'm', optional: true, default: 1, help: 'Real size one repeat of the maps covers (by-real-size mapping).' },
+			{ key: 'label', label: 'Name', kind: 'text', optional: true, default: '' }
+		],
+		create: () => ({ type: 'material' })
+	},
+	{
 		type: 'textDisplay',
 		label: 'Text Display',
 		group: 'Render',

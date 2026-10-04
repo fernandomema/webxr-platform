@@ -135,6 +135,10 @@ const ASSET_REFERENCES: Record<string, (component: LooseComponent) => AssetId[]>
 		const ref = component[key] as SourceRef | undefined;
 		return ref?.kind === 'asset' && isAssetId(ref.assetId) ? [ref.assetId] : [];
 	}),
+	material: (component) => ['albedo', 'normal', 'arm'].flatMap((key) => {
+		const ref = component[key] as SourceRef | undefined;
+		return ref?.kind === 'asset' && isAssetId(ref.assetId) ? [ref.assetId] : [];
+	}),
 	appInfo: (component) => {
 		const icon = component.icon as SourceRef | undefined;
 		return icon?.kind === 'asset' ? [icon.assetId] : [];

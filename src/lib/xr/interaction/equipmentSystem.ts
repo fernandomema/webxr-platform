@@ -84,9 +84,20 @@ export class EquipmentSystem implements GrabGuard, EquipQuery {
 	// --- GrabGuard -------------------------------------------------------
 
 	canGrab(slotId: string, grabberId: string): boolean {
-		if (this.getHolderOfSlotOrAncestor(slotId)) return false; // equipped objects are taken off first
 		const who = this.parseGrabberId(grabberId);
+		const holder = this.getHolderOfSlotOrAncestor(slotId);
+		// Equipped objects are taken off first. What sits in a socket of one is not the object itself: the player who holds the
+		// tool can take it out with the other hand, to swap it for another.
+		if (holder && !(this.isSocketOccupant(slotId) && who?.playerId === holder.playerId)) return false;
 		return !(who && this.registry.getSlot(who.playerId, who.hand)); // a hand holds one thing
+	}
+
+	/** Whether the slot is what a socket (of the slot it hangs from) currently holds, and is not itself equipped. */
+	private isSocketOccupant(slotId: string): boolean {
+		const live = this.sceneGraph.getLive(slotId);
+		if (!live || this.registry.getHolder(slotId) || !live.slot.parentId) return false;
+		const socket = this.sceneGraph.getLive(live.slot.parentId)?.slot.components.find((component) => component.type === 'socket');
+		return !!socket && socket.type === 'socket' && socket.occupantId === slotId;
 	}
 
 	// --- equip / unequip -------------------------------------------------

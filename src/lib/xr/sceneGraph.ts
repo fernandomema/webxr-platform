@@ -10,11 +10,12 @@ import {
 	Quaternion,
 	Ray,
 	TransformNode,
+	AbstractMesh,
+	type PBRMaterial,
 	type Scene,
-	type AbstractMesh,
 	type InstancedMesh
 } from '@babylonjs/core';
-import type { MediaControlAction, Slot, SlotTree, UIEvent, Vec3, Quat } from '$lib/ecs/types';
+import type { Component, MediaControlAction, Slot, SlotTree, UIEvent, Vec3, Quat } from '$lib/ecs/types';
 import { findComponent, isGrabbable } from '$lib/ecs/types';
 import { normalizeMeshRef, type AssetId, type MeshRef } from '$lib/assets/ref';
 import { needsRebuild } from './slotRebuild';
@@ -28,6 +29,7 @@ import { setupHtmlView } from './htmlViewSurface';
 import { setupParticleBurst } from './particleEffects';
 import { setupSurfaceMask } from './surfaceMaskRenderer';
 import { setupStroke } from './strokeRenderer';
+import { setupMaterialSurfaces, type MaterialSurfaces } from './materialSurface';
 import { setupSkybox } from './skyboxRenderer';
 import { setupWorldGlobe } from './worldGlobe';
 import { setupImpactSound } from './impactSoundEffects';
@@ -45,6 +47,9 @@ import { createCodeBlockHandlers, type CodeBlockHost, type RadialItemDef, type C
  */
 const INSTANCED_SHAPES = new Set(['box', 'sphere', 'cylinder']);
 /** Components that draw onto their slot's own mesh (a texture, or a material of its own): such a mesh cannot be shared. */
+/** Components a script may not put on another slot: they carry code or identity, which only their own authors set. */
+const UNSETTABLE = new Set<string>(['codeBlock', 'avatar', 'boneAttach']);
+
 const OWN_SURFACE = new Set<string>(['mirror', 'camera', 'textDisplay', 'htmlView', 'scoreboard', 'uiPanel', 'uiElement', 'surfaceMask', 'worldPortal', 'audioPlayer']);
 
 const instanceColor = (color: string | undefined): Color4 => {
@@ -141,6 +146,11 @@ export class SceneGraph {
 	/** The hidden mesh each instanced shape is drawn from, and the material they all share. */
 	private primitiveSources = new Map<string, Mesh>();
 	private primitiveMaterial: StandardMaterial | null = null;
+	/** The PBR surfaces of slots that carry a `material`; made the first time one does. */
+	private materialSurfaces: MaterialSurfaces | null = null;
+	private get materials(): MaterialSurfaces {
+		return (this.materialSurfaces ??= setupMaterialSurfaces(this.scene, this.options.mediaAssets));
+	}
 	/** Slots by the components they carry, and whole objects, for the systems that look every frame; rebuilt after the scene changes. */
 	private byComponent = new Map<string, LiveSlot[]>();
 	private subtrees = new Map<string, LiveSlot[]>();
@@ -259,6 +269,8 @@ export class SceneGraph {
 			this.primitiveSources.clear();
 			this.primitiveMaterial?.dispose();
 			this.primitiveMaterial = null;
+			this.materialSurfaces?.dispose();
+			this.materialSurfaces = null;
 			for (const material of Object.values(this.placeholderMaterials)) material?.dispose();
 			this.placeholderMaterials = {};
 		}));
@@ -266,6 +278,7 @@ export class SceneGraph {
 
 	/** One runtime failing to clean up (e.g. a media player with no audio engine) must not stop the rest of the scene from being torn down. */
 	private disposeRuntime(entry: LiveSlot): void {
+		this.materialSurfaces?.release(entry.slot.id);
 		try {
 			entry.runtime?.dispose();
 		} catch (err) {
@@ -592,6 +605,7 @@ export class SceneGraph {
 		entry.runtime?.sync?.(slot);
 		const color = findComponent(slot, 'meshRenderer')?.color;
 		if (color && !entry.model) this.paint(entry.node, color);
+		this.syncMaterial(entry);
 		entry.node.position = Vector3.FromArray(slot.position);
 		entry.node.rotationQuaternion = Quaternion.FromArray(slot.rotation);
 		entry.node.scaling = Vector3.FromArray(slot.scale);
@@ -646,6 +660,7 @@ export class SceneGraph {
 		this.live.set(slot.id, entry);
 		this.invalidateIndexes();
 		if (modelAssetId) this.bindModel(entry, modelAssetId);
+		this.syncMaterial(entry);
 		// Surfaces that draw onto the mesh itself do not apply to a model.
 		if (mesh && !modelAssetId) {
 			const mirror = findComponent(slot, 'mirror');
@@ -755,6 +770,12 @@ export class SceneGraph {
 			isHost: () => this.options.isHost?.() ?? true,
 			requestSpawn: (slot) => this.options.onSpawnRequest?.(slot),
 			requestDelete: (slotId) => this.options.onDeleteRequest?.(slotId),
+			setComponent: (slotId, component, broadcast = true) => {
+				if (!(this.options.isHost?.() ?? true)) return false;
+				const changed = this.setComponent(slotId, component);
+				if (changed && broadcast) this.options.onSlotMutated?.(slotId);
+				return changed;
+			},
 			setComponentField: (slotId, componentType, field, value, broadcast = true) => {
 				// Host/solo-only: a guest calling this would only affect its own
 				// unauthoritative copy, silently reverted by the next broadcast —
@@ -771,7 +792,7 @@ export class SceneGraph {
 				if (broadcast) this.options.onSlotMutated?.(slotId);
 			},
 			findNear: (worldPos, radius) => this.findSlotsNear(worldPos, radius),
-			raycast: (origin, direction, maxDistance) => this.raycastScene(origin, direction, maxDistance),
+			raycast: (origin, direction, maxDistance, ignore) => this.raycastScene(origin, direction, maxDistance, ignore),
 			resolvePlayer: (grabberId) => this.options.resolvePlayer?.(grabberId) ?? { id: grabberId, name: 'Player' },
 			setSlotEnabled: (slotId, enabled, broadcast = true) => {
 				if (!(this.options.isHost?.() ?? true)) return false;
@@ -809,10 +830,16 @@ export class SceneGraph {
 	}
 
 	/** Casts a ray through every pickable mesh in the scene and resolves the closest hit back to its owning Slot — see CodeBlockHost.raycast's doc comment. `null` if nothing pickable (or nothing owned by a Slot, e.g. a placeholder proxy) is hit within `maxDistance`. */
-	private raycastScene(origin: Vec3, direction: Vec3, maxDistance: number): RaycastHit | null {
+	private raycastScene(origin: Vec3, direction: Vec3, maxDistance: number, ignore?: readonly string[]): RaycastHit | null {
 		const dir = Vector3.FromArray(direction).normalize();
 		const ray = new Ray(Vector3.FromArray(origin), dir, Math.max(0.001, maxDistance));
-		const pick = this.scene.pickWithRay(ray, (mesh) => mesh.isPickable && mesh.isEnabled());
+		const skipped = ignore?.length ? new Set(ignore) : null;
+		const passesThrough = (mesh: AbstractMesh) => {
+			if (!skipped) return false;
+			for (let id = this.getSlotIdForNode(mesh); id; id = this.live.get(id)?.slot.parentId ?? null) if (skipped.has(id)) return true;
+			return false;
+		};
+		const pick = this.scene.pickWithRay(ray, (mesh) => mesh.isPickable && mesh.isEnabled() && !passesThrough(mesh));
 		if (!pick?.hit || !pick.pickedMesh || !pick.pickedPoint) return null;
 		const slotId = this.getSlotIdForNode(pick.pickedMesh);
 		if (!slotId) return null;
@@ -932,6 +959,7 @@ export class SceneGraph {
 		// from it at spawn time — refresh the one thing that visibly matters
 		// for the switch/lever demo (a meshRenderer's color).
 		if (componentType === 'meshRenderer' && field === 'color' && typeof value === 'string') this.paint(entry.node, value);
+		if (componentType === 'material') this.syncMaterial(entry);
 		// Same redraw hook reconcile() already uses for an incoming snapshot —
 		// so a LOCAL mutation (e.g. a script updating its own scoreboard) also
 		// redraws immediately, not just once a broadcast round-trips back.
@@ -1141,6 +1169,32 @@ export class SceneGraph {
 		// By class name: the material may come from another copy of Babylon's module than this file's import.
 		const material = mesh.material;
 		if (material?.getClassName() === 'StandardMaterial') (material as StandardMaterial).diffuseColor = Color3.FromHexString(color);
+		// A material with a colour map shows the map as it is; the colour only stands in for it when there is none.
+		else if (material?.getClassName() === 'PBRMaterial' && !(material as PBRMaterial).albedoTexture) (material as PBRMaterial).albedoColor = Color3.FromHexString(color);
+	}
+
+	/** Shows the slot's `material` on its mesh (or lets go of one it no longer has). Models keep their own materials. */
+	private syncMaterial(entry: LiveSlot): void {
+		const material = findComponent(entry.slot, 'material');
+		const mesh = findComponent(entry.slot, 'meshRenderer');
+		if (!material || !mesh || entry.model || !(entry.node instanceof AbstractMesh)) {
+			this.materialSurfaces?.release(entry.slot.id);
+			return;
+		}
+		const ref = normalizeMeshRef(mesh.meshRef);
+		this.materials.apply(entry.slot.id, entry.node, material, mesh.color, ref.kind === 'builtin' ? ref.id : undefined);
+	}
+
+	/**
+	 * Adds a component to a live slot, or replaces the one of its type (host and solo only; the caller then broadcasts). The slot is
+	 * edited the way an inspector edit is, so what must be rebuilt is. Refused for components that carry code or identity.
+	 */
+	setComponent(slotId: string, component: Component): boolean {
+		const entry = this.live.get(slotId);
+		if (!entry || entry.system || !component || typeof component.type !== 'string' || UNSETTABLE.has(component.type)) return false;
+		const index = entry.slot.components.findIndex((existing) => existing.type === component.type);
+		const components = index < 0 ? [...entry.slot.components, component] : entry.slot.components.map((existing, at) => (at === index ? component : existing));
+		return this.applySlotEdit(slotId, { ...entry.slot, components });
 	}
 
 	/** The hidden mesh a shape's instances are drawn from, made the first time the shape is needed. */
@@ -1177,7 +1231,7 @@ export class SceneGraph {
 		const opacity = findComponent(slot, 'meshRenderer')?.opacity;
 		const translucent = opacity !== undefined && opacity < 1;
 		// A see-through mesh needs a material of its own, so it cannot be an instance either.
-		if (INSTANCED_SHAPES.has(shape) && !translucent && !slot.components.some((c) => OWN_SURFACE.has(c.type)) && slot.scale.every((v) => v > 0)) {
+		if (INSTANCED_SHAPES.has(shape) && !translucent && !slot.components.some((c) => OWN_SURFACE.has(c.type) || c.type === 'material') && slot.scale.every((v) => v > 0)) {
 			const instance = this.primitiveSource(shape).createInstance(id);
 			instance.instancedBuffers.color = instanceColor(color);
 			return instance;
@@ -1208,7 +1262,8 @@ export class SceneGraph {
 				mesh = MeshBuilder.CreateBox(id, { size: 1 }, this.scene);
 				break;
 		}
-		if (color || translucent) {
+		// A slot with a `material` gets its PBR one right after (see syncMaterial).
+		if ((color || translucent) && !findComponent(slot, 'material')) {
 			const mat = new StandardMaterial(`${id}-mat`, this.scene);
 			mat.diffuseColor = Color3.FromHexString(color ?? '#ffffff');
 			if (translucent) {

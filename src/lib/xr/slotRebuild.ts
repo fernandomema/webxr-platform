@@ -56,6 +56,9 @@ function fieldsDiffer(a: Component, b: Component, changed: (key: string) => bool
 
 export function needsRebuild(prev: Slot, next: Slot): boolean {
 	if (visualKey(prev) !== visualKey(next)) return true;
+	// A mesh with a material cannot be an instance of a shared one, so gaining or losing a material is a different mesh.
+	// Changes to the material's own fields are applied live.
+	if (prev.components.some((c) => c.type === 'material') !== next.components.some((c) => c.type === 'material')) return true;
 	// Script state is written by scripts while the world runs: it is never a reason to rebuild.
 	const before = prev.components.filter((component) => component.type !== 'scriptState');
 	const after = next.components.filter((component) => component.type !== 'scriptState');

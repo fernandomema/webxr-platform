@@ -257,3 +257,57 @@ test('leaving a world (reconciling to another scene) stops the tracks its script
 		f.dispose();
 	}
 });
+
+test('a script can give another slot a component, but not code or identity', () => {
+	const f = fixture();
+	const graph = new SceneGraph(f.scene, {});
+	try {
+		graph.load([createSlot({ id: 'box', components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'box' }, color: '#ff0000' }] })]);
+		assert.equal(graph.setComponent('box', { type: 'collider', shape: 'box' }), true);
+		assert.ok(graph.getLive('box').slot.components.some((c) => c.type === 'collider'));
+		assert.equal(graph.setComponent('box', { type: 'collider', shape: 'sphere' }), true);
+		const colliders = graph.getLive('box').slot.components.filter((c) => c.type === 'collider');
+		assert.deepEqual(colliders, [{ type: 'collider', shape: 'sphere' }], 'the component of that type is replaced, not added twice');
+		assert.equal(graph.setComponent('box', { type: 'codeBlock', code: 'return {};' }), false);
+		assert.equal(graph.setComponent('missing', { type: 'collider', shape: 'box' }), false);
+	} finally { graph.dispose(); f.dispose(); }
+});
+
+test('the player holding a tool can take what sits in its socket, but not the tool or anyone else’s socket', async () => {
+	const equipmentCode = compile(await readFile(new URL('xr/interaction/equipmentSystem.ts', libUrl), 'utf8'))
+		.replaceAll("'./equipmentRegistry'", JSON.stringify(new URL('xr/interaction/equipmentRegistry.ts', libUrl).href))
+		.replace(/import \{[^}]*\} from '\.\/grabSystem';/, '')
+		.replace(/import \{ eulerToQuat \} from "[^"]+";/, 'const eulerToQuat = () => [0, 0, 0, 1];');
+	const { EquipmentSystem } = await import(moduleUrl(equipmentCode));
+	const f = fixture();
+	const graph = new SceneGraph(f.scene, {});
+	try {
+		graph.load([
+			createSlot({ id: 'tool', components: [{ type: 'grabbable', scalable: false }, { type: 'equippable', left: { position: [0, 0, 0], rotation: [0, 0, 0] }, right: { position: [0, 0, 0], rotation: [0, 0, 0] } }] }),
+			createSlot({ id: 'socket', parentId: 'tool', components: [{ type: 'socket', accepts: ['material'], radius: 0.2, snap: { position: [0, 0, 0], rotation: [0, 0, 0] }, occupantId: 'orb' }] }),
+			createSlot({ id: 'orb', parentId: 'socket', components: [{ type: 'grabbable', scalable: false }, { type: 'insertable', tag: 'material' }] }),
+			createSlot({ id: 'loose', parentId: 'tool', components: [{ type: 'grabbable', scalable: false }] })
+		]);
+		const grabSystem = { setGuard() {} };
+		const system = new EquipmentSystem(f.scene, graph, grabSystem, () => 'me', (id) => id);
+		system.registry.equip('me', 'right', 'tool');
+		assert.equal(system.canGrab('tool', 'left'), false, 'the equipped tool itself stays put');
+		assert.equal(system.canGrab('orb', 'left'), true, 'its holder takes the orb out with the free hand');
+		assert.equal(system.canGrab('orb', 'other:left'), false, 'another player cannot take it');
+		assert.equal(system.canGrab('loose', 'left'), false, 'only what a socket holds, not any child');
+	} finally { graph.dispose(); f.dispose(); }
+});
+
+test('a ray can pass through some slots and what hangs from them, and stops at the next thing', () => {
+	const f = fixture();
+	const graph = new SceneGraph(f.scene, {});
+	try {
+		const cube = (id, z, parentId = null) => createSlot({ id, parentId, position: [0, 0, z], components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'box' } }] });
+		graph.load([createSlot({ id: 'tool' }), cube('tip', 1, 'tool'), cube('wall', 3)]);
+		for (const mesh of f.scene.meshes) mesh.computeWorldMatrix(true);
+		const cast = (ignore) => graph.raycastScene([0, 0, -2], [0, 0, 1], 10, ignore)?.slotId ?? null;
+		assert.equal(cast(), 'tip', 'without it, the tool’s own tip is in the way');
+		assert.equal(cast(['tool']), 'wall');
+		assert.equal(cast(['tool', 'wall']), null);
+	} finally { graph.dispose(); f.dispose(); }
+});

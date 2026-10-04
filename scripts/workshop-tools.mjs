@@ -7,10 +7,10 @@ const s45 = Math.SQRT1_2;
 const ALONG = [s45, 0, 0, s45];
 
 /** Held like a wand: the handle in the fist, the working end forward. */
-const WAND_GRIP = { position: [0, 0, 0.04], rotation: [15, 0, 0] };
+export const WAND_GRIP = { position: [0, 0, 0.04], rotation: [15, 0, 0] };
 
 /** Shared by every tool's script: its parts, what it may act on, aiming, the beam, and going back to its bench. */
-const PRELUDE = String.raw`
+export const PRELUDE = String.raw`
 const SELF = ctx.self.id;
 const has = (slot, type) => !!slot && slot.components.some((c) => c.type === type);
 // Parts are looked up among this tool's own children: several tools use the same part names.
@@ -32,11 +32,12 @@ function objectOf(slotId) {
 // Tools and avatars are never changed by another tool; everything else that can be picked up is fair game.
 const editable = (object) => !!object && !has(object, 'equippable') && !has(object, 'avatar');
 const REACH = 12;
-// Where the working end points, and what it hits (null when nothing is within reach).
+// Where the working end points, and what it hits (null when nothing is within reach). The ray passes through the tool itself
+// (and whatever it holds): starting at the tip, it would otherwise now and then hit the tip.
 function aim() {
   const muzzle = partPose('Muzzle');
   if (!muzzle) return null;
-  const hit = ctx.world.raycast(muzzle.position, muzzle.forward, REACH);
+  const hit = ctx.world.raycast(muzzle.position, muzzle.forward, REACH, { ignore: [SELF] });
   return { from: muzzle.position, forward: muzzle.forward, hit, end: hit ? hit.point : ctx.math.vecAdd(muzzle.position, ctx.math.vecScale(muzzle.forward, 2)) };
 }
 const round3 = (v) => Math.round(v * 1000) / 1000;

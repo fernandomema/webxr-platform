@@ -1,7 +1,7 @@
 import type { WorldStorageService } from './worldStorageService';
 import { requestScriptJson } from './scriptNet';
 import { Vector3, Quaternion, type TransformNode } from '@babylonjs/core';
-import type { Slot, UIEvent, Vec3, Quat } from '$lib/ecs/types';
+import type { Component, Slot, UIEvent, Vec3, Quat } from '$lib/ecs/types';
 import type { UIMediaState } from './uiPanelSurface';
 import type { AudioTrackHandle, ScriptAudio } from './scriptAudio';
 
@@ -17,12 +17,14 @@ export interface CodeBlockHost {
 	requestDelete(slotId: string): void;
 	/** Host/solo only — a guest's call is a documented no-op, corrected by the next broadcast anyway. */
 	setComponentField(slotId: string, componentType: string, field: string, value: unknown, broadcast?: boolean): void;
+	/** Adds a component to another slot, or replaces the one of its type. Host/solo only; returns whether it was done. */
+	setComponent(slotId: string, component: Component, broadcast?: boolean): boolean;
 	/** Records a slot's node transform (moved by a script) as its data and, when `broadcast`, sends it to guests. Host/solo only. */
 	commitTransform(slotId: string, broadcast?: boolean): void;
 	/** Every non-system Slot whose world position is within `radius` of `worldPos` — a generic spatial query for proximity/collision-style logic (hit detection, triggers, area effects), not tied to any one demo. O(live slot count) per call. */
 	findNear(worldPos: Vec3, radius: number): Slot[];
 	/** Casts a ray through the live scene — generic aiming/hit-testing for any tool (a laser, a thrown object, a spray), not tied to any one demo. `null` when nothing pickable is hit within `maxDistance`. */
-	raycast(origin: Vec3, direction: Vec3, maxDistance: number): RaycastHit | null;
+	raycast(origin: Vec3, direction: Vec3, maxDistance: number, ignore?: readonly string[]): RaycastHit | null;
 	/** Resolves a grabberId (from `getGrabbers`/`ctx.grab.heldBy()`) to a stable player id + display name — generic attribution for scripts that need to know "who did this" (scoreboards, ownership tags, logs), not tied to any one demo. */
 	resolvePlayer(grabberId: string): { id: string; name: string };
 	/** Which player/hand has this slot — or one of its ancestors — equipped, if any. */
@@ -294,6 +296,11 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 			setComponentField: (targetId: string, componentType: string, field: string, value: unknown, broadcast = true) =>
 				host.setComponentField(targetId, componentType, field, value, broadcast),
 			/**
+			 * Gives ANOTHER slot a component (or replaces the one of its type), for tools that change what a thing is made of. Host/solo
+			 * only, like `setComponentField`; returns whether it was done. Refused for code and identity components.
+			 */
+			setComponent: (targetId: string, component: Component, broadcast = true): boolean => host.setComponent(targetId, component, broadcast),
+			/**
 			 * Puts ANOTHER slot at a world position and/or rotation, keeping its scale — for tools that straighten, snap or
 			 * place objects. Host/solo only, like `setComponentField`. Refused (returns false) while a hand holds the slot
 			 * or it is equipped, so it never fights a player. `broadcast: false` moves it on this peer only.
@@ -308,7 +315,8 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 				return true;
 			},
 			findNear: (worldPos: Vec3, radius: number) => host.findNear(worldPos, radius),
-			raycast: (origin: Vec3, direction: Vec3, maxDistance: number) => host.raycast(origin, direction, maxDistance),
+			/** `options.ignore`: slots the ray passes through, with everything under them (a tool aiming past its own parts and what it holds). */
+			raycast: (origin: Vec3, direction: Vec3, maxDistance: number, options?: { ignore?: string[] }) => host.raycast(origin, direction, maxDistance, options?.ignore),
 			getPlayer: (grabberId: string) => host.resolvePlayer(grabberId)
 		},
 		particles: {
