@@ -3,6 +3,7 @@
 import '@babylonjs/loaders/glTF';
 import {
 	Engine,
+	AbstractEngine,
 	Scene,
 	HemisphericLight,
 	Vector3,
@@ -281,6 +282,7 @@ export async function mountGame(
 	viewerCamera = getActiveCamera;
 
 	loadSettings();
+	AbstractEngine.audioEngine?.setGlobalVolume(xrSettings.masterVolume);
 	const grabSystem = new GrabSystem(scene, sceneGraph);
 	// Bodies for every player: the host (or a solo player) owns the avatar slots, everyone poses them from presence.
 	const avatarSystem = new AvatarSystem(scene, sceneGraph, {
@@ -688,6 +690,7 @@ export async function mountGame(
 		onToggleInspector: () => inspector.root.setEnabled(!inspector.root.isEnabled()),
 		onSeatedModeChanged: () => playerBody.setSeated(xrSettings.seatedMode),
 		onDesktopSettingsChanged: () => fps.applySettings(),
+		onAudioSettingsChanged: () => AbstractEngine.audioEngine?.setGlobalVolume(xrSettings.masterVolume),
 		onPerformanceSettingsChanged: () => applyPerformanceSettings(),
 		frameRates: () => supportedFrameRates
 	});

@@ -33,6 +33,8 @@ export interface XrSettings {
 	invertY: boolean;
 	/** Desktop: the camera's vertical field of view, in degrees. */
 	desktopFov: number;
+	/** Master volume for music, effects and other world audio. */
+	masterVolume: number;
 }
 
 export const MOUSE_SENSITIVITIES = [0.5, 1, 1.6, 2.5] as const;
@@ -52,7 +54,8 @@ export const xrSettings: XrSettings = {
 	frameRate: null,
 	mouseSensitivity: 1,
 	invertY: false,
-	desktopFov: 46
+	desktopFov: 46,
+	masterVolume: 1
 };
 
 const STORAGE_KEY = 'webxr-platform-settings';
@@ -77,6 +80,7 @@ export function loadSettings(): void {
 		if (typeof parsed.mouseSensitivity === 'number' && parsed.mouseSensitivity > 0 && parsed.mouseSensitivity <= 5) xrSettings.mouseSensitivity = parsed.mouseSensitivity;
 		if (typeof parsed.invertY === 'boolean') xrSettings.invertY = parsed.invertY;
 		if (typeof parsed.desktopFov === 'number' && parsed.desktopFov >= 30 && parsed.desktopFov <= 110) xrSettings.desktopFov = parsed.desktopFov;
+		if (typeof parsed.masterVolume === 'number' && parsed.masterVolume >= 0 && parsed.masterVolume <= 1) xrSettings.masterVolume = parsed.masterVolume;
 	} catch {
 		// unavailable/malformed storage — keep defaults
 	}

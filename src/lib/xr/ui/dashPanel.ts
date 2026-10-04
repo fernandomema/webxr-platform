@@ -58,6 +58,8 @@ export interface DashPanelCallbacks {
 	onPerformanceSettingsChanged(): void;
 	/** Mouse speed, inverted look or field of view (the desktop controls) was changed (`xrSettings` already holds the new values). */
 	onDesktopSettingsChanged(): void;
+	/** The master audio volume changed (`xrSettings.masterVolume` already holds the new value). */
+	onAudioSettingsChanged(): void;
 	/** The display refresh rates the headset offers (empty until a headset session has started). */
 	frameRates(): number[];
 }
@@ -1196,6 +1198,11 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		const names: Record<number, string> = { 46: 'Normal', 60: 'Wide', 75: 'Wider' };
 		return DESKTOP_FOVS.map((value) => pick('desktopFov', value, names[value], () => callbacks.onDesktopSettingsChanged()));
 	});
+
+	settingsSection('Audio');
+	settingRow('volume', 'Master volume', 'Controls the volume of music, sound effects and other world audio.', () =>
+		([0, 0.25, 0.5, 0.75, 1] as const).map((value) => pick('masterVolume', value, `${Math.round(value * 100)}%`, () => callbacks.onAudioSettingsChanged()))
+	);
 
 	settingsSection('Keyboard');
 	settingRow('keyboard', 'Keyboard layout', 'The keys of the in-world keyboard. Auto follows the language of the page.', () => {
