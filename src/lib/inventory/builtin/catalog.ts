@@ -52,6 +52,7 @@ function workshopTool(tool: (typeof TOOLS)[number]): SlotTree {
 		color?: string;
 		collider?: boolean;
 		textDisplay?: { title: string; lines: string[]; color: string };
+		components?: unknown[];
 		position?: Slot['position'];
 		rotation?: Slot['rotation'];
 		scale?: Slot['scale'];
@@ -59,7 +60,8 @@ function workshopTool(tool: (typeof TOOLS)[number]): SlotTree {
 	const parts = pieces.map((piece, index) => slot(`${rootId}-part-${index}`, piece.name, ([
 		...(piece.mesh ? [{ type: 'meshRenderer' as const, meshRef: { kind: 'builtin' as const, id: piece.mesh }, ...(piece.color ? { color: piece.color } : {}) }] : []),
 		...(piece.collider ? [{ type: 'collider' as const, shape: 'box' as const }] : []),
-		...(piece.textDisplay ? [{ type: 'textDisplay' as const, ...piece.textDisplay }] : [])
+		...(piece.textDisplay ? [{ type: 'textDisplay' as const, ...piece.textDisplay }] : []),
+		...(piece.components ?? [])
 	] as unknown as Component[]), {
 		parentId: rootId,
 		position: piece.position ?? [0, 0, 0],

@@ -349,3 +349,62 @@ test('a ray can pass through some slots and what hangs from them, and stops at t
 		assert.equal(cast(['tool', 'wall']), null);
 	} finally { graph.dispose(); f.dispose(); }
 });
+
+/** The `ctx` a script on a slot of `graph` gets, taken from inside a script. */
+function scriptCtx(graph) {
+	graph.addSlot(createSlot({ id: 'probe', components: [{ type: 'codeBlock', code: 'globalThis.__probeCtx = ctx; return {};' }] }));
+	const ctx = globalThis.__probeCtx;
+	delete globalThis.__probeCtx;
+	return ctx;
+}
+
+test('a capsule touches what comes within its radius, by each mesh’s true box, nearest first', () => {
+	const f = fixture();
+	const graph = new SceneGraph(f.scene, {});
+	try {
+		const mesh = (id) => [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id } }];
+		const s = Math.sin(Math.PI / 8), c = Math.cos(Math.PI / 8);
+		graph.load([
+			createSlot({ id: 'cube', components: mesh('box') }),
+			// Turned 45°: its corner reaches x = 2 - 0.707, but not out to its axis-aligned bounds.
+			createSlot({ id: 'turned', position: [2, 0, 0], rotation: [0, s, 0, c], components: mesh('box') }),
+			createSlot({ id: 'ball', position: [0, 0, 3], components: mesh('sphere') })
+		]);
+		const ctx = scriptCtx(graph);
+		assert.deepEqual(ctx.world.overlap([0.52, 0, 0], [1.25, 0, 0], 0.05), ['cube', 'turned']);
+		assert.deepEqual(ctx.world.overlap([0.52, 0, 0], [1.25, 0, 0], 0.05, { ignore: ['cube'] }), ['turned']);
+		assert.deepEqual(ctx.world.overlap([1.25, 0, 0.6], [1.25, 0, 0.6], 0.05), [], 'outside the turned box, though inside its axis-aligned bounds');
+		// Diagonally off the ball: inside its bounding cube, but 6.6 cm from its surface.
+		assert.deepEqual(ctx.world.overlap([0.4, 0, 3.4], [0.4, 0, 3.4], 0.03), []);
+		assert.deepEqual(ctx.world.overlap([0.4, 0, 3.4], [0.4, 0, 3.4], 0.1), ['ball']);
+	} finally { graph.dispose(); f.dispose(); }
+});
+
+test('a script can move a slot under another and back, where it is in the world, and take a component off it', () => {
+	const f = fixture();
+	const graph = new SceneGraph(f.scene, {});
+	try {
+		const s = Math.SQRT1_2;
+		graph.load([
+			createSlot({ id: 'group', position: [1, 0, 0], rotation: [0, s, 0, s] }),
+			createSlot({ id: 'part', position: [0, 0, 2], components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'box' } }, { type: 'grabbable', scalable: true }] })
+		]);
+		const ctx = scriptCtx(graph);
+		const at = () => ctx.hierarchy.getWorldPose('part').position;
+		assert.equal(ctx.world.setParent('part', 'group'), true);
+		assert.equal(graph.getLive('part').slot.parentId, 'group');
+		assert.ok(at().every((v, i) => Math.abs(v - [0, 0, 2][i]) < 1e-6), 'it stays where it was');
+		assert.equal(ctx.world.setParent('group', 'part'), false, 'never under itself');
+		assert.equal(ctx.world.setParent('part', null), true);
+		assert.equal(graph.getLive('part').slot.parentId, null);
+		assert.ok(at().every((v, i) => Math.abs(v - [0, 0, 2][i]) < 1e-6));
+
+		assert.equal(ctx.world.removeComponent('part', 'grabbable'), true);
+		assert.ok(!graph.getLive('part').slot.components.some((c) => c.type === 'grabbable'));
+		assert.equal(ctx.world.removeComponent('part', 'grabbable'), false, 'it has none left');
+		assert.equal(ctx.world.removeComponent('probe', 'codeBlock'), false, 'code stays with its author');
+
+		assert.equal(ctx.world.setWorldPose('part', { scale: [2, 0.5, 3] }), true);
+		assert.deepEqual(graph.getLive('part').slot.scale, [2, 0.5, 3]);
+	} finally { graph.dispose(); f.dispose(); }
+});

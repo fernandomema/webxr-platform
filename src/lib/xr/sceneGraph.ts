@@ -17,7 +17,7 @@ import {
 } from '@babylonjs/core';
 import type { Component, MediaControlAction, Slot, SlotTree, UIEvent, Vec3, Quat } from '$lib/ecs/types';
 import { findComponent, isGrabbable } from '$lib/ecs/types';
-import { normalizeMeshRef, type AssetId, type MeshRef } from '$lib/assets/ref';
+import { isBuiltinMesh, normalizeMeshRef, type AssetId, type MeshRef } from '$lib/assets/ref';
 import { needsRebuild } from './slotRebuild';
 import { batchMaterialUpdates, batchMeshDisposal } from './performance';
 import type { BlobAssetLibrary } from './blobAssetLibrary';
@@ -788,6 +788,21 @@ export class SceneGraph {
 					this.options.onSlotMutated?.(slotId);
 				}
 			},
+			removeComponent: (slotId, componentType, broadcast = true) => {
+				if (!(this.options.isHost?.() ?? true)) return false;
+				const changed = this.removeComponent(slotId, componentType);
+				if (changed && broadcast) this.options.onSlotMutated?.(slotId);
+				return changed;
+			},
+			reparent: (slotId, parentId, broadcast = true) => {
+				if (!(this.options.isHost?.() ?? true)) return false;
+				const entry = this.live.get(slotId);
+				if (!entry || findComponent(entry.slot, 'avatar')) return false;
+				if (entry.slot.parentId === parentId) return true;
+				const changed = this.reparentSlot(slotId, parentId);
+				if (changed && broadcast) this.options.onSlotMutated?.(slotId);
+				return changed;
+			},
 			commitTransform: (slotId, broadcast = true) => {
 				const entry = this.live.get(slotId);
 				if (!entry || entry.system || !(this.options.isHost?.() ?? true)) return;
@@ -796,6 +811,7 @@ export class SceneGraph {
 			},
 			findNear: (worldPos, radius) => this.findSlotsNear(worldPos, radius),
 			raycast: (origin, direction, maxDistance, ignore) => this.raycastScene(origin, direction, maxDistance, ignore),
+			overlap: (from, to, radius, ignore) => this.overlapScene(from, to, radius, ignore),
 			resolvePlayer: (grabberId) => this.options.resolvePlayer?.(grabberId) ?? { id: grabberId, name: 'Player' },
 			setSlotEnabled: (slotId, enabled, broadcast = true) => {
 				if (!(this.options.isHost?.() ?? true)) return false;
@@ -855,6 +871,70 @@ export class SceneGraph {
 			u: uv?.x ?? 0,
 			v: uv?.y ?? 0
 		};
+	}
+
+	/** The slots whose pickable meshes come within `radius` of the segment `from`-`to`, nearest first — see CodeBlockHost.overlap's doc comment. */
+	private overlapScene(from: Vec3, to: Vec3, radius: number, ignore?: readonly string[]): string[] {
+		const a = Vector3.FromArray(from);
+		const ab = Vector3.FromArray(to).subtract(a);
+		const reach = Math.max(0, radius);
+		const mid = a.add(ab.scale(0.5));
+		const skipped = ignore?.length ? new Set(ignore) : null;
+		const nearest = new Map<string, number>();
+		const point = new Vector3();
+		const offset = new Vector3();
+		for (const mesh of this.scene.meshes) {
+			if (!mesh.isPickable || !mesh.isEnabled()) continue;
+			const slotId = this.getSlotIdForNode(mesh);
+			if (!slotId) continue;
+			if (skipped) {
+				let passes = false;
+				for (let id: string | null = slotId; id && !passes; id = this.live.get(id)?.slot.parentId ?? null) passes = skipped.has(id);
+				if (passes) continue;
+			}
+			const world = mesh.computeWorldMatrix();
+			const box = mesh.getBoundingInfo().boundingBox;
+			const center = Vector3.TransformCoordinates(box.center, world);
+			const axes = [Vector3.Right(), Vector3.Up(), Vector3.Forward()].map((axis) => Vector3.TransformNormal(axis, world));
+			const extend = box.extendSize.asArray();
+			const half = axes.map((axis, i) => extend[i] * axis.length());
+			for (const axis of axes) axis.normalize();
+			// Broad phase: the sphere round the box against the sphere round the segment.
+			const boxRadius = Math.hypot(half[0], half[1], half[2]);
+			if (Vector3.Distance(center, mid) > boxRadius + ab.length() / 2 + reach) continue;
+			const round = this.live.get(slotId)?.slot.components.some((c) => c.type === 'meshRenderer' && isBuiltinMesh(c.meshRef, 'sphere'));
+			const distanceTo = (t: number) => {
+				point.copyFrom(ab).scaleInPlace(t).addInPlace(a);
+				point.subtractToRef(center, offset);
+				if (round) {
+					// An ellipsoid, measured in its own axes: close enough for touching, and exact for a sphere.
+					const local = axes.map((axis, i) => Vector3.Dot(offset, axis) / (half[i] || 1e-6));
+					const r = Math.hypot(local[0], local[1], local[2]);
+					return r <= 1 ? 0 : (r - 1) * Math.min(...half);
+				}
+				let squared = 0;
+				for (let i = 0; i < 3; i++) {
+					const along = Vector3.Dot(offset, axes[i]);
+					const outside = Math.abs(along) - half[i];
+					if (outside > 0) squared += outside * outside;
+				}
+				return Math.sqrt(squared);
+			};
+			// The distance from a point moving along the segment to a convex shape is convex in where the point is.
+			let lo = 0;
+			let hi = 1;
+			for (let i = 0; i < 24 && hi - lo > 1e-4; i++) {
+				const m1 = lo + (hi - lo) / 3;
+				const m2 = hi - (hi - lo) / 3;
+				if (distanceTo(m1) <= distanceTo(m2)) hi = m2;
+				else lo = m1;
+			}
+			const distance = distanceTo((lo + hi) / 2);
+			if (distance > reach) continue;
+			const known = nearest.get(slotId);
+			if (known === undefined || distance < known) nearest.set(slotId, distance);
+		}
+		return [...nearest.entries()].sort((x, y) => x[1] - y[1]).map(([id]) => id);
 	}
 
 	/** Applies each codeBlock's tick() (own try/catch inside), integrates generic `velocity` components, and sweeps expired slots — call every frame, on every peer, solo included. Returns how many slots were removed by expiry. */
@@ -1202,6 +1282,13 @@ export class SceneGraph {
 		const index = entry.slot.components.findIndex((existing) => existing.type === component.type);
 		const components = index < 0 ? [...entry.slot.components, component] : entry.slot.components.map((existing, at) => (at === index ? component : existing));
 		return this.applySlotEdit(slotId, { ...entry.slot, components });
+	}
+
+	/** Takes the component of a type off a live slot (host and solo only; the caller then broadcasts). Refused like `setComponent`. */
+	removeComponent(slotId: string, componentType: string): boolean {
+		const entry = this.live.get(slotId);
+		if (!entry || entry.system || UNSETTABLE.has(componentType) || !entry.slot.components.some((c) => c.type === componentType)) return false;
+		return this.applySlotEdit(slotId, { ...entry.slot, components: entry.slot.components.filter((c) => c.type !== componentType) });
 	}
 
 	/** The hidden mesh a shape's instances are drawn from, made the first time the shape is needed. */

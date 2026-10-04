@@ -346,7 +346,7 @@ In the JSON, that code is a **single JSON string**: escape double quotes as `\"`
 
 - One player is the **host** (or the only player, "solo"). The host owns the shared state; guests receive snapshots (~20 times per second).
 - Every script runs on **every player's** device. Local variables are **not shared**.
-- **Only the host can change the world**: `world.spawn`, `deleteSlot`, `setComponentField`, `setComponent`, `setWorldPose`, `setSlotEnabled`. On a guest these calls do nothing. Moving a slot with `ctx.self.setWorldPosition/Rotation` on the host is synchronised to guests.
+- **Only the host can change the world**: `world.spawn`, `deleteSlot`, `setComponentField`, `setComponent`, `removeComponent`, `setWorldPose`, `setParent`, `setSlotEnabled`. On a guest these calls do nothing. Moving a slot with `ctx.self.setWorldPosition/Rotation` on the host is synchronised to guests.
 - So in `tick`, start world-changing logic with `if (!ctx.world.isHost()) return;`.
 - Shared game state (score, turn, phase) lives in components: a `scriptState.data` object, `textDisplay.lines`, `uiElement.text`... written with `setComponentField` by the host, readable by everyone via `ctx.self.getComponent(...)` / `ctx.hierarchy.getSlot(id)`.
 - Scripts cannot call each other. To coordinate, write to a shared `scriptState` and let others read it in `tick`.
@@ -378,13 +378,16 @@ ctx.world
   .deleteSelf()   .deleteSlot(id)                                               host only
   .setComponentField(slotId, componentType, field, value, broadcast = true)     host only
   .setComponent(slotId, component, broadcast = true) -> boolean                 add/replace a component (not codeBlock)
-  .setWorldPose(slotId, { position?, rotation? }, broadcast = true) -> boolean  refused while held
+  .removeComponent(slotId, type, broadcast = true) -> boolean                   take a component off (not codeBlock)
+  .setWorldPose(slotId, { position?, rotation?, scale? }, broadcast = true) -> boolean  refused while held; scale is local
+  .setParent(slotId, parentId | null, broadcast = true) -> boolean             keeps its world pose; refused while held
   .setSlotEnabled(slotId, enabled) -> boolean                                   show/hide for everyone
   .findNear([x,y,z], radius) -> slots                                           proximity query (world space)
   .raycast(origin, direction, maxDistance, { ignore: [ids] }?) -> { slotId, point, normal, u, v } | null
+  .overlap(from, to, radius, { ignore: [ids] }?) -> slotIds                    what a capsule touches, nearest first
   .getPlayer(grabberId) -> { id, name }
 
-ctx.grab     .isHeld() -> boolean     .heldBy() -> grabberId[]
+ctx.grab     .isHeld() -> boolean     .heldBy() -> grabberId[]     .isSlotHeld(id) -> boolean (any slot)
 ctx.equip    .isEquipped() -> boolean .holder() -> { playerId, hand } | null
 
 ctx.math

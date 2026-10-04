@@ -2,9 +2,16 @@
 // Used by generate-workshop.mjs. A tool points along its own +Z: that is the end that does the work, and the way it
 // faces when equipped (the handle sits in the fist, like the lobby's paint brush).
 
+import { HOME_PRELUDE, HOME_TOOLS } from './home-tools.mjs';
+
 const s45 = Math.SQRT1_2;
 /** A cylinder lies along Y; this turns it to lie along the tool (+Z). */
 const ALONG = [s45, 0, 0, s45];
+/**
+ * Pitches a part about the tool's X axis.
+ * @param {number} radians
+ */
+const tilt = (radians) => [Math.sin(radians / 2), 0, 0, Math.cos(radians / 2)];
 
 /** Held like a wand: the handle in the fist, the working end forward. */
 export const WAND_GRIP = { position: [0, 0, 0.04], rotation: [15, 0, 0] };
@@ -111,6 +118,7 @@ function withBench(tool) {
 `;
 
 /** A tool's script: the shared prelude, then the tool's own handlers wrapped so it also returns to its bench. */
+/** @param {string} body */
 const script = (body) => `${PRELUDE}\n${body.trim()}\nreturn withBench(tool);\n`;
 
 // --- Shapes -----------------------------------------------------------------------------------------------------------
@@ -383,6 +391,29 @@ let aiming = false;
 function showColor() { const tank = part('Tank'); if (tank) ctx.world.setComponentField(tank.id, 'meshRenderer', 'color', color); setBeamColor(color); }
 const colorName = () => (PALETTE.find((entry) => entry[1] === color) || ['Custom'])[0];
 
+// A piece of a house built with the home tools (a wall, a floor...): the child of the 'House' group the slot belongs to.
+function housePiece(slotId) {
+  for (let slot = ctx.hierarchy.getSlot(slotId), hops = 0; slot && hops < 16; hops++) {
+    const parent = slot.parentId ? ctx.hierarchy.getSlot(slot.parentId) : null;
+    if (parent && parent.name === 'House' && parent.components.some((c) => c.type === 'scriptState' && c.data && c.data.kind === 'house')) return slot;
+    slot = parent;
+  }
+  return null;
+}
+// Paints a whole piece: every part of it in the colour aimed at (a wall's sections, not its window frames), and what it
+// remembers its colour to be, for when it is rebuilt.
+function paintPiece(piece, from, to) {
+  const queue = [piece];
+  while (queue.length) {
+    const slot = queue.shift();
+    const renderer = slot.components.find((c) => c.type === 'meshRenderer');
+    if (renderer && renderer.color === from) ctx.world.setComponentField(slot.id, 'meshRenderer', 'color', to);
+    queue.push(...ctx.hierarchy.getChildren(slot.id));
+  }
+  const state = piece.components.find((c) => c.type === 'scriptState');
+  if (state && state.data && state.data.color === from) ctx.world.setComponentField(piece.id, 'scriptState', 'data', { ...state.data, color: to });
+}
+
 const tool = {
   onSpawn() { showColor(); },
   onDrop() { aiming = false; },
@@ -395,10 +426,12 @@ const tool = {
     const hit = shot && shot.hit;
     const target = hit ? ctx.hierarchy.getSlot(hit.slotId) : null;
     const renderer = target && target.components.find((c) => c.type === 'meshRenderer');
-    // Only the parts of loose objects: the building and the tools keep their colours.
-    if (!renderer || !editable(objectOf(target.id))) { buzz(); return true; }
+    const piece = target && housePiece(target.id);
+    // Only the parts of loose objects and of built houses: the building and the tools keep their colours.
+    if (!renderer || !(piece || editable(objectOf(target.id)))) { buzz(); return true; }
     if (MODES[mode] === 'Paint') {
-      ctx.world.setComponentField(target.id, 'meshRenderer', 'color', color);
+      if (piece && renderer.color) paintPiece(piece, renderer.color, color);
+      else ctx.world.setComponentField(target.id, 'meshRenderer', 'color', color);
       flash(hit.point, color);
       beep(700);
     } else if (renderer.color) {
@@ -586,14 +619,242 @@ const tool = {
 };
 `;
 
+const DRILL = String.raw`
+const MODES = ['Join', 'Unscrew'];
+const DRILL_TIME = 0.5;        // seconds the trigger is held to drive a screw home
+const REACH_RADIUS = 0.008;    // how close to the screw something counts as touching it
+const IDLE = '#9ca3af', READY = '#22c55e', FIX = '#38bdf8', LOOSEN = '#f59e0b';
+let mode = 0;
+let current = null;            // what the screw touches now, and what driving it would do
+let drilling = null;           // that, while the trigger is held
+let progress = 0, whirr = 0, looked = 1;
+
+const dataOf = (slot) => { const c = slot && slot.components.find((x) => x.type === 'scriptState'); return (c && c.data) || null; };
+const kindOf = (slot) => (dataOf(slot) || {}).kind;
+// The whole thing a slot is part of: its outermost ancestor that can be picked up or is an assembly (one fixed in place
+// cannot). Undefined for what the drill leaves alone (tools, avatars); null for what is fixed (walls, floors, furniture of the world).
+function bodyOf(slotId) {
+  let found = null;
+  for (let slot = ctx.hierarchy.getSlot(slotId), hops = 0; slot && hops < 64; hops++) {
+    if (has(slot, 'avatar') || has(slot, 'equippable')) return undefined;
+    if (has(slot, 'grabbable') || kindOf(slot) === 'assembly') found = slot;
+    slot = slot.parentId ? ctx.hierarchy.getSlot(slot.parentId) : null;
+  }
+  return found;
+}
+// The part of an assembly a slot belongs to (the assembly's child, never one of its screws), or null.
+function partOf(slotId) {
+  for (let slot = ctx.hierarchy.getSlot(slotId), hops = 0; slot && hops < 64; hops++) {
+    const parent = slot.parentId ? ctx.hierarchy.getSlot(slot.parentId) : null;
+    if (kindOf(parent) === 'assembly') return kindOf(slot) === 'screw' ? null : { assembly: parent, part: slot };
+    slot = parent;
+  }
+  return null;
+}
+const passing = (slot) => !slot || slot.name === 'Build Preview' || has(slot, 'stroke') || has(slot, 'expires');
+
+function plan() {
+  const base = partPose('Screw Base'), tip = partPose('Muzzle');
+  const bodies = [], parts = [];
+  let fixed = false;
+  if (base && tip) {
+    for (const id of ctx.world.overlap(base.position, tip.position, REACH_RADIUS, { ignore: [SELF] })) {
+      if (passing(ctx.hierarchy.getSlot(id))) continue;
+      const body = bodyOf(id);
+      if (body === undefined) continue;
+      if (body === null) { fixed = true; continue; }
+      if (!bodies.some((b) => b.id === body.id)) bodies.push(body);
+      const p = partOf(id);
+      if (p && !parts.some((q) => q.part.id === p.part.id)) parts.push(p);
+    }
+  }
+  if (MODES[mode] === 'Unscrew') {
+    const target = parts[0];
+    return target ? { kind: 'unscrew', target, color: LOOSEN, lines: ['Unscrew', target.part.name] } : { kind: null, color: IDLE, lines: ['Unscrew', 'Touch a joined part'] };
+  }
+  if (bodies.some((b) => ctx.grab.isSlotHeld(b.id))) return { kind: null, color: IDLE, lines: ['Join', 'Let go of it first'] };
+  if (bodies.length >= 2) return { kind: 'join', bodies, parts, fixed, color: READY, lines: ['Join', bodies.map((b) => b.name).join(' + ')] };
+  if (bodies.length === 1 && fixed) return { kind: 'join', bodies, parts, fixed, color: FIX, lines: ['Fix in place', bodies[0].name] };
+  return { kind: null, color: IDLE, lines: ['Join', bodies.length ? 'Touch a second part' : 'Touch where parts meet'] };
+}
+
+// Puts the bodies under one assembly (a new one, or one of them that already is), where they move as one: only the assembly
+// can be picked up, its parts no longer on their own. Something fixed touched as well fixes the assembly in place.
+function join({ bodies, parts, fixed }) {
+  let target = bodies.find((b) => kindOf(b) === 'assembly');
+  if (!target) {
+    const pose = ctx.hierarchy.getWorldPose(bodies[0].id);
+    const id = crypto.randomUUID();
+    ctx.world.spawn({ id, name: 'Assembly', position: pose.position.map(round3), rotation: pose.rotation, components: [{ type: 'container' }, { type: 'grabbable', scalable: true }, { type: 'scriptState', data: { kind: 'assembly', fixed: false, grips: {} } }] });
+    target = ctx.hierarchy.getSlot(id);
+  }
+  const data = { kind: 'assembly', fixed: false, ...dataOf(target) };
+  data.grips = { ...(data.grips || {}) };
+  const joined = [];
+  for (const body of bodies) {
+    if (body.id === target.id || !ctx.world.setParent(body.id, target.id)) continue;
+    if (kindOf(body) === 'assembly') {
+      // Two assemblies become one: the other's parts and screws move across, and it goes.
+      const other = dataOf(body);
+      Object.assign(data.grips, other.grips || {});
+      if (other.fixed) data.fixed = true;
+      for (const child of ctx.hierarchy.getChildren(body.id)) if (ctx.world.setParent(child.id, target.id) && kindOf(child) !== 'screw') joined.push(child.id);
+      ctx.world.deleteSlot(body.id);
+      continue;
+    }
+    const grip = body.components.find((c) => c.type === 'grabbable');
+    if (grip) {
+      data.grips[body.id] = grip;
+      ctx.world.removeComponent(body.id, 'grabbable');
+    }
+    joined.push(body.id);
+  }
+  if (fixed) data.fixed = true;
+  if (data.fixed) ctx.world.removeComponent(target.id, 'grabbable');
+  ctx.world.setComponentField(target.id, 'scriptState', 'data', data);
+  // An assembly made but left with nothing in it (each part was taken by a hand meanwhile) is not kept.
+  if (!ctx.hierarchy.getChildren(target.id).length) { ctx.world.deleteSlot(target.id); return false; }
+  // The screw holds what it went through: the parts just joined, and those of the assembly it went into.
+  leaveScrew(target.id, joined.concat(parts.map((p) => p.part.id)));
+  return true;
+}
+
+// A screw head left where the screw went in, as part of the assembly.
+function leaveScrew(assemblyId, joins) {
+  const base = partPose('Screw Base'), head = partPose('Screw Head'), muzzle = partPose('Muzzle');
+  if (!base || !head || !muzzle) return;
+  const hit = ctx.world.raycast(ctx.math.vecSub(base.position, ctx.math.vecScale(muzzle.forward, 0.05)), muzzle.forward, 0.15, { ignore: [SELF] });
+  const id = crypto.randomUUID();
+  ctx.world.spawn({
+    id,
+    name: 'Screw',
+    position: (hit ? hit.point : base.position).map(round3),
+    rotation: head.rotation,
+    scale: [0.018, 0.005, 0.018],
+    components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'cylinder' }, color: '#d1d5db' }, { type: 'scriptState', data: { kind: 'screw', joins } }]
+  });
+  ctx.world.setParent(id, assemblyId);
+}
+
+// Takes a part out of its assembly, loose again, with the screws that held it; an assembly left with one part is undone.
+function unscrew({ assembly, part: piece }) {
+  const data = { ...(dataOf(assembly) || {}) };
+  data.grips = { ...(data.grips || {}) };
+  const free = (id) => {
+    if (!ctx.world.setParent(id, null)) return false;
+    ctx.world.setComponent(id, data.grips[id] || { type: 'grabbable', scalable: true });
+    delete data.grips[id];
+    return true;
+  };
+  if (!free(piece.id)) return false;
+  const children = ctx.hierarchy.getChildren(assembly.id);
+  for (const screw of children) {
+    const joins = kindOf(screw) === 'screw' ? dataOf(screw).joins || [] : null;
+    if (joins && joins.includes(piece.id)) ctx.world.deleteSlot(screw.id);
+  }
+  const rest = children.filter((c) => kindOf(c) !== 'screw');
+  if (rest.length <= 1) {
+    for (const last of rest) free(last.id);
+    ctx.world.deleteSlot(assembly.id);
+  } else ctx.world.setComponentField(assembly.id, 'scriptState', 'data', data);
+  return true;
+}
+
+function setScrewColor(color) {
+  for (const name of ['Screw', 'Screw Head']) {
+    const p = part(name);
+    const renderer = p && p.components.find((c) => c.type === 'meshRenderer');
+    if (renderer && renderer.color !== color) ctx.world.setComponentField(p.id, 'meshRenderer', 'color', color);
+  }
+}
+let shownLines = '';
+function readout(lines) {
+  const key = lines.join('|');
+  if (key === shownLines) return;
+  shownLines = key;
+  const r = part('Readout');
+  if (r) ctx.world.setComponentField(r.id, 'textDisplay', 'lines', lines, false);
+}
+// The bit's own script spins it while this is set.
+function spin(on) { const bit = part('Bit'); if (bit) ctx.world.setComponentField(bit.id, 'scriptState', 'data', { spinning: on }); }
+function stop() { if (drilling) spin(false); drilling = null; progress = 0; }
+
+const tool = {
+  onDrop() { stop(); setScrewColor(IDLE); },
+  onUnequip() { stop(); setScrewColor(IDLE); },
+  onTrigger(e) {
+    if (e.phase === 'press') {
+      current = plan();
+      if (!current.kind) { buzz(); return true; }
+      drilling = current;
+      progress = 0;
+      whirr = 0;
+      spin(true);
+      return true;
+    }
+    if (e.phase === 'release') stop();
+    return true;
+  },
+  tick(dt) {
+    if (!ctx.world.isHost()) return;
+    looked += dt;
+    if (drilling || looked > 0.1) {
+      looked = 0;
+      current = plan();
+      setScrewColor(current.color);
+      readout(current.lines);
+    }
+    if (!drilling) return;
+    // The screw slipped off what it was going into.
+    if (current.kind !== drilling.kind) { stop(); buzz(); return; }
+    progress += dt;
+    whirr -= dt;
+    if (whirr <= 0) {
+      whirr = 0.08;
+      ctx.audio.play({ frequency: 160 + 420 * Math.min(1, progress / DRILL_TIME), noiseMix: 0.45, durationMs: 110, volume: 0.25 });
+    }
+    if (progress < DRILL_TIME) return;
+    const done = current;
+    stop();
+    const ok = done.kind === 'join' ? join(done) : unscrew(done.target);
+    if (!ok) { buzz(); return; }
+    const tip = partPose('Muzzle');
+    if (tip) flash(tip.position, done.color);
+    beep(done.kind === 'join' ? 880 : 520);
+    looked = 1;
+  },
+  getRadialItems() {
+    return [{ label: 'Mode: ' + MODES[mode], isEnabled: () => true, onSelect: () => { mode = (mode + 1) % MODES.length; stop(); looked = 1; } }];
+  }
+};
+`;
+
+/** The drill's bit: spins while the drill drives a screw (the drill sets `spinning` in the bit's scriptState). Every player's device spins its own. */
+const BIT_SPIN = String.raw`
+const REST = ctx.self.getSlot().rotation;
+let angle = 0;
+return {
+  tick(dt) {
+    const state = ctx.self.getComponent('scriptState');
+    if (!state || !state.data || !state.data.spinning) return;
+    angle = (angle + dt * 40) % (Math.PI * 2);
+    ctx.self.setLocalTransform({ rotation: ctx.math.quatMultiply(REST, ctx.math.quatFromAxisAngle([0, 1, 0], angle)) });
+  }
+};
+`;
+
 // --- The tools, by bay --------------------------------------------------------------------------------------------------
 
 const handle = (color = '#374151') => ({ name: 'Handle', mesh: 'box', position: [0, 0, 0], scale: [0.03, 0.03, 0.16], color, collider: true });
+/** @param {number} z */
 const muzzle = (z) => ({ name: 'Muzzle', position: [0, 0, z] });
+/** How far above the drill's grip its barrel (and the screw) runs. */
+const DRILL_AXIS = 0.055;
 
 /**
  * Each tool: the bay it belongs to, its parts (in the tool's own space), its script, and the tip card above it.
- * A part without a mesh is just a point the script reads (the Muzzle it aims from).
+ * A part without a mesh is just a point the script reads (the Muzzle it aims from); `components` are any a part has
+ * besides its mesh. `lift` raises a tool that hangs below its handle so it lies on its bench.
  */
 export const TOOLS = [
 	{
@@ -683,7 +944,46 @@ export const TOOLS = [
 		],
 		code: script(ALIGNER),
 		tip: { title: 'Aligner', lines: ['Aim at an object, release:', 'it stands upright and square', 'Menu: angle step,', 'snap to a grid'] }
-	}
+	},
+	{
+		id: 'drill',
+		bay: 'measure',
+		name: 'Drill',
+		// Its battery hangs below the grip: raised on the bench so that it stands on it.
+		lift: 0.09,
+		parts: [
+			{ name: 'Grip', mesh: 'box', position: [0, -0.01, -0.005], rotation: tilt(-0.25), scale: [0.032, 0.1, 0.045], color: '#1f2937', collider: true },
+			{ name: 'Body', mesh: 'box', position: [0, DRILL_AXIS, 0.02], scale: [0.05, 0.06, 0.17], color: '#f59e0b', collider: true },
+			{ name: 'Battery', mesh: 'box', position: [0, -0.07, -0.01], scale: [0.055, 0.035, 0.08], color: '#111827' },
+			{ name: 'Chuck', mesh: 'cylinder', position: [0, DRILL_AXIS, 0.125], rotation: ALONG, scale: [0.032, 0.04, 0.032], color: '#4b5563' },
+			{
+				name: 'Bit',
+				mesh: 'cylinder',
+				position: [0, DRILL_AXIS, 0.165],
+				rotation: ALONG,
+				scale: [0.007, 0.04, 0.007],
+				color: '#9ca3af',
+				components: [{ type: 'scriptState', data: { spinning: false } }, { type: 'codeBlock', code: BIT_SPIN.trim() }]
+			},
+			// The screw waiting at the tip: its colour says what driving it would do.
+			{ name: 'Screw Head', mesh: 'cylinder', position: [0, DRILL_AXIS, 0.188], rotation: ALONG, scale: [0.016, 0.005, 0.016], color: '#9ca3af' },
+			{ name: 'Screw', mesh: 'cylinder', position: [0, DRILL_AXIS, 0.225], rotation: ALONG, scale: [0.006, 0.07, 0.006], color: '#9ca3af' },
+			{ name: 'Screw Base', position: [0, DRILL_AXIS, 0.19] },
+			{ name: 'Muzzle', position: [0, DRILL_AXIS, 0.26] },
+			{
+				name: 'Readout',
+				mesh: 'plane',
+				position: [0, DRILL_AXIS + 0.045, -0.075],
+				rotation: tilt(Math.PI / 6),
+				scale: [0.14, 0.07, 1],
+				color: '#111827',
+				textDisplay: { title: 'Drill', lines: ['Join', 'Touch where parts meet'], color: '#111827' }
+			}
+		],
+		code: script(DRILL),
+		tip: { title: 'Drill', lines: ['Touch the screw where', 'parts meet, hold trigger:', 'they move as one', 'Menu: Unscrew takes apart'] }
+	},
+	...HOME_TOOLS.map(({ body, ...tool }) => ({ ...tool, code: script(`${HOME_PRELUDE}\n${body}`) }))
 ];
 
 /** How every tool is held: in the fist like a wand, the fingers closing round its handle. */

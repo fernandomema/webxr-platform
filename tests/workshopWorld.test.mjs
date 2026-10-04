@@ -55,7 +55,7 @@ test('every raised floor can be stepped onto from the one below it', () => {
 
 test('each work bay has a bench, shelving and a sign that faces into the hall', () => {
 	const bays = workshop.filter((slot) => slot.name.startsWith('Bay: '));
-	assert.equal(bays.length, 6);
+	assert.equal(bays.length, 8);
 	for (const bay of bays) {
 		const parts = workshop.filter((slot) => slot.parentId === bay.id);
 		assert.ok(parts.some((slot) => slot.name.endsWith('Workbench Top') && isSolid(slot)), `${bay.name} has a workbench`);

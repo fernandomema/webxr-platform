@@ -19,12 +19,22 @@ export interface CodeBlockHost {
 	setComponentField(slotId: string, componentType: string, field: string, value: unknown, broadcast?: boolean): void;
 	/** Adds a component to another slot, or replaces the one of its type. Host/solo only; returns whether it was done. */
 	setComponent(slotId: string, component: Component, broadcast?: boolean): boolean;
+	/** Takes a component of a type off another slot. Host/solo only; returns whether it was done. */
+	removeComponent(slotId: string, componentType: string, broadcast?: boolean): boolean;
+	/** Moves a slot under another (or to the root, `null`), keeping where it is in the world. Host/solo only; returns whether it was done. */
+	reparent(slotId: string, parentId: string | null, broadcast?: boolean): boolean;
 	/** Records a slot's node transform (moved by a script) as its data and, when `broadcast`, sends it to guests. Host/solo only. */
 	commitTransform(slotId: string, broadcast?: boolean): void;
 	/** Every non-system Slot whose world position is within `radius` of `worldPos` — a generic spatial query for proximity/collision-style logic (hit detection, triggers, area effects), not tied to any one demo. O(live slot count) per call. */
 	findNear(worldPos: Vec3, radius: number): Slot[];
 	/** Casts a ray through the live scene — generic aiming/hit-testing for any tool (a laser, a thrown object, a spray), not tied to any one demo. `null` when nothing pickable is hit within `maxDistance`. */
 	raycast(origin: Vec3, direction: Vec3, maxDistance: number, ignore?: readonly string[]): RaycastHit | null;
+	/**
+	 * The slots whose pickable meshes come within `radius` of the segment `from`-`to` (a capsule; a sphere when both ends are
+	 * the same point), nearest first — generic touch-testing for any tool (a blade, a screw, a hand-sized trigger zone), not
+	 * tied to any one demo. Meshes are taken as their oriented bounding boxes (ellipsoids for builtin spheres).
+	 */
+	overlap(from: Vec3, to: Vec3, radius: number, ignore?: readonly string[]): string[];
 	/** Resolves a grabberId (from `getGrabbers`/`ctx.grab.heldBy()`) to a stable player id + display name — generic attribution for scripts that need to know "who did this" (scoreboards, ownership tags, logs), not tied to any one demo. */
 	resolvePlayer(grabberId: string): { id: string; name: string };
 	/** Which player/hand has this slot — or one of its ancestors — equipped, if any. */
@@ -278,7 +288,9 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 		},
 		grab: {
 			isHeld: () => host.getGrabbers(slotId).length > 0,
-			heldBy: () => host.getGrabbers(slotId)
+			heldBy: () => host.getGrabbers(slotId),
+			/** Whether a hand holds ANOTHER slot or has it (or what it belongs to) equipped — for tools that must leave alone what a player has hold of. */
+			isSlotHeld: (targetId: string) => host.getGrabbers(targetId).length > 0 || host.getEquipHolder(targetId) !== null
 		},
 		world: {
 			isHost: () => host.isHost(),
@@ -306,23 +318,37 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 			 * only, like `setComponentField`; returns whether it was done. Refused for code and identity components.
 			 */
 			setComponent: (targetId: string, component: Component, broadcast = true): boolean => host.setComponent(targetId, component, broadcast),
+			/** Takes the component of a type off ANOTHER slot (the counterpart of `setComponent`). Host/solo only; returns whether it was done. */
+			removeComponent: (targetId: string, componentType: string, broadcast = true): boolean => host.removeComponent(targetId, componentType, broadcast),
 			/**
-			 * Puts ANOTHER slot at a world position and/or rotation, keeping its scale — for tools that straighten, snap or
-			 * place objects. Host/solo only, like `setComponentField`. Refused (returns false) while a hand holds the slot
-			 * or it is equipped, so it never fights a player. `broadcast: false` moves it on this peer only.
+			 * Puts ANOTHER slot at a world position and/or rotation, and optionally a local `scale` — for tools that straighten,
+			 * snap, size or place objects. Host/solo only, like `setComponentField`. Refused (returns false) while a hand holds the
+			 * slot or it is equipped, so it never fights a player. `broadcast: false` moves it on this peer only.
 			 */
-			setWorldPose: (targetId: string, pose: { position?: Vec3; rotation?: Quat }, broadcast = true): boolean => {
+			setWorldPose: (targetId: string, pose: { position?: Vec3; rotation?: Quat; scale?: Vec3 }, broadcast = true): boolean => {
 				if (!host.isHost()) return false;
 				const target = host.getNode(targetId);
 				if (!target || host.getGrabbers(targetId).length > 0 || host.getEquipHolder(targetId)) return false;
 				if (pose.position) setWorldPosition(target, pose.position);
 				if (pose.rotation) setWorldRotation(target, pose.rotation);
+				if (pose.scale?.length === 3 && pose.scale.every((value) => Number.isFinite(value) && value > 0)) target.scaling.copyFromFloats(...pose.scale);
 				host.commitTransform(targetId, broadcast);
 				return true;
+			},
+			/**
+			 * Moves ANOTHER slot under `parentId` (or to the root, `null`), keeping where it is in the world — for tools that
+			 * group, attach or detach things. Host/solo only. Refused (returns false) while a hand holds or has equipped the
+			 * slot, and for a move that would put a slot under itself.
+			 */
+			setParent: (targetId: string, parentId: string | null, broadcast = true): boolean => {
+				if (!host.isHost() || host.getGrabbers(targetId).length > 0 || host.getEquipHolder(targetId)) return false;
+				return host.reparent(targetId, parentId, broadcast);
 			},
 			findNear: (worldPos: Vec3, radius: number) => host.findNear(worldPos, radius),
 			/** `options.ignore`: slots the ray passes through, with everything under them (a tool aiming past its own parts and what it holds). */
 			raycast: (origin: Vec3, direction: Vec3, maxDistance: number, options?: { ignore?: string[] }) => host.raycast(origin, direction, maxDistance, options?.ignore),
+			/** Ids of the slots touching the capsule `from`-`to` of `radius` (nearest first). `options.ignore` as for `raycast`. */
+			overlap: (from: Vec3, to: Vec3, radius: number, options?: { ignore?: string[] }) => host.overlap(from, to, radius, options?.ignore),
 			getPlayer: (grabberId: string) => host.resolvePlayer(grabberId)
 		},
 		particles: {

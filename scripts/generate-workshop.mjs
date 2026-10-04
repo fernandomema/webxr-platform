@@ -37,11 +37,16 @@ const COLORS = {
 	door: '#475569'
 };
 
-/** The six work bays, three along each side wall, nearest the entrance first. Their tools come in a later phase. */
+/**
+ * The work bays along each side wall, nearest the entrance first: the two by the entrance (index -1, between the entrance
+ * wall and the first columns) hold the home-building tools, the six past them a kind of work each.
+ */
 const BAYS = [
+	{ id: 'home', side: LEFT, index: -1, title: 'Build a Home', lines: ['Walls, rooms, floors', 'and stairs'], color: '#dc2626' },
+	{ id: 'home-details', side: RIGHT, index: -1, title: 'Home Details', lines: ['Doors, windows, roofs', 'and a sledgehammer'], color: '#2563eb' },
 	{ id: 'shapes', side: LEFT, index: 0, title: 'Shapes', lines: ['Boxes, spheres, cylinders', 'and building blocks'], color: '#8b5cf6' },
 	{ id: 'paint', side: RIGHT, index: 0, title: 'Paint & Color', lines: ['Brushes, colors', 'and surface coatings'], color: '#f97316' },
-	{ id: 'measure', side: LEFT, index: 1, title: 'Measure & Align', lines: ['Rulers, grids', 'and alignment guides'], color: '#eab308' },
+	{ id: 'measure', side: LEFT, index: 1, title: 'Measure & Align', lines: ['Rulers, alignment', 'and a drill to join parts'], color: '#eab308' },
 	{ id: 'logic', side: RIGHT, index: 1, title: 'Logic & Scripts', lines: ['Buttons, scripts', 'and interactions'], color: '#22c55e' },
 	{ id: 'media', side: LEFT, index: 2, title: 'Sound & Media', lines: ['Audio, screens', 'and text displays'], color: '#06b6d4' },
 	{ id: 'effects', side: RIGHT, index: 2, title: 'Effects', lines: ['Particles, motion', 'and skies'], color: '#ec4899' }
@@ -211,7 +216,7 @@ for (const bay of BAYS) {
 		const z = benchZ + (i - (tools.length - 1) / 2) * 1.25;
 		const id = `workshop-tool-${tool.id}`;
 		slot(id, tool.name, g, {
-			position: [at(benchDepth / 2), benchHeight + 0.025, z],
+			position: [at(benchDepth / 2), benchHeight + 0.025 + (tool.lift ?? 0), z],
 			components: [{ type: 'container' }, { type: 'grabbable', scalable: false }, toolEquippable(), { type: 'codeBlock', code: tool.code }]
 		});
 		for (const [j, piece] of tool.parts.entries()) {
@@ -222,7 +227,8 @@ for (const bay of BAYS) {
 				components: [
 					...(piece.mesh ? [mesh(piece.mesh, piece.color)] : []),
 					...(piece.collider ? [solid] : []),
-					...(piece.textDisplay ? [{ type: 'textDisplay', ...piece.textDisplay }] : [])
+					...(piece.textDisplay ? [{ type: 'textDisplay', ...piece.textDisplay }] : []),
+					...(piece.components ?? [])
 				]
 			});
 		}
@@ -231,7 +237,7 @@ for (const bay of BAYS) {
 }
 // Low partitions between neighbouring bays, out from the columns that separate them.
 for (const s of [-1, 1]) {
-	for (const [i, z] of [COLUMN_Z[2], COLUMN_Z[3]].entries()) {
+	for (const [i, z] of [COLUMN_Z[1], COLUMN_Z[2], COLUMN_Z[3]].entries()) {
 		const length = 3.8;
 		box(`workshop-partition-${s === LEFT ? 'l' : 'r'}${i}`, `Bay Partition ${s === LEFT ? 'Left' : 'Right'} ${i + 1}`, 'workshop-building', [s * (W - t / 2 - length / 2), 0.7, z], [length, 1.4, 0.1], COLORS.wainscot);
 	}
