@@ -140,6 +140,9 @@ async function drawTopDown(scene: Scene, camera: FreeCamera | ArcRotateCamera, s
 	});
 	try {
 		target.activeCamera = camera;
+		// Panels and signs draw their GUI into their texture when the scene renders a camera, which a picture taken from a
+		// render target never does: without this their screens come out blank.
+		scene.onBeforeCameraRenderObservable.notifyObservers(camera);
 		target.renderList = scene.meshes.slice();
 		target.clearColor = scene.clearColor;
 		target.ignoreCameraViewport = true;

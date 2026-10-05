@@ -67,14 +67,15 @@ test('every disc in the lobby is exactly what buildDisc makes from its readable 
   }
 });
 
-test('a disc carries a preview camera above and in front of it, looking down at the label', () => {
+test('a disc carries a preview camera straight above its centre, looking down at the label', () => {
   const slots = buildDisc(params);
   const camera = slots.find((slot) => find(slot, 'previewCamera'));
   assert.equal(camera.parentId, 'd');
-  assert.ok(camera.position[1] > 0 && camera.position[2] > 0);
+  assert.ok(camera.position[1] > 0);
+  assert.deepEqual([camera.position[0], camera.position[2]], [0, 0]);
   const [x, y, z, w] = camera.rotation;
   const forward = [2 * (x * z + w * y), 2 * (y * z - w * x), 1 - 2 * (x * x + y * y)];
-  assert.ok(forward[1] < 0 && forward[2] < 0, 'it looks down and away from the player side');
+  assert.ok(Math.abs(forward[0]) < 1e-3 && Math.abs(forward[2]) < 1e-3 && forward[1] < -0.999, 'it looks straight down');
 });
 
 test('a label picture keeps the title strip and follows labelImage when it is edited', () => {

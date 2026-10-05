@@ -11,6 +11,7 @@ import {
 } from '@babylonjs/core';
 import type { CameraComponent } from '../ecs/types';
 import type { RadialItemDef } from './codeBlockRuntime';
+import { mirrorRenderHooks } from './mirrorHooks';
 import { createCameraUi, loadSettings, qualityFor, saveSettings, QUALITY_LONG_SIDE, QUALITY_LABEL, type CameraSettings } from './cameraSettingsUi';
 
 /** Further than this from the viewer, the screen is too small to read: it draws nothing and costs nothing. */
@@ -139,8 +140,14 @@ export function setupCameraSurface(scene: Scene, mesh: AbstractMesh, component: 
 		relistIfNeeded(target);
 		camera.outputRenderTarget = target;
 		scene.incrementRenderId();
-		target.render();
-		camera.outputRenderTarget = null;
+		// Like a mirror, this camera sees the player's own head, which is hidden from their own eyes.
+		mirrorRenderHooks.before.notifyObservers();
+		try {
+			target.render();
+		} finally {
+			mirrorRenderHooks.after.notifyObservers();
+			camera.outputRenderTarget = null;
+		}
 	};
 
 	let recording: { recorder: MediaRecorder; chunks: Blob[]; canvas: HTMLCanvasElement; context: CanvasRenderingContext2D; reading: boolean; lastFrame: number } | null = null;

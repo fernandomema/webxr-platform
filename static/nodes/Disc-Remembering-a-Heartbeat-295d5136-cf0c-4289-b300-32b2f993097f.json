@@ -1,0 +1,386 @@
+{
+  "id": "Disc-Remembering-a-Heartbeat-295d5136-cf0c-4289-b300-32b2f993097f.json",
+  "folderId": null,
+  "name": "Disc: Remembering a Heartbeat",
+  "slotData": [
+    {
+      "id": "lobby-disc-1",
+      "parentId": null,
+      "name": "Disc: Remembering a Heartbeat",
+      "position": [
+        3.28,
+        1.0156,
+        -2.089
+      ],
+      "rotation": [
+        0.5878,
+        0,
+        0,
+        0.809
+      ],
+      "scale": [
+        0.3,
+        0.01,
+        0.3
+      ],
+      "components": [
+        {
+          "type": "recordDisc",
+          "title": "Remembering a Heartbeat",
+          "author": "Hampus Naeselius",
+          "labelColor": "#9f1239",
+          "vinylColor": "#0b0b10"
+        },
+        {
+          "type": "meshRenderer",
+          "meshRef": {
+            "kind": "builtin",
+            "id": "cylinder"
+          },
+          "color": "#0b0b10"
+        },
+        {
+          "type": "collider",
+          "shape": "box"
+        },
+        {
+          "type": "grabbable",
+          "scalable": false
+        },
+        {
+          "type": "insertable",
+          "tag": "disc"
+        },
+        {
+          "type": "audioPlayer",
+          "source": {
+            "kind": "url",
+            "url": "/audio/hampus-naeselius-remembering-a-heartbeat-epidemic-fantasy.mp3"
+          },
+          "loop": true,
+          "volume": 0.8
+        }
+      ]
+    },
+    {
+      "id": "lobby-disc-1-rim",
+      "parentId": "lobby-disc-1",
+      "name": "Disc Rim",
+      "position": [
+        0,
+        0.52,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        0.9733,
+        0.04,
+        0.9733
+      ],
+      "components": [
+        {
+          "type": "meshRenderer",
+          "meshRef": {
+            "kind": "builtin",
+            "id": "cylinder"
+          },
+          "color": "#9f1239"
+        }
+      ]
+    },
+    {
+      "id": "lobby-disc-1-plate",
+      "parentId": "lobby-disc-1",
+      "name": "Disc Plate",
+      "position": [
+        0,
+        0.54,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        0.9333,
+        0.08,
+        0.9333
+      ],
+      "components": [
+        {
+          "type": "meshRenderer",
+          "meshRef": {
+            "kind": "builtin",
+            "id": "cylinder"
+          },
+          "color": "#0b0b10"
+        }
+      ]
+    },
+    {
+      "id": "lobby-disc-1-groove-1",
+      "parentId": "lobby-disc-1",
+      "name": "Disc Groove 1",
+      "position": [
+        0,
+        0.555,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        0.8733,
+        0.11,
+        0.8733
+      ],
+      "components": [
+        {
+          "type": "meshRenderer",
+          "meshRef": {
+            "kind": "builtin",
+            "id": "cylinder"
+          },
+          "color": "#232328"
+        }
+      ]
+    },
+    {
+      "id": "lobby-disc-1-groove-2",
+      "parentId": "lobby-disc-1",
+      "name": "Disc Groove 2",
+      "position": [
+        0,
+        0.57,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        0.7933,
+        0.14,
+        0.7933
+      ],
+      "components": [
+        {
+          "type": "meshRenderer",
+          "meshRef": {
+            "kind": "builtin",
+            "id": "cylinder"
+          },
+          "color": "#0b0b10"
+        }
+      ]
+    },
+    {
+      "id": "lobby-disc-1-groove-3",
+      "parentId": "lobby-disc-1",
+      "name": "Disc Groove 3",
+      "position": [
+        0,
+        0.585,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        0.7133,
+        0.17,
+        0.7133
+      ],
+      "components": [
+        {
+          "type": "meshRenderer",
+          "meshRef": {
+            "kind": "builtin",
+            "id": "cylinder"
+          },
+          "color": "#232328"
+        }
+      ]
+    },
+    {
+      "id": "lobby-disc-1-groove-4",
+      "parentId": "lobby-disc-1",
+      "name": "Disc Groove 4",
+      "position": [
+        0,
+        0.6,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        0.6333,
+        0.2,
+        0.6333
+      ],
+      "components": [
+        {
+          "type": "meshRenderer",
+          "meshRef": {
+            "kind": "builtin",
+            "id": "cylinder"
+          },
+          "color": "#0b0b10"
+        }
+      ]
+    },
+    {
+      "id": "lobby-disc-1-groove-5",
+      "parentId": "lobby-disc-1",
+      "name": "Disc Groove 5",
+      "position": [
+        0,
+        0.615,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        0.5533,
+        0.23,
+        0.5533
+      ],
+      "components": [
+        {
+          "type": "meshRenderer",
+          "meshRef": {
+            "kind": "builtin",
+            "id": "cylinder"
+          },
+          "color": "#232328"
+        }
+      ]
+    },
+    {
+      "id": "lobby-disc-1-label",
+      "parentId": "lobby-disc-1",
+      "name": "Disc Label",
+      "position": [
+        0,
+        0.65,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        0.4333,
+        0.3,
+        0.4333
+      ],
+      "components": [
+        {
+          "type": "meshRenderer",
+          "meshRef": {
+            "kind": "builtin",
+            "id": "cylinder"
+          },
+          "color": "#9f1239"
+        }
+      ]
+    },
+    {
+      "id": "lobby-disc-1-label-text",
+      "parentId": "lobby-disc-1",
+      "name": "Disc Label Text",
+      "position": [
+        0,
+        0.83,
+        0
+      ],
+      "rotation": [
+        0,
+        0.7071,
+        -0.7071,
+        0
+      ],
+      "scale": [
+        0.3067,
+        0.3067,
+        1
+      ],
+      "components": [
+        {
+          "type": "meshRenderer",
+          "meshRef": {
+            "kind": "builtin",
+            "id": "plane"
+          },
+          "color": "#9f1239"
+        },
+        {
+          "type": "textDisplay",
+          "title": "Remembering a Heartbeat",
+          "lines": [
+            "Hampus Naeselius"
+          ],
+          "color": "#9f1239",
+          "scale": 1.2,
+          "verticalAlign": "middle"
+        }
+      ]
+    },
+    {
+      "id": "lobby-disc-1-preview-camera",
+      "parentId": "lobby-disc-1",
+      "name": "Disc Preview Camera",
+      "position": [
+        0,
+        40,
+        1.1667
+      ],
+      "rotation": [
+        0,
+        0.9106,
+        -0.4132,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "components": [
+        {
+          "type": "previewCamera"
+        }
+      ]
+    }
+  ],
+  "kind": "object",
+  "worldLineageId": null,
+  "revisionNumber": null,
+  "thumbnailAssetId": "sha256:515a69b68e93f48d7f44725c60dd338aa72caf540d95a6f12334ce1409ce19a1",
+  "createdAt": "2026-10-05T15:03:18.382Z"
+}

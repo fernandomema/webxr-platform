@@ -1,5 +1,6 @@
 import { Color3, MeshBuilder, StandardMaterial, type AbstractMesh, type Scene } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Button, Control, Rectangle, StackPanel, TextBlock } from '@babylonjs/gui';
+import { THEME } from './ui/theme';
 
 export type CameraQuality = 'low' | 'medium' | 'high';
 export type CameraMode = 'photo' | 'video';
@@ -80,8 +81,8 @@ export function createCameraUi(scene: Scene, screen: AbstractMesh, aspect: numbe
 	const texture = AdvancedDynamicTexture.CreateForMesh(plane, WIDTH, height, true);
 
 	const style = (button: Button, selected: boolean, enabled = true) => {
-		button.background = selected ? '#4f46e5' : '#1f2937';
-		button.color = enabled ? 'white' : '#6b7280';
+		button.background = selected ? THEME.accent : THEME.surface;
+		button.color = enabled ? THEME.text : THEME.dim;
 		button.alpha = enabled ? 1 : 0.6;
 	};
 	const makeButton = (name: string, label: string, onClick: () => void, buttonWidth: string, buttonHeight = '64px') => {
@@ -125,7 +126,7 @@ export function createCameraUi(scene: Scene, screen: AbstractMesh, aspect: numbe
 		const block = new TextBlock(`camera-heading-${text}`, text);
 		block.height = '44px';
 		block.fontSize = 26;
-		block.color = '#9ca3af';
+		block.color = THEME.muted;
 		block.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
 		return block;
 	};

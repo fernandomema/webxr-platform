@@ -30,9 +30,20 @@ import { createWorldsBrowser } from './worldsBrowser';
 import { thumbnailUrl } from '$lib/assets/thumbnails';
 import type { AssetId } from '$lib/assets/ref';
 import { WORLD_VISIBILITY_INFO, type HostedWorldVisibility } from '$lib/worldVisibility';
+import { THEME } from './theme';
+import { TabRegistry, tabBarLayout, type TabSpec } from './dashTabs.ts';
+import { iconUri } from './icons.ts';
+import { createScrollColumn, createCard, placeText } from './layout.ts';
 
-const TABS = ['Home', 'Session', 'Worlds', 'Inventory', 'Settings', 'Account'] as const;
-type Tab = (typeof TABS)[number];
+/** A tab of the dash. Built-in ones are registered the same way, so anything can add its own with `DashPanelHandle.addTab`. */
+export interface DashTab extends TabSpec {
+	/** Fills the tab's page. Called once, when the tab is added. */
+	build(content: Rectangle): void;
+	/** The tab was opened (also each time it is opened again): refresh what it shows. */
+	onShow?(): void;
+	/** Another tab was opened in its place. */
+	onHide?(): void;
+}
 
 export interface DashPanelCallbacks {
 	onHostWorld(visibility: HostedWorldVisibility): Promise<void>;
@@ -67,6 +78,11 @@ export interface DashPanelCallbacks {
 export interface DashPanelHandle {
 	root: TransformNode;
 	refreshWorldsTab(): void;
+	/** Adds a tab to the dash (or replaces the one with its id). Returns a function that removes it again. */
+	addTab(tab: DashTab): () => void;
+	removeTab(id: string): void;
+	/** Opens a tab by its id. */
+	showTab(id: string): void;
 }
 
 export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks: DashPanelCallbacks): DashPanelHandle {
@@ -90,7 +106,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	const background = new Rectangle('dash-bg');
 	background.width = 1;
 	background.height = 1;
-	background.background = '#111827';
+	background.background = THEME.panel;
 	background.thickness = 0;
 	texture.addControl(background);
 
@@ -100,48 +116,148 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	tabsBar.top = '-284px';
 	background.addControl(tabsBar);
 
-	const contentByTab: Record<Tab, Rectangle> = {} as Record<Tab, Rectangle>;
-	let activeTab: Tab = 'Home';
+	// --- The tabs: a registry the bar and the pages follow, so tabs can be added or removed at any time ---
+	const tabs = new TabRegistry<DashTab>();
+	const contentByTab: Record<string, Rectangle> = {};
+	const tabButtons = new Map<string, Button>();
+	let activeTab = '';
+	let ready = false;
+	const TAB_BAR_WIDTH = 980;
 
-	function showTab(tab: Tab) {
-		activeTab = tab;
-		for (const t of TABS) contentByTab[t].isVisible = t === tab;
-		if (tab === 'Home') refreshHomeTab();
-		if (tab === 'Session' || tab === 'Worlds') refreshWorldsTab();
-		if (tab === 'Inventory') refreshInventoryTab();
+	function showTab(id: string) {
+		const tab = tabs.get(id);
+		if (!tab) return;
+		if (activeTab && activeTab !== id) tabs.get(activeTab)?.onHide?.();
+		activeTab = id;
+		for (const other of tabs.list()) contentByTab[other.id].isVisible = other.id === id;
+		for (const other of tabs.list()) styleTabButton(other.id);
+		tab.onShow?.();
+	}
+
+	const tabParts = new Map<string, { icon: string | undefined; image: Image | null; label: TextBlock }>();
+
+	function styleTabButton(id: string) {
+		const button = tabButtons.get(id);
+		const parts = tabParts.get(id);
+		if (!button || !parts) return;
+		const on = id === activeTab;
+		const color = on ? THEME.text : THEME.muted;
+		button.background = on ? THEME.accent : THEME.surface;
+		parts.label.color = color;
+		if (parts.image && parts.icon) parts.image.source = iconUri(parts.icon, color, 52) ?? '';
+	}
+
+	/** Lays the buttons out again: all of them share the bar, narrowing (and at last keeping only their icons) as tabs are added. */
+	function rebuildTabBar() {
+		for (const child of [...tabsBar.children]) {
+			tabsBar.removeControl(child);
+			child.dispose();
+		}
+		tabButtons.clear();
+		tabParts.clear();
+		const list = tabs.list();
+		const { width, showLabels } = tabBarLayout(list.length, TAB_BAR_WIDTH);
+		for (const tab of list) {
+			const btn = new Button(`tab-${tab.id}`);
+			btn.width = `${width}px`;
+			btn.height = '60px';
+			btn.cornerRadius = 10;
+			btn.thickness = 0;
+			btn.paddingLeft = '4px';
+			btn.paddingRight = '4px';
+			btn.onPointerClickObservable.add(() => showTab(tab.id));
+
+			// An icon, then the label; with no room for labels, the icon alone (or the label's start, for a tab without one).
+			const hasIcon = tab.icon !== undefined && iconUri(tab.icon, '#000') !== undefined;
+			const row = new StackPanel(`tab-${tab.id}-row`);
+			row.isVertical = false;
+			row.adaptWidthToChildren = true;
+			row.height = '36px';
+			row.isHitTestVisible = false;
+			let image: Image | null = null;
+			if (hasIcon) {
+				image = new Image(`tab-${tab.id}-icon`, '');
+				image.width = '26px'; image.height = '26px';
+				image.stretch = Image.STRETCH_UNIFORM;
+				image.paddingRight = showLabels ? '9px' : '0px';
+				image.isHitTestVisible = false;
+				row.addControl(image);
+			}
+			const text = showLabels || !hasIcon ? (showLabels ? tab.label : tab.label.slice(0, 2)) : '';
+			const label = new TextBlock(`tab-${tab.id}-label`, text);
+			label.fontSize = 20;
+			label.height = '36px';
+			label.width = text ? `${Math.ceil(text.length * 11.5) + 4}px` : '0px';
+			label.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+			label.isHitTestVisible = false;
+			row.addControl(label);
+			btn.addControl(row);
+
+			tabsBar.addControl(btn);
+			tabButtons.set(tab.id, btn);
+			tabParts.set(tab.id, { icon: tab.icon, image, label });
+			styleTabButton(tab.id);
+		}
+	}
+
+	function addTab(tab: DashTab): () => void {
+		// A tab replacing one with its id gets a fresh page.
+		if (contentByTab[tab.id]) {
+			background.removeControl(contentByTab[tab.id]);
+			contentByTab[tab.id].dispose();
+		}
+		const page = new Rectangle(`panel-${tab.id}`);
+		page.width = 1;
+		page.height = '520px';
+		page.top = '40px';
+		page.thickness = 0;
+		page.isVisible = false;
+		background.addControl(page);
+		contentByTab[tab.id] = page;
+		tab.build(page);
+		tabs.add(tab);
+		if (activeTab === tab.id) page.isVisible = true;
+		// The built-in tabs are opened once the whole panel is built, since opening one refreshes what is built after it.
+		else if (!activeTab && ready) showTab(tab.id);
+		return () => {
+			if (tabs.get(tab.id) === tab) removeTab(tab.id);
+		};
+	}
+
+	function removeTab(id: string) {
+		if (!tabs.remove(id)) return;
+		const page = contentByTab[id];
+		if (page) {
+			background.removeControl(page);
+			page.dispose();
+			delete contentByTab[id];
+		}
+		if (activeTab === id) {
+			activeTab = '';
+			const next = tabs.list()[0];
+			if (next) showTab(next.id);
+		}
+	}
+
+	tabs.onChange(rebuildTabBar);
+
+	// The built-in tabs. Each builds its page below, where the rest of its code lives; `onShow` refreshes it.
+	const BUILTIN_TABS: Array<Omit<DashTab, 'build'>> = [
+		{ id: 'home', label: 'Home', icon: 'house', order: 0, onShow: () => refreshHomeTab() },
+		{ id: 'session', label: 'Session', icon: 'users', order: 10, onShow: () => void refreshWorldsTab() },
+		{ id: 'worlds', label: 'Worlds', icon: 'globe', order: 20, onShow: () => void refreshWorldsTab() },
+		{ id: 'inventory', label: 'Inventory', icon: 'backpack', order: 30, onShow: () => refreshInventoryTab() },
 		// The keyboard's own layout key changes a setting too: show what is chosen now.
-		if (tab === 'Settings') refreshSettingsTab();
-	}
-
-	for (const tab of TABS) {
-		const btn = Button.CreateSimpleButton(`tab-${tab}`, tab);
-		btn.width = '150px';
-		btn.height = '60px';
-		btn.color = 'white';
-		btn.fontSize = 20;
-		btn.background = '#374151';
-		btn.cornerRadius = 8;
-		btn.thickness = 0;
-		btn.paddingLeft = '8px';
-		btn.paddingRight = '8px';
-		btn.onPointerClickObservable.add(() => showTab(tab));
-		tabsBar.addControl(btn);
-
-		const panel = new Rectangle(`panel-${tab}`);
-		panel.width = 1;
-		panel.height = '520px';
-		panel.top = '40px';
-		panel.thickness = 0;
-		panel.isVisible = tab === activeTab;
-		background.addControl(panel);
-		contentByTab[tab] = panel;
-	}
+		{ id: 'settings', label: 'Settings', icon: 'settings', order: 40, onShow: () => refreshSettingsTab() },
+		{ id: 'account', label: 'Account', icon: 'user', order: 50 }
+	];
+	for (const tab of BUILTIN_TABS) addTab({ ...tab, build: () => {} });
 
 	// --- Home tab: the player's own shortcuts ---
 	const homePanel = new StackPanel('home-panel');
 	homePanel.width = 0.85;
 	homePanel.top = '10px';
-	contentByTab.Home.addControl(homePanel);
+	contentByTab.home.addControl(homePanel);
 	let customisingHome = false;
 
 	function setSeatedMode(enabled: boolean) {
@@ -165,7 +281,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		const btn = Button.CreateSimpleButton(key, text);
 		btn.width = `${width}px`;
 		btn.height = '56px';
-		btn.color = 'white';
+		btn.color = THEME.text;
 		btn.fontSize = 22;
 		btn.cornerRadius = 8;
 		btn.background = background;
@@ -178,11 +294,11 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	const HOME_ACTIONS: Record<DashboardItemId, () => { text: string; background: string; run: () => void }> = {
 		seated: () => ({
 			text: `Seated mode: ${xrSettings.seatedMode ? 'On' : 'Off'}`,
-			background: xrSettings.seatedMode ? '#2563eb' : '#374151',
+			background: xrSettings.seatedMode ? THEME.accent : THEME.raised,
 			run: () => setSeatedMode(!xrSettings.seatedMode)
 		}),
-		inspector: () => ({ text: 'Inspector', background: '#374151', run: () => callbacks.onToggleInspector() }),
-		'exit-vr': () => ({ text: 'Exit VR', background: '#991b1b', run: () => void callbacks.onExitVr() })
+		inspector: () => ({ text: 'Inspector', background: THEME.raised, run: () => callbacks.onToggleInspector() }),
+		'exit-vr': () => ({ text: 'Exit VR', background: THEME.danger, run: () => void callbacks.onExitVr() })
 	};
 
 	function setHomeLayout(layout: DashboardItemId[]) {
@@ -193,163 +309,274 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 
 	function refreshHomeTab() {
 		for (const child of [...homePanel.children]) homePanel.removeControl(child);
-		homePanel.addControl(homeText('Home', 'white', 26, 44));
+		homePanel.addControl(homeText('Home', THEME.text, 26, 44));
 
 		if (!customisingHome) {
 			const layout = xrSettings.dashboardLayout;
-			if (layout.length === 0) homePanel.addControl(homeText('Nothing here yet. Use Customise to add your shortcuts.', '#9ca3af', 20, 60));
+			if (layout.length === 0) homePanel.addControl(homeText('Nothing here yet. Use Customise to add your shortcuts.', THEME.muted, 20, 60));
 			for (const id of layout) {
 				const action = HOME_ACTIONS[id]();
 				homePanel.addControl(homeButton(`home-${id}`, action.text, action.background, 420, action.run));
 			}
-			homePanel.addControl(homeButton('home-customise', 'Customise', '#1f2937', 220, () => { customisingHome = true; refreshHomeTab(); }));
+			homePanel.addControl(homeButton('home-customise', 'Customise', THEME.surface, 220, () => { customisingHome = true; refreshHomeTab(); }));
 			if (import.meta.env.DEV) {
-				homePanel.addControl(homeButton('home-reload', 'Reload', '#1f2937', 220, () => window.location.reload()));
+				homePanel.addControl(homeButton('home-reload', 'Reload', THEME.surface, 220, () => window.location.reload()));
 			}
 			return;
 		}
 
-		homePanel.addControl(homeText('Choose the shortcuts you want here, and their order.', '#9ca3af', 20, 40));
+		homePanel.addControl(homeText('Choose the shortcuts you want here, and their order.', THEME.muted, 20, 40));
 		const layout = xrSettings.dashboardLayout;
 		for (const { id, shown } of dashboardEditorOrder(layout)) {
 			const row = new StackPanel(`home-edit-${id}`);
 			row.isVertical = false;
 			row.height = '60px';
-			const name = homeText(dashboardItemLabel(id), shown ? 'white' : '#6b7280', 22, 52);
+			const name = homeText(dashboardItemLabel(id), shown ? THEME.text : THEME.dim, 22, 52);
 			name.width = '260px';
 			name.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
 			row.addControl(name);
-			row.addControl(homeButton(`home-toggle-${id}`, shown ? 'Shown' : 'Hidden', shown ? '#2563eb' : '#374151', 130, () => setHomeLayout(toggleDashboardItem(layout, id))));
+			row.addControl(homeButton(`home-toggle-${id}`, shown ? 'Shown' : 'Hidden', shown ? THEME.accent : THEME.raised, 130, () => setHomeLayout(toggleDashboardItem(layout, id))));
 			if (shown) {
-				row.addControl(homeButton(`home-up-${id}`, '▲', '#374151', 60, () => setHomeLayout(moveDashboardItem(layout, id, -1))));
-				row.addControl(homeButton(`home-down-${id}`, '▼', '#374151', 60, () => setHomeLayout(moveDashboardItem(layout, id, 1))));
+				row.addControl(homeButton(`home-up-${id}`, '▲', THEME.raised, 60, () => setHomeLayout(moveDashboardItem(layout, id, -1))));
+				row.addControl(homeButton(`home-down-${id}`, '▼', THEME.raised, 60, () => setHomeLayout(moveDashboardItem(layout, id, 1))));
 			}
 			homePanel.addControl(row);
 		}
-		homePanel.addControl(homeButton('home-done', 'Done', '#16a34a', 200, () => { customisingHome = false; refreshHomeTab(); }));
+		homePanel.addControl(homeButton('home-done', 'Done', THEME.go, 200, () => { customisingHome = false; refreshHomeTab(); }));
 	}
 	refreshHomeTab();
 
 	// --- Session tab (current session / hosting) ---
-	const sessionScroll = new ScrollViewer('session-scroll');
-	sessionScroll.width = 0.94;
-	sessionScroll.height = '490px';
-	sessionScroll.top = '10px';
-	sessionScroll.barColor = '#7c3aed';
-	sessionScroll.thickness = 0;
-	contentByTab.Session.addControl(sessionScroll);
-	const sessionList = new StackPanel('session-list');
-	sessionList.width = 0.94;
-	sessionScroll.addControl(sessionList);
+	const sessionColumn = createScrollColumn('session', { top: 10, height: 500 });
+	contentByTab.session.addControl(sessionColumn.scroll);
+	const sessionList = sessionColumn.list;
 
 	// --- Worlds tab (official, active and published worlds to go to) ---
-	const worldsBrowser = createWorldsBrowser(contentByTab.Worlds, sceneGraph, {
+	const worldsBrowser = createWorldsBrowser(contentByTab.worlds, sceneGraph, {
 		onJoinWorld: async (roomCode) => { await callbacks.onJoinWorld(roomCode); void refreshWorldsTab(); },
 		onSpawnPublishedWorld: callbacks.onSpawnPublishedWorld,
 		onLaunchBuiltinWorld: callbacks.onLaunchBuiltinWorld
 	});
 
 
-	const worldsTitle = new TextBlock('worlds-title', '¿Cómo quieres compartir este mundo?');
-	worldsTitle.color = 'white';
-	worldsTitle.fontSize = 22;
-	worldsTitle.height = '42px';
-	sessionList.addControl(worldsTitle);
+	// Cards of one width, like the settings: where this session stands, how to share the world, and saving it.
+	const SESSION_WIDTH = sessionColumn.width;
 
-	const worldsHint = new TextBlock('worlds-hint', 'Solo necesitas alojarlo si quieres que entren otras personas.');
-	worldsHint.color = '#9ca3af';
-	worldsHint.fontSize = 16;
-	worldsHint.height = '36px';
-	sessionList.addControl(worldsHint);
-	const visibilityOptions = new StackPanel('world-visibility-options');
-	const visibilityButtons: Button[] = [];
-	visibilityOptions.width = 1;
-	sessionList.addControl(visibilityOptions);
+	function sessionHeading(title: string): TextBlock {
+		const heading = new TextBlock(`session-heading-${title}`, title);
+		heading.width = `${SESSION_WIDTH}px`;
+		heading.height = '56px';
+		heading.paddingTop = '18px';
+		heading.fontSize = 22;
+		heading.fontWeight = 'bold';
+		heading.color = THEME.text;
+		heading.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+		return heading;
+	}
 
-	const worldActionStatus = new TextBlock('world-action-status', '');
-	worldActionStatus.color = '#fbbf24';
-	worldActionStatus.fontSize = 16;
-	worldActionStatus.height = '34px';
-	sessionList.addControl(worldActionStatus);
+	const sessionCard = (name: string, height: number) => createCard(name, SESSION_WIDTH, height);
 
-	const sessionPanel = new StackPanel('active-session-panel');
-	sessionPanel.width = 1;
-	sessionPanel.isVisible = false;
-	sessionList.addControl(sessionPanel);
+	function cardText(card: Rectangle, name: string, text: string, left: number, top: number, width: number, height: number, size: number, color: string): TextBlock {
+		const block = new TextBlock(name, text);
+		block.fontSize = size; block.color = color;
+		block.textWrapping = true;
+		placeText(card, block, left, top, width, height);
+		return block;
+	}
 
-	const sessionInfo = new TextBlock('active-session-info', '');
-	sessionInfo.color = '#86efac';
-	sessionInfo.fontSize = 19;
-	sessionInfo.height = '104px';
-	sessionPanel.addControl(sessionInfo);
+	// Where this session stands: alone, hosting (with the room code to give out) or visiting.
+	const statusCard = sessionCard('session-status', 140);
+	sessionList.addControl(statusCard);
+	const statusDot = new Rectangle('session-status-dot');
+	statusDot.width = statusDot.height = '16px';
+	statusDot.cornerRadius = 8; statusDot.thickness = 0;
+	statusDot.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+	statusDot.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+	statusDot.left = '24px'; statusDot.top = '26px';
+	statusCard.addControl(statusDot);
+	const statusTitle = cardText(statusCard, 'session-status-title', '', 54, 18, 560, 34, 24, THEME.text);
+	statusTitle.fontWeight = 'bold';
+	const statusDetail = cardText(statusCard, 'session-status-detail', '', 54, 58, 560, 60, 16, THEME.muted);
 
-	const stopHostingBtn = Button.CreateSimpleButton('stop-hosting-btn', 'Dejar de alojar');
-	stopHostingBtn.height = '52px';
-	stopHostingBtn.color = 'white';
-	stopHostingBtn.background = '#991b1b';
-	stopHostingBtn.cornerRadius = 8;
+	const codeCaption = new TextBlock('session-code-caption', 'ROOM CODE');
+	codeCaption.fontSize = 13; codeCaption.color = THEME.muted;
+	codeCaption.width = '280px'; codeCaption.height = '20px'; codeCaption.top = '16px'; codeCaption.left = '-24px';
+	codeCaption.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+	codeCaption.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+	codeCaption.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+	codeCaption.isHitTestVisible = false;
+	statusCard.addControl(codeCaption);
+	const codeText = new TextBlock('session-code', '');
+	codeText.fontSize = 38; codeText.fontWeight = 'bold'; codeText.color = THEME.glow;
+	codeText.width = '280px'; codeText.height = '48px'; codeText.top = '36px'; codeText.left = '-24px';
+	codeText.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+	codeText.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+	codeText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+	codeText.isHitTestVisible = false;
+	statusCard.addControl(codeText);
+
+	const stopHostingBtn = Button.CreateSimpleButton('stop-hosting-btn', 'Stop hosting');
+	stopHostingBtn.width = '180px'; stopHostingBtn.height = '40px';
+	stopHostingBtn.fontSize = 17;
+	stopHostingBtn.color = THEME.text; stopHostingBtn.background = THEME.danger;
+	stopHostingBtn.cornerRadius = 10; stopHostingBtn.thickness = 0;
+	stopHostingBtn.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+	stopHostingBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+	stopHostingBtn.left = '-24px'; stopHostingBtn.top = '-16px';
 	stopHostingBtn.onPointerClickObservable.add(async () => {
 		stopHostingBtn.isEnabled = false;
-		worldActionStatus.text = 'Cerrando la sesión…';
+		setSessionNotice('Closing the session…');
 		try {
 			await callbacks.onStopHosting();
-			worldActionStatus.text = '';
+			setSessionNotice('');
 			refreshWorldsTab();
 		} catch (err) {
-			worldActionStatus.text = err instanceof Error ? err.message : 'No se pudo cerrar la sesión';
+			setSessionNotice(err instanceof Error ? err.message : 'Could not close the session', 'error');
 			stopHostingBtn.isEnabled = true;
 		}
 	});
-	sessionPanel.addControl(stopHostingBtn);
+	statusCard.addControl(stopHostingBtn);
 
-	// Save the running scene as a world. A world loaded from the inventory gets a
-	// new revision in its own lineage (revisions are immutable), not a new world.
-	const saveWorldTitle = new TextBlock('save-world-title', 'Save this world');
-	saveWorldTitle.color = '#d1d5db'; saveWorldTitle.fontSize = 18; saveWorldTitle.height = '38px'; saveWorldTitle.top = '10px';
-	sessionList.addControl(saveWorldTitle);
-	const saveWorldRow = new StackPanel('save-world-row');
-	saveWorldRow.isVertical = false; saveWorldRow.height = '56px';
+	// Playing alone, the way to open the world up is this button: the choices of who can join show only once it is pressed.
+	let inviteOpen = false;
+	const inviteBtn = Button.CreateSimpleButton('invite-btn', 'Invite people');
+	inviteBtn.width = '200px'; inviteBtn.height = '44px';
+	inviteBtn.fontSize = 19;
+	inviteBtn.color = THEME.text; inviteBtn.background = THEME.accent;
+	inviteBtn.cornerRadius = 10; inviteBtn.thickness = 0;
+	inviteBtn.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+	inviteBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_CENTER;
+	inviteBtn.left = '-24px';
+	inviteBtn.onPointerClickObservable.add(() => {
+		inviteOpen = !inviteOpen;
+		setSessionNotice('');
+		void refreshWorldsTab();
+	});
+	statusCard.addControl(inviteBtn);
+
+	// What went wrong (or is going on), under the status: takes no room while there is nothing to say.
+	const sessionNotice = new TextBlock('session-notice', '');
+	sessionNotice.width = `${SESSION_WIDTH}px`;
+	sessionNotice.height = '0px';
+	sessionNotice.fontSize = 17;
+	sessionNotice.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+	sessionNotice.paddingLeft = '8px';
+	sessionList.addControl(sessionNotice);
+	function setSessionNotice(text: string, tone: 'info' | 'error' = 'info') {
+		sessionNotice.text = text;
+		sessionNotice.color = tone === 'error' ? THEME.error : THEME.glow;
+		sessionNotice.height = text ? '38px' : '0px';
+	}
+
+	// Inviting: how open the hosted session is. Each option is a card; the ones that cannot be used yet say so.
+	const shareHeading = sessionHeading('Who can join?');
+	sessionList.addControl(shareHeading);
+	const shareCards: Rectangle[] = [];
+	const UNAVAILABLE_VISIBILITIES: HostedWorldVisibility[] = ['friends', 'friends-plus'];
+
+	function addShareOption(visibility: HostedWorldVisibility) {
+		const info = WORLD_VISIBILITY_INFO[visibility];
+		const unavailable = UNAVAILABLE_VISIBILITIES.includes(visibility);
+		const card = sessionCard(`world-visibility-${visibility}`, 86);
+		card.height = '86px';
+		card.isPointerBlocker = true;
+		card.hoverCursor = unavailable ? 'default' : 'pointer';
+		cardText(card, `world-visibility-${visibility}-title`, info.label, 24, 14, 560, 30, 21, unavailable ? THEME.dim : THEME.text);
+		cardText(card, `world-visibility-${visibility}-about`, unavailable ? 'Coming soon: needs friends and access checks.' : info.description, 24, 44, 640, 26, 16, THEME.muted);
+		const action = new TextBlock(`world-visibility-${visibility}-action`, unavailable ? 'Soon' : 'Host  ›');
+		action.width = '160px'; action.height = '30px'; action.fontSize = 19;
+		action.color = unavailable ? THEME.dim : THEME.accentBorder;
+		action.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+		action.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+		action.left = '-24px';
+		action.isHitTestVisible = false;
+		card.addControl(action);
+		if (!unavailable) {
+			card.onPointerEnterObservable.add(() => { if (card.isEnabled) card.background = THEME.surfaceHover; });
+			card.onPointerOutObservable.add(() => { card.background = THEME.surface; });
+		}
+		card.onPointerClickObservable.add(async () => {
+			if (unavailable || !card.isEnabled) return;
+			if (!gameState.userId && visibility !== 'private') {
+				setSessionNotice('Sign in (Account tab) to host a friends or public session.', 'error');
+				return;
+			}
+			for (const other of shareCards) other.isEnabled = false;
+			action.text = 'Starting…';
+			setSessionNotice('');
+			try {
+				await callbacks.onHostWorld(visibility);
+				refreshWorldsTab();
+			} catch (err) {
+				setSessionNotice(err instanceof Error ? err.message : 'Could not host the world', 'error');
+			} finally {
+				for (const other of shareCards) other.isEnabled = true;
+				action.text = 'Host  ›';
+			}
+		});
+		shareCards.push(card);
+		sessionList.addControl(card);
+	}
+	addShareOption('private');
+	addShareOption('friends');
+	addShareOption('friends-plus');
+	addShareOption('public');
+
+	// Saving the running scene as a world. A world loaded from the inventory gets a new revision in its own
+	// lineage (revisions are immutable), not a new world.
+	const saveHeading = sessionHeading('Save this world');
+	sessionList.addControl(saveHeading);
+	const saveCard = sessionCard('save-world-card', 156);
+	sessionList.addControl(saveCard);
+	const saveAbout = cardText(saveCard, 'save-world-about', 'Keeps a copy in your inventory.', 24, 14, 880, 26, 17, THEME.muted);
 	const worldNameInput = new InputText('world-name-input');
-	worldNameInput.width = '300px'; worldNameInput.height = '48px';
-	worldNameInput.color = 'white'; worldNameInput.background = '#1f2937';
+	worldNameInput.width = '330px'; worldNameInput.height = '48px';
+	worldNameInput.fontSize = 19;
+	worldNameInput.color = THEME.text; worldNameInput.background = THEME.ink; worldNameInput.focusedBackground = THEME.accentSoft;
+	worldNameInput.thickness = 1;
 	worldNameInput.placeholderText = 'World name'; worldNameInput.text = 'My World';
-	worldNameInput.paddingRight = '6px';
-	saveWorldRow.addControl(worldNameInput);
+	worldNameInput.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+	worldNameInput.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+	worldNameInput.left = '24px'; worldNameInput.top = '52px';
+	saveCard.addControl(worldNameInput);
 	const saveWorldBtn = Button.CreateSimpleButton('save-world-btn', 'Save world');
-	saveWorldBtn.width = '330px'; saveWorldBtn.height = '48px'; saveWorldBtn.fontSize = 18;
-	saveWorldBtn.color = 'white'; saveWorldBtn.background = '#7c3aed'; saveWorldBtn.cornerRadius = 8;
-	saveWorldBtn.paddingRight = '6px';
-	saveWorldRow.addControl(saveWorldBtn);
+	saveWorldBtn.width = '230px'; saveWorldBtn.height = '48px'; saveWorldBtn.fontSize = 19;
+	saveWorldBtn.color = THEME.text; saveWorldBtn.background = THEME.accent; saveWorldBtn.cornerRadius = 10; saveWorldBtn.thickness = 0;
+	saveWorldBtn.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+	saveWorldBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+	saveWorldBtn.left = '370px'; saveWorldBtn.top = '52px';
+	saveCard.addControl(saveWorldBtn);
 	const saveAsNewBtn = Button.CreateSimpleButton('save-world-new-btn', 'Save as new world');
-	saveAsNewBtn.width = '230px'; saveAsNewBtn.height = '48px'; saveAsNewBtn.fontSize = 18;
-	saveAsNewBtn.color = 'white'; saveAsNewBtn.background = '#374151'; saveAsNewBtn.cornerRadius = 8;
-	saveWorldRow.addControl(saveAsNewBtn);
-	sessionList.addControl(saveWorldRow);
-	const saveWorldStatus = new TextBlock('save-world-status', '');
-	saveWorldStatus.color = '#86efac'; saveWorldStatus.fontSize = 16; saveWorldStatus.height = '34px';
-	sessionList.addControl(saveWorldStatus);
+	saveAsNewBtn.width = '250px'; saveAsNewBtn.height = '48px'; saveAsNewBtn.fontSize = 19;
+	saveAsNewBtn.color = THEME.text; saveAsNewBtn.background = THEME.raised; saveAsNewBtn.cornerRadius = 10; saveAsNewBtn.thickness = 0;
+	saveAsNewBtn.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+	saveAsNewBtn.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+	saveAsNewBtn.left = '612px'; saveAsNewBtn.top = '52px';
+	saveCard.addControl(saveAsNewBtn);
+	const saveWorldStatus = cardText(saveCard, 'save-world-status', '', 24, 112, 880, 26, 16, THEME.mint);
 	let shownLoadedKey: string | null = null;
 
 	function refreshSaveWorld() {
 		const loaded = gameState.loadedWorld;
-		saveWorldTitle.isVisible = saveWorldRow.isVisible = saveWorldStatus.isVisible = gameState.role !== 'guest';
+		const canSave = gameState.role !== 'guest';
+		saveHeading.isVisible = saveCard.isVisible = canSave;
 		saveAsNewBtn.isVisible = loaded !== null;
 		const key = loaded ? `${loaded.adapterId}:${loaded.worldLineageId}` : null;
 		if (key !== shownLoadedKey) {
 			shownLoadedKey = key;
 			worldNameInput.text = loaded?.name ?? gameState.worldName ?? 'My World';
 		}
+		const revises = loaded !== null && getInventoryAdapter(loaded.adapterId)?.saveItem !== undefined;
+		saveAbout.text = revises ? `Saves a new revision (v${(loaded.revisionNumber ?? 0) + 1}) of “${loaded.name}”.` : 'Keeps a copy in your inventory.';
 		const button = saveWorldBtn.textBlock;
-		if (button) button.text = loaded && getInventoryAdapter(loaded.adapterId)?.saveItem
-			? `Save as v${(loaded.revisionNumber ?? 0) + 1} of “${loaded.name}”`.slice(0, 40)
-			: 'Save world';
+		if (button) button.text = revises ? `Save as v${(loaded.revisionNumber ?? 0) + 1}` : 'Save world';
 	}
 
 	async function saveWorld(asNew: boolean) {
 		const loaded = asNew ? null : gameState.loadedWorld;
 		const selected = getInventoryAdapter(loaded?.adapterId ?? gameState.currentInventoryAdapterId ?? 'local');
 		const adapter = selected?.isAvailable(getInventoryContext()) && selected.saveItem ? selected : getInventoryAdapter('local');
-		if (!adapter) { saveWorldStatus.color = '#f87171'; saveWorldStatus.text = 'No inventory is available'; return; }
+		if (!adapter) { saveWorldStatus.color = THEME.error; saveWorldStatus.text = 'No inventory is available'; return; }
 		const folderId = loaded && loaded.adapterId === adapter.id ? loaded.folderId
 			: adapter.id === gameState.currentInventoryAdapterId ? gameState.currentInventoryFolderId : null;
 		const name = worldNameInput.text.trim() || 'My World';
@@ -359,86 +586,59 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			validateWorldScene(snapshot);
 			const lineage = loaded && loaded.adapterId === adapter.id ? loaded.worldLineageId : undefined;
 			if (!adapter.saveItem || isReadOnlyAdapter(adapter.id)) throw new Error('This inventory is read-only');
-			saveWorldStatus.color = '#9ca3af';
+			saveWorldStatus.color = THEME.muted;
 			saveWorldStatus.text = 'Saving…';
 			const saved = await saveWithPreview(adapter, getInventoryContext(), folderId, name, snapshot, 'world', lineage);
 			if (saved.worldLineageId) {
 				gameState.loadedWorld = { adapterId: adapter.id, worldLineageId: saved.worldLineageId, folderId: saved.folderId, name: saved.name, revisionNumber: saved.revisionNumber ?? null };
 			}
-			saveWorldStatus.color = '#86efac';
+			saveWorldStatus.color = THEME.mint;
 			saveWorldStatus.text = lineage ? `Saved revision v${saved.revisionNumber ?? '?'} in ${adapter.label}.` : `Saved to ${adapter.label}.`;
 		} catch (error) {
-			saveWorldStatus.color = '#f87171';
+			saveWorldStatus.color = THEME.error;
 			saveWorldStatus.text = error instanceof Error ? error.message : 'Could not save world';
 		} finally {
 			saveWorldBtn.isEnabled = saveAsNewBtn.isEnabled = true;
 			refreshSaveWorld();
-			if (activeTab === 'Inventory') refreshInventoryTab();
+			if (activeTab === 'inventory') refreshInventoryTab();
 		}
 	}
 	saveWorldBtn.onPointerClickObservable.add(() => void saveWorld(false));
 	saveAsNewBtn.onPointerClickObservable.add(() => void saveWorld(true));
 
-	function addVisibilityOption(visibility: HostedWorldVisibility | 'solo') {
-		const info = WORLD_VISIBILITY_INFO[visibility];
-		const btn = Button.CreateSimpleButton(
-			`world-visibility-${visibility}`,
-			`${info.label} — ${info.description}`
-		);
-		btn.height = '58px';
-		btn.color = 'white';
-		btn.background = visibility === 'solo' ? '#2563eb' : '#16a34a';
-		btn.cornerRadius = 8;
-		btn.paddingTop = '5px';
-		if (visibility === 'friends' || visibility === 'friends-plus') btn.isEnabled = false;
-		btn.onPointerClickObservable.add(async () => {
-			if (visibility === 'solo') {
-				worldActionStatus.text = 'Mundo local activo. Nadie puede entrar.';
-				return;
-			}
-			if (!gameState.userId && visibility !== 'private') {
-				worldActionStatus.text = 'Sign in to host a friends or public session.';
-				return;
-			}
-			btn.isEnabled = false;
-			worldActionStatus.text = `Alojando como ${info.label.toLowerCase()}…`;
-			try {
-				await callbacks.onHostWorld(visibility);
-				worldActionStatus.text = '';
-				refreshWorldsTab();
-			} catch (err) {
-				worldActionStatus.text = err instanceof Error ? err.message : 'No se pudo alojar el mundo';
-				btn.isEnabled = true;
-			}
-		});
-		visibilityButtons.push(btn);
-		visibilityOptions.addControl(btn);
-	}
-
-	addVisibilityOption('solo');
-	addVisibilityOption('private');
-	addVisibilityOption('friends');
-	addVisibilityOption('friends-plus');
-	addVisibilityOption('public');
-
 	async function refreshWorldsTab() {
 		refreshSaveWorld();
-		const isConnected = gameState.role === 'host' || gameState.role === 'guest';
-		visibilityOptions.isVisible = !isConnected;
-		sessionPanel.isVisible = isConnected;
-		stopHostingBtn.isVisible = gameState.role === 'host';
-		if (!isConnected) for (const btn of visibilityButtons) btn.isEnabled = !(btn.name ?? '').endsWith('-friends') && !(btn.name ?? '').endsWith('-friends-plus');
-		if (gameState.role === 'host') {
-			const visibility = gameState.worldVisibility ? WORLD_VISIBILITY_INFO[gameState.worldVisibility].label : 'Alojada';
+		const hosting = gameState.role === 'host';
+		const visiting = gameState.role === 'guest';
+		const connected = hosting || visiting;
+		if (connected) inviteOpen = false;
+		const showOptions = !connected && inviteOpen;
+		shareHeading.isVisible = showOptions;
+		for (const card of shareCards) card.isVisible = showOptions;
+		stopHostingBtn.isVisible = hosting;
+		inviteBtn.isVisible = !connected;
+		inviteBtn.textBlock!.text = inviteOpen ? 'Hide options' : 'Invite people';
+		inviteBtn.background = inviteOpen ? THEME.raised : THEME.accent;
+		codeCaption.isVisible = codeText.isVisible = connected;
+		statusDot.background = connected ? THEME.mint : THEME.dim;
+		const worldName = gameState.worldName ?? 'This world';
+		if (hosting) {
+			const visibility = gameState.worldVisibility ? WORLD_VISIBILITY_INFO[gameState.worldVisibility].label : 'Hosted';
 			const startedAt = gameState.sessionStartedAt
 				? new Date(gameState.sessionStartedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-				: '—';
-			sessionInfo.text = `Sesión activa\n${gameState.worldName ?? 'Mi mundo'} · ${visibility}\nCódigo de sala: ${gameState.roomCode ?? '—'} · Desde ${startedAt}`;
-		} else if (gameState.role === 'guest') {
-			sessionInfo.text = `Conectado a una sesión\nCódigo de sala: ${gameState.roomCode ?? '—'}`;
+				: null;
+			statusTitle.text = `Hosting · ${visibility}`;
+			statusDetail.text = `${worldName}${startedAt ? ` · since ${startedAt}` : ''}\nGive the room code to whoever should join.`;
+		} else if (visiting) {
+			statusTitle.text = 'Visiting a session';
+			statusDetail.text = 'You are in someone else’s world. Its host decides how long it stays open.';
+		} else {
+			statusTitle.text = 'Playing solo';
+			statusDetail.text = `${worldName} is only on your device. Invite people to let others join.`;
 		}
+		codeText.text = gameState.roomCode ?? '—';
 		// The Worlds tab lists its own category; only reload it while it is the one on screen.
-		if (activeTab === 'Worlds') await worldsBrowser.refresh();
+		if (activeTab === 'worlds') await worldsBrowser.refresh();
 	}
 
 
@@ -448,18 +648,21 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	//   2. breadcrumb                       contextual actions (+ Folder / selection)
 	// Single click selects a cell, double click opens a folder or spawns an item.
 	const INV = {
-		bg: '#0f172a', surface: '#1e293b', surfaceHover: '#273449', border: '#334155',
-		text: '#f1f5f9', muted: '#94a3b8', accent: '#6366f1', accentSoft: '#312e81', accentBorder: '#818cf8',
-		danger: '#b91c1c', ok: '#22c55e', warn: '#f59e0b', error: '#ef4444'
+		bg: THEME.ink, surface: THEME.surface, surfaceHover: THEME.surfaceHover, border: THEME.border,
+		text: THEME.text, muted: THEME.muted, accent: THEME.accent, accentSoft: THEME.accentSoft, accentBorder: THEME.accentBorder,
+		danger: THEME.danger, ok: THEME.mint, warn: THEME.glow, error: THEME.error
 	};
 	const KIND_STYLE = {
-		folder: { icon: '📁', tint: '#78350f', label: 'Folder' },
-		object: { icon: '📦', tint: '#1e3a8a', label: 'Object' },
-		world: { icon: '🌍', tint: '#5b21b6', label: 'World' }
+		folder: { icon: 'folder', tint: '#3a2615' },
+		object: { icon: 'box', tint: '#1d2b3a' },
+		world: { icon: 'globe', tint: '#2a2550' }
 	} as const;
 	const CELL_W = 156;
-	const CELL_H = 108;
 	const CELL_GAP = 6;
+	/** The square picture of a cell (the cell's width less the gap that follows it), and the room for its name below. */
+	const TILE = CELL_W - CELL_GAP;
+	const LABEL_H = 38;
+	const CELL_H = TILE + 6 + LABEL_H;
 	const GRID_COLUMNS = 6;
 	const DOUBLE_CLICK_MS = 400;
 	const SIDE_MARGIN = 20;
@@ -480,7 +683,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	inventoryRootsFrame.thickness = 1;
 	inventoryRootsFrame.color = INV.border;
 	inventoryRootsFrame.cornerRadius = 12;
-	contentByTab.Inventory.addControl(inventoryRootsFrame);
+	contentByTab.inventory.addControl(inventoryRootsFrame);
 	const inventoryRoots = new StackPanel('inventory-roots');
 	inventoryRoots.isVertical = false;
 	inventoryRoots.height = '44px';
@@ -492,7 +695,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	quotaGroup.width = '300px';
 	quotaGroup.height = '44px';
 	quotaGroup.isVisible = false;
-	contentByTab.Inventory.addControl(quotaGroup);
+	contentByTab.inventory.addControl(quotaGroup);
 	const quotaCaption = new TextBlock('inventory-quota-caption', 'Storage');
 	quotaCaption.height = '20px';
 	quotaCaption.fontSize = 14;
@@ -520,13 +723,13 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	inventoryPath.isVertical = false;
 	inventoryPath.height = '40px';
 	inventoryPath.adaptWidthToChildren = true;
-	contentByTab.Inventory.addControl(inventoryPath);
+	contentByTab.inventory.addControl(inventoryPath);
 
 	const inventoryToolbar = place(new StackPanel('inventory-toolbar'), 60, 'right');
 	inventoryToolbar.isVertical = false;
 	inventoryToolbar.height = '40px';
 	inventoryToolbar.adaptWidthToChildren = true;
-	contentByTab.Inventory.addControl(inventoryToolbar);
+	contentByTab.inventory.addControl(inventoryToolbar);
 
 	function actionButton(name: string, text: string, background: string, width: number, onClick: () => void): Button {
 		const btn = Button.CreateSimpleButton(name, text);
@@ -556,7 +759,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	inventoryScroll.barBackground = INV.bg;
 	inventoryScroll.barSize = 8;
 	inventoryScroll.thickness = 0;
-	contentByTab.Inventory.addControl(inventoryScroll);
+	contentByTab.inventory.addControl(inventoryScroll);
 	const inventoryList = new StackPanel('inventory-list');
 	inventoryList.width = 1;
 	inventoryScroll.addControl(inventoryList);
@@ -571,7 +774,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	toast.cornerRadius = 20;
 	toast.isVisible = false;
 	toast.isPointerBlocker = false;
-	contentByTab.Inventory.addControl(toast);
+	contentByTab.inventory.addControl(toast);
 	const toastText = new TextBlock('inventory-toast-text', '');
 	toastText.fontSize = 16;
 	toastText.color = INV.text;
@@ -696,7 +899,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 				: actionButton('tb-set-avatar', 'Set as default', INV.accent, 150, () => void setDefaultAvatar(item)));
 			else inventoryToolbar.addControl(actionButton('tb-spawn', isWorld ? 'Place orb' : 'Spawn', INV.accent, isWorld ? 116 : 94, () => activate(entry)));
 			if (!isWorld && gameState.userId && !isReadOnlyAdapter(adapter.id) && (adapter.id !== 'world' || gameState.role === 'host')) {
-				inventoryToolbar.addControl(actionButton('tb-marketplace', item.marketplaceItemId ? 'Update Marketplace' : 'Publish', '#7c3aed', 160, async () => {
+				inventoryToolbar.addControl(actionButton('tb-marketplace', item.marketplaceItemId ? 'Update Marketplace' : 'Publish', THEME.accent, 160, async () => {
 					try {
 						// The listing shows the object's own preview, which goes up with its models.
 						const preview = item.thumbnailAssetId ?? null;
@@ -714,13 +917,13 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 				}));
 			}
 			if (isWorld) {
-				inventoryToolbar.addControl(actionButton('tb-load', 'Load', '#0f766e', 84, async () => {
+				inventoryToolbar.addControl(actionButton('tb-load', 'Load', THEME.go, 84, async () => {
 					if (isReadOnlyAdapter(adapter.id)) return;
 					try { await callbacks.onLaunchWorldItem(item, adapter.id); }
 					catch (error) { showMessage(error instanceof Error ? error.message : 'Could not load world', 'error'); }
 				}));
 				if (gameState.userId) {
-					inventoryToolbar.addControl(actionButton('tb-publish', 'Publish', '#7c3aed', 100, async () => {
+					inventoryToolbar.addControl(actionButton('tb-publish', 'Publish', THEME.accent, 100, async () => {
 						try {
 							validateWorldScene(item.slotData);
 							const thumbnailAssetId = item.thumbnailAssetId ?? undefined;
@@ -795,7 +998,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		visible.forEach((crumb, index) => {
 			const i = index + offset;
 			const isLast = i === path.length - 1;
-			const label = crumb.name.length > 16 ? `${crumb.name.slice(0, 15)}…` : crumb.name;
+			const label = crumb.name.length > 22 ? `${crumb.name.slice(0, 21)}…` : crumb.name;
 			const btn = Button.CreateSimpleButton(`crumb-${i}`, label);
 			btn.height = '36px';
 			btn.width = `${28 + label.length * 10}px`;
@@ -868,62 +1071,68 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		const key = entryKey(entry);
 		const kind = entry.type === 'folder' ? 'folder' : entry.item.kind === 'world' ? 'world' : 'object';
 		const style = KIND_STYLE[kind];
-		const meta = kind === 'world' && entry.type === 'item' ? `World · v${entry.item.revisionNumber ?? 1}` : style.label;
 
+		// The cell is a square tile with the name under it, so the name never covers the picture. The tile is what
+		// is painted for hover and selection; the cell around it takes the clicks, name included.
 		const cell = new Rectangle(`cell-${key}`);
 		cell.width = `${CELL_W}px`;
 		cell.height = `${CELL_H}px`;
-		cell.cornerRadius = 12;
+		cell.thickness = 0;
 		cell.isPointerBlocker = true;
 		cell.hoverCursor = 'pointer';
 
-		const badge = new Rectangle(`cell-badge-${key}`);
-		badge.width = '38px'; badge.height = '38px';
-		badge.background = style.tint; badge.thickness = 0; badge.cornerRadius = 10;
-		badge.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-		badge.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-		badge.left = '10px'; badge.top = '10px';
-		badge.isHitTestVisible = false;
-		const glyph = new TextBlock(`cell-icon-${key}`, style.icon);
-		glyph.fontSize = 22;
-		badge.addControl(glyph);
-		cell.addControl(badge);
+		const tile = new Rectangle(`cell-tile-${key}`);
+		tile.width = `${TILE}px`; tile.height = `${TILE}px`;
+		tile.cornerRadius = 12;
+		tile.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+		tile.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+		tile.isHitTestVisible = false;
+		cell.addControl(tile);
 
-		// An item with a preview shows it in place of the icon once it has loaded; until then (or if it never does) the icon stays.
+		// The kind's icon, large, until the item's preview has loaded (or for good if it has none).
+		const glyph = new Image(`cell-icon-${key}`, iconUri(style.icon, THEME.muted, 128) ?? '');
+		glyph.width = '64px'; glyph.height = '64px';
+		glyph.stretch = Image.STRETCH_UNIFORM;
+		glyph.isHitTestVisible = false;
+		tile.addControl(glyph);
+
 		const previewId = entry.type === 'item' ? entry.item.thumbnailAssetId : null;
 		if (previewId) {
-			const frame = previewFrame(`cell-thumbnail-${key}`, previewId, 58, style.tint, () => { badge.isVisible = false; });
-			frame.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT; frame.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-			frame.left = '10px'; frame.top = '10px';
-			cell.addControl(frame);
+			const frame = previewFrame(`cell-thumbnail-${key}`, previewId, TILE - 6, style.tint, () => { glyph.isVisible = false; });
+			tile.addControl(frame);
+			// A small mark, in the corner, tells a world's preview from an object's. Objects are the common case and carry none.
+			if (kind === 'world') {
+				const chip = new Rectangle(`cell-chip-${key}`);
+				chip.width = '30px'; chip.height = '30px';
+				chip.background = '#07070ccc'; chip.thickness = 0; chip.cornerRadius = 15;
+				chip.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+				chip.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+				chip.left = '8px'; chip.top = '8px';
+				chip.isHitTestVisible = false;
+				const mark = new Image(`cell-chip-icon-${key}`, iconUri(style.icon, THEME.text, 48) ?? '');
+				mark.width = '18px'; mark.height = '18px';
+				mark.stretch = Image.STRETCH_UNIFORM;
+				chip.addControl(mark);
+				tile.addControl(chip);
+			}
 		}
 
-		const tag = new TextBlock(`cell-meta-${key}`, meta);
-		tag.fontSize = 13; tag.color = INV.muted;
-		tag.width = `${CELL_W - (previewId ? 86 : 64)}px`; tag.height = '20px';
-		tag.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-		tag.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-		tag.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-		tag.left = previewId ? '76px' : '56px'; tag.top = '10px';
-		tag.isHitTestVisible = false;
-		cell.addControl(tag);
-
-		const nameW = CELL_W - 20;
-		const nameH = CELL_H - 58;
+		const nameW = TILE - 4;
 		const name = new TextBlock(`cell-name-${key}`, entry.name);
-		name.width = `${nameW}px`; name.height = `${nameH}px`;
+		name.width = `${nameW}px`; name.height = `${LABEL_H}px`;
 		name.textWrapping = true;
 		name.color = INV.text;
-		name.fontSize = fitFontSize(entry.name, nameW, nameH);
-		name.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+		name.fontSize = fitFontSize(entry.name, nameW, LABEL_H);
+		name.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
 		name.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-		name.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-		name.top = '-8px';
+		name.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+		name.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+		name.top = `${TILE + 6}px`;
 		name.isHitTestVisible = false;
 		cell.addControl(name);
 
-		cell.onPointerEnterObservable.add(() => paintCell(key, cell, true));
-		cell.onPointerOutObservable.add(() => paintCell(key, cell));
+		cell.onPointerEnterObservable.add(() => paintCell(key, tile, true));
+		cell.onPointerOutObservable.add(() => paintCell(key, tile));
 		cell.onPointerClickObservable.add(() => {
 			const now = Date.now();
 			if (lastClick.key === key && now - lastClick.at <= DOUBLE_CLICK_MS) {
@@ -934,19 +1143,23 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			lastClick = { key, at: now };
 			select(entry);
 		});
-		cellByKey.set(key, cell);
-		paintCell(key, cell);
+		cellByKey.set(key, tile);
+		paintCell(key, tile);
 		return cell;
 	}
 
 	function showListNotice(title: string, hint = '', color = INV.muted) {
 		for (const child of [...inventoryList.children]) inventoryList.removeControl(child);
+		// A control's padding is part of its height, so the top gap is a spacer and the text gets the room it needs.
+		const spacer = new Rectangle('inventory-notice-spacer');
+		spacer.height = '70px'; spacer.thickness = 0;
+		inventoryList.addControl(spacer);
 		const heading = new TextBlock('inventory-notice', title);
-		heading.height = hint ? '44px' : '60px'; heading.fontSize = 22; heading.color = color; heading.paddingTop = '40px';
+		heading.height = '40px'; heading.fontSize = 24; heading.color = color;
 		inventoryList.addControl(heading);
 		if (hint) {
 			const sub = new TextBlock('inventory-notice-hint', hint);
-			sub.height = '34px'; sub.fontSize = 16; sub.color = INV.muted; sub.paddingTop = '40px';
+			sub.height = '30px'; sub.fontSize = 17; sub.color = INV.muted;
 			inventoryList.addControl(sub);
 		}
 	}
@@ -1018,7 +1231,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		for (const folder of folders) {
 			const isActive = folder === activeAdapter;
 			const btn = Button.CreateSimpleButton(`root-${folder.id}`, folder.label);
-			btn.width = '120px';
+			btn.width = `${Math.max(100, 30 + folder.label.length * 10)}px`;
 			btn.height = '36px';
 			btn.fontSize = 18;
 			btn.color = isActive ? INV.text : INV.muted;
@@ -1043,20 +1256,13 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	// --- Settings tab ----------------------------------------------------------
 	// Sections of setting cards, all the same width: what the setting is and does on the left, and on the right a
 	// segmented control of a fixed width whatever the number of options. The whole list scrolls.
-	const SETTINGS_WIDTH = 940;
 	const CHOICE_WIDTH = 420;
-	const settingsScroll = new ScrollViewer('settings-scroll');
-	settingsScroll.width = 1;
-	settingsScroll.height = '520px';
-	settingsScroll.thickness = 0;
-	settingsScroll.barColor = INV.accent;
-	settingsScroll.barBackground = INV.bg;
-	contentByTab.Settings.addControl(settingsScroll);
-	// The list spans the scroll area and its cards keep their own width, centred in it.
-	const settingsList = new StackPanel('settings-list');
-	settingsList.width = 1;
+	const settingsColumn = createScrollColumn('settings');
+	const SETTINGS_WIDTH = settingsColumn.width;
+	const settingsScroll = settingsColumn.scroll;
+	contentByTab.settings.addControl(settingsScroll);
+	const settingsList = settingsColumn.list;
 	settingsList.paddingBottom = '16px';
-	settingsScroll.addControl(settingsList);
 
 	interface SettingOption {
 		label: string;
@@ -1242,130 +1448,234 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	}
 	refreshSettingsTab();
 
-	// --- Account tab (login/register/logout, typed in VR with the in-world keyboard) ---
-	const settingsStack = new StackPanel('settings-stack');
-	settingsStack.width = 0.7;
-	settingsStack.top = '10px';
-	contentByTab.Account.addControl(settingsStack);
-
-	const statusText = new TextBlock('settings-status', '');
-	statusText.color = 'white';
-	statusText.fontSize = 22;
-	statusText.height = '72px';
-	statusText.text = 'Comprobando sesión…';
-	settingsStack.addControl(statusText);
-
-	const emailInput = new InputText('email-input');
-	emailInput.width = 1;
-	emailInput.height = '48px';
-	emailInput.color = 'white';
-	emailInput.background = '#1f2937';
-	emailInput.placeholderText = 'Email';
-	emailInput.isVisible = false;
-	settingsStack.addControl(emailInput);
-
-	const usernameInput = new InputText('username-input');
-	usernameInput.width = 1;
-	usernameInput.height = '48px';
-	usernameInput.color = 'white';
-	usernameInput.background = '#1f2937';
-	usernameInput.placeholderText = 'Usuario (para registrarte, o para entrar sin email)';
-	usernameInput.margin = '4px';
-	usernameInput.isVisible = false;
-	settingsStack.addControl(usernameInput);
-
-	const passwordInput = new InputText('password-input');
-	passwordInput.width = 1;
-	passwordInput.height = '48px';
-	passwordInput.color = 'white';
-	passwordInput.background = '#1f2937';
-	passwordInput.placeholderText = 'Contraseña';
-	passwordInput.margin = '4px';
-	passwordInput.isVisible = false;
-	settingsStack.addControl(passwordInput);
-
 	// In a headset these fields are typed with the in-world keyboard, brought up in front of the dash.
-	const nearDash = () => mesh;
-	typeWithKeyboard(worldsBrowser.joinCodeInput, { near: nearDash, title: 'Room code' });
-	typeWithKeyboard(worldNameInput, { near: nearDash, title: 'World name' });
-	typeWithKeyboard(emailInput, { near: nearDash, title: 'Email' });
-	typeWithKeyboard(usernameInput, { near: nearDash, title: 'Username' });
-	typeWithKeyboard(passwordInput, { near: nearDash, title: 'Password', secret: true });
+	typeWithKeyboard(worldsBrowser.joinCodeInput, { near: () => mesh, title: 'Room code' });
+	typeWithKeyboard(worldNameInput, { near: () => mesh, title: 'World name' });
 
-	const authButtons = new StackPanel('auth-buttons');
-	authButtons.isVertical = false;
-	authButtons.height = '56px';
-	authButtons.top = '8px';
-	settingsStack.addControl(authButtons);
+	// --- Account tab (sign in / create account / sign out, typed in VR with the in-world keyboard) ---
+	// One centred card with two views: the sign-in / create-account form, and the profile of whoever is signed in.
+	const ACCOUNT_WIDTH = 560;
+	type AuthMode = 'signin' | 'register';
+	let authMode: AuthMode = 'signin';
+	let authBusy = false;
 
-	function authButton(name: string, text: string, onClick: () => void): Button {
+	const accountCard = new Rectangle('account-card');
+	accountCard.width = `${ACCOUNT_WIDTH}px`;
+	accountCard.height = '490px';
+	accountCard.thickness = 1;
+	accountCard.color = INV.border;
+	accountCard.background = INV.surface;
+	accountCard.cornerRadius = 16;
+	contentByTab.account.addControl(accountCard);
+
+	function accountButton(name: string, text: string, background: string, width: string, onClick: () => void): Button {
 		const btn = Button.CreateSimpleButton(name, text);
-		btn.width = '160px';
-		btn.height = '52px';
-		btn.color = 'white';
-		btn.background = '#374151';
-		btn.cornerRadius = 8;
+		btn.width = width;
+		btn.height = '54px';
+		btn.color = INV.text;
+		btn.fontSize = 20;
+		btn.background = background;
+		btn.cornerRadius = 10;
+		btn.thickness = 0;
 		btn.onPointerClickObservable.add(onClick);
-		authButtons.addControl(btn);
 		return btn;
 	}
 
-	const loginBtn = authButton('login-btn', 'Entrar', async () => {
-		statusText.text = 'Entrando…';
-		// no email typed but a username was -> log in by username instead
-		const { error } =
-			!emailInput.text && usernameInput.text
-				? await authClient.signIn.username({ username: usernameInput.text, password: passwordInput.text })
-				: await authClient.signIn.email({ email: emailInput.text, password: passwordInput.text });
-		statusText.text = error ? (error.message ?? 'Error al entrar') : '';
-		await refreshSession();
-	});
+	function accountField(name: string, placeholder: string, title: string, secret = false): InputText {
+		const input = new InputText(name);
+		input.width = `${ACCOUNT_WIDTH - 64}px`;
+		input.height = '50px';
+		input.fontSize = 20;
+		input.color = INV.text;
+		input.background = INV.bg;
+		input.focusedBackground = INV.accentSoft;
+		input.thickness = 1;
+		input.placeholderText = placeholder;
+		input.placeholderColor = INV.muted;
+		input.paddingBottom = '8px';
+		typeWithKeyboard(input, { near: () => mesh, title, secret, onSubmit: () => void submitAuth() });
+		return input;
+	}
 
-	const registerBtn = authButton('register-btn', 'Registrarse', async () => {
-		statusText.text = 'Creando cuenta…';
-		const { error } = await authClient.signUp.email({
-			email: emailInput.text,
-			password: passwordInput.text,
-			name: usernameInput.text || emailInput.text.split('@')[0] || 'Explorer',
-			...(usernameInput.text ? { username: usernameInput.text } : {})
-		});
-		statusText.text = error ? (error.message ?? 'Error al registrarse') : '';
-		await refreshSession();
-	});
+	// Signed out: mode toggle, fields, status, primary action and Discord.
+	const signedOutView = new StackPanel('account-signed-out');
+	signedOutView.width = `${ACCOUNT_WIDTH - 64}px`;
+	accountCard.addControl(signedOutView);
 
-	const discordBtn = authButton('discord-btn', 'Discord', async () => {
+	const accountHeading = new TextBlock('account-heading', 'Welcome back');
+	accountHeading.height = '52px';
+	accountHeading.fontSize = 28;
+	accountHeading.fontWeight = 'bold';
+	accountHeading.color = INV.text;
+	accountHeading.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+	signedOutView.addControl(accountHeading);
+
+	const modeToggle = new StackPanel('account-mode');
+	modeToggle.isVertical = false;
+	modeToggle.height = '62px';
+	signedOutView.addControl(modeToggle);
+	const modeButtons = {} as Record<AuthMode, Button>;
+	for (const [mode, label] of [['signin', 'Sign in'], ['register', 'Create account']] as [AuthMode, string][]) {
+		const btn = accountButton(`account-mode-${mode}`, label, 'transparent', `${(ACCOUNT_WIDTH - 64) / 2}px`, () => setAuthMode(mode));
+		btn.height = '46px';
+		btn.fontSize = 19;
+		btn.paddingBottom = '8px';
+		modeToggle.addControl(btn);
+		modeButtons[mode] = btn;
+	}
+
+	const emailInput = accountField('email-input', 'Email', 'Email');
+	const usernameInput = accountField('username-input', 'Username', 'Username');
+	const passwordInput = accountField('password-input', 'Password', 'Password', true);
+	signedOutView.addControl(emailInput);
+	signedOutView.addControl(usernameInput);
+	signedOutView.addControl(passwordInput);
+
+	const statusText = new TextBlock('account-status', '');
+	statusText.height = '34px';
+	statusText.fontSize = 17;
+	statusText.color = INV.muted;
+	statusText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+	signedOutView.addControl(statusText);
+
+	function setStatus(text: string, tone: 'info' | 'error' | 'ok' = 'info') {
+		statusText.text = text;
+		statusText.color = tone === 'error' ? INV.error : tone === 'ok' ? INV.ok : INV.muted;
+	}
+
+	const submitBtn = accountButton('account-submit', 'Sign in', INV.accent, `${ACCOUNT_WIDTH - 64}px`, () => void submitAuth());
+	submitBtn.paddingBottom = '8px';
+	signedOutView.addControl(submitBtn);
+	const discordBtn = accountButton('discord-btn', 'Continue with Discord', '#5865f2', `${ACCOUNT_WIDTH - 64}px`, async () => {
 		await authClient.signIn.social({ provider: 'discord', callbackURL: window.location.href });
 	});
+	signedOutView.addControl(discordBtn);
 
-	const logoutBtn = authButton('logout-btn', 'Salir', async () => {
+	function setAuthMode(mode: AuthMode) {
+		authMode = mode;
+		const register = mode === 'register';
+		accountHeading.text = register ? 'Create your account' : 'Welcome back';
+		// Signing in takes an email or a username, in the one field.
+		emailInput.placeholderText = register ? 'Email' : 'Email or username';
+		usernameInput.isVisible = register;
+		submitBtn.textBlock!.text = register ? 'Create account' : 'Sign in';
+		for (const m of ['signin', 'register'] as AuthMode[]) {
+			const on = m === mode;
+			modeButtons[m].background = on ? INV.accent : 'transparent';
+			modeButtons[m].color = on ? INV.text : INV.muted;
+		}
+		setStatus('');
+	}
+
+	async function submitAuth() {
+		if (authBusy) return;
+		const identifier = emailInput.text.trim();
+		const username = usernameInput.text.trim();
+		const password = passwordInput.text;
+		if (!identifier || !password || (authMode === 'register' && !username)) {
+			setStatus(authMode === 'register' ? 'Fill in your email, a username and a password.' : 'Enter your email or username, and your password.', 'error');
+			return;
+		}
+		authBusy = true;
+		submitBtn.background = INV.border;
+		setStatus(authMode === 'register' ? 'Creating your account…' : 'Signing in…');
+		try {
+			const { error } =
+				authMode === 'register'
+					? await authClient.signUp.email({ email: identifier, password, name: username, username })
+					: identifier.includes('@')
+						? await authClient.signIn.email({ email: identifier, password })
+						: await authClient.signIn.username({ username: identifier, password });
+			if (error) {
+				setStatus(error.message ?? (authMode === 'register' ? 'Could not create the account.' : 'Could not sign in.'), 'error');
+			} else {
+				passwordInput.text = '';
+				setStatus('');
+			}
+		} catch {
+			setStatus('Could not reach the server. Try again.', 'error');
+		} finally {
+			authBusy = false;
+			submitBtn.background = INV.accent;
+		}
+		await refreshSession();
+	}
+
+	// Signed in: who you are, and how to sign out.
+	const signedInView = new StackPanel('account-signed-in');
+	signedInView.width = `${ACCOUNT_WIDTH - 64}px`;
+	signedInView.isVisible = false;
+	accountCard.addControl(signedInView);
+
+	const avatarBadge = new Rectangle('account-avatar');
+	avatarBadge.width = avatarBadge.height = '110px';
+	avatarBadge.cornerRadius = 55;
+	avatarBadge.thickness = 3;
+	avatarBadge.color = INV.accentBorder;
+	avatarBadge.background = INV.accent;
+	avatarBadge.paddingBottom = '14px';
+	const avatarInitial = new TextBlock('account-avatar-initial', '?');
+	avatarInitial.fontSize = 52;
+	avatarInitial.fontWeight = 'bold';
+	avatarInitial.color = INV.text;
+	avatarBadge.addControl(avatarInitial);
+	const avatarSlot = new StackPanel('account-avatar-slot');
+	avatarSlot.height = '124px';
+	avatarSlot.addControl(avatarBadge);
+	signedInView.addControl(avatarSlot);
+
+	const profileName = new TextBlock('account-name', '');
+	profileName.height = '42px';
+	profileName.fontSize = 30;
+	profileName.fontWeight = 'bold';
+	profileName.color = INV.text;
+	signedInView.addControl(profileName);
+	const profileEmail = new TextBlock('account-email', '');
+	profileEmail.height = '32px';
+	profileEmail.fontSize = 19;
+	profileEmail.color = INV.muted;
+	signedInView.addControl(profileEmail);
+	const signedInTag = new TextBlock('account-signed-in-tag', '● Signed in');
+	signedInTag.height = '56px';
+	signedInTag.fontSize = 17;
+	signedInTag.color = INV.ok;
+	signedInView.addControl(signedInTag);
+	const signOutBtn = accountButton('logout-btn', 'Sign out', INV.danger, `${ACCOUNT_WIDTH - 64}px`, async () => {
 		await authClient.signOut();
 		await refreshSession();
 	});
-	logoutBtn.isVisible = false;
-	loginBtn.isVisible = false;
-	registerBtn.isVisible = false;
-	discordBtn.isVisible = false;
+	signedInView.addControl(signOutBtn);
+
+	setAuthMode('signin');
+	setStatus('Checking your session…');
 
 	async function refreshSession() {
 		const { data } = await authClient.getSession();
 		const user = data?.user ?? null;
 		gameState.userId = user?.id ?? null;
 		gameState.userName = user?.name ?? null;
-		statusText.text = user ? `Sesión activa\n${user.name} · ${user.email}` : 'Sin sesión';
-		for (const input of [emailInput, usernameInput, passwordInput]) input.isVisible = !user;
-		loginBtn.isVisible = !user;
-		registerBtn.isVisible = !user;
-		discordBtn.isVisible = !user;
-		logoutBtn.isVisible = Boolean(user);
+		signedOutView.isVisible = !user;
+		signedInView.isVisible = Boolean(user);
+		if (user) {
+			profileName.text = user.name;
+			profileEmail.text = user.email;
+			avatarInitial.text = (user.name.trim()[0] ?? '?').toUpperCase();
+		} else {
+			setStatus('');
+		}
 		refreshInventoryTab();
 		refreshWorldsTab();
 	}
 	void refreshSession();
 
-	showTab('Home');
+	ready = true;
+	showTab('home');
 
 	return {
 		root: node,
-		refreshWorldsTab
+		refreshWorldsTab,
+		addTab,
+		removeTab,
+		showTab
 	};
 }

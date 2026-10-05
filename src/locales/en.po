@@ -4201,9 +4201,8 @@ msgstr "<0>W A S D</0> move · <1>Shift</1> run · <2>Space</2> jump"
 msgid "<0>Click</0> grab and drag · <1>E</1> carry · <2>Wheel</2> push / pull"
 msgstr "<0>Click</0> grab and drag · <1>E</1> carry · <2>Wheel</2> push / pull"
 
-#: src/lib/xr/XRLaunchOverlay.svelte
-msgid "<0>Right click</0> options · <1>M</1> menu · <2>I</2> inspector"
-msgstr "<0>Right click</0> options · <1>M</1> menu · <2>I</2> inspector"
+#~ msgid "<0>Right click</0> options · <1>M</1> menu · <2>I</2> inspector"
+#~ msgstr "<0>Right click</0> options · <1>M</1> menu · <2>I</2> inspector"
 
 #: src/lib/xr/XRLaunchOverlay.svelte
 msgid "<0>Esc</0> release the mouse"
@@ -4262,9 +4261,8 @@ msgstr "<0>Wheel</0> Push / pull <1>Ctrl</1>+<2>Wheel</2> Scale <3>Shift</3>+<4>
 msgid "<0>Right click</0> Options of what you aim at or carry"
 msgstr "<0>Right click</0> Options of what you aim at or carry"
 
-#: src/lib/xr/interaction/desktop/DesktopHud.svelte
-msgid "<0>M</0> Menu <1>I</1> Inspector <2>Esc</2> Release the mouse"
-msgstr "<0>M</0> Menu <1>I</1> Inspector <2>Esc</2> Release the mouse"
+#~ msgid "<0>M</0> Menu <1>I</1> Inspector <2>Esc</2> Release the mouse"
+#~ msgstr "<0>M</0> Menu <1>I</1> Inspector <2>Esc</2> Release the mouse"
 
 #: src/lib/xr/interaction/desktop/DesktopHud.svelte
 msgid "Paused"
@@ -4566,3 +4564,11 @@ msgstr "FreeLLMAPI must allow this Studio origin in DASHBOARD_ORIGINS (CORS). Re
 #: src/lib/studio/components/AiPanel.svelte
 msgid "A local Base URL connects to the device running your browser. Allow local network access for this Studio if your browser asks."
 msgstr "A local Base URL connects to the device running your browser. Allow local network access for this Studio if your browser asks."
+
+#: src/lib/xr/XRLaunchOverlay.svelte
+msgid "<0>Right click</0> options · <1>Tab</1> menu · <2>I</2> inspector"
+msgstr "<0>Right click</0> options · <1>Tab</1> menu · <2>I</2> inspector"
+
+#: src/lib/xr/interaction/desktop/DesktopHud.svelte
+msgid "<0>Tab</0> Menu <1>I</1> Inspector <2>Esc</2> Release the mouse"
+msgstr "<0>Tab</0> Menu <1>I</1> Inspector <2>Esc</2> Release the mouse"

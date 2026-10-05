@@ -1,5 +1,6 @@
 import { Color3, MeshBuilder, Quaternion, StandardMaterial, Vector3, type Scene, type TransformNode, type Camera } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Button } from '@babylonjs/gui';
+import { THEME } from './theme';
 
 export interface RadialItem {
 	label: string;
@@ -35,7 +36,7 @@ export function createRadialView(
 		buttons.forEach((button, index) => {
 			const enabled = items[index].isEnabled();
 			button.alpha = enabled ? 1 : 0.45;
-			button.background = !enabled ? '#374151' : hoveredIndex === index ? '#6d28d9' : '#1f2937';
+			button.background = !enabled ? THEME.raised : hoveredIndex === index ? THEME.accent : THEME.surface;
 		});
 	}
 
@@ -63,7 +64,7 @@ export function createRadialView(
 			button.width = '116px';
 			button.height = '116px';
 			button.cornerRadius = 58;
-			button.color = 'white';
+			button.color = THEME.text;
 			button.fontSize = 17;
 			button.left = `${Math.cos(angle) * 155}px`;
 			button.top = `${Math.sin(angle) * 155}px`;

@@ -12,6 +12,8 @@ import { TOOLS, toolEquippable } from '../../../../scripts/workshop-tools.mjs';
 export interface BuiltinFolder {
 	id: string;
 	name: string;
+	/** The folder this one is inside; none (the default) for a folder at the top of the kit. */
+	parentId?: string;
 }
 
 export interface BuiltinEntry {
@@ -26,6 +28,7 @@ export const BUILTIN_FOLDERS: BuiltinFolder[] = [
 	{ id: 'basics', name: 'Basics' },
 	{ id: 'music', name: 'Music' },
 	{ id: 'tools', name: 'Tools' },
+	{ id: 'home-builder', name: 'Home Builder', parentId: 'tools' },
 	...PROP_FOLDERS
 ];
 
@@ -163,7 +166,8 @@ const ENTRIES: BuiltinEntry[] = [
 			})
 		]
 	},
-	...TOOLS.map((tool) => ({ id: tool.id, folderId: 'tools', name: tool.name, build: () => workshopTool(tool) }))
+	// The tools that build a house (walls, floors, stairs, doors and windows, roofs, the sledgehammer) have a folder of their own.
+	...TOOLS.map((tool) => ({ id: tool.id, folderId: tool.bay.startsWith('home') ? 'home-builder' : 'tools', name: tool.name, build: () => workshopTool(tool) }))
 ];
 
 /** Whatever is spawned from the kit can be picked up and moved by its root, so an object made of parts (a record player) is grabbed as one. */

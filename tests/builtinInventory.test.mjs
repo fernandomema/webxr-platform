@@ -100,3 +100,16 @@ test('the furniture, lighting and decor are whole objects standing on the floor'
     assert.ok(BUILTIN_ENTRIES.find((e) => e.id === id).build().some((slot) => slot.components.some((c) => c.type === 'pointLight')), `${id} should give light`);
   }
 });
+
+test('the home-building tools sit in a Home Builder folder inside Tools', async () => {
+  const { builtinInventoryAdapter } = await import('../src/lib/inventory/adapters/builtin.ts');
+  const top = await builtinInventoryAdapter.listFolders({}, null);
+  assert.ok(top.some((folder) => folder.id === 'tools'));
+  assert.ok(!top.some((folder) => folder.id === 'home-builder'), 'a subfolder is not listed at the top');
+  const inTools = await builtinInventoryAdapter.listFolders({}, 'tools');
+  assert.deepEqual(inTools.map((folder) => folder.name), ['Home Builder']);
+  const home = (await builtinInventoryAdapter.listItems({}, 'home-builder')).map((item) => item.name);
+  for (const name of ['Wall Tool', 'Floor Tool', 'Stairs Tool', 'Door & Window Tool', 'Roof Tool', 'Sledgehammer']) assert.ok(home.includes(name), `${name} is in Home Builder`);
+  const loose = (await builtinInventoryAdapter.listItems({}, 'tools')).map((item) => item.name);
+  assert.ok(!loose.includes('Wall Tool') && loose.includes('Drill') && loose.includes('Camera'));
+});

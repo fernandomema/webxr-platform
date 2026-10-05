@@ -31,6 +31,7 @@ import { keyLabel, keyVariants, placeKeys, type KeyDef, type KeyboardLayout } fr
 import { nextLayout, preferredLayout } from './layouts';
 import type { KeyboardPresence } from './presence';
 import type { TextInputHandlers, TextInputProvider, TextInputRequest, TextInputSession } from './service';
+import { THEME } from '../ui/theme';
 
 /**
  * The in-world keyboard: brought up near whoever asks for text (see service.ts), typed on with the laser or by touching
@@ -54,7 +55,7 @@ const REPEAT_MS = 65;
 /** Keys that go on by themselves while held down. */
 const REPEATS = new Set<KeyDef['action']>(['backspace', 'left', 'right']);
 
-const COLORS = { key: '#1f2937', action: '#334155', hover: '#475569', down: '#7c3aed', locked: '#6d28d9', variant: '#4c1d95', candidate: '#1e3a8a' };
+const COLORS = { key: THEME.surface, action: THEME.raised, hover: '#3a3a55', down: THEME.accentBorder, locked: THEME.accent, variant: THEME.accentSoft, candidate: '#1d3345' };
 
 interface LiveKey {
 	slotId: string;
@@ -425,7 +426,7 @@ export class KeyboardSystem implements TextInputProvider {
 		context.clearRect(0, 0, WIDTH, height);
 		context.textAlign = 'center';
 		context.textBaseline = 'middle';
-		context.fillStyle = '#f8fafc';
+		context.fillStyle = THEME.text;
 		this.keys.forEach((key, i) => {
 			const [cx, cy] = origins[i];
 			const w = cells[i];
@@ -450,14 +451,14 @@ export class KeyboardSystem implements TextInputProvider {
 		if (!this.preview) return;
 		const context = this.preview.getContext() as unknown as CanvasRenderingContext2D;
 		const { width, height } = this.preview.getSize();
-		context.fillStyle = '#0f172a';
+		context.fillStyle = THEME.ink;
 		context.fillRect(0, 0, width, height);
 		context.textBaseline = 'middle';
 		context.font = '500 44px system-ui, sans-serif';
 		let x = 24;
 		const title = this.session?.request.title;
 		if (title) {
-			context.fillStyle = '#94a3b8';
+			context.fillStyle = THEME.muted;
 			context.fillText(title, x, height / 2);
 			x += context.measureText(title).width + 24;
 		}
@@ -470,9 +471,9 @@ export class KeyboardSystem implements TextInputProvider {
 		const room = width - x - 24;
 		context.font = '500 52px system-ui, sans-serif';
 		if (!chars.length && !preedit) {
-			context.fillStyle = '#64748b';
+			context.fillStyle = THEME.dim;
 			context.fillText(this.session?.request.placeholder ?? '', x, height / 2);
-			context.fillStyle = '#a78bfa';
+			context.fillStyle = THEME.ember;
 			context.fillRect(x, 30, 4, height - 60);
 		} else {
 			// The text before the cursor, what is being composed (underlined), the caret, then the rest. When it does not
@@ -485,17 +486,17 @@ export class KeyboardSystem implements TextInputProvider {
 			context.rect(x, 0, room, height);
 			context.clip();
 			const start = x - scroll;
-			context.fillStyle = '#f8fafc';
+			context.fillStyle = THEME.text;
 			context.fillText(before, start, height / 2);
 			const preeditX = start + context.measureText(before).width;
 			if (preedit) {
-				context.fillStyle = '#c4b5fd';
+				context.fillStyle = THEME.glow;
 				context.fillText(preedit, preeditX, height / 2);
 				context.fillRect(preeditX, height / 2 + 30, context.measureText(preedit).width, 3);
 			}
-			context.fillStyle = '#f8fafc';
+			context.fillStyle = THEME.text;
 			context.fillText(after, start + caret, height / 2);
-			context.fillStyle = '#a78bfa';
+			context.fillStyle = THEME.ember;
 			context.fillRect(start + caret - 2, 30, 4, height - 60);
 			context.restore();
 		}
@@ -733,7 +734,7 @@ export class KeyboardSystem implements TextInputProvider {
 	private newTip(id: string): Tip {
 		const marker = MeshBuilder.CreateSphere(`keyboard-tip-${id}`, { diameter: 0.012, segments: 8 }, this.scene);
 		const material = new StandardMaterial(`keyboard-tip-${id}`, this.scene);
-		material.emissiveColor = Color3.FromHexString('#c4b5fd');
+		material.emissiveColor = Color3.FromHexString(THEME.glow);
 		material.disableLighting = true;
 		marker.material = material;
 		marker.isPickable = false;
@@ -770,7 +771,7 @@ export class KeyboardSystem implements TextInputProvider {
 			}
 			const locked = key.def.action === 'shift' && this.state?.shift === 'locked';
 			const on = key.def.action === 'shift' && this.state?.shift === 'once';
-			const color = depth > 0 ? COLORS.down : locked ? COLORS.locked : on ? COLORS.hover : key.hovered ? COLORS.hover : key.variant !== undefined ? COLORS.variant : key.candidate !== undefined ? COLORS.candidate : key.def.text !== undefined ? COLORS.key : key.def.action === 'close' ? '#7f1d1d' : COLORS.action;
+			const color = depth > 0 ? COLORS.down : locked ? COLORS.locked : on ? COLORS.hover : key.hovered ? COLORS.hover : key.variant !== undefined ? COLORS.variant : key.candidate !== undefined ? COLORS.candidate : key.def.text !== undefined ? COLORS.key : key.def.action === 'close' ? THEME.danger : COLORS.action;
 			if (color !== key.color) {
 				key.color = color;
 				this.sceneGraph.setComponentField(key.slotId, 'meshRenderer', 'color', color);

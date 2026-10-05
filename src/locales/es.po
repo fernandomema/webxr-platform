@@ -4201,9 +4201,8 @@ msgstr ""
 msgid "<0>Click</0> grab and drag · <1>E</1> carry · <2>Wheel</2> push / pull"
 msgstr ""
 
-#: src/lib/xr/XRLaunchOverlay.svelte
-msgid "<0>Right click</0> options · <1>M</1> menu · <2>I</2> inspector"
-msgstr ""
+#~ msgid "<0>Right click</0> options · <1>M</1> menu · <2>I</2> inspector"
+#~ msgstr ""
 
 #: src/lib/xr/XRLaunchOverlay.svelte
 msgid "<0>Esc</0> release the mouse"
@@ -4262,9 +4261,8 @@ msgstr ""
 msgid "<0>Right click</0> Options of what you aim at or carry"
 msgstr ""
 
-#: src/lib/xr/interaction/desktop/DesktopHud.svelte
-msgid "<0>M</0> Menu <1>I</1> Inspector <2>Esc</2> Release the mouse"
-msgstr ""
+#~ msgid "<0>M</0> Menu <1>I</1> Inspector <2>Esc</2> Release the mouse"
+#~ msgstr ""
 
 #: src/lib/xr/interaction/desktop/DesktopHud.svelte
 msgid "Paused"
@@ -4566,3 +4564,11 @@ msgstr "FreeLLMAPI debe permitir este origen del estudio en DASHBOARD_ORIGINS (C
 #: src/lib/studio/components/AiPanel.svelte
 msgid "A local Base URL connects to the device running your browser. Allow local network access for this Studio if your browser asks."
 msgstr "Una URL base local conecta con el dispositivo donde se ejecuta tu navegador. Permite el acceso a la red local para este estudio si tu navegador lo solicita."
+
+#: src/lib/xr/XRLaunchOverlay.svelte
+msgid "<0>Right click</0> options · <1>Tab</1> menu · <2>I</2> inspector"
+msgstr ""
+
+#: src/lib/xr/interaction/desktop/DesktopHud.svelte
+msgid "<0>Tab</0> Menu <1>I</1> Inspector <2>Esc</2> Release the mouse"
+msgstr ""

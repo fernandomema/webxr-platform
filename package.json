@@ -16,9 +16,11 @@
 		"db:push": "prisma db push",
 		"db:migrate": "prisma migrate dev",
 		"db:studio": "prisma studio",
-		"i18n": "npx wuchale"
+		"i18n": "npx wuchale",
+		"icons": "node scripts/gen-icons.mjs"
 	},
 	"devDependencies": {
+		"@iconify-json/lucide": "^1.2.140",
 		"@sveltejs/adapter-node": "^5.5.4",
 		"@sveltejs/kit": "^2.63.0",
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",

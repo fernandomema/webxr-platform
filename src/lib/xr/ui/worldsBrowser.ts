@@ -18,6 +18,7 @@ import { gameState } from '../gameState';
 import type { SceneGraph } from '../sceneGraph';
 import { BUILTIN_WORLDS, DEV_WORLD_IDS, type BuiltinWorld } from '../templates/builtinWorlds';
 import { captureItemThumbnail } from '../thumbnail/capture';
+import { THEME } from './theme';
 
 /**
  * The Dash "Worlds" tab: a sidebar of categories, a grid of world cards with their 360° preview, and a detail page for the
@@ -49,8 +50,8 @@ const CATEGORIES: ReadonlyArray<{ id: Category; label: string }> = [
 ];
 
 const C = {
-	bg: '#111827', surface: '#1f2937', surfaceHover: '#273449', border: '#374151',
-	text: '#e2e8f0', muted: '#94a3b8', accent: '#7c3aed', accentSoft: '#4c1d95', ok: '#86efac', warn: '#fbbf24', error: '#f87171'
+	bg: THEME.panel, surface: THEME.surface, surfaceHover: THEME.surfaceHover, border: THEME.border,
+	text: THEME.text, muted: THEME.muted, accent: THEME.accent, accentSoft: THEME.accentSoft, ok: THEME.mint, warn: THEME.glow, error: THEME.error
 };
 
 const MAIN_WIDTH = 780;
@@ -155,7 +156,7 @@ function pill(name: string, label: string, width: number, height: number, backgr
 	const button = Button.CreateSimpleButton(name, label);
 	button.width = `${width}px`;
 	button.height = `${height}px`;
-	button.color = 'white';
+	button.color = THEME.text;
 	button.fontSize = 18;
 	button.background = background;
 	button.cornerRadius = 8;
@@ -214,7 +215,7 @@ function panoramaViewer(name: string, url: string): Rectangle {
 	box.cornerRadius = 12;
 	box.thickness = 2;
 	box.color = C.accentSoft;
-	box.background = '#0b1020';
+	box.background = THEME.ink;
 	box.isPointerBlocker = true;
 
 	// The seam of the picture can be in view, so it is drawn as two pieces: the end of the picture and then its start.
@@ -236,7 +237,7 @@ function panoramaViewer(name: string, url: string): Rectangle {
 	badge.isHitTestVisible = false;
 	topLeft(badge, 10, 10);
 	const label = new TextBlock(`${name}-badge-text`, '360°');
-	label.color = 'white'; label.fontSize = 14;
+	label.color = THEME.text; label.fontSize = 14;
 	badge.addControl(label);
 	box.addControl(badge);
 
@@ -316,10 +317,10 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 	main.left = '216px';
 	parent.addControl(main);
 
-	const title = topLeft(text('worlds-title', '', 22, 'white', 36), 4, 4);
+	const title = topLeft(text('worlds-title', '', 22, THEME.text, 36), 4, 4);
 	title.width = '560px';
 	main.addControl(title);
-	const refreshButton = topLeft(pill('worlds-refresh', 'Refresh', 130, 36, '#374151'), MAIN_WIDTH - 134, 4);
+	const refreshButton = topLeft(pill('worlds-refresh', 'Refresh', 130, 36, THEME.raised), MAIN_WIDTH - 134, 4);
 	refreshButton.fontSize = 16;
 	refreshButton.onPointerClickObservable.add(async () => {
 		refreshButton.isEnabled = false;
@@ -370,9 +371,9 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 	joinView.addControl(joinHint);
 	const joinInput = topLeft(new InputText('worlds-join-input'), 4, 52);
 	joinInput.width = '360px'; joinInput.height = '52px';
-	joinInput.color = 'white'; joinInput.background = C.surface; joinInput.placeholderText = 'Private room code';
+	joinInput.color = THEME.text; joinInput.background = C.surface; joinInput.placeholderText = 'Private room code';
 	joinView.addControl(joinInput);
-	const joinButton = topLeft(pill('worlds-join-button', 'Join room', 180, 52, '#2563eb'), 376, 52);
+	const joinButton = topLeft(pill('worlds-join-button', 'Join room', 180, 52, THEME.accent), 376, 52);
 	joinButton.onPointerClickObservable.add(async () => {
 		const code = joinInput.text.trim();
 		if (!code) return;
@@ -431,7 +432,7 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 			frame.addControl(cardPicture(`world-card-picture-${entry.key}`, url, CARD_W - 6, CARD_PREVIEW_H));
 		}).catch(() => { waiting.text = 'No preview'; });
 
-		const name = topLeft(text(`world-card-name-${entry.key}`, entry.name, 16, 'white', 22), 10, CARD_PREVIEW_H + 6);
+		const name = topLeft(text(`world-card-name-${entry.key}`, entry.name, 16, THEME.text, 22), 10, CARD_PREVIEW_H + 6);
 		name.width = `${CARD_W - 26}px`;
 		name.isHitTestVisible = false;
 		cell.addControl(name);
@@ -491,7 +492,7 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 
 		const column = 4 + VIEWER_W + 18;
 		const width = MAIN_WIDTH - column - 4;
-		const name = topLeft(text('world-detail-name', entry.name, 24, 'white', 64), column, 4);
+		const name = topLeft(text('world-detail-name', entry.name, 24, THEME.text, 64), column, 4);
 		name.width = `${width}px`; name.textWrapping = true;
 		name.textVerticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
 		detail.addControl(name);
@@ -515,7 +516,7 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 		detail.addControl(primary);
 		top += 58;
 		if (entry.secondary) {
-			const secondary = topLeft(pill('world-detail-secondary', entry.secondary.label, width, 44, '#374151'), column, top);
+			const secondary = topLeft(pill('world-detail-secondary', entry.secondary.label, width, 44, THEME.raised), column, top);
 			secondary.fontSize = 16;
 			act(secondary, entry.secondary);
 			detail.addControl(secondary);
@@ -681,14 +682,14 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 				info.width = '520px'; info.textWrapping = true;
 				line.addControl(info);
 				const done = acquired.has(item.id);
-				const button = pill(`marketplace-acquire-${item.id}`, done ? 'Acquired' : 'Acquire', 140, 48, done ? '#334155' : C.accent);
+				const button = pill(`marketplace-acquire-${item.id}`, done ? 'Acquired' : 'Acquire', 140, 48, done ? THEME.raised : C.accent);
 				button.isEnabled = !done;
 				button.onPointerClickObservable.add(async () => {
 					try {
 						const response = await fetch(`/api/marketplace/items/${item.id}/purchase`, { method: 'POST' });
 						if (!response.ok) throw new Error(response.status === 401 ? 'Sign in to acquire this object.' : 'Could not acquire this object.');
 						button.textBlock!.text = 'Acquired';
-						button.background = '#334155';
+						button.background = THEME.raised;
 						button.isEnabled = false;
 						say('Added to Purchased Objects inventory.', C.ok);
 					} catch (error) {

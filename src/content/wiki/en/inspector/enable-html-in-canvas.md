@@ -24,7 +24,7 @@ You get the best result with the browser flag enabled. Without it, Kithin falls 
 
 ## Open the Inspector
 
-1. Open the **Dash** (`M` on desktop, the menu button on your controller).
+1. Open the **Dash** (`Tab` on desktop, the menu button on your controller).
 2. On the **Home** tab, press **Inspector**. The panel appears in front of you; you can grab it and move it like any object.
 3. If you don't see the button, press **Customise** on the Home tab and add **Inspector** to your shortcuts.
 

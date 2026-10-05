@@ -6,6 +6,7 @@ import { WORLD_VISIBILITY_INFO } from '$lib/worldVisibility';
 import { createRadialView } from './radialView';
 import { sourceLabel, validateWorldPackage } from '$lib/worlds/package';
 import type { WorldPackage } from '$lib/worlds/types';
+import { THEME } from './theme';
 
 /** How long the orb's menu stays open when nobody uses it. */
 const MENU_AUTO_CLOSE_MS = 20_000;
@@ -35,19 +36,19 @@ export function createWorldPortalMenu(
   background.width = 1;
   background.height = 1;
   background.thickness = 0;
-  background.background = '#111827';
+  background.background = THEME.panel;
   texture.addControl(background);
   const stack = new StackPanel('world-settings-stack');
   stack.width = 0.9;
   background.addControl(stack);
   const title = new TextBlock('world-settings-title', 'Custom world session');
-  title.height = '64px'; title.fontSize = 28; title.color = 'white';
+  title.height = '64px'; title.fontSize = 28; title.color = THEME.text;
   stack.addControl(title);
   const source = new TextBlock('world-settings-source', '');
-  source.height = '32px'; source.fontSize = 17; source.color = '#9ca3af';
+  source.height = '32px'; source.fontSize = 17; source.color = THEME.muted;
   stack.addControl(source);
   const status = new TextBlock('world-settings-status', '');
-  status.height = '42px'; status.fontSize = 18; status.color = '#fbbf24';
+  status.height = '42px'; status.fontSize = 18; status.color = THEME.glow;
   stack.addControl(status);
   let selectedWorld: WorldPackage | null = null;
   let selectedVisibility: HostedWorldVisibility | 'solo' = 'private';
@@ -55,14 +56,14 @@ export function createWorldPortalMenu(
   const buttons = new Map<string, Button>();
   for (const visibility of options) {
     const button = Button.CreateSimpleButton(`world-settings-${visibility}`, WORLD_VISIBILITY_INFO[visibility].label);
-    button.height = '70px'; button.color = 'white'; button.fontSize = 22; button.cornerRadius = 10;
+    button.height = '70px'; button.color = THEME.text; button.fontSize = 22; button.cornerRadius = 10;
     if (visibility === 'friends' || visibility === 'friends-plus') { button.textBlock!.text += ' (unavailable)'; button.isEnabled = false; }
     button.onPointerClickObservable.add(() => { selectedVisibility = visibility; refresh(); });
     stack.addControl(button);
     buttons.set(visibility, button);
   }
   const start = Button.CreateSimpleButton('world-settings-start', 'Start world');
-  start.height = '72px'; start.color = 'white'; start.background = '#16a34a'; start.cornerRadius = 10;
+  start.height = '72px'; start.color = THEME.text; start.background = THEME.go; start.cornerRadius = 10;
   start.onPointerClickObservable.add(async () => {
     if (!selectedWorld) return;
     start.isEnabled = false;
@@ -76,12 +77,12 @@ export function createWorldPortalMenu(
   });
   stack.addControl(start);
   const cancel = Button.CreateSimpleButton('world-settings-cancel', 'Cancel');
-  cancel.height = '60px'; cancel.color = 'white'; cancel.background = '#374151'; cancel.cornerRadius = 10;
+  cancel.height = '60px'; cancel.color = THEME.text; cancel.background = THEME.raised; cancel.cornerRadius = 10;
   cancel.onPointerClickObservable.add(() => panel.setEnabled(false));
   stack.addControl(cancel);
 
   function refresh() {
-    for (const [visibility, button] of buttons) button.background = selectedVisibility === visibility ? '#6d28d9' : '#374151';
+    for (const [visibility, button] of buttons) button.background = selectedVisibility === visibility ? THEME.accent : THEME.raised;
   }
   refresh();
 

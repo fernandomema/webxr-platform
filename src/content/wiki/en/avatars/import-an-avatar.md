@@ -55,7 +55,7 @@ Save the project (`Ctrl+S`). Because it contains an avatar, it is stored in your
 
 ## 6. Wear it
 
-1. Open `/play` and the **Dash** panel (`M` on desktop, the menu button on your controller).
+1. Open `/play` and the **Dash** panel (`Tab` on desktop, the menu button on your controller).
 2. Open your **Inventory** and select the avatar.
 3. Press **Set as default**.
 

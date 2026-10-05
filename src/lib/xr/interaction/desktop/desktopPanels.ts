@@ -40,6 +40,8 @@ interface Saved {
 	rotationQuaternion: Quaternion | null;
 	scaling: Vector3;
 	renderingGroupId: number;
+	constantlyPicking: boolean;
+	skippedMovePicking: boolean;
 	picks: [AbstractMeshPredicate | undefined, AbstractMeshPredicate | undefined, AbstractMeshPredicate | undefined];
 }
 
@@ -87,6 +89,8 @@ export function setupDesktopPanels(
 			rotationQuaternion: root.rotationQuaternion?.clone() ?? null,
 			scaling: root.scaling.clone(),
 			renderingGroupId: root.renderingGroupId,
+			constantlyPicking: scene.constantlyUpdateMeshUnderPointer,
+			skippedMovePicking: scene.skipPointerMovePicking,
 			picks: [scene.pointerMovePredicate, scene.pointerDownPredicate, scene.pointerUpPredicate]
 		};
 		root.parent = camera;
@@ -96,6 +100,11 @@ export function setupDesktopPanels(
 		// The panel is in front of everything in the picture, so it is also first for the mouse: what is behind it is not hit.
 		const onlyPanel: AbstractMeshPredicate = (mesh) => mesh === root;
 		scene.pointerMovePredicate = scene.pointerDownPredicate = scene.pointerUpPredicate = onlyPanel;
+		// The wheel reaches a GUI on a mesh (a scroll viewer) only with the panel picked under the pointer. Babylon picks
+		// for the wheel only when it is not skipping pointer-move picking (the engine does, for speed) and is asked to keep
+		// track of the mesh under the pointer.
+		scene.skipPointerMovePicking = false;
+		scene.constantlyUpdateMeshUnderPointer = true;
 		backdrop.setEnabled(true);
 		docked = panel;
 		options.onDockChange(panel);
@@ -115,6 +124,8 @@ export function setupDesktopPanels(
 			root.rotationQuaternion = previous.rotationQuaternion;
 			root.scaling.copyFrom(previous.scaling);
 			root.renderingGroupId = previous.renderingGroupId;
+			scene.constantlyUpdateMeshUnderPointer = previous.constantlyPicking;
+			scene.skipPointerMovePicking = previous.skippedMovePicking;
 			[scene.pointerMovePredicate, scene.pointerDownPredicate, scene.pointerUpPredicate] = previous.picks as [AbstractMeshPredicate, AbstractMeshPredicate, AbstractMeshPredicate];
 		}
 		options.onDockChange(null);

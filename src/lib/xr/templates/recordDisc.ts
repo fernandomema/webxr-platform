@@ -161,17 +161,20 @@ function labelText(id: string, title: string, author: string, labelColor: string
 }
 
 /**
- * Where a picture of the disc is taken from (the inventory and the world's thumbnails use it): above and in front of it, looking
- * down at the label with its top away from the camera. The slot sits in the root's stretched units, so the metres are divided by the scale.
+ * Where a picture of the disc is taken from (the inventory and the world's thumbnails use it): straight above its centre,
+ * looking down at the label with the top of the label towards the top of the picture. The slot sits in the root's stretched
+ * units, so the metres are divided by the scale.
  */
 function previewCamera(id: string): Slot {
-	const position: Vec3 = [0, 0.4, 0.35];
+	const height = 0.38;
+	// A quarter turn about Y then a half turn about the camera's own X: looking along -Y, with -Z at the top of the picture.
+	const rotation: Quat = [0, Math.SQRT1_2, -Math.SQRT1_2, 0];
 	return {
 		id: `${id}-preview-camera`,
 		parentId: id,
 		name: 'Disc Preview Camera',
-		position: [round(position[0] / DISC_DIAMETER), round(position[1] / DISC_THICKNESS), round(position[2] / DISC_DIAMETER)],
-		rotation: lookRotation([-position[0], -position[1], -position[2]]).map(round) as Quat,
+		position: [0, round(height / DISC_THICKNESS), 0],
+		rotation: rotation.map(round) as Quat,
 		scale: [1, 1, 1],
 		components: [{ type: 'previewCamera' }]
 	};

@@ -740,7 +740,7 @@ export async function mountGame(
 		}
 	};
 	const pointerState = xr ? setupPointerAndGrabControllers(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, pointerHooks) : null;
-	setupPanelToggle(scene, xr, dash.root, getActiveCamera, { keyboardKey: 'm', buttonIdPattern: /x-button|menu/i });
+	setupPanelToggle(scene, xr, dash.root, getActiveCamera, { keyboardKey: 'tab', buttonIdPattern: /x-button|menu/i });
 	setupPanelToggle(scene, xr, inspector.root, getActiveCamera, { keyboardKey: 'i', buttonIdPattern: /a-button/i });
 	const radialNetwork = {
 		getInspectTarget: (hand: 'left' | 'right') => inspector.root.isEnabled() ? pointerState?.getLaserTarget(hand) ?? null : null,

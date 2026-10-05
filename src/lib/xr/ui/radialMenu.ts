@@ -98,7 +98,7 @@ export function buildRadialItems(
 	return items;
 }
 
-/** Joystick input adapter for the shared radial view. */
+/** Joystick input adapter for the shared radial view: the stick points at an option; the stick click or the menu button applies it. */
 export function setupRadialMenuForHand(
 	scene: Scene,
 	xr: WebXRDefaultExperience,
@@ -118,6 +118,8 @@ export function setupRadialMenuForHand(
 	let stickX = 0;
 	let stickY = 0;
 	let selectedIndex = 0;
+	/** Whether the stick is pushed far enough to point at an option. */
+	let pointing = false;
 	/** The object the open menu is about; the menu closes if it leaves the hand. */
 	let menuSlotId: string | null = null;
 	let inspectTargetId: string | null = null;
@@ -128,12 +130,18 @@ export function setupRadialMenuForHand(
 	let releasing = false;
 
 	function close() {
+		pointing = false;
 		view.close();
 		menuSlotId = null;
 		inspectTargetId = null;
 		releasing = true;
 	}
 	const inHand = (slotId: string) => equipment.getEquippedSlot(localPlayerId(), hand) === slotId || grabSystem.getHeldSlot(hand) === slotId;
+	/** Applies the option pointed at, closing the hand's menu if that closed it. */
+	function pick() {
+		void view.select(selectedIndex);
+		if (!view.isOpen) close();
+	}
 	function open(controller: WebXRInputSource) {
 		const player = localPlayerId();
 		const equippedSlotId = equipment.getEquippedSlot(player, hand);
@@ -158,7 +166,10 @@ export function setupRadialMenuForHand(
 			const openButtonId = motionController.getComponentIds().find((id) => buttonPattern.test(id));
 			if (openButtonId) motionController.getComponent(openButtonId).onButtonStateChangedObservable.add((component) => {
 				if (!component.changes.pressed?.current) return;
-				if (view.isOpen) close(); else open(controller);
+				// Open, with an option pointed at, the button applies it like a click of the stick; otherwise it closes the menu.
+				if (!view.isOpen) open(controller);
+				else if (pointing) pick();
+				else close();
 			});
 			stick?.onAxisValueChangedObservable.add((axes) => { stickX = axes.x; stickY = axes.y; });
 			// Clicking the stick opens the menu, like the menu button; while it is open, it picks the option pointed at.
@@ -168,8 +179,7 @@ export function setupRadialMenuForHand(
 					open(controller);
 					return;
 				}
-				void view.select(selectedIndex);
-				if (!view.isOpen) close();
+				pick();
 			});
 		});
 		controller.onDisposeObservable.add(() => {
@@ -186,7 +196,8 @@ export function setupRadialMenuForHand(
 		// Dropped, unequipped or deleted: its options no longer apply.
 		if (view.isOpen && menuSlotId && !inHand(menuSlotId)) close();
 		if (view.isOpen && inspectTargetId && network?.getInspectTarget?.(hand) !== inspectTargetId) close();
-		if (!view.isOpen || Math.hypot(stickX, stickY) < 0.35) return;
+		pointing = view.isOpen && Math.hypot(stickX, stickY) >= 0.35;
+		if (!pointing) return;
 		const angle = Math.atan2(stickY, stickX);
 		const step = (2 * Math.PI) / view.itemCount;
 		selectedIndex = ((Math.round((angle + Math.PI / 2) / step) % view.itemCount) + view.itemCount) % view.itemCount;

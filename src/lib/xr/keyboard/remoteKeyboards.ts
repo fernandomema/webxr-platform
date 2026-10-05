@@ -1,5 +1,6 @@
 import { Color3, DynamicTexture, MeshBuilder, Quaternion, StandardMaterial, TransformNode, Vector3, type Mesh, type Scene } from '@babylonjs/core';
 import type { KeyboardPresence } from './presence';
+import { THEME } from '../ui/theme';
 
 /**
  * The stand-in of another player's keyboard: a blank board with rows of unlabelled keys where theirs is, so everyone can
@@ -13,13 +14,13 @@ export class RemoteKeyboards {
 
 	constructor(private scene: Scene) {
 		this.bodyMaterial = new StandardMaterial('remote-keyboard-body', scene);
-		this.bodyMaterial.diffuseColor = Color3.FromHexString('#0b1220');
+		this.bodyMaterial.diffuseColor = Color3.FromHexString(THEME.ink);
 		this.bodyMaterial.specularColor = Color3.Black();
 		this.keysTexture = new DynamicTexture('remote-keyboard-keys', { width: 512, height: 256 }, scene, true);
 		const context = this.keysTexture.getContext() as unknown as CanvasRenderingContext2D;
-		context.fillStyle = '#0b1220';
+		context.fillStyle = THEME.ink;
 		context.fillRect(0, 0, 512, 256);
-		context.fillStyle = '#334155';
+		context.fillStyle = THEME.border;
 		const rows = 5, columns = 12;
 		for (let r = 0; r < rows; r++) {
 			for (let c = 0; c < columns; c++) {

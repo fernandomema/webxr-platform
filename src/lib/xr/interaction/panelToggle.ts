@@ -32,7 +32,9 @@ export function setupPanelToggle(
 
 	scene.onKeyboardObservable.add((info) => {
 		if (info.type === KeyboardEventTypes.KEYDOWN && info.event.key.toLowerCase() === options.keyboardKey) {
-			toggle();
+			// Keys like Tab would otherwise also move the page's focus.
+			info.event.preventDefault();
+			if (!info.event.repeat) toggle();
 		}
 	});
 

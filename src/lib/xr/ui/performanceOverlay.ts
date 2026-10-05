@@ -1,5 +1,6 @@
 import { MeshBuilder, Quaternion, SceneInstrumentation, StandardMaterial, Color3, Vector3, type Camera, type Scene } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Control, TextBlock } from '@babylonjs/gui';
+import { THEME } from './theme';
 
 /**
  * A small readout, low on the left of the view, of what the world costs to draw: frames per second, the time a frame
@@ -28,7 +29,7 @@ export function createPerformanceOverlay(scene: Scene, getCamera: () => Camera):
 	const texture = AdvancedDynamicTexture.CreateForMesh(plane, 512, 256, false);
 	texture.background = '#0b1220dd';
 	const text = new TextBlock('performance-text', '');
-	text.color = '#e2e8f0';
+	text.color = THEME.text;
 	text.fontSize = 30;
 	text.fontFamily = 'monospace';
 	text.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
