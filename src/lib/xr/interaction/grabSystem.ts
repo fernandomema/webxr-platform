@@ -91,6 +91,30 @@ export class GrabSystem {
 		return this.grabberOf.get(grabberId) ?? null;
 	}
 
+	/**
+	 * Puts what `grabberId` holds at a world pose, keeping it held (so it still follows the hand from there). For the host, to apply
+	 * where a guest says they are holding it: pushed or pulled along the laser, or carried by a player with no hands to track.
+	 * Only a one-handed hold: two hands decide the pose themselves.
+	 */
+	setHeldWorldPose(grabberId: string, position: Vector3, rotation: Quaternion): boolean {
+		const slotId = this.grabberOf.get(grabberId);
+		if (!slotId || (this.grabbersOfSlot.get(slotId)?.size ?? 0) !== 1) return false;
+		const node = this.sceneGraph.getLive(slotId)?.node;
+		if (!node) return false;
+		const parent = node.parent as TransformNode | null;
+		if (!parent) {
+			node.position.copyFrom(position);
+			node.rotationQuaternion = rotation.clone();
+			return true;
+		}
+		const toLocal = parent.getWorldMatrix().clone().invert();
+		node.position.copyFrom(Vector3.TransformCoordinates(position, toLocal));
+		const parentRotation = new Quaternion();
+		parent.getWorldMatrix().decompose(undefined, parentRotation, undefined);
+		node.rotationQuaternion = Quaternion.Inverse(parentRotation).multiply(rotation);
+		return true;
+	}
+
 	/** Grab priority: caller decides target (laser hit takes priority over hand overlap). */
 	grab(grabberId: string, grabberNode: TransformNode, targetSlotId: string | null): void {
 		if (!targetSlotId || this.grabberOf.has(grabberId)) return;

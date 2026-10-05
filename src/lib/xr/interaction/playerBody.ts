@@ -37,6 +37,8 @@ export interface PlayerBody {
 	setSeated(seated: boolean): void;
 	/** Desktop: a jump, if standing on something. */
 	jump(): void;
+	/** Puts the player back at the world's start point, facing the way they started, with nothing left of a fall. For entering a world. */
+	respawn(): void;
 	/** Gravity, standing on the floor, and putting the player back if they fall out of the world. Call every frame. */
 	update(dt: number): void;
 }
@@ -195,7 +197,23 @@ export function setupPlayerBody(
 		}
 	}
 
+	function respawn(): void {
+		verticalSpeed = 0;
+		if (inXr()) {
+			const camera = xr!.baseExperience.camera;
+			camera.position.x = spawn.x;
+			camera.position.z = spawn.z;
+			// Down to the floor from where the head would be; the next frame settles it onto whatever floor is there.
+			camera.position.y = camera.realWorldHeight + (lift ?? 0);
+			return;
+		}
+		desktopCamera.position.copyFrom(desktopStart);
+		desktopCamera.rotation.set(0, 0, 0);
+		grounded = false;
+	}
+
 	return {
+		respawn,
 		jump() {
 			if (inXr() || !grounded) return;
 			verticalSpeed = JUMP_SPEED;

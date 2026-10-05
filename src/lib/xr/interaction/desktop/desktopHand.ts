@@ -215,6 +215,13 @@ export function setupDesktopHand(options: DesktopHandOptions): DesktopHand {
 
 	// --- the wheel: bring closer, push away, scale, turn --------------------------------------------------------------
 
+	/** Tells the other players where the held object is. A guest's mouse has no hand for them to track, so what it holds is told in full. */
+	function reportHold(slotId: string): void {
+		const node = sceneGraph.getLive(slotId)?.node;
+		if (!node) return;
+		network.onHold?.(HAND, slotId, node.getAbsolutePosition().asArray() as [number, number, number], node.absoluteRotationQuaternion.asArray() as [number, number, number, number]);
+	}
+
 	function onWheel(event: WheelEvent): void {
 		const slotId = held();
 		const raw = event.deltaY || event.deltaX; // Shift turns a vertical wheel into a horizontal one in some browsers
@@ -236,6 +243,7 @@ export function setupDesktopHand(options: DesktopHandOptions): DesktopHand {
 			const along = Vector3.Dot(position.subtract(camera.globalPosition), forward);
 			const next = wheelPushedDistance(along, notches);
 			node.setAbsolutePosition(position.add(forward.scale(next - along)));
+			reportHold(slotId);
 			// Pulled all the way in, an object that can be equipped goes into the hand, as if caught.
 			if (notches < 0 && next <= PUSH_RANGE.min && isEquippable(live.slot) && grabSystem.getGrabbersForSlot(slotId).length === 1) {
 				if (equipment.equip(player(), HAND, handNode, slotId)) {
@@ -409,6 +417,9 @@ export function setupDesktopHand(options: DesktopHandOptions): DesktopHand {
 			if (radial.carriedSlotId && carried() !== radial.carriedSlotId) closeRadial();
 			else syncRadial();
 		}
+
+		const heldSlotId = held();
+		if (heldSlotId) reportHold(heldSlotId);
 
 		const holding = carriedSlotId
 			? { label: slotNameOf(carriedSlotId), equipped: equipped() === carriedSlotId, usable: equipment.hasTriggerAction(player(), HAND, carriedSlotId) }

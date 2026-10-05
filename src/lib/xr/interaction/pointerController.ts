@@ -46,6 +46,8 @@ function setControllerTeleportEnabled(xr: WebXRDefaultExperience, controller: We
 export interface PointerControllerNetworkHooks {
 	onGrab?(grabberId: string, slotId: string): void;
 	onRelease?(grabberId: string, slotId?: string): void;
+	/** Where the object this hand holds is now, in the world, when the hand's own movement does not say it (pushed or pulled along the laser). A guest tells the host. */
+	onHold?(grabberId: string, slotId: string, position: [number, number, number], rotation: [number, number, number, number]): void;
 	onWorldPortal?(slotId: string): void;
 	/** The trigger of a hand holding an equipped object with `onTrigger` actions. Solo/host run it locally; a guest asks the host. */
 	onUse?(slotId: string, hand: EquipHand, phase: 'press' | 'release' | 'value', value: number): void;
@@ -218,6 +220,7 @@ export function setupPointerAndGrabControllers(
 		pushRay.direction.scaleToRef(next - along, pushDelta);
 		pushPosition.addInPlace(pushDelta);
 		node.setAbsolutePosition(pushPosition);
+		if (slotId) network?.onHold?.(grabberId, slotId, pushPosition.asArray() as [number, number, number], node.absoluteRotationQuaternion.asArray() as [number, number, number, number]);
 		const live = slotId ? sceneGraph.getLive(slotId) : undefined;
 		if (y > 0 && next <= PUSH_RANGE.min && slotId && live && isEquippable(live.slot)) {
 			if (!equipment.equip(localPlayerId(), hand, controller.grip ?? controller.pointer, slotId)) return;

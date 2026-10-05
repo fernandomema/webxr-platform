@@ -17,8 +17,10 @@ import { RemoteKeyboards } from '../keyboard/remoteKeyboards';
 import { AssetPeer } from '$lib/assets/p2p';
 import { announceAssetSourcesChanged, getLocalAssetStore } from '$lib/assets/store';
 import type { SlotTree } from '$lib/ecs/types';
+import { cameraHeadPose } from '../avatar/headPose';
 
 const PRESENCE_INTERVAL_MS = 50;
+const HOLD_MOVE_INTERVAL_MS = 50;
 
 /** Applies host-authoritative world state and renders every remote participant. */
 export class GuestSync {
@@ -240,10 +242,7 @@ export class GuestSync {
 	private sendPresence(): void {
 		if (!this.link) return;
 		const camera = this.xr?.baseExperience.camera ?? this.desktopCamera;
-		const head: TransformPose = {
-			position: camera.globalPosition.asArray() as TransformPose['position'],
-			rotation: (camera.rotationQuaternion?.asArray() ?? [0, 0, 0, 1]) as TransformPose['rotation']
-		};
+		const head: TransformPose = cameraHeadPose(camera);
 		const hands = readHandPoses(this.xr);
 		const keyboard = localKeyboardPresence();
 		this.link.sendState({
@@ -264,7 +263,29 @@ export class GuestSync {
 
 	requestRelease(grabberId: string, slotId?: string): void {
 		if (slotId) this.locallyGrabbed.delete(slotId);
+		this.pendingHoldMove = null;
 		this.link?.send({ kind: 'release-request', requestId: crypto.randomUUID(), grabberId });
+	}
+
+	private holdMoveAt = 0;
+	private holdMoveTimer: ReturnType<typeof setTimeout> | null = null;
+	private pendingHoldMove: Extract<WorldSyncMessage, { kind: 'hold-move' }> | null = null;
+
+	/** Tells the host where this guest holds an object (when it is pushed or pulled along the laser), a few times a second, the last one always. */
+	requestHoldMove(grabberId: string, slotId: string, position: [number, number, number], rotation: [number, number, number, number]): void {
+		this.pendingHoldMove = { kind: 'hold-move', grabberId, slotId, position, rotation };
+		const wait = this.holdMoveAt + HOLD_MOVE_INTERVAL_MS - Date.now();
+		if (wait <= 0) this.flushHoldMove();
+		else this.holdMoveTimer ??= setTimeout(() => this.flushHoldMove(), wait);
+	}
+
+	private flushHoldMove(): void {
+		if (this.holdMoveTimer) clearTimeout(this.holdMoveTimer);
+		this.holdMoveTimer = null;
+		if (!this.pendingHoldMove) return;
+		this.holdMoveAt = Date.now();
+		this.link?.send(this.pendingHoldMove);
+		this.pendingHoldMove = null;
 	}
 
 	requestEquip(hand: 'left' | 'right', slotId: string): void {

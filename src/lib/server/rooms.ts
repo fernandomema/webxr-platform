@@ -7,7 +7,11 @@ interface Room {
 	guests: Map<string, WebSocket>; // guestId -> socket
 }
 
-const rooms = new Map<string, Room>();
+// Held on `globalThis`: the signaling handler and the app's server code can each load their own copy of this module (in
+// `vite dev` the first runs in Vite's own process, the second in its SSR runtime; the production bundle has the same split),
+// and the list of active worlds asks which rooms are live: with a map per copy it always found none and ended every session.
+const shared = globalThis as typeof globalThis & { __webxrSignalingRooms?: Map<string, Room> };
+const rooms = (shared.__webxrSignalingRooms ??= new Map<string, Room>());
 const connectionIds = new WeakMap<WebSocket, string>();
 
 function send(socket: WebSocket, data: unknown) {

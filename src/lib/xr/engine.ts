@@ -478,6 +478,7 @@ export async function mountGame(
 			gameState.publication = publication;
 			sceneGraph.reconcile(copyScene(snapshot));
 			refreshTeleportFloors();
+			playerBody.respawn();
 			void applyLocalAvatar();
 			if (visibility === 'solo') {
 				// Kept so that hosting it later, or saving it, starts from its own name.
@@ -602,6 +603,7 @@ export async function mountGame(
 			refreshTeleportFloors,
 			() => void applyLocalAvatar()
 		);
+		playerBody.respawn();
 		guestSync.setAvatarHooks(guestAvatarHooks);
 		guestSync.setStorageHooks({
 			onPublication: (publicationId) => { gameState.publication = publicationId ? { publicationId, revisionId: null } : null; },
@@ -737,6 +739,9 @@ export async function mountGame(
 		onRelease: (grabberId, slotId) => {
 			if (gameState.role === 'host') hostAuthority?.broadcastSnapshot();
 			else guestSync?.requestRelease(grabberId, slotId);
+		},
+		onHold: (grabberId, slotId, position, rotation) => {
+			if (gameState.role === 'guest') guestSync?.requestHoldMove(grabberId, slotId, position, rotation);
 		}
 	};
 	const pointerState = xr ? setupPointerAndGrabControllers(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, pointerHooks) : null;

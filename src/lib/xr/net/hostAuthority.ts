@@ -17,6 +17,7 @@ import { parseKeyboardPresence } from '../keyboard/presence';
 import { RemoteKeyboards } from '../keyboard/remoteKeyboards';
 import { AssetPeer } from '$lib/assets/p2p';
 import { announceAssetSourcesChanged, getLocalAssetStore } from '$lib/assets/store';
+import { cameraHeadPose } from '../avatar/headPose';
 
 const PRESENCE_INTERVAL_MS = 50;
 const STATE_INTERVAL_MS = 50;
@@ -126,10 +127,7 @@ export class HostAuthority {
 
 	private getLocalPresence(): Extract<WorldStateMessage, { kind: 'presence' }> {
 		const camera = this.xr?.baseExperience.camera ?? this.desktopCamera;
-		const head: TransformPose = {
-			position: camera.globalPosition.asArray() as TransformPose['position'],
-			rotation: (camera.rotationQuaternion?.asArray() ?? [0, 0, 0, 1]) as TransformPose['rotation']
-		};
+		const head: TransformPose = cameraHeadPose(camera);
 		const hands = readHandPoses(this.xr);
 		const keyboard = localKeyboardPresence();
 		return {
@@ -347,6 +345,15 @@ export class HostAuthority {
 				this.equipment.dispatchTrigger(guestId, msg.hand, msg.phase, value, msg.slotId);
 				break;
 			}
+			case 'hold-move': {
+				if (!isEquipHand(msg.grabberId)) break;
+				const grabberId = `${guestId}:${msg.grabberId}`;
+				// Only what this guest is holding, and only a sane pose.
+				if (this.grabSystem.getHeldSlot(grabberId) !== msg.slotId) break;
+				if (!isFinitePose(msg.position, 3) || !isFinitePose(msg.rotation, 4)) break;
+				this.grabSystem.setHeldWorldPose(grabberId, Vector3.FromArray(msg.position), Quaternion.FromArray(msg.rotation).normalize());
+				break;
+			}
 			case 'release-request':
 				this.grabSystem.release(`${guestId}:${msg.grabberId}`);
 				this.broadcastSnapshot();
@@ -437,4 +444,8 @@ export class HostAuthority {
 		this.keyboards.dispose();
 		this.signaling.close();
 	}
+}
+
+function isFinitePose(value: unknown, length: number): value is number[] {
+	return Array.isArray(value) && value.length === length && value.every((n) => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) < 1e5);
 }

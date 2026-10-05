@@ -12,6 +12,7 @@ import { detectHumanoidMap, fingerJoints, missingRequiredBones, pruneHumanoidMap
 import { mirrorRenderHooks } from '../mirrorHooks';
 import { newFoot, smoothVelocity, stepFoot, type Foot } from './gait';
 import { arcBetween, followYaw, headYaw, restFacingYaw, solveTwoBone, stepToReach, updateStandingHeight, type Q4, type V3 } from './ik';
+import { cameraHeadPose } from './headPose';
 
 /**
  * Drives every avatar slot from its owner's pose, like a puppet: the body stands under the head and
@@ -251,10 +252,7 @@ export class AvatarSystem {
 	private readLocalPose(): AvatarPose {
 		const xr = this.options.getXr();
 		const camera = this.options.getCamera();
-		const head: TransformPose = {
-			position: camera.globalPosition.asArray() as Vec3,
-			rotation: ((camera as { rotationQuaternion?: Quaternion | null }).rotationQuaternion ?? Quaternion.FromEulerAngles((camera as { rotation?: Vector3 }).rotation?.x ?? 0, (camera as { rotation?: Vector3 }).rotation?.y ?? 0, 0)).asArray() as TransformPose['rotation']
-		};
+		const head: TransformPose = cameraHeadPose(camera);
 		const pose: AvatarPose = { head };
 		if (xr?.baseExperience.state === WebXRState.IN_XR) Object.assign(pose, readHandPoses(xr));
 		return pose;
