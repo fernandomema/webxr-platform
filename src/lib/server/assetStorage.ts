@@ -8,6 +8,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { createHash } from 'node:crypto';
+import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
 import type { AssetId } from '$lib/assets/ref';
 
@@ -52,10 +53,24 @@ export function transferMode(): TransferMode {
 	return env.S3_ENDPOINT?.startsWith('https:') ? 'direct' : 'proxy';
 }
 
-/** `assets/sha256/ab/cd/<hex>.<ext>` — the hash spread over two directory levels. */
+/**
+ * Folder every key lives under. Development and production can share one bucket without mixing objects:
+ * dev uses `dev/` unless S3_KEY_PREFIX says otherwise (set it to an empty string to opt out), production uses none.
+ * Keys are stored in the database as written, so changing this only affects objects uploaded afterwards.
+ */
+export function keyPrefix(): string {
+	const configured = env.S3_KEY_PREFIX ?? (dev ? 'dev' : '');
+	const trimmed = configured.replace(/^\/+|\/+$/g, '');
+	return trimmed ? `${trimmed}/` : '';
+}
+
+/** Where model files are stored, including the environment prefix. */
+export const assetKeyPrefix = () => `${keyPrefix()}assets/sha256/`;
+
+/** `[dev/]assets/sha256/ab/cd/<hex>.<ext>` — the hash spread over two directory levels. */
 export function storageKeyFor(id: AssetId, extension: string): string {
 	const hex = id.slice('sha256:'.length);
-	return `assets/sha256/${hex.slice(0, 2)}/${hex.slice(2, 4)}/${hex}${extension ? `.${extension}` : ''}`;
+	return `${assetKeyPrefix()}${hex.slice(0, 2)}/${hex.slice(2, 4)}/${hex}${extension ? `.${extension}` : ''}`;
 }
 
 const PRESIGN_SECONDS = 15 * 60;

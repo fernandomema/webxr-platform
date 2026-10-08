@@ -28,6 +28,24 @@ export function faceLookup(x: number, y: number, z: number): { face: number; u: 
 	return { face, u: (sc / ma + 1) / 2, v: (tc / ma + 1) / 2 };
 }
 
+/**
+ * Two cube maps taken a little apart only give depth across the view direction: looking along the line between the eyes there is none,
+ * and behind the viewer it would be reversed. So away from the middle of the picture (the way the player looks) the right eye takes
+ * the left eye's picture: fully from `monoFrom` radians off the middle, and not at all within `stereoUntil`. Changes `right` in place.
+ */
+export function monoAtSides(left: Uint8ClampedArray, right: Uint8ClampedArray, width: number, height: number, stereoUntil = Math.PI * 0.4, monoFrom = Math.PI * 0.6): void {
+	for (let column = 0; column < width; column++) {
+		const away = Math.abs(((column + 0.5) / width - 0.5) * 2 * Math.PI);
+		const t = Math.min(1, Math.max(0, (away - stereoUntil) / (monoFrom - stereoUntil)));
+		if (t === 0) continue;
+		const weight = t * t * (3 - 2 * t);
+		for (let row = 0; row < height; row++) {
+			const at = (row * width + column) * 4;
+			for (let channel = 0; channel < 4; channel++) right[at + channel] = right[at + channel] + (left[at + channel] - right[at + channel]) * weight;
+		}
+	}
+}
+
 /** Reading a texture back gives its bottom row first; the addressing above wants the top row first. */
 export function flipRows(face: Uint8Array, faceSize: number): Uint8Array {
 	const out = new Uint8Array(face.length);

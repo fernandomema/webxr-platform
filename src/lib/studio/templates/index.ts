@@ -1,5 +1,6 @@
 import type { SlotTree } from '$lib/ecs/types';
 import { createSlot } from '$lib/ecs/types';
+import { BLANK_WORLD_NAME, buildBlankWorld } from '$lib/xr/templates/blankWorld';
 import { buildWishEngine } from '$lib/xr/templates/wishEngine';
 
 export interface StudioTemplate {
@@ -25,14 +26,8 @@ export const TEMPLATES: StudioTemplate[] = [
 		label: 'Blank world',
 		description: 'A flat floor and nothing else.',
 		kind: 'world',
-		defaultName: 'Untitled world',
-		build: () => [
-			createSlot({
-				id: 'floor',
-				name: 'Floor',
-				components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'ground' }, color: '#4b5563' }, { type: 'collider', shape: 'box' }]
-			})
-		]
+		defaultName: BLANK_WORLD_NAME,
+		build: buildBlankWorld
 	},
 	{
 		id: 'blank-object',

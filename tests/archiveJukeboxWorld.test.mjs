@@ -9,9 +9,9 @@ const tree = buildArchiveJukebox();
 const byId = new Map(tree.map((slot) => [slot.id, slot]));
 const find = (slot, type) => slot.components.find((c) => c.type === type);
 
-test('the jukebox is a development world', async () => {
+test('the jukebox is an official world', async () => {
 	const source = await readFile(new URL('../src/lib/xr/templates/builtinWorlds.ts', import.meta.url), 'utf8');
-	assert.ok(/DEV_WORLD_IDS[^=]*=\s*\[([^\]]*)\]/.exec(source)[1].includes('archive-jukebox'));
+	assert.ok(!/DEV_WORLD_IDS[^=]*=\s*\[([^\]]*)\]/.exec(source)[1].includes('archive-jukebox'));
 	assert.match(source, /id: 'archive-jukebox'/);
 });
 

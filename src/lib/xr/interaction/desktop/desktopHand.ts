@@ -1,5 +1,5 @@
 import { Axis, KeyboardEventTypes, PickingInfo, Space, TransformNode, Vector3, type AbstractMesh, type Scene, type UniversalCamera } from '@babylonjs/core';
-import { isEquippable, isGrabbable } from '$lib/ecs/types';
+import { isEquippable, isGrabbable, opensWorldMenu } from '$lib/ecs/types';
 import type { SceneGraph } from '../../sceneGraph';
 import type { GrabSystem } from '../grabSystem';
 import type { EquipmentSystem } from '../equipmentSystem';
@@ -157,7 +157,8 @@ export function setupDesktopHand(options: DesktopHandOptions): DesktopHand {
 	}
 
 	function worldPortalAt(slotId: string | null): string | null {
-		return slotId && sceneGraph.getLive(slotId)?.slot.components.some((component) => component.type === 'worldPortal') ? slotId : null;
+		const slot = slotId ? sceneGraph.getLive(slotId)?.slot : undefined;
+		return slotId && slot && opensWorldMenu(slot) ? slotId : null;
 	}
 
 	function onPrimaryDown(): void {

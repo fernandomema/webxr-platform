@@ -14,6 +14,9 @@
 	--color-sky: #6ec3ff;
 }
 
+/* One content width for every page (home, worlds, settings, studio), so switching between them does not shift the layout. */
+:root { --page-width: 1180px; }
+
 html { scroll-behavior: smooth; background: var(--color-ink); }
 body { margin: 0; background: var(--color-ink); color: var(--color-bone); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 ::selection { background: var(--color-ember); color: #0a0a10; }
@@ -21,3 +24,9 @@ body { margin: 0; background: var(--color-ink); color: var(--color-bone); font-f
 @keyframes floaty { 0%,100% { transform:translateY(-6px) rotate(-2deg); } 50% { transform:translateY(6px) rotate(2deg); } }
 @keyframes breathe { 0%,100% { opacity:.55; transform:scale(1); } 50% { opacity:1; transform:scale(1.08); } }
 .anim-breathe { animation:breathe 5s ease-in-out infinite; }
+
+/* Page-to-page cross-fade (see onNavigate in +layout.svelte). */
+::view-transition-old(root) { animation: 160ms ease-out both page-out; }
+::view-transition-new(root) { animation: 240ms ease-out both page-in; }
+@keyframes page-out { to { opacity: 0; } }
+@keyframes page-in { from { opacity: 0; transform: translateY(6px); } }

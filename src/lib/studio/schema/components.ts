@@ -571,6 +571,28 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		advanced: true,
 		fields: [{ key: 'world', label: 'World package', kind: 'json', advanced: true }],
 		create: () => ({ type: 'worldPortal', world: undefined as never })
+	},
+	{
+		type: 'spawnPoint',
+		label: 'Spawn Point',
+		group: 'World',
+		description: 'Where players start, facing the way this object’s blue arrow (forward) points. Place it on the floor.',
+		glyph: '⚑',
+		fields: [],
+		create: () => ({ type: 'spawnPoint' })
+	},
+	{
+		type: 'worldLink',
+		label: 'World Link',
+		group: 'World',
+		description: 'Pressing it offers a menu to go to one of the built-in worlds.',
+		glyph: '➜',
+		advanced: true,
+		fields: [
+			{ key: 'target', label: 'Destination', kind: 'json', advanced: true, help: '{ "kind": "builtin", "id": "beat-turntable" }' },
+			{ key: 'label', label: 'Name in the menu', kind: 'text', optional: true, default: '' }
+		],
+		create: () => ({ type: 'worldLink', target: { kind: 'builtin', id: 'lobby' } })
 	}
 ];
 

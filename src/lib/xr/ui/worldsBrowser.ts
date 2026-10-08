@@ -1,3 +1,4 @@
+import type { Mesh } from '@babylonjs/core';
 import {
 	Button,
 	Control,
@@ -8,6 +9,7 @@ import {
 	StackPanel,
 	TextBlock
 } from '@babylonjs/gui';
+import { authClient } from '$lib/auth-client';
 import { ensureCloudAssets } from '$lib/assets/cloudSync';
 import type { AssetId } from '$lib/assets/ref';
 import { getLocalAssetStore } from '$lib/assets/store';
@@ -17,8 +19,10 @@ import type { WorldPackage } from '$lib/worlds/types';
 import { gameState } from '../gameState';
 import type { SceneGraph } from '../sceneGraph';
 import { BUILTIN_WORLDS, DEV_WORLD_IDS, type BuiltinWorld } from '../templates/builtinWorlds';
+import { builtinPreview, builtinStereoPreview, exportBuiltinPreviews } from '$lib/worlds/builtinPreview';
 import { captureItemThumbnail } from '../thumbnail/capture';
 import { THEME } from './theme';
+import { createStereoPanoramaPlane, type StereoPanoramaPlane } from './stereoPanoramaPlane';
 
 /**
  * The Dash "Worlds" tab: a sidebar of categories, a grid of world cards with their 360° preview, and a detail page for the
@@ -29,6 +33,8 @@ export interface WorldsBrowserCallbacks {
 	onJoinWorld(roomCode: string): Promise<void>;
 	onSpawnPublishedWorld(world: WorldPackage): void;
 	onLaunchBuiltinWorld(world: BuiltinWorld): Promise<void>;
+	/** Starts a new world from scratch (a blank floor), on your own. */
+	onCreateWorld(): Promise<void>;
 }
 
 export interface WorldsBrowser {
@@ -42,7 +48,7 @@ type Category = 'official' | 'dev' | 'active' | 'published' | 'marketplace' | 'j
 
 const CATEGORIES: ReadonlyArray<{ id: Category; label: string }> = [
 	{ id: 'official', label: 'Official' },
-	...(import.meta.env.DEV ? [{ id: 'dev' as const, label: 'Dev' }] : []),
+	{ id: 'dev', label: 'Dev' },
 	{ id: 'active', label: 'Active worlds' },
 	{ id: 'published', label: 'Published' },
 	{ id: 'marketplace', label: 'Marketplace' },
@@ -70,8 +76,10 @@ interface WorldEntry {
 	name: string;
 	subtitle: string;
 	description: string;
-	/** The 360° preview, if there is (or can be made) one. Resolves to null when there is none. */
-	preview(): Promise<AssetId | null>;
+	/** The 360° preview (an asset id, or the URL of a picture shipped with the app), if there is (or can be made) one. Resolves to null when there is none. */
+	preview(): Promise<string | null>;
+	/** The same preview in 3D (a picture for each eye), if it can be made. Slower to come than `preview`. */
+	stereoPreview?(): Promise<string | null>;
 	primary: { label: string; run(): Promise<string> };
 	secondary?: { label: string; run(): Promise<string> };
 }
@@ -97,48 +105,6 @@ interface MarketplaceItem {
 	latestRevision: number;
 	containsCode: boolean;
 	thumbnailAssetId: string | null;
-}
-
-// --- Previews of the official worlds -------------------------------------------------------------------------------
-// They ship with the app, so nothing stored for them exists on a server: each is drawn once on this device, kept in the
-// local asset store, and remembered by the content of its scene so it is drawn again only when the world changes.
-
-const builtinPreviews = new Map<string, Promise<AssetId | null>>();
-let builtinQueue: Promise<unknown> = Promise.resolve();
-
-function sceneHash(scene: unknown): string {
-	const text = JSON.stringify(scene);
-	let hash = 5381;
-	for (let i = 0; i < text.length; i++) hash = ((hash << 5) + hash + text.charCodeAt(i)) | 0;
-	return `${(hash >>> 0).toString(36)}-${text.length.toString(36)}`;
-}
-
-function storageGet(key: string): string | null {
-	try { return localStorage.getItem(key); } catch { return null; }
-}
-
-function storageSet(key: string, value: string): void {
-	try { localStorage.setItem(key, value); } catch { /* the preview is simply drawn again next time */ }
-}
-
-function builtinPreview(world: BuiltinWorld): Promise<AssetId | null> {
-	let job = builtinPreviews.get(world.id);
-	if (!job) {
-		job = (async () => {
-			const key = `kithin.worldPreview.${world.id}.${sceneHash(world.scene)}`;
-			const known = storageGet(key) as AssetId | null;
-			if (known && (await thumbnailUrl(known))) return known;
-			// One at a time: each picture is six renders of a whole world.
-			const run = builtinQueue.then(() => captureItemThumbnail(copyScene(world.scene), 'world', { name: world.name }));
-			builtinQueue = run.catch(() => undefined);
-			const made = await run;
-			if (made) storageSet(key, made);
-			else builtinPreviews.delete(world.id); // try again the next time the tab is opened
-			return made;
-		})();
-		builtinPreviews.set(world.id, job);
-	}
-	return job;
 }
 
 // --- Small GUI helpers ------------------------------------------------------------------------------------------------
@@ -208,7 +174,7 @@ function cardPicture(name: string, url: string, width: number, height: number): 
  * Looks around inside a 360° picture: where the laser is over the box picks the direction, left to right turning once around
  * (the picture wraps) and top to bottom from straight up to straight down. With the laser away it faces straight ahead.
  */
-function panoramaViewer(name: string, url: string): Rectangle {
+function panoramaViewer(name: string, url: string, surface: Mesh): { box: Rectangle; showStereo(url: string): void } {
 	const box = new Rectangle(name);
 	box.width = `${VIEWER_W}px`;
 	box.height = `${VIEWER_H}px`;
@@ -243,7 +209,38 @@ function panoramaViewer(name: string, url: string): Rectangle {
 
 	let u = 0.5;
 	let v = 0.5;
+	/** The 3D window laid over the picture, once its pictures have arrived. */
+	let stereo: StereoPanoramaPlane | null = null;
+	/** The size of the panel's texture, which the box can tell only once it is on the panel. */
+	const textureSize = () => box.host.getSize();
+	/** The picture is twice as wide as it is tall; the window shows `VIEWER_SPAN` of its width at the shape of the viewer. */
+	const spanV = VIEWER_SPAN * 2 * (VIEWER_H / VIEWER_W);
+	const placeStereo = () => {
+		if (!stereo) return;
+		stereo.setWindow(u, v * (1 - spanV), VIEWER_SPAN, spanV);
+		// Where the box really is on the panel (its pixels are known once it has been drawn), inside its border.
+		const measure = (box as unknown as { _currentMeasure?: { left: number; top: number; width: number; height: number } })._currentMeasure;
+		if (measure && measure.width > 0 && box.host) stereo.place({ left: measure.left + 2, top: measure.top + 2, width: measure.width - 4, height: measure.height - 4 }, textureSize());
+	};
+	// Put away with its page: the plane is not part of the GUI, so it must be hidden when the box (or a page above it) is.
+	const scene = surface.getScene();
+	const keepInStep = scene.onBeforeRenderObservable.add(() => {
+		if (!stereo) return;
+		let shown = true;
+		for (let control: Control | null = box; control; control = control.parent) if (!control.isVisible) shown = false;
+		stereo.setVisible(shown);
+		if (shown) placeStereo();
+	});
+	let gone = false;
+	box.onDisposeObservable.add(() => {
+		gone = true;
+		scene.onBeforeRenderObservable.remove(keepInStep);
+		stereo?.dispose();
+		stereo = null;
+	});
 	const draw = () => {
+		placeStereo();
+		// A stereo picture is two stacked; the flat one shown here is always a single picture.
 		const total = first.imageWidth;
 		const tall = first.imageHeight;
 		if (!total || !tall) return;
@@ -263,6 +260,10 @@ function panoramaViewer(name: string, url: string): Rectangle {
 		}
 	};
 	first.onImageLoadedObservable.add(draw);
+	const showStereo = (stereoUrl: string) => {
+		if (stereo || gone) return;
+		stereo = createStereoPanoramaPlane(scene, surface, stereoUrl, () => { label.text = '360° 3D'; badge.width = '84px'; placeStereo(); });
+	};
 	box.onPointerMoveObservable.add((position) => {
 		const local = box.getLocalCoordinates(position);
 		const nextU = clamp01(local.x / VIEWER_W);
@@ -275,10 +276,11 @@ function panoramaViewer(name: string, url: string): Rectangle {
 		u = 0.5; v = 0.5;
 		draw();
 	});
-	return box;
+	return { box, showStereo };
 }
 
-export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, callbacks: WorldsBrowserCallbacks): WorldsBrowser {
+/** `surface` is the panel the browser is drawn on: a 3D view of a world's preview is laid over it. */
+export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, callbacks: WorldsBrowserCallbacks, surface: Mesh): WorldsBrowser {
 	let category: Category = 'official';
 	let selected: WorldEntry | null = null;
 	let activeSessions: ActiveSession[] = [];
@@ -308,6 +310,41 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 		categoryButtons.set(entry.id, button);
 		sidebar.addControl(button);
 	}
+
+	// Dev worlds are listed in dev builds and for admins; role is a comma-separated list.
+	const devButton = categoryButtons.get('dev');
+	if (devButton) devButton.isVisible = import.meta.env.DEV;
+	async function refreshDevAccess(): Promise<void> {
+		let visible = import.meta.env.DEV;
+		if (!visible) {
+			try {
+				const { data } = await authClient.getSession();
+				const roles = ((data?.user as { role?: string | null } | undefined)?.role ?? '').split(',').map((r) => r.trim());
+				visible = roles.includes('admin');
+			} catch {
+				visible = false;
+			}
+		}
+		if (devButton) devButton.isVisible = visible;
+		if (!visible && category === 'dev') category = 'official';
+	}
+
+	// A world made from scratch: a blank floor to build on, on your own. Separate from the categories, which only list worlds that exist.
+	const createButton = pill('worlds-create', '+  New world', 190, 50, C.accentSoft);
+	createButton.paddingTop = '10px';
+	createButton.height = '66px';
+	createButton.onPointerClickObservable.add(async () => {
+		createButton.isEnabled = false;
+		say('Creating a new world…', C.muted);
+		try {
+			await callbacks.onCreateWorld();
+		} catch (error) {
+			say(error instanceof Error ? error.message : 'Could not create a world');
+		} finally {
+			createButton.isEnabled = true;
+		}
+	});
+	sidebar.addControl(createButton);
 
 	// --- Main area ---
 	const main = new Rectangle('worlds-main');
@@ -426,7 +463,7 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 		cell.addControl(frame);
 
 		void entry.preview().then(async (assetId) => {
-			const url = assetId ? await thumbnailUrl(assetId) : null;
+			const url = assetId ? await previewUrl(assetId) : null;
 			if (!url) { waiting.text = 'No preview'; return; }
 			frame.removeControl(waiting);
 			frame.addControl(cardPicture(`world-card-picture-${entry.key}`, url, CARD_W - 6, CARD_PREVIEW_H));
@@ -476,14 +513,19 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 		viewerSlot.addControl(waiting);
 		detail.addControl(viewerSlot);
 		void entry.preview().then(async (assetId) => {
-			const url = assetId ? await thumbnailUrl(assetId) : null;
+			const url = assetId ? await previewUrl(assetId) : null;
 			if (selected !== entry) return;
 			if (!url) { waiting.text = 'This world has no preview yet'; return; }
 			viewerSlot.dispose();
-			const viewer = panoramaViewer('world-viewer', url);
-			topLeft(viewer, 4, 4);
-			detail.addControl(viewer);
+			const viewer = panoramaViewer('world-viewer', url, surface);
+			topLeft(viewer.box, 4, 4);
+			detail.addControl(viewer.box);
 			hint.text = 'Point the laser at the picture to look around.';
+			// The 3D picture takes longer to draw: the flat one is shown meanwhile, and replaced when it is ready.
+			void entry.stereoPreview?.().then(async (stereoId) => {
+				const stereoUrl = stereoId ? await previewUrl(stereoId) : null;
+				if (stereoUrl && selected === entry) viewer.showStereo(stereoUrl);
+			}).catch(() => { /* the flat picture stays */ });
 		}).catch(() => { waiting.text = 'This world has no preview yet'; });
 
 		const hint = topLeft(text('world-viewer-hint', '', 14, C.muted, 22), 8, VIEWER_H + 12);
@@ -527,6 +569,9 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 		detail.addControl(back);
 	}
 
+	// Development: `await __exportWorldPreviews()` in the console downloads the pictures to put in src/lib/worlds/previews/.
+	if (import.meta.env.DEV) (window as unknown as Record<string, unknown>).__exportWorldPreviews = () => exportBuiltinPreviews(BUILTIN_WORLDS);
+
 	// --- Lists of worlds ---
 	function officialEntries(): WorldEntry[] {
 		return BUILTIN_WORLDS.filter((world) => !DEV_WORLD_IDS.includes(world.id)).map((world) => ({
@@ -535,6 +580,7 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 			subtitle: 'Official world',
 			description: world.description,
 			preview: () => builtinPreview(world),
+			stereoPreview: () => builtinStereoPreview(world),
 			primary: {
 				label: 'Go',
 				run: async () => { await callbacks.onLaunchBuiltinWorld(world); return `Welcome to the ${world.name}.`; }
@@ -549,6 +595,7 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 			subtitle: 'Development world',
 			description: world.description,
 			preview: () => builtinPreview(world),
+			stereoPreview: () => builtinStereoPreview(world),
 			primary: {
 				label: 'Go',
 				run: async () => { await callbacks.onLaunchBuiltinWorld(world); return `Welcome to the ${world.name}.`; }
@@ -567,7 +614,7 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 					name: session.world.name,
 					subtitle: host ? `Host: ${host}` : 'Public session',
 					description: `A public session${host ? ` hosted by ${host}` : ''}, open since ${since}.`,
-					preview: async () => (session.world.thumbnailAssetId as AssetId | null) ?? null,
+					preview: async () => session.world.thumbnailAssetId ?? null,
 					primary: {
 						label: 'Join',
 						run: async () => { await callbacks.onJoinWorld(session.roomCode); return `Joined ${session.world.name}.`; }
@@ -599,7 +646,7 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 				name: publication.name,
 				subtitle: `Published · v${publication.latestRevision}${owned ? ' · yours' : ''}`,
 				description: 'A published world. Place its orb in your world to look inside it and step through.',
-				preview: async () => (publication.thumbnailAssetId as AssetId | null) ?? null,
+				preview: async () => publication.thumbnailAssetId ?? null,
 				primary: {
 					label: 'Place orb',
 					run: async () => {
@@ -630,6 +677,11 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 	}
 
 	// --- Marketplace (objects, not worlds: a plain list) ---
+	/** A preview reference is either an asset id or the URL of a picture that ships with the app. */
+	function previewUrl(ref: string): Promise<string | null> {
+		return ref.startsWith('sha256:') ? thumbnailUrl(ref as AssetId) : Promise.resolve(ref);
+	}
+
 	function squareThumbnail(name: string, assetId: string, size: number): Rectangle {
 		const frame = new Rectangle(name);
 		frame.width = `${size}px`; frame.height = `${size}px`;
@@ -713,6 +765,7 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 		joinCodeInput: joinInput,
 		async refresh() {
 			const token = ++loadToken;
+			await refreshDevAccess();
 			for (const [id, button] of categoryButtons) button.background = id === category ? C.accent : C.surface;
 			title.text = CATEGORIES.find((entry) => entry.id === category)?.label ?? '';
 			refreshButton.isVisible = category !== 'join';

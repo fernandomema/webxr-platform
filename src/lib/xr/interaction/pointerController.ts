@@ -19,7 +19,7 @@ import type { EquipmentSystem } from './equipmentSystem';
 import type { EquipHand } from './equipmentRegistry';
 import { claimStickY, isHandLocked, releaseStickY } from './handLock';
 import { PUSH_RANGE, STICK_DEADZONE, pushedDistance } from './pushPull';
-import { isEquippable } from '$lib/ecs/types';
+import { isEquippable, opensWorldMenu } from '$lib/ecs/types';
 
 const HAND_GRAB_RADIUS = 0.15;
 const LASER_MAX_LENGTH = 5;
@@ -314,7 +314,8 @@ export function setupPointerAndGrabControllers(
 				if (wasActive) {
 					const hovered = pointerSelection.getMeshUnderPointer(controller.uniqueId);
 					const hoveredSlotId = sceneGraph.getSlotIdForNode(hovered);
-					if (hoveredSlotId && sceneGraph.getLive(hoveredSlotId)?.slot.components.some((item) => item.type === 'worldPortal')) {
+					const hoveredSlot = hoveredSlotId ? sceneGraph.getLive(hoveredSlotId)?.slot : undefined;
+					if (hoveredSlotId && hoveredSlot && opensWorldMenu(hoveredSlot)) {
 						network?.onWorldPortal?.(hoveredSlotId);
 						return;
 					}

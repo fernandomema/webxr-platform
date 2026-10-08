@@ -82,3 +82,38 @@ test('a mirror is drawn as a pale panel when it cannot reflect, unless it alread
 	assert.equal(plain[0].color, '#b6c4d6');
 	assert.equal(stripActiveComponents([mirror('#ff0000')])[0].components[0].color, '#ff0000');
 });
+
+import { monoAtSides } from '../src/lib/xr/thumbnail/cubeToEquirect.ts';
+import { findSpawnPoint, spawnViewpoint, DEFAULT_SPAWN } from '../src/lib/xr/thumbnail/cameraPose.ts';
+
+test('the right eye keeps its own picture in front of the player and takes the left eye’s picture behind', () => {
+	const width = 8, height = 1;
+	const left = new Uint8ClampedArray(width * 4).fill(10);
+	const right = new Uint8ClampedArray(width * 4).fill(200);
+	monoAtSides(left, right, width, height);
+	assert.equal(right[(width / 2) * 4], 200, 'the middle column is untouched');
+	assert.equal(right[0], 10, 'the far edge (behind) is the left eye’s');
+	assert.equal(right[(width - 1) * 4], 10);
+});
+
+test('a panorama from a spawn point is turned to the way the spawn faces', () => {
+	const faces = (yaw) => {
+		const q = [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)];
+		const { frame } = spawnViewpoint({ position: [0, 0, 0], rotation: q });
+		// The middle of the picture looks along the frame's -Z.
+		const half = Math.atan2(2 * frame[1] * frame[3], 1 - 2 * frame[1] * frame[1]);
+		return [-Math.sin(half), -Math.cos(half)];
+	};
+	const [x, z] = faces(Math.PI); // facing -Z
+	assert.ok(Math.abs(x) < 1e-9 && Math.abs(z + 1) < 1e-9);
+	const [x2, z2] = faces(0); // facing +Z
+	assert.ok(Math.abs(x2) < 1e-9 && Math.abs(z2 - 1) < 1e-9);
+});
+
+test('the spawn point is found in the tree, and a world without one starts at the default', () => {
+	const slot = (id, parentId, position, components = []) => ({ id, parentId, name: id, position, rotation: [0, 0, 0, 1], scale: [1, 1, 1], components });
+	const tree = [slot('a', null, [1, 0, 0]), slot('spawn', 'a', [0, 0, 2], [{ type: 'spawnPoint' }])];
+	assert.deepEqual(findSpawnPoint(tree).position, [1, 0, 2]);
+	assert.equal(findSpawnPoint([slot('a', null, [0, 0, 0])]), null);
+	assert.deepEqual(DEFAULT_SPAWN.position, [0, 0, 2]);
+});

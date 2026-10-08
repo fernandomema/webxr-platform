@@ -55,6 +55,22 @@ Ver `.env.example`. `DATABASE_URL` (de `prisma dev`), `BETTER_AUTH_SECRET`/`BETT
 - `npm run db:push` / `db:migrate` — sincronizar el schema
 - `npm run i18n` — extraer/actualizar catálogos de wuchale (`src/locales/*.po`)
 - `npm run check` — svelte-check
+- Crear un usuario admin con la CLI de Better Auth (`--role` admite varios roles separados por comas, p. ej. `admin,moderator`):
+
+  ```bash
+  npx auth@latest create-admin --config src/lib/auth.ts --email tu@email.com --password '...' --name Admin --role admin
+  ```
+
+  Añade `--yes` si ya existen usuarios. Crea un usuario nuevo; para promover uno que ya existe:
+
+  ```bash
+  node scripts/set-role.mjs tu@email.com            # rol admin
+  node scripts/set-role.mjs tu@email.com admin,moderator
+  node scripts/set-role.mjs tu@email.com --add moderator
+  node scripts/set-role.mjs tu@email.com user       # quitar admin
+  ```
+
+  Acepta email o username y usa `DATABASE_URL`. Los admins ven la pestaña Dev de Worlds también fuera de desarrollo.
 
 ## World workflow
 

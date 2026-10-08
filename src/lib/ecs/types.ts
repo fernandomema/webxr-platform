@@ -101,6 +101,24 @@ export interface WorldPortalComponent {
 	world: import('$lib/worlds/types').WorldPackage;
 }
 
+/**
+ * A doorway to one of the worlds that ship with the app. Pointing at the slot and pressing opens a small radial menu that offers to
+ * go there; nothing is loaded until it is chosen. `label` names the destination in the menu (the world's name when empty).
+ */
+export interface WorldLinkComponent {
+	type: 'worldLink';
+	target: { kind: 'builtin'; id: string };
+	label?: string;
+}
+
+/**
+ * Where a player starts in this world, and which way they face: the slot's position (on the floor) and its forward direction
+ * (local +Z). The first one in the world is used; without one, players start at the engine's default point.
+ */
+export interface SpawnPointComponent {
+	type: 'spawnPoint';
+}
+
 export interface MirrorComponent {
 	type: 'mirror';
 	resolution?: number;
@@ -545,6 +563,8 @@ export type Component =
 	| AudioSourceComponent
 	| ContainerComponent
 	| WorldPortalComponent
+	| WorldLinkComponent
+	| SpawnPointComponent
 	| MirrorComponent
 	| CameraComponent
 	| AudioPlayerComponent
@@ -607,6 +627,11 @@ export function findComponent<T extends Component['type']>(
 	type: T
 ): Extract<Component, { type: T }> | undefined {
 	return slot.components.find((c) => c.type === type) as Extract<Component, { type: T }> | undefined;
+}
+
+/** Whether pointing at this slot and pressing opens a world menu (a world orb's, or a link to a built-in world's). */
+export function opensWorldMenu(slot: Slot): boolean {
+	return slot.components.some((component) => component.type === 'worldPortal' || component.type === 'worldLink');
 }
 
 export function isEquippable(slot: Slot): EquippableComponent | undefined {

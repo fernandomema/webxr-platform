@@ -235,12 +235,15 @@ async function readableIds(user: SessionUser | null, ids: string[]): Promise<Set
 	}
 	const remaining = ids.filter((id) => !readable.has(id));
 	if (remaining.length) {
-		const [published, hosted, marketplace] = await Promise.all([
+		const [published, hosted, marketplace, profilePictures] = await Promise.all([
 			prisma.publishedRevisionAsset.findMany({ where: { assetId: { in: remaining } }, select: { assetId: true }, distinct: ['assetId'] }),
 			prisma.worldAsset.findMany({ where: { assetId: { in: remaining } }, select: { assetId: true }, distinct: ['assetId'] }),
-			prisma.marketplaceRevisionAsset.findMany({ where: { assetId: { in: remaining }, revision: { marketplaceItem: { OR: [{ status: 'published' }, ...(user ? [{ purchases: { some: { userId: user.id } } }] : [])] } } }, select: { assetId: true }, distinct: ['assetId'] })
+			prisma.marketplaceRevisionAsset.findMany({ where: { assetId: { in: remaining }, revision: { marketplaceItem: { OR: [{ status: 'published' }, ...(user ? [{ purchases: { some: { userId: user.id } } }] : [])] } } }, select: { assetId: true }, distinct: ['assetId'] }),
+			prisma.user.findMany({ where: { image: { in: remaining } }, select: { image: true } })
 		]);
 		for (const row of [...published, ...hosted, ...marketplace]) readable.add(row.assetId);
+		// A profile picture is shown to everyone who sees the profile.
+		for (const row of profilePictures) if (row.image) readable.add(row.image);
 	}
 	return readable;
 }
@@ -337,6 +340,9 @@ export async function releaseOwnership(user: SessionUser | null, assetId: string
 	await prisma.$transaction(async (tx) => {
 		const owner = await tx.assetOwner.findUnique({ where: { assetId_ownerId: { assetId, ownerId: user.id } } });
 		if (!owner) throw new NotFoundError();
+		if ((await tx.user.findUnique({ where: { id: user.id }, select: { image: true } }))?.image === assetId) {
+			throw new BadRequestError('This image is your profile picture. Change your picture first.');
+		}
 		const used = await referencesOwnedBy(tx, user.id, assetId);
 		if (!canReleaseOwnership(used.items + used.worlds + used.publications)) {
 			throw new BadRequestError('Some of your objects and worlds still use this model.');

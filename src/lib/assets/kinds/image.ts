@@ -7,9 +7,10 @@ import { AssetImportError, type AssetKindDef } from './types.ts';
  * Only the header is read (no decoding), so the width and height are what the file declares.
  */
 
-const MAX_BYTES = 2 * 1024 * 1024;
+const MAX_BYTES = 6 * 1024 * 1024;
 const MAX_SIDE = 4096;
-const MAX_PIXELS = 8 * 1024 * 1024;
+/** A 4096 × 4096 picture: the two eyes of a stereo 360° preview, one above the other. */
+const MAX_PIXELS = 4096 * 4096;
 
 const ascii = (bytes: Uint8Array, at: number, text: string) => {
 	if (at + text.length > bytes.byteLength) return false;

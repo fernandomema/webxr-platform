@@ -26,6 +26,7 @@ const CONSTRUCTED: Partial<Record<Component['type'], Construction>> = {
 	scoreboard: { rebuildKeys: [] },
 	surfaceMask: { liveKeys: [] },
 	worldPortal: { liveKeys: [] },
+	worldLink: { liveKeys: [] },
 	uiPanel: { rebuildKeys: ['width', 'height', 'worldWidth'] },
 	particleBurst: { liveKeys: [] },
 	particleEmitter: { rebuildKeys: ['capacity'] },

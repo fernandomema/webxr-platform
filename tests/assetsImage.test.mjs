@@ -39,11 +39,11 @@ test('the declared size is read from PNG and from every kind of WebP', () => {
 test('images that are too big or unreadable are refused with a reason', () => {
 	const refuses = (bytes) => assert.throws(() => kind.analyze(bytes, 'x'), (e) => e instanceof AssetImportError);
 	refuses(png(5000, 10));
-	refuses(png(4096, 4096));
+	refuses(png(4097, 4096));
 	refuses(png(0, 10));
 	refuses(new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0]));
 	refuses(new Uint8Array([...text('RIFF'), ...le32(4), ...text('WEBP'), ...text('JUNK'), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
-	refuses(new Uint8Array(3 * 1024 * 1024).fill(1));
+	refuses(new Uint8Array(7 * 1024 * 1024).fill(1));
 });
 
 test('a manifest for an image validates, and a wrong mime type or size does not', () => {

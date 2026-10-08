@@ -1,7 +1,7 @@
 import { env } from '$env/dynamic/private';
 import { planAssetGc, type AssetRow } from '$lib/assets/accounting';
 import { prisma } from '../db';
-import { assetStorageConfigured, deleteObject, listKeys } from '../assetStorage';
+import { assetKeyPrefix, assetStorageConfigured, deleteObject, listKeys } from '../assetStorage';
 
 
 export interface GcReport {
@@ -76,7 +76,7 @@ export async function runAssetGc(apply: boolean): Promise<GcReport> {
 	if (assetStorageConfigured()) {
 		const known = new Set(rows.map((row) => row.storageKey));
 		const cutoff = Date.now() - graceDays * 86_400_000;
-		for await (const object of listKeys('assets/sha256/')) {
+		for await (const object of listKeys(assetKeyPrefix())) {
 			if (known.has(object.key) || (object.lastModified?.getTime() ?? 0) > cutoff) continue;
 			report.strayObjects.push(object.key);
 			if (apply) await deleteObject(object.key);

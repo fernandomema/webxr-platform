@@ -6,18 +6,20 @@
 	let { children } = $props();
 	const tabs = [
 		{ href: '/settings', label: 'General' },
-		{ href: '/settings/connections', label: 'Connections' }
+		{ href: '/settings/cloud', label: 'Cloud' },
+		{ href: '/settings/connections', label: 'Connections' },
+		{ href: '/settings/account', label: 'Data & Account' }
 	] as const;
 </script>
 
 <div class="min-h-screen bg-ink text-bone antialiased">
 	<header class="border-b border-white/6">
-		<div class="mx-auto flex max-w-[860px] items-center justify-between px-5 py-4 sm:px-8">
+		<div class="mx-auto flex max-w-[var(--page-width)] items-center justify-between px-5 py-4 sm:px-8">
 			<a href={resolve('/')} aria-label="{PLATFORM_NAME} home"><img src="/assets/kithin-logo.svg" alt={PLATFORM_NAME} class="h-7 w-auto" /></a>
-			<a class="text-sm text-bone/60 hover:text-bone" href={resolve('/play')}>Back to {PLATFORM_NAME}</a>
+			<a class="text-sm text-bone/60 hover:text-bone" href={resolve('/home')}>Back to {PLATFORM_NAME}</a>
 		</div>
 	</header>
-	<main class="mx-auto max-w-[860px] px-5 py-10 sm:px-8">
+	<main class="mx-auto max-w-[var(--page-width)] px-5 py-10 sm:px-8">
 		<h1 class="text-3xl font-semibold">Settings</h1>
 		<nav class="mt-6 flex gap-1 border-b border-white/10" aria-label="Settings sections">
 			{#each tabs as tab (tab.href)}

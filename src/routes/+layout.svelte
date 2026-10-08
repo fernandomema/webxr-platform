@@ -3,8 +3,22 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
+	import { onNavigate } from '$app/navigation';
 
 	let { children } = $props();
+
+	// Cross-fade between pages with the browser's View Transitions API; browsers without it just navigate.
+	// The game (/play) is left out: it owns a WebGL canvas and a headset session, which a snapshot cross-fade would only get in the way of.
+	onNavigate((navigation) => {
+		if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+		if (navigation.to?.url.pathname.startsWith('/play') || navigation.from?.url.pathname.startsWith('/play')) return;
+		return new Promise((resolve) => {
+			document.startViewTransition(async () => {
+				resolve();
+				await navigation.complete;
+			});
+		});
+	});
 
 	// Mobile/headset devtools console — no way to plug in real DevTools on a
 	// Quest, so this gives a floating console/network/elements panel instead.

@@ -1,7 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
-import { username } from 'better-auth/plugins';
+import { admin, username } from 'better-auth/plugins';
 import { getRequestEvent } from '$app/server';
 import { dev } from '$app/environment';
 import { prisma } from '$lib/server/db';
@@ -24,6 +24,13 @@ export const auth = betterAuth({
 	emailAndPassword: {
 		enabled: true
 	},
+	// Account deletion cascades through every user-owned table (see prisma/schema.prisma); freed models are reclaimed by the asset cleanup.
+	user: { deleteUser: { enabled: true } },
+	// Settings → Connections lists sessions and unlinks accounts; both require a "fresh" session,
+	// which would otherwise 403 for anyone signed in more than a day ago.
+	session: { freshAge: 0 },
+	// A signed-in user explicitly linking Discord may use a different email there.
+	account: { accountLinking: { allowDifferentEmails: true } },
 	socialProviders: {
 		...(env.DISCORD_CLIENT_ID && env.DISCORD_CLIENT_SECRET
 			? {
@@ -34,5 +41,6 @@ export const auth = betterAuth({
 				}
 			: {})
 	},
-	plugins: [username(), sveltekitCookies(getRequestEvent)]
+	// `role` is stored as a comma-separated string ("admin,moderator"); a user is an admin when any of their roles is listed in adminRoles.
+	plugins: [username(), admin({ adminRoles: ['admin'], defaultRole: 'user' }), sveltekitCookies(getRequestEvent)]
 });

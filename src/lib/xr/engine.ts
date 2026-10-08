@@ -16,8 +16,9 @@ import {
 	type WebXRDefaultExperience
 } from '@babylonjs/core';
 import lobbyTemplate from './templates/lobby.json';
+import { buildLobbyBillboard } from './templates/lobbyBillboard';
 import { getBuiltinWorld } from './templates/builtinWorlds';
-import { createSlot, type SlotTree } from '$lib/ecs/types';
+import { createSlot, opensWorldMenu, type SlotTree } from '$lib/ecs/types';
 import { atRest, instantiate } from '$lib/ecs/serialize';
 import { isBuiltinMesh, migrateSlotTree } from '$lib/assets/ref';
 import type { AssetResolver } from '$lib/assets/resolve';
@@ -72,6 +73,7 @@ import { WorldStorageService } from './worldStorageService';
 import { ProximityVoice } from './net/voice';
 import { parseIceServers } from './net/peerConnection';
 import { authClient } from '$lib/auth-client';
+import { BLANK_WORLD_NAME, buildBlankWorld } from './templates/blankWorld';
 import { gameState, type LoadedWorld, type PublicationContext } from './gameState';
 import type { HostedWorldVisibility } from '$lib/worldVisibility';
 import type { PlayerInfo } from './net/protocol';
@@ -235,7 +237,7 @@ export async function mountGame(
 	const startupBuiltin = !initialRoomCode && !options.initialWorld && !startupParams.has('studioPlay')
 		? getBuiltinWorld(startupParams.get('world') ?? '') : undefined;
 	// A direct world link only needs a temporary floor during input setup. Avoid starting lobby media that would be disposed mid-load.
-	sceneGraph.load((startupBuiltin ? lobbyTemplate.filter((slot) => slot.id === 'floor') : lobbyTemplate) as SlotTree);
+	sceneGraph.load((startupBuiltin ? lobbyTemplate.filter((slot) => slot.id === 'floor') : [...lobbyTemplate, ...buildLobbyBillboard()]) as SlotTree);
 
 	const floorMesh = sceneGraph.getLive('floor')?.node as AbstractMesh | undefined;
 	// Controller profiles + models (Meta/Oculus Touch) are served from /static/xr-input-profiles instead of
@@ -327,6 +329,8 @@ export async function mountGame(
 	let locomotion: ReturnType<typeof setupLocomotion> | null = null;
 	const playerBody = setupPlayerBody(scene, sceneGraph, xr, desktopCamera, { x: desktopCamera.position.x, z: desktopCamera.position.z });
 	playerBody.setSeated(xrSettings.seatedMode);
+	// The starting world is already up: stand at its spawn point.
+	playerBody.respawn();
 	const inXr = () => xr?.baseExperience.state === WebXRState.IN_XR;
 	const fps = setupFpsController(scene, canvas, desktopCamera, playerBody, { isXr: inXr });
 	resetDesktopHud();
@@ -687,6 +691,7 @@ export async function mountGame(
 		},
 		// On your own at first; the Session tab hosts it for others like any world.
 		onLaunchBuiltinWorld: (world) => launchScene(world.name, copyScene(world.scene), 'solo'),
+		onCreateWorld: () => launchScene(BLANK_WORLD_NAME, buildBlankWorld(), 'solo'),
 		onLocomotionSettingsChanged: async () => { await locomotion?.applySettings(); },
 		onExitVr: async () => { await xr?.baseExperience.exitXRAsync(); },
 		onToggleInspector: () => inspector.root.setEnabled(!inspector.root.isEnabled()),
@@ -705,12 +710,17 @@ export async function mountGame(
 		if (!adapter?.saveItem) throw new Error('Choose a writable inventory first');
 		const folderId = adapter.id === gameState.currentInventoryAdapterId ? gameState.currentInventoryFolderId : null;
 		await saveWithPreview(adapter, getInventoryContext(), folderId, world.name, copyScene(world.scene), 'world');
+	}, async (id) => {
+		const world = getBuiltinWorld(id);
+		if (!world) throw new Error(`There is no built-in world "${id}"`);
+		await launchScene(world.name, copyScene(world.scene), 'solo');
 	});
 	scene.onPointerObservable.add((event) => {
 		// With the mouse captured the hand opens portals itself (see desktopHand.ts); this is for a free cursor.
 		if (event.type !== PointerEventTypes.POINTERPICK || inXr() || fps.locked) return;
 		const slotId = sceneGraph.getSlotIdForNode(event.pickInfo?.pickedMesh);
-		if (slotId && sceneGraph.getLive(slotId)?.slot.components.some((component) => component.type === 'worldPortal')) worldPortalMenu.open(slotId);
+		const slot = slotId ? sceneGraph.getLive(slotId)?.slot : undefined;
+		if (slotId && slot && opensWorldMenu(slot)) worldPortalMenu.open(slotId);
 	});
 	// The reactions to a trigger, a grab or a portal are the same whether a controller or the mouse's hand does it.
 	const pointerHooks: PointerControllerNetworkHooks = {

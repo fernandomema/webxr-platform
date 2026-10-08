@@ -26,6 +26,9 @@ export function configureThumbnails(next: ThumbnailConfig): void {
 }
 
 const CAPTURE_TIMEOUT_MS = 8000;
+/** A world panorama is six big renders (twelve for a stereo one) and a conversion of each picture. */
+const PANORAMA_TIMEOUT_MS = 20000;
+const STEREO_PANORAMA_TIMEOUT_MS = 45000;
 
 /**
  * A preview of the item, stored as an asset, or null if none could be made. It never throws and never takes long: a preview
@@ -34,13 +37,13 @@ const CAPTURE_TIMEOUT_MS = 8000;
 export async function captureItemThumbnail(
 	tree: SlotTree,
 	kind: InventoryKind,
-	options: { name?: string; getResolvers?: () => AssetResolver[] } = {}
+	options: { name?: string; getResolvers?: () => AssetResolver[]; /** A world only: left and right eye pictures, one above the other. */ stereo?: boolean } = {}
 ): Promise<AssetId | null> {
 	const signal = { cancelled: false };
-	const render: RenderOptions = { engine: config.engine, getResolvers: options.getResolvers ?? config.getResolvers, signal };
+	const render: RenderOptions = { engine: config.engine, getResolvers: options.getResolvers ?? config.getResolvers, signal, stereo: options.stereo };
 	try {
 		const work = kind === 'world' ? renderWorldPanorama(tree, render) : renderObjectThumbnail(tree, kind, render);
-		const blob = await Promise.race([work, new Promise<null>((resolve) => setTimeout(() => resolve(null), CAPTURE_TIMEOUT_MS))]);
+		const blob = await Promise.race([work, new Promise<null>((resolve) => setTimeout(() => resolve(null), kind !== 'world' ? CAPTURE_TIMEOUT_MS : options.stereo ? STEREO_PANORAMA_TIMEOUT_MS : PANORAMA_TIMEOUT_MS))]);
 		if (!blob) {
 			signal.cancelled = true;
 			return null;

@@ -129,7 +129,8 @@
 		<nav>
 			<a class="btn ghost" href={resolve('/play')}>Open game</a>
 			{#if studioSession.userId}
-				<span class="badge"><Icon name="user" size={12} />{studioSession.userName ?? 'Signed in'}</span>
+				<a class="badge" href={resolve('/settings')} title="Account settings"><Icon name="user" size={12} />{studioSession.userName ?? 'Signed in'}</a>
+				<a class="btn ghost" href={resolve('/settings')}>Settings</a>
 			{:else if studioSession.ready}
 				<a class="btn" href={resolve('/login')}>Sign in</a>
 			{/if}
@@ -238,7 +239,8 @@
 {/if}
 
 <style>
-	.page { max-width: 1040px; margin: 0 auto; padding: 0 16px 64px; }
+	.page { max-width: var(--page-width); margin: 0 auto; padding: 0 20px 64px; }
+	@media (min-width: 640px) { .page { padding-inline: 32px; } }
 	.top { display: flex; align-items: center; justify-content: space-between; height: 56px; }
 	.brand { display: flex; align-items: center; gap: 8px; color: var(--accent); }
 	.brand strong { color: var(--text); font-size: 15px; }

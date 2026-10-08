@@ -21,9 +21,9 @@ import { ModelLibrary } from '../modelLibrary';
 import { SceneGraph } from '../sceneGraph';
 import { isFloorSlot } from '../interaction/playerBody';
 import { bustBounds, frameBounds, THUMBNAIL_FOV, type V3 } from './framing';
-import { cubeToEquirect, flipRows } from './cubeToEquirect';
+import { cubeToEquirect, flipRows, monoAtSides } from './cubeToEquirect';
 import { stripActiveComponents } from './inertTree';
-import { findPreviewCamera, type PreviewCamera } from './cameraPose';
+import { DEFAULT_SPAWN, findPreviewCamera, findSpawnPoint, spawnViewpoint, type PreviewCamera } from './cameraPose';
 import { rotateVector } from '../avatar/ik';
 
 /**
@@ -38,16 +38,22 @@ export interface RenderOptions {
 	getResolvers?: () => AssetResolver[];
 	/** How long to wait for models to load before drawing what is there. */
 	waitMs?: number;
+	/** A world panorama only: two pictures for the two eyes, one above the other (left on top), instead of one. */
+	stereo?: boolean;
 	/** Set `cancelled` to make an unfinished render stop and clean up. */
 	signal?: { cancelled: boolean };
 }
 
 export const OBJECT_SIZE = 256;
-export const PANORAMA_SIZE = { width: 1024, height: 512 };
-const CUBE_FACE = 512;
-/** Where the panorama is taken from: the origin the headset starts at, at eye height above whatever floor is there. */
-export const WORLD_SPAWN = { x: 0, z: 0 };
+/** One panorama, or one eye of a stereo one. */
+export const PANORAMA_SIZE = { width: 4096, height: 2048 };
+const CUBE_FACE = 1024;
 const EYE_HEIGHT = 1.6;
+/** What a panorama is kept under, so that one saved with a cloud world stays light to send; a stereo one stays on the device. */
+const MONO_PANORAMA_BYTES = 2 * 1024 * 1024;
+const STEREO_PANORAMA_BYTES = 5.5 * 1024 * 1024;
+/** How far apart the two eyes of a stereo panorama are, in metres (a little over a real pair, so the depth reads on a small screen). */
+const EYE_SEPARATION = 0.08;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -156,15 +162,23 @@ async function drawTopDown(scene: Scene, camera: FreeCamera | ArcRotateCamera, s
 	}
 }
 
-/** RGBA pixels (top row first) to a WebP of the wanted size, scaled with smoothing. */
-async function pixelsToBlob(rgba: Uint8Array | Uint8ClampedArray, width: number, height: number, outWidth: number, outHeight: number): Promise<Blob | null> {
+/** The qualities a WebP is tried at, best first, until it fits the size it is meant to stay under. */
+const WEBP_QUALITIES = [0.85, 0.75, 0.62, 0.5, 0.4];
+
+/** RGBA pixels (top row first) to a WebP of the wanted size, scaled with smoothing, and no bigger than `maxBytes` if a lower quality can do it. */
+async function pixelsToBlob(rgba: Uint8Array | Uint8ClampedArray, width: number, height: number, outWidth: number, outHeight: number, maxBytes = Infinity): Promise<Blob | null> {
 	const source = Object.assign(document.createElement('canvas'), { width, height });
 	source.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(rgba) as ImageDataArray, width, height), 0, 0);
 	const out = Object.assign(document.createElement('canvas'), { width: outWidth, height: outHeight });
 	const context = out.getContext('2d')!;
 	context.imageSmoothingQuality = 'high';
 	context.drawImage(source, 0, 0, outWidth, outHeight);
-	return await new Promise<Blob | null>((resolve) => out.toBlob(resolve, 'image/webp', 0.85));
+	let blob: Blob | null = null;
+	for (const quality of WEBP_QUALITIES) {
+		blob = await new Promise<Blob | null>((resolve) => out.toBlob(resolve, 'image/webp', quality));
+		if (!blob || blob.size <= maxBytes) break;
+	}
+	return blob;
 }
 
 /** A camera standing where a Preview camera slot is, looking along its forward direction. */
@@ -209,17 +223,17 @@ export async function renderObjectThumbnail(tree: SlotTree, kind: 'object' | 'av
 	}
 }
 
-/** The floor height under the spawn, so the panorama is taken from eye height and not from inside the ground. */
-function eyeHeightAtSpawn(stage: Stage): number {
+/** The height of the eyes of someone standing at `x`, `z`: above the floor there, or above `feetY` where there is none. */
+function eyeHeightAt(stage: Stage, x: number, z: number, feetY: number): number {
 	const floors = new Set<AbstractMesh>();
 	for (const entry of stage.sceneGraph.allSlots()) if (isFloorSlot(entry.slot as Slot)) floors.add(entry.node as AbstractMesh);
 	for (const mesh of floors) mesh.computeWorldMatrix(true);
-	const hit = stage.scene.pickWithRay(new Ray(new Vector3(WORLD_SPAWN.x, 200, WORLD_SPAWN.z), Vector3.Down(), 400), (mesh) => floors.has(mesh));
-	return (hit?.hit && hit.pickedPoint ? hit.pickedPoint.y : 0) + EYE_HEIGHT;
+	const hit = stage.scene.pickWithRay(new Ray(new Vector3(x, 200, z), Vector3.Down(), 400), (mesh) => floors.has(mesh));
+	return (hit?.hit && hit.pickedPoint ? hit.pickedPoint.y : feetY) + EYE_HEIGHT;
 }
 
 /**
- * The six views from the spawn, each a square picture with a 90° field of view. Every face is looked at with the "up"
+ * The six views from a point, each a square picture with a 90° field of view. Every face is looked at with the "up"
  * that the cube-map addressing in `cubeToEquirect` expects (+Y and -Y are looked at with -Z and +Z at the top).
  */
 const PANORAMA_VIEWS: Array<{ look: V3; up: V3 }> = [
@@ -231,31 +245,67 @@ const PANORAMA_VIEWS: Array<{ look: V3; up: V3 }> = [
 	{ look: [0, 0, -1], up: [0, 1, 0] } // -Z
 ];
 
-/** A 360° equirectangular picture of a world from its spawn: forward (-Z) in the middle, up at the top. */
+/** One equirectangular picture of the stage from `position`, its middle looking along `frame`'s -Z. Null if cancelled or nothing was drawn. */
+async function drawPanorama(stage: Stage, position: Vector3, frame: [number, number, number, number], signal?: { cancelled: boolean }): Promise<Uint8ClampedArray | null> {
+	const camera = new FreeCamera('panorama-camera', position, stage.scene);
+	camera.fov = Math.PI / 2;
+	camera.minZ = 0.05;
+	camera.maxZ = 2000;
+	stage.scene.activeCamera = camera;
+	try {
+		const faces: Uint8Array[] = [];
+		for (const view of PANORAMA_VIEWS) {
+			if (signal?.cancelled) return null;
+			camera.upVector = Vector3.FromArray(rotateVector(frame, view.up));
+			camera.setTarget(position.add(Vector3.FromArray(rotateVector(frame, view.look))));
+			const pixels = await drawTopDown(stage.scene, camera, CUBE_FACE, signal);
+			if (!pixels) return null;
+			faces.push(pixels);
+		}
+		return cubeToEquirect(faces, CUBE_FACE, PANORAMA_SIZE.width, PANORAMA_SIZE.height);
+	} finally {
+		camera.dispose();
+	}
+}
+
+/**
+ * A 360° equirectangular picture of a world, with the way the player looks when entering in the middle and up at the top. It is
+ * taken from the author's Preview camera when there is one, else from the world's spawn point (or the default start without
+ * one), at eye height. With `stereo` it is two pictures, left eye above right, from two points apart across the heading.
+ */
 export async function renderWorldPanorama(tree: SlotTree, options: RenderOptions = {}): Promise<Blob | null> {
 	const stage = await buildStage(tree, options);
 	try {
 		if (options.signal?.cancelled) return null;
-		// From the author's Preview camera when there is one, else from the spawn; the panorama applies a half turn around Y.
 		const authored = findPreviewCamera(tree);
-		const frame = authored?.rotation ?? ([0, 0, 0, 1] as [number, number, number, number]);
-		const position = authored ? Vector3.FromArray(authored.position) : new Vector3(WORLD_SPAWN.x, eyeHeightAtSpawn(stage), WORLD_SPAWN.z);
-		const camera = new FreeCamera('panorama-camera', position, stage.scene);
-		camera.fov = Math.PI / 2;
-		camera.minZ = 0.05;
-		camera.maxZ = 2000;
-		stage.scene.activeCamera = camera;
-		const faces: Uint8Array[] = [];
-		for (const view of PANORAMA_VIEWS) {
-			if (options.signal?.cancelled) return null;
-			camera.upVector = Vector3.FromArray(rotateVector(frame, view.up));
-			camera.setTarget(position.add(Vector3.FromArray(rotateVector(frame, view.look))));
-			const pixels = await drawTopDown(stage.scene, camera, CUBE_FACE, options.signal);
-			if (!pixels) return null;
-			faces.push(pixels);
+		let frame: [number, number, number, number];
+		let center: Vector3;
+		let right: V3;
+		if (authored) {
+			frame = authored.rotation;
+			center = Vector3.FromArray(authored.position);
+			right = rotateVector(authored.rotation, [1, 0, 0]);
+		} else {
+			const view = spawnViewpoint(findSpawnPoint(tree) ?? DEFAULT_SPAWN);
+			frame = view.frame;
+			center = new Vector3(view.position[0], eyeHeightAt(stage, view.position[0], view.position[2], view.position[1]), view.position[2]);
+			right = view.right;
 		}
 		const { width, height } = PANORAMA_SIZE;
-		return await pixelsToBlob(cubeToEquirect(faces, CUBE_FACE, width, height), width, height, width, height);
+		if (!options.stereo) {
+			const pixels = await drawPanorama(stage, center, frame, options.signal);
+			return pixels ? await pixelsToBlob(pixels, width, height, width, height, MONO_PANORAMA_BYTES) : null;
+		}
+		const half = Vector3.FromArray(right).scale(EYE_SEPARATION / 2);
+		const left = await drawPanorama(stage, center.subtract(half), frame, options.signal);
+		if (!left) return null;
+		const second = await drawPanorama(stage, center.add(half), frame, options.signal);
+		if (!second) return null;
+		monoAtSides(left, second, width, height);
+		const both = new Uint8ClampedArray(left.length * 2);
+		both.set(left, 0);
+		both.set(second, left.length);
+		return await pixelsToBlob(both, width, height * 2, width, height * 2, STEREO_PANORAMA_BYTES);
 	} finally {
 		stage.dispose();
 	}

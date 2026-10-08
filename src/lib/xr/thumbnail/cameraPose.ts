@@ -86,6 +86,31 @@ export function lookRotation(forward: V3, up: V3 = [0, 1, 0]): Q4 {
 	return quatFromBasis(x, cross(z, x), z);
 }
 
+/** Where a player starts when a world has no spawn point: the engine's default start (2 m in front of the origin, facing +Z). */
+export const DEFAULT_SPAWN: Pose = { position: [0, 0, 2], rotation: [0, 0, 0, 1] };
+
+/** The first `spawnPoint` slot of the tree, placed in the world, or null when the world has none. */
+export function findSpawnPoint(tree: SlotTree): Pose | null {
+	for (const slot of tree) {
+		if (!slot.components.some((candidate) => candidate.type === 'spawnPoint')) continue;
+		const pose = worldPose(tree, slot.id);
+		if (pose) return pose;
+	}
+	return null;
+}
+
+/**
+ * What a panorama is taken from for a player starting at `spawn`: the feet position, and the frame the panorama is drawn in. The
+ * panorama shows its frame's -Z in the middle (see cubeToEquirect), so the frame is the heading of the spawn (only its turn
+ * around the vertical, so the horizon stays level) with a half turn added: the middle of the picture is where the player looks.
+ */
+export function spawnViewpoint(spawn: Pose): { position: V3; frame: Q4; right: V3 } {
+	const forward = rotateVector(spawn.rotation, [0, 0, 1]);
+	const yaw = Math.atan2(forward[0], forward[2]);
+	const frame: Q4 = [0, Math.sin((yaw + Math.PI) / 2), 0, Math.cos((yaw + Math.PI) / 2)];
+	return { position: spawn.position, frame, right: [Math.cos(yaw), 0, -Math.sin(yaw)] };
+}
+
 export const DEFAULT_PREVIEW_FOV_DEG = 46;
 
 export interface PreviewCamera extends Pose {

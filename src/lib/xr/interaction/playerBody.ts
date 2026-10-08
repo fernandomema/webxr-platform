@@ -1,4 +1,4 @@
-import { Ray, Vector3, WebXRState, type AbstractMesh, type Scene, type UniversalCamera, type WebXRDefaultExperience } from '@babylonjs/core';
+import { Quaternion, Ray, Vector3, WebXRState, type AbstractMesh, type Scene, type UniversalCamera, type WebXRDefaultExperience } from '@babylonjs/core';
 import { findComponent, isGrabbable, type Slot } from '$lib/ecs/types';
 import { isBuiltinMesh } from '$lib/assets/ref';
 import type { SceneGraph } from '../sceneGraph';
@@ -37,7 +37,7 @@ export interface PlayerBody {
 	setSeated(seated: boolean): void;
 	/** Desktop: a jump, if standing on something. */
 	jump(): void;
-	/** Puts the player back at the world's start point, facing the way they started, with nothing left of a fall. For entering a world. */
+	/** Puts the player back at the world's start point (its `spawnPoint` slot, else the default), facing the way it points, with nothing left of a fall. For entering a world. */
 	respawn(): void;
 	/** Gravity, standing on the floor, and putting the player back if they fall out of the world. Call every frame. */
 	update(dt: number): void;
@@ -64,6 +64,18 @@ export function setupPlayerBody(
 	desktopCamera.applyGravity = false;
 	desktopCamera.ellipsoid = new Vector3(BODY_RADIUS, DESKTOP_EYE_HEIGHT / 2, BODY_RADIUS); // eye height is twice the half-height
 	const desktopStart = desktopCamera.position.clone();
+
+	/** The world's `spawnPoint` slot, as a floor position and the direction (yaw, radians) it faces; `null` when the world has none. */
+	function worldSpawn(): { x: number; y: number; z: number; yaw: number } | null {
+		for (const entry of sceneGraph.allSlots()) {
+			if (entry.system || !entry.slot.components.some((component) => component.type === 'spawnPoint')) continue;
+			entry.node.computeWorldMatrix(true);
+			const position = entry.node.absolutePosition;
+			const forward = entry.node.getDirection(Vector3.Forward());
+			return { x: position.x, y: position.y, z: position.z, yaw: Math.atan2(forward.x, forward.z) };
+		}
+		return null;
+	}
 
 	/** Parts of something you can pick up (a brush handle, a cue) travel with it and must never block the player. */
 	function insideGrabbable(slot: Slot): boolean {
@@ -154,9 +166,10 @@ export function setupPlayerBody(
 		}
 		if (feetY() < VOID_Y) {
 			verticalSpeed = 0;
-			camera.position.x = spawn.x;
-			camera.position.z = spawn.z;
-			camera.position.y = camera.realWorldHeight + (lift ?? 0);
+			const point = worldSpawn();
+			camera.position.x = point?.x ?? spawn.x;
+			camera.position.z = point?.z ?? spawn.z;
+			camera.position.y = (point?.y ?? 0) + camera.realWorldHeight + (lift ?? 0);
 		}
 	}
 
@@ -193,22 +206,32 @@ export function setupPlayerBody(
 		}
 		if (camera.position.y < VOID_Y) {
 			verticalSpeed = 0;
-			camera.position.copyFrom(desktopStart);
+			const point = worldSpawn();
+			if (point) camera.position.set(point.x, point.y + DESKTOP_EYE_HEIGHT, point.z);
+			else camera.position.copyFrom(desktopStart);
 		}
 	}
 
 	function respawn(): void {
 		verticalSpeed = 0;
+		const point = worldSpawn();
 		if (inXr()) {
 			const camera = xr!.baseExperience.camera;
-			camera.position.x = spawn.x;
-			camera.position.z = spawn.z;
+			camera.position.x = point?.x ?? spawn.x;
+			camera.position.z = point?.z ?? spawn.z;
 			// Down to the floor from where the head would be; the next frame settles it onto whatever floor is there.
-			camera.position.y = camera.realWorldHeight + (lift ?? 0);
+			camera.position.y = (point?.y ?? 0) + camera.realWorldHeight + (lift ?? 0);
+			if (point) {
+				// Turned the way the point faces, from wherever the head looks now (as a snap turn does).
+				const forward = camera.getForwardRay().direction;
+				const sign = scene.useRightHandedSystem ? -1 : 1;
+				Quaternion.FromEulerAngles(0, (point.yaw - Math.atan2(forward.x, forward.z)) * sign, 0).multiplyToRef(camera.rotationQuaternion, camera.rotationQuaternion);
+			}
 			return;
 		}
-		desktopCamera.position.copyFrom(desktopStart);
-		desktopCamera.rotation.set(0, 0, 0);
+		if (point) desktopCamera.position.set(point.x, point.y + DESKTOP_EYE_HEIGHT, point.z);
+		else desktopCamera.position.copyFrom(desktopStart);
+		desktopCamera.rotation.set(0, point?.yaw ?? 0, 0);
 		grounded = false;
 	}
 

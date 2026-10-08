@@ -1,4 +1,4 @@
-import { MeshBuilder, Quaternion, StandardMaterial, Color3, Vector3, type Camera, type Scene } from '@babylonjs/core';
+import { MeshBuilder, Quaternion, StandardMaterial, Color3, Vector3, type Camera, type Scene, type TransformNode } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Button, Rectangle, StackPanel, TextBlock } from '@babylonjs/gui';
 import type { SceneGraph } from '../sceneGraph';
 import type { HostedWorldVisibility } from '$lib/worldVisibility';
@@ -16,7 +16,8 @@ export function createWorldPortalMenu(
   sceneGraph: SceneGraph,
   getCamera: () => Camera,
   launch: (world: WorldPackage, visibility: HostedWorldVisibility | 'solo') => Promise<void>,
-  saveCopy: (world: WorldPackage) => Promise<void>
+  saveCopy: (world: WorldPackage) => Promise<void>,
+  launchBuiltin: (id: string) => Promise<void>
 ) {
   const radial = createRadialView(scene, 'world-portal', getCamera, {
     pointerSelectable: true,
@@ -115,6 +116,8 @@ export function createWorldPortalMenu(
     // Pressing the orb again puts its menu away.
     if (radial.isOpen && openFor === slotId) return closeRadial();
     const entry = sceneGraph.getLive(slotId);
+    const link = entry?.slot.components.find((component) => component.type === 'worldLink');
+    if (entry && link) return openLink(slotId, entry.node, link.target.id, link.label);
     const world = entry?.slot.components.find((component) => component.type === 'worldPortal')?.world;
     if (!entry || !world) return;
     try { validateWorldPackage(world); } catch { return; }
@@ -124,6 +127,20 @@ export function createWorldPortalMenu(
       { label: 'Custom session', isEnabled: () => true, onSelect: () => showCustom(world) },
       { label: 'Save a copy', isEnabled: () => true, onSelect: () => void saveCopy(world).catch((error) => { showCustom(world); status.text = error instanceof Error ? error.message : 'Could not save a copy'; }) }
     ]);
+    keepOpen(slotId);
+  }
+
+  /** A link to a built-in world offers to go there, and to stay. */
+  function openLink(slotId: string, node: TransformNode, worldId: string, label?: string) {
+    panel.setEnabled(false);
+    radial.open(node, [
+      { label: `Go to ${label || worldId}`, isEnabled: () => true, onSelect: () => void launchBuiltin(worldId).catch((error) => console.error('Could not open the world', error)) },
+      { label: 'Stay here', isEnabled: () => true, onSelect: () => {} }
+    ]);
+    keepOpen(slotId);
+  }
+
+  function keepOpen(slotId: string) {
     openFor = slotId;
     // An unused menu does not hang in the air for ever.
     clearTimeout(autoClose);

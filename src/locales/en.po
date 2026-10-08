@@ -11,8 +11,9 @@ msgstr ""
 #~ msgid "Error al entrar"
 #~ msgstr "Error al entrar"
 
+#: src/routes/(admin)/admin/users/+page.svelte
 #: src/routes/register/+page.svelte
-#: src/routes/settings/+page.svelte
+#: src/routes/register/+page.svelte
 msgid "Email"
 msgstr "Email"
 
@@ -51,45 +52,44 @@ msgstr "Sign-up failed"
 #: src/lib/studio/components/Inspector.svelte
 #: src/lib/studio/components/SaveDialog.svelte
 #: src/routes/register/+page.svelte
-#: src/routes/settings/+page.svelte
+#: src/routes/register/+page.svelte
 msgid "Name"
 msgstr "Name"
 
 #: src/routes/register/+page.svelte
-#: src/routes/settings/+page.svelte
+#: src/routes/register/+page.svelte
 msgid "Username"
 msgstr "Username"
 
 #: src/routes/login/+page.svelte
+#: src/routes/login/+page.svelte
 #: src/routes/register/+page.svelte
+#: src/routes/settings/+page.svelte
 msgid "Password"
 msgstr "Password"
 
-#: src/routes/login/+page.svelte
-#: src/routes/register/+page.svelte
-msgid "Create an account"
-msgstr "Create an account"
+#~ msgid "Create an account"
+#~ msgstr "Create an account"
 
 #: src/routes/register/+page.svelte
 msgid "Create account"
 msgstr "Create account"
 
-#: src/routes/register/+page.svelte
-msgid "I already have an account"
-msgstr "I already have an account"
+#~ msgid "I already have an account"
+#~ msgstr "I already have an account"
 
 #: src/routes/login/+page.svelte
 msgid "Sign-in failed"
 msgstr "Sign-in failed"
 
 #: src/routes/login/+page.svelte
+#: src/routes/login/+page.svelte
 msgid "Email or username"
 msgstr "Email or username"
 
 #: src/lib/studio/components/MarketplacePanel.svelte
-#: src/lib/studio/components/PublishDialog.svelte
 #: src/lib/studio/components/PublishPanel.svelte
-#: src/routes/login/+page.svelte
+#: src/routes/home/+page.svelte
 #: src/routes/login/+page.svelte
 #: src/routes/studio/+page.svelte
 msgid "Sign in"
@@ -171,6 +171,7 @@ msgstr "Logic node"
 #~ msgstr "⌘ K"
 
 #: src/lib/studio/components/TopBar.svelte
+#: src/routes/settings/+page.svelte
 msgid "Saving…"
 msgstr "Saving…"
 
@@ -189,8 +190,9 @@ msgstr "Library"
 msgid "Preview"
 msgstr "Preview"
 
-#~ msgid "Assets"
-#~ msgstr "Assets"
+#: src/routes/(admin)/admin/+page.svelte
+msgid "Assets"
+msgstr "Assets"
 
 #: src/routes/studio/edit/+page.svelte
 msgid "Scene"
@@ -240,6 +242,7 @@ msgstr "Code"
 #~ msgid "New"
 #~ msgstr "New"
 
+#: src/routes/(admin)/admin/feedback/+page.svelte
 #: src/routes/studio/+page.svelte
 #: src/routes/studio/+page.svelte
 #: src/routes/studio/edit/+page.svelte
@@ -372,6 +375,8 @@ msgstr "Rotation"
 #~ msgstr "Media"
 
 #: src/lib/studio/components/TopBar.svelte
+#: src/routes/(admin)/admin/worlds/+page.svelte
+#: src/routes/home/+page.svelte
 #: src/routes/studio/+page.svelte
 #: src/routes/studio/+page.svelte
 msgid "World"
@@ -579,7 +584,6 @@ msgstr "Format"
 #: src/lib/studio/components/AddObjectMenu.svelte
 #: src/lib/studio/components/AvatarWizard.svelte
 #: src/lib/studio/components/CommandPalette.svelte
-#: src/lib/studio/components/PublishDialog.svelte
 #: src/lib/studio/components/SaveDialog.svelte
 #: src/lib/studio/ui/ColorInput.svelte
 #: src/lib/studio/ui/Combobox.svelte
@@ -589,7 +593,6 @@ msgid "Escape"
 msgstr "Escape"
 
 #: src/lib/studio/components/AvatarWizard.svelte
-#: src/lib/studio/components/PublishDialog.svelte
 #: src/lib/studio/components/SaveDialog.svelte
 #: src/lib/studio/ui/DialogHost.svelte
 #: src/lib/studio/ui/DialogHost.svelte
@@ -715,6 +718,7 @@ msgstr "M9 9h6v6H9zM9 9V6a3 3 0 10-3 3h3M15 9h3a3 3 0 10-3-3M9 15H6a3 3 0 103 3M
 
 #: src/routes/+page.svelte
 #: src/routes/+page.svelte
+#: src/routes/home/+page.svelte
 #: src/routes/studio/+page.svelte
 msgid "Create"
 msgstr "Create"
@@ -764,6 +768,7 @@ msgid "Open game"
 msgstr "Open game"
 
 #: src/lib/studio/components/TopBar.svelte
+#: src/routes/home/+page.svelte
 #: src/routes/studio/+page.svelte
 #: src/routes/studio/+page.svelte
 #: src/routes/xr-panel/inspector/+page.svelte
@@ -774,19 +779,23 @@ msgstr "Object"
 msgid "Start something new"
 msgstr "Start something new"
 
+#: src/routes/settings/cloud/+page.svelte
 #: src/routes/studio/+page.svelte
 msgid "Storage"
 msgstr "Storage"
 
 #: src/lib/studio/components/SaveDialog.svelte
+#: src/routes/settings/+layout.svelte
 msgid "Cloud"
 msgstr "Cloud"
 
 #: src/lib/studio/components/SaveDialog.svelte
+#: src/routes/settings/+page.svelte
 msgid "This device"
 msgstr "This device"
 
 #: src/lib/studio/ui/Select.svelte
+#: src/routes/(admin)/admin/users/+page.svelte
 #: src/routes/studio/+page.svelte
 msgid "Search"
 msgstr "Search"
@@ -821,8 +830,8 @@ msgstr "Try again"
 
 #: src/lib/studio/components/AiPanel.svelte
 #: src/lib/studio/components/MarketplacePanel.svelte
-#: src/lib/studio/components/PublishDialog.svelte
 #: src/lib/studio/components/PublishPanel.svelte
+#: src/routes/settings/+page.svelte
 #: src/routes/studio/+page.svelte
 msgid "Loading…"
 msgstr "Loading…"
@@ -1121,6 +1130,8 @@ msgid "Try it in the game"
 msgstr "Try it in the game"
 
 #: src/lib/studio/components/TopBar.svelte
+#: src/routes/+page.svelte
+#: src/routes/home/+page.svelte
 msgid "Play"
 msgstr "Play"
 
@@ -1128,7 +1139,6 @@ msgstr "Play"
 msgid "Save (Ctrl+S)"
 msgstr "Save (Ctrl+S)"
 
-#: src/lib/studio/components/PublishDialog.svelte
 #: src/lib/studio/components/PublishPanel.svelte
 msgid "Publish"
 msgstr "Publish"
@@ -1310,82 +1320,64 @@ msgstr "Save {0}"
 msgid "Choose a name and where to keep it."
 msgstr "Choose a name and where to keep it."
 
-#: src/lib/studio/components/PublishDialog.svelte
 #: src/lib/studio/components/PublishPanel.svelte
 msgid "Could not load your published worlds"
 msgstr "Could not load your published worlds"
 
-#: src/lib/studio/components/PublishDialog.svelte
 #: src/lib/studio/components/PublishPanel.svelte
 msgid "Could not publish this world"
 msgstr "Could not publish this world"
 
-#: src/lib/studio/components/PublishDialog.svelte
-msgid "Publish world"
-msgstr "Publish world"
+#~ msgid "Publish world"
+#~ msgstr "Publish world"
 
-#: src/lib/studio/components/PublishDialog.svelte
-msgid "Close"
-msgstr "Close"
+#~ msgid "Close"
+#~ msgstr "Close"
 
-#: src/lib/studio/components/PublishDialog.svelte
 #: src/lib/studio/components/PublishPanel.svelte
 msgid "You need to sign in to publish worlds."
 msgstr "You need to sign in to publish worlds."
 
-#: src/lib/studio/components/PublishDialog.svelte
 #: src/lib/studio/components/PublishPanel.svelte
 msgid "Publish as a new world"
 msgstr "Publish as a new world"
 
-#: src/lib/studio/components/PublishDialog.svelte
 #: src/lib/studio/components/PublishPanel.svelte
 msgid "Starts at revision 1."
 msgstr "Starts at revision 1."
 
-#: src/lib/studio/components/PublishDialog.svelte
 #: src/lib/studio/components/PublishPanel.svelte
 msgid "World to update"
 msgstr "World to update"
 
 #. 0: publication.name; 1: publication.latestRevision
-#. 0: publication.name; 1: publication.latestRevision
-#: src/lib/studio/components/PublishDialog.svelte
 #: src/lib/studio/components/PublishPanel.svelte
 msgid "{0} (revision {1})"
 msgstr "{0} (revision {1})"
 
-#: src/lib/studio/components/PublishDialog.svelte
 #: src/lib/studio/components/PublishPanel.svelte
 msgid "You haven’t published a world yet."
 msgstr "You haven’t published a world yet."
 
-#: src/lib/studio/components/PublishDialog.svelte
 #: src/lib/studio/components/PublishPanel.svelte
 msgid "Add a revision to an existing world"
 msgstr "Add a revision to an existing world"
 
 #. 0: chosen.latestRevision + 1
-#. 0: chosen.latestRevision + 1
-#: src/lib/studio/components/PublishDialog.svelte
 #: src/lib/studio/components/PublishPanel.svelte
 msgid "This will create revision {0}."
 msgstr "This will create revision {0}."
 
 #: src/lib/studio/components/MarketplacePanel.svelte
-#: src/lib/studio/components/PublishDialog.svelte
 #: src/lib/studio/components/PublishPanel.svelte
 msgid "Publishing…"
 msgstr "Publishing…"
 
-#: src/lib/studio/components/PublishDialog.svelte
 #: src/lib/studio/components/PublishPanel.svelte
 msgid "Publishing snapshots the world as it is right now. Each publish is an immutable revision."
 msgstr "Publishing snapshots the world as it is right now. Each publish is an immutable revision."
 
 #. 0: project.doc.name
-#. 0: project.doc.name
-#: src/lib/studio/components/PublishDialog.svelte
 #: src/lib/studio/components/PublishPanel.svelte
 msgid "Publish “{0}”"
 msgstr "Publish “{0}”"
@@ -1664,7 +1656,9 @@ msgstr "Provider request failed."
 msgid "Provider"
 msgstr "Provider"
 
+#: src/routes/home/+page.svelte
 #: src/routes/settings/+layout.svelte
+#: src/routes/studio/+page.svelte
 msgid "Settings"
 msgstr "Settings"
 
@@ -1700,6 +1694,7 @@ msgstr "Ask AI to inspect, create, or change objects. Review its proposal before
 
 #: src/lib/studio/components/AiPanel.svelte
 #: src/lib/studio/components/MarketplacePanel.svelte
+#: src/routes/settings/+page.svelte
 msgid "Working…"
 msgstr "Working…"
 
@@ -1862,6 +1857,8 @@ msgid "Objects and worlds that use it will show a placeholder until it is import
 msgstr "Objects and worlds that use it will show a placeholder until it is imported again."
 
 #: src/lib/studio/components/AssetsPanel.svelte
+#: src/routes/settings/+page.svelte
+#: src/routes/settings/cloud/+page.svelte
 msgid "Remove"
 msgstr "Remove"
 
@@ -1904,8 +1901,6 @@ msgid "Drop a .glb file here, or import one. Models are stored on this device."
 msgstr "Drop a .glb file here, or import one. Models are stored on this device."
 
 #. 0: project.assetProgress.done + 1; 1: project.assetProgress.total
-#. 0: project.assetProgress.done + 1; 1: project.assetProgress.total
-#: src/lib/studio/components/PublishDialog.svelte
 #: src/lib/studio/components/PublishPanel.svelte
 msgid "Uploading models {0}/{1}…"
 msgstr "Uploading models {0}/{1}…"
@@ -2219,6 +2214,7 @@ msgid "Use this rigged model as a player avatar"
 msgstr "Use this rigged model as a player avatar"
 
 #: src/lib/studio/components/AssetsPanel.svelte
+#: src/routes/home/+page.svelte
 #: src/routes/studio/+page.svelte
 #: src/routes/studio/+page.svelte
 msgid "Avatar"
@@ -2881,6 +2877,7 @@ msgstr "Kithin"
 
 #: src/routes/+page.svelte
 #: src/routes/+page.svelte
+#: src/routes/home/+page.svelte
 msgid "Discover"
 msgstr "Discover"
 
@@ -3823,6 +3820,7 @@ msgstr "Drop Zone"
 msgid "Wiki page not found"
 msgstr "Wiki page not found"
 
+#: src/routes/home/+page.svelte
 #: src/routes/wiki/+layout.svelte
 #: src/routes/wiki/+layout.svelte
 msgid "Wiki"
@@ -4137,15 +4135,18 @@ msgstr "Snap"
 msgid "Create something"
 msgstr "Create something"
 
-#: src/routes/+page.svelte
-msgid "Enter now"
-msgstr "Enter now"
+#~ msgid "Enter now"
+#~ msgstr "Enter now"
 
 #: src/routes/+page.svelte
 msgid "Open Studio"
 msgstr "Open Studio"
 
+#: src/routes/(admin)/+layout.svelte
+#: src/routes/(admin)/admin/+page.svelte
+#: src/routes/(admin)/admin/worlds/+page.svelte
 #: src/routes/+page.svelte
+#: src/routes/settings/cloud/+page.svelte
 #: src/routes/worlds/+page.svelte
 msgid "Worlds"
 msgstr "Worlds"
@@ -4162,6 +4163,8 @@ msgstr "Worlds · {0}"
 
 #. 0: PLATFORM_NAME
 #. 0: PLATFORM_NAME
+#. 0: PLATFORM_NAME
+#: src/lib/auth/AuthShell.svelte
 #: src/routes/settings/+layout.svelte
 #: src/routes/worlds/+page.svelte
 msgid "{0} home"
@@ -4172,6 +4175,7 @@ msgstr "{0} home"
 msgid "Open {0} <0/>"
 msgstr "Open {0} <0/>"
 
+#: src/routes/home/+page.svelte
 #: src/routes/worlds/+page.svelte
 msgid "No worlds have been published yet."
 msgstr "No worlds have been published yet."
@@ -4282,6 +4286,8 @@ msgid "Connections"
 msgstr "Connections"
 
 #. 0: PLATFORM_NAME
+#. 0: PLATFORM_NAME
+#: src/routes/(admin)/+layout.svelte
 #: src/routes/settings/+layout.svelte
 msgid "Back to {0}"
 msgstr "Back to {0}"
@@ -4295,9 +4301,8 @@ msgstr "Settings sections"
 msgid "Settings · {0}"
 msgstr "Settings · {0}"
 
-#: src/routes/settings/+page.svelte
-msgid "Account"
-msgstr "Account"
+#~ msgid "Account"
+#~ msgstr "Account"
 
 #: src/routes/settings/connections/+page.svelte
 msgid "Could not disconnect."
@@ -4334,9 +4339,11 @@ msgid "Your key is stored encrypted and is never sent to the browser."
 msgstr "Your key is stored encrypted and is never sent to the browser."
 
 #: src/routes/settings/connections/+page.svelte
+#: src/routes/settings/connections/+page.svelte
 msgid "Disconnecting…"
 msgstr "Disconnecting…"
 
+#: src/routes/settings/connections/+page.svelte
 #: src/routes/settings/connections/+page.svelte
 msgid "Disconnect"
 msgstr "Disconnect"
@@ -4572,3 +4579,801 @@ msgstr "<0>Right click</0> options · <1>Tab</1> menu · <2>I</2> inspector"
 #: src/lib/xr/interaction/desktop/DesktopHud.svelte
 msgid "<0>Tab</0> Menu <1>I</1> Inspector <2>Esc</2> Release the mouse"
 msgstr "<0>Tab</0> Menu <1>I</1> Inspector <2>Esc</2> Release the mouse"
+
+#: src/routes/settings/+page.svelte
+msgid "Could not save your profile."
+msgstr "Could not save your profile."
+
+#: src/routes/settings/+page.svelte
+msgid "Profile saved."
+msgstr "Profile saved."
+
+#: src/routes/settings/+page.svelte
+msgid "Could not change the password."
+msgstr "Could not change the password."
+
+#: src/routes/settings/+page.svelte
+msgid "Password changed. Other devices were signed out."
+msgstr "Password changed. Other devices were signed out."
+
+#: src/routes/settings/+page.svelte
+msgid "Could not load sessions."
+msgstr "Could not load sessions."
+
+#: src/routes/settings/+page.svelte
+msgid "Could not revoke the session."
+msgstr "Could not revoke the session."
+
+#: src/routes/settings/+page.svelte
+msgid "Could not revoke sessions."
+msgstr "Could not revoke sessions."
+
+#: src/routes/settings/+page.svelte
+msgid "Firefox"
+msgstr "Firefox"
+
+#: src/routes/settings/+page.svelte
+msgid "Meta Quest Browser"
+msgstr "Meta Quest Browser"
+
+#: src/routes/settings/+page.svelte
+msgid "Edge"
+msgstr "Edge"
+
+#: src/routes/settings/+page.svelte
+msgid "Chrome"
+msgstr "Chrome"
+
+#: src/routes/settings/+page.svelte
+msgid "Safari"
+msgstr "Safari"
+
+#: src/routes/settings/+page.svelte
+msgid "Unknown browser"
+msgstr "Unknown browser"
+
+#: src/routes/settings/+page.svelte
+msgid "Android"
+msgstr "Android"
+
+#: src/routes/settings/+page.svelte
+msgid "Windows"
+msgstr "Windows"
+
+#: src/routes/settings/+page.svelte
+msgid "Linux"
+msgstr "Linux"
+
+#. 0: browser; 1: os
+#: src/routes/settings/+page.svelte
+msgid "{0} on {1}"
+msgstr "{0} on {1}"
+
+#: src/routes/settings/+page.svelte
+msgid "Save profile"
+msgstr "Save profile"
+
+#: src/routes/settings/+page.svelte
+msgid "Display name <0/>"
+msgstr "Display name <0/>"
+
+#: src/routes/settings/+page.svelte
+msgid "Username <0/>"
+msgstr "Username <0/>"
+
+#: src/routes/settings/+page.svelte
+msgid "Email <0/>"
+msgstr "Email <0/>"
+
+#: src/routes/settings/+page.svelte
+msgid "Profile"
+msgstr "Profile"
+
+#: src/routes/settings/+page.svelte
+msgid "Changing…"
+msgstr "Changing…"
+
+#: src/routes/settings/+page.svelte
+msgid "Change password"
+msgstr "Change password"
+
+#: src/routes/settings/+page.svelte
+msgid "Current password <0/>"
+msgstr "Current password <0/>"
+
+#: src/routes/settings/+page.svelte
+msgid "New password <0/>"
+msgstr "New password <0/>"
+
+#: src/routes/settings/+page.svelte
+msgid "Sign out other devices"
+msgstr "Sign out other devices"
+
+#: src/routes/settings/+page.svelte
+#: src/routes/settings/cloud/+page.svelte
+msgid "Active sessions"
+msgstr "Active sessions"
+
+#: src/routes/settings/+page.svelte
+msgid "Unknown IP"
+msgstr "Unknown IP"
+
+#. 0: row.ipAddress ?? 'Unknown IP'; 1: new Date(row.createdAt).toLocaleString()
+#: src/routes/settings/+page.svelte
+msgid "{0} · Signed in {1}"
+msgstr "{0} · Signed in {1}"
+
+#: src/routes/settings/+page.svelte
+msgid "Revoke"
+msgstr "Revoke"
+
+#: src/routes/settings/+page.svelte
+msgid "Privacy policy"
+msgstr "Privacy policy"
+
+#: src/routes/settings/connections/+page.svelte
+msgid "Could not connect Discord."
+msgstr "Could not connect Discord."
+
+#: src/routes/settings/connections/+page.svelte
+msgid "Could not disconnect Discord. You need another way to sign in first."
+msgstr "Could not disconnect Discord. You need another way to sign in first."
+
+#: src/routes/settings/connections/+page.svelte
+msgid "Discord connected."
+msgstr "Discord connected."
+
+#~ msgid "Could not connect Discord. It may already be linked to another account."
+#~ msgstr "Could not connect Discord. It may already be linked to another account."
+
+#: src/routes/settings/connections/+page.svelte
+msgid "Connected — you can sign in to "
+msgstr "Connected — you can sign in to "
+
+#: src/routes/settings/connections/+page.svelte
+msgid "Link your Discord account to sign in with it."
+msgstr "Link your Discord account to sign in with it."
+
+#: src/routes/settings/connections/+page.svelte
+msgid "Discord"
+msgstr "Discord"
+
+#: src/lib/auth/AuthShell.svelte
+#: src/routes/settings/connections/+page.svelte
+msgid "Redirecting…"
+msgstr "Redirecting…"
+
+#: src/routes/settings/connections/+page.svelte
+msgid "Connect Discord"
+msgstr "Connect Discord"
+
+#. 0: data.discordError ? ` (${data.discordError.replaceAll('_', ' ')})` \\: ''
+#: src/routes/settings/connections/+page.svelte
+msgid "Could not connect Discord{0}. It may already be linked to another account."
+msgstr "Could not connect Discord{0}. It may already be linked to another account."
+
+#: src/routes/(admin)/admin/+page.svelte
+#: src/routes/settings/cloud/+page.svelte
+msgid "Published worlds"
+msgstr "Published worlds"
+
+#: src/routes/settings/cloud/+page.svelte
+msgid "Inventory items"
+msgstr "Inventory items"
+
+#: src/routes/settings/cloud/+page.svelte
+msgid "Inventory folders"
+msgstr "Inventory folders"
+
+#: src/routes/settings/cloud/+page.svelte
+msgid "Marketplace listings"
+msgstr "Marketplace listings"
+
+#: src/routes/settings/cloud/+page.svelte
+msgid "Purchases"
+msgstr "Purchases"
+
+#~ msgid "Hosted sessions"
+#~ msgstr "Hosted sessions"
+
+#: src/routes/settings/cloud/+page.svelte
+msgid "Could not remove the model."
+msgstr "Could not remove the model."
+
+#. 0: PLATFORM_NAME
+#: src/routes/settings/cloud/+page.svelte
+msgid "Cloud · {0}"
+msgstr "Cloud · {0}"
+
+#: src/routes/settings/cloud/+page.svelte
+msgid "Storage used"
+msgstr "Storage used"
+
+#: src/routes/settings/cloud/+page.svelte
+msgid "3D models"
+msgstr "3D models"
+
+#: src/routes/settings/cloud/+page.svelte
+msgid "Inventory data"
+msgstr "Inventory data"
+
+#: src/routes/settings/cloud/+page.svelte
+msgid "Your content"
+msgstr "Your content"
+
+#: src/routes/settings/cloud/+page.svelte
+msgid "In use"
+msgstr "In use"
+
+#: src/routes/settings/cloud/+page.svelte
+msgid "Unused"
+msgstr "Unused"
+
+#: src/routes/settings/cloud/+page.svelte
+msgid "Removing…"
+msgstr "Removing…"
+
+#: src/routes/settings/cloud/+page.svelte
+msgid "No models uploaded yet."
+msgstr "No models uploaded yet."
+
+#: src/routes/settings/cloud/+page.svelte
+msgid "Largest models"
+msgstr "Largest models"
+
+#: src/routes/settings/cloud/+page.svelte
+msgid "Models still used by an object or world can't be removed."
+msgstr "Models still used by an object or world can't be removed."
+
+#: src/routes/login/+page.svelte
+msgid "Sign-in with Discord failed. Please try again."
+msgstr "Sign-in with Discord failed. Please try again."
+
+#. 0: PLATFORM_NAME
+#: src/routes/login/+page.svelte
+msgid "Sign in · {0}"
+msgstr "Sign in · {0}"
+
+#: src/routes/login/+page.svelte
+msgid "Welcome back"
+msgstr "Welcome back"
+
+#. 0: PLATFORM_NAME
+#: src/routes/login/+page.svelte
+msgid "Sign in to continue to {0}."
+msgstr "Sign in to continue to {0}."
+
+#: src/routes/login/+page.svelte
+msgid "Signing in…"
+msgstr "Signing in…"
+
+#: src/routes/login/+page.svelte
+msgid "New here? <0>Create an account</0>"
+msgstr "New here? <0>Create an account</0>"
+
+#: src/lib/auth/AuthShell.svelte
+msgid "Could not reach Discord."
+msgstr "Could not reach Discord."
+
+#: src/lib/auth/AuthShell.svelte
+msgid "Continue with Discord"
+msgstr "Continue with Discord"
+
+#: src/lib/auth/AuthShell.svelte
+msgid "<0/>or<1/>"
+msgstr "<0/>or<1/>"
+
+#: src/routes/studio/+page.svelte
+msgid "Account settings"
+msgstr "Account settings"
+
+#: src/routes/settings/+layout.svelte
+msgid "Data & Account"
+msgstr "Data & Account"
+
+#: src/routes/settings/account/+page.svelte
+msgid "Could not delete your account."
+msgstr "Could not delete your account."
+
+#. 0: PLATFORM_NAME
+#: src/routes/settings/account/+page.svelte
+msgid "Data & Account · {0}"
+msgstr "Data & Account · {0}"
+
+#: src/routes/settings/account/+page.svelte
+msgid "Export your data"
+msgstr "Export your data"
+
+#: src/routes/settings/account/+page.svelte
+msgid "Download a JSON file with your profile, worlds, inventory, published worlds, marketplace activity, model list and feedback. Passwords and access tokens are never included, and model files are listed by id rather than bundled."
+msgstr "Download a JSON file with your profile, worlds, inventory, published worlds, marketplace activity, model list and feedback. Passwords and access tokens are never included, and model files are listed by id rather than bundled."
+
+#: src/routes/settings/account/+page.svelte
+msgid "Download my data"
+msgstr "Download my data"
+
+#: src/routes/settings/account/+page.svelte
+msgid "Password <0/>"
+msgstr "Password <0/>"
+
+#: src/routes/settings/account/+page.svelte
+msgid "Deleting…"
+msgstr "Deleting…"
+
+#: src/routes/settings/account/+page.svelte
+msgid "Delete my account"
+msgstr "Delete my account"
+
+#: src/routes/settings/account/+page.svelte
+msgid "This permanently deletes your account and everything you own: worlds, inventory, published worlds, marketplace listings, feedback and uploaded models. It can't be undone. Download your data first if you want a copy."
+msgstr "This permanently deletes your account and everything you own: worlds, inventory, published worlds, marketplace listings, feedback and uploaded models. It can't be undone. Download your data first if you want a copy."
+
+#: src/routes/settings/account/+page.svelte
+msgid "Type <0/> to confirm <1/>"
+msgstr "Type <0/> to confirm <1/>"
+
+#: src/routes/settings/account/+page.svelte
+msgid "Delete account"
+msgstr "Delete account"
+
+#: src/routes/settings/+page.svelte
+msgid "Picture updated."
+msgstr "Picture updated."
+
+#: src/routes/settings/+page.svelte
+msgid "Could not update your picture."
+msgstr "Could not update your picture."
+
+#: src/routes/settings/+page.svelte
+msgid "Could not remove your picture."
+msgstr "Could not remove your picture."
+
+#. 0: secondary; 1: pictureBusy ? 'pointer-events-none opacity-50' \\: ''
+#: src/routes/settings/+page.svelte
+msgid "{0} cursor-pointer {1}"
+msgstr "{0} cursor-pointer {1}"
+
+#: src/routes/settings/+page.svelte
+msgid "Upload picture"
+msgstr "Upload picture"
+
+#: src/routes/settings/+page.svelte
+msgid "Cropped to a square. Counts toward your Cloud storage."
+msgstr "Cropped to a square. Counts toward your Cloud storage."
+
+#~ msgid "Jump into Kithin, in the browser or with a headset."
+#~ msgstr "Jump into Kithin, in the browser or with a headset."
+
+#~ msgid "M8 5v14l11-7z"
+#~ msgstr "M8 5v14l11-7z"
+
+#~ msgid "Browse the worlds people have published."
+#~ msgstr "Browse the worlds people have published."
+
+#~ msgid "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2c1.7 0 3.3 2.6 3.8 6H8.2C8.7 6.6 10.3 4 12 4Zm-3.9 8h7.8c-.5 3.4-2.1 6-3.9 6s-3.4-2.6-3.9-6Z"
+#~ msgstr "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2c1.7 0 3.3 2.6 3.8 6H8.2C8.7 6.6 10.3 4 12 4Zm-3.9 8h7.8c-.5 3.4-2.1 6-3.9 6s-3.4-2.6-3.9-6Z"
+
+#~ msgid "Build worlds and objects and save them to your inventory."
+#~ msgstr "Build worlds and objects and save them to your inventory."
+
+#~ msgid "M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25ZM20.7 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83Z"
+#~ msgstr "M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25ZM20.7 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83Z"
+
+#~ msgid "Your account, connections and cloud storage."
+#~ msgstr "Your account, connections and cloud storage."
+
+#~ msgid "M19.4 13a7.5 7.5 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3.4h-4L10.7 6a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.5 7.5 0 0 0 0 2l-2 1.6 2 3.4 2.4-1c.5.4 1.1.7 1.7 1l.3 2.6h4l.3-2.6c.6-.3 1.2-.6 1.7-1l2.4 1 2-3.4-2-1.6ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"
+#~ msgstr "M19.4 13a7.5 7.5 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3.4h-4L10.7 6a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.5 7.5 0 0 0 0 2l-2 1.6 2 3.4 2.4-1c.5.4 1.1.7 1.7 1l.3 2.6h4l.3-2.6c.6-.3 1.2-.6 1.7-1l2.4 1 2-3.4-2-1.6ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"
+
+#. 0: PLATFORM_NAME
+#: src/routes/home/+page.svelte
+msgid "Pick where to go next on {0}."
+msgstr "Pick where to go next on {0}."
+
+#. 0: PLATFORM_NAME
+#: src/routes/home/+page.svelte
+msgid "Home · {0}"
+msgstr "Home · {0}"
+
+#. 0: PLATFORM_NAME
+#: src/routes/home/+page.svelte
+msgid "{0} landing"
+msgstr "{0} landing"
+
+#~ msgid "Welcome back, {0}"
+#~ msgstr "Welcome back, {0}"
+
+#. 0: PLATFORM_NAME
+#: src/routes/home/+page.svelte
+msgid "Welcome to {0}"
+msgstr "Welcome to {0}"
+
+#~ msgid "Where to?"
+#~ msgstr "Where to?"
+
+#: src/routes/home/+page.svelte
+msgid "Still up"
+msgstr "Still up"
+
+#: src/routes/home/+page.svelte
+msgid "Good morning"
+msgstr "Good morning"
+
+#: src/routes/home/+page.svelte
+msgid "Good afternoon"
+msgstr "Good afternoon"
+
+#: src/routes/home/+page.svelte
+msgid "Good evening"
+msgstr "Good evening"
+
+#: src/routes/home/+page.svelte
+msgid "Welcome"
+msgstr "Welcome"
+
+#: src/routes/home/+page.svelte
+msgid "<0/>Browser · VR"
+msgstr "<0/>Browser · VR"
+
+#: src/routes/home/+page.svelte
+msgid "Step into Kithin with whoever's around."
+msgstr "Step into Kithin with whoever's around."
+
+#: src/routes/home/+page.svelte
+msgid "Enter now <0/>"
+msgstr "Enter now <0/>"
+
+#~ msgid "Explore what people published."
+#~ msgstr "Explore what people published."
+
+#~ msgid "Build worlds and objects."
+#~ msgstr "Build worlds and objects."
+
+#: src/routes/home/+page.svelte
+msgid "Account, connections and cloud."
+msgstr "Account, connections and cloud."
+
+#: src/routes/home/+page.svelte
+msgid "Sign in to manage your account."
+msgstr "Sign in to manage your account."
+
+#~ msgid "Recently published"
+#~ msgstr "Recently published"
+
+#: src/routes/home/+page.svelte
+msgid "See all →"
+msgstr "See all →"
+
+#: src/routes/home/+page.svelte
+msgid "Who's in? Pick where to go."
+msgstr "Who's in? Pick where to go."
+
+#: src/routes/home/+page.svelte
+msgid "Explore worlds people published."
+msgstr "Explore worlds people published."
+
+#: src/routes/home/+page.svelte
+msgid "Build your own worlds and objects."
+msgstr "Build your own worlds and objects."
+
+#: src/routes/home/+page.svelte
+msgid "Recently visited"
+msgstr "Recently visited"
+
+#: src/routes/home/+page.svelte
+msgid "Pick up where you left off."
+msgstr "Pick up where you left off."
+
+#: src/routes/home/+page.svelte
+msgid "Staff picks"
+msgstr "Staff picks"
+
+#: src/routes/home/+page.svelte
+msgid "Hand-picked by the team."
+msgstr "Hand-picked by the team."
+
+#: src/routes/home/+page.svelte
+msgid "Popular worlds"
+msgstr "Popular worlds"
+
+#: src/routes/home/+page.svelte
+msgid "Where people have been playing lately."
+msgstr "Where people have been playing lately."
+
+#: src/routes/home/+page.svelte
+msgid "New worlds"
+msgstr "New worlds"
+
+#: src/routes/home/+page.svelte
+msgid "Fresh from the community."
+msgstr "Fresh from the community."
+
+#. 0: minutes
+#: src/routes/home/+page.svelte
+msgid "{0} min ago"
+msgstr "{0} min ago"
+
+#. 0: Math.round(minutes / 60)
+#: src/routes/home/+page.svelte
+msgid "{0} h ago"
+msgstr "{0} h ago"
+
+#. 0: Math.round(minutes / 60 / 24)
+#: src/routes/home/+page.svelte
+msgid "{0} d ago"
+msgstr "{0} d ago"
+
+#: src/routes/home/+page.svelte
+msgid "<0/> Continue creating"
+msgstr "<0/> Continue creating"
+
+#~ msgid "Your latest worlds in the cloud."
+#~ msgstr "Your latest worlds in the cloud."
+
+#: src/routes/home/+page.svelte
+msgid "Open Create →"
+msgstr "Open Create →"
+
+#: src/routes/home/+page.svelte
+msgid "Edit"
+msgstr "Edit"
+
+#~ msgid "Saved {0}"
+#~ msgstr "Saved {0}"
+
+#: src/routes/home/+page.svelte
+msgid "Worlds you open will show up here."
+msgstr "Worlds you open will show up here."
+
+#: src/routes/home/+page.svelte
+msgid "No staff picks yet."
+msgstr "No staff picks yet."
+
+#: src/routes/home/+page.svelte
+msgid "Nobody has played a published world this month."
+msgstr "Nobody has played a published world this month."
+
+#~ msgid "Save a world to your cloud inventory and it will be waiting here. <0>Start creating →</0>"
+#~ msgstr "Save a world to your cloud inventory and it will be waiting here. <0>Start creating →</0>"
+
+#: src/routes/home/+page.svelte
+msgid "Your latest worlds, objects and avatars."
+msgstr "Your latest worlds, objects and avatars."
+
+#: src/routes/home/+page.svelte
+msgid "Worlds, objects and avatars you save in Create will be waiting here, from this device or the cloud. <0>Start creating →</0>"
+msgstr "Worlds, objects and avatars you save in Create will be waiting here, from this device or the cloud. <0>Start creating →</0>"
+
+#: src/routes/home/+page.svelte
+msgid "New here, or building something?"
+msgstr "New here, or building something?"
+
+#: src/routes/home/+page.svelte
+msgid "The wiki has guides for playing, creating worlds and objects, and importing avatars."
+msgstr "The wiki has guides for playing, creating worlds and objects, and importing avatars."
+
+#: src/routes/home/+page.svelte
+msgid "Quick start"
+msgstr "Quick start"
+
+#: src/routes/home/+page.svelte
+msgid "Browse the wiki"
+msgstr "Browse the wiki"
+
+#~ msgid "Jugar"
+#~ msgstr "Jugar"
+
+#~ msgid "Aprender"
+#~ msgstr "Aprender"
+
+#: src/routes/+page.svelte
+msgid "Learn"
+msgstr "Learn"
+
+#: src/routes/register/+page.svelte
+msgid "Sign-up with Discord failed. Please try again."
+msgstr "Sign-up with Discord failed. Please try again."
+
+#. 0: PLATFORM_NAME
+#: src/routes/register/+page.svelte
+msgid "Create account · {0}"
+msgstr "Create account · {0}"
+
+#: src/routes/register/+page.svelte
+msgid "Create your account"
+msgstr "Create your account"
+
+#. 0: PLATFORM_NAME
+#: src/routes/register/+page.svelte
+msgid "Build and explore worlds on {0}."
+msgstr "Build and explore worlds on {0}."
+
+#: src/routes/register/+page.svelte
+msgid "Password (8+ characters)"
+msgstr "Password (8+ characters)"
+
+#: src/routes/register/+page.svelte
+msgid "Creating…"
+msgstr "Creating…"
+
+#: src/routes/register/+page.svelte
+msgid "Already have an account? <0>Sign in</0>"
+msgstr "Already have an account? <0>Sign in</0>"
+
+#: src/routes/worlds/+page.svelte
+msgid "Enter <0/>"
+msgstr "Enter <0/>"
+
+#: src/routes/worlds/+page.svelte
+msgid "<0/> Official"
+msgstr "<0/> Official"
+
+#. 0: PLATFORM_NAME
+#: src/routes/worlds/+page.svelte
+msgid "Made by the {0} team."
+msgstr "Made by the {0} team."
+
+#: src/routes/worlds/+page.svelte
+msgid "<0/> Community"
+msgstr "<0/> Community"
+
+#: src/routes/worlds/+page.svelte
+msgid "Published by players."
+msgstr "Published by players."
+
+#: src/routes/(admin)/+layout.server.ts
+msgid "Admins only"
+msgstr "Admins only"
+
+#: src/routes/(admin)/+layout.svelte
+#: src/routes/(admin)/admin/+page.svelte
+msgid "Dashboard"
+msgstr "Dashboard"
+
+#: src/routes/(admin)/+layout.svelte
+#: src/routes/(admin)/admin/+page.svelte
+#: src/routes/(admin)/admin/users/+page.svelte
+msgid "Users"
+msgstr "Users"
+
+#. 0: PLATFORM_NAME
+#: src/routes/(admin)/+layout.svelte
+msgid "Admin · {0}"
+msgstr "Admin · {0}"
+
+#. 0: PLATFORM_NAME
+#. 0: PLATFORM_NAME
+#: src/routes/(admin)/+layout.svelte
+#: src/routes/(admin)/+layout.svelte
+msgid "{0} admin"
+msgstr "{0} admin"
+
+#: src/routes/(admin)/+layout.svelte
+msgid "Admin"
+msgstr "Admin"
+
+#: src/routes/(admin)/+layout.svelte
+#: src/routes/(admin)/+layout.svelte
+msgid "Admin sections"
+msgstr "Admin sections"
+
+#: src/routes/(admin)/+layout.svelte
+msgid "Toggle menu"
+msgstr "Toggle menu"
+
+#. 0: data.stats.publicWorlds
+#: src/routes/(admin)/admin/+page.svelte
+msgid "{0} public"
+msgstr "{0} public"
+
+#: src/routes/(admin)/admin/+page.svelte
+msgid "Live on the platform"
+msgstr "Live on the platform"
+
+#: src/routes/(admin)/admin/+page.svelte
+msgid "Stored files"
+msgstr "Stored files"
+
+#: src/routes/(admin)/admin/+page.svelte
+msgid "Platform overview"
+msgstr "Platform overview"
+
+#: src/routes/(admin)/admin/users/+page.svelte
+#: src/routes/(admin)/admin/worlds/+page.svelte
+msgid "Showing up to 100, newest first"
+msgstr "Showing up to 100, newest first"
+
+#: src/routes/(admin)/admin/users/+page.svelte
+msgid "Search name, email or username"
+msgstr "Search name, email or username"
+
+#: src/routes/(admin)/admin/users/+page.svelte
+msgid "User"
+msgstr "User"
+
+#: src/routes/(admin)/admin/users/+page.svelte
+msgid "Role"
+msgstr "Role"
+
+#: src/routes/(admin)/admin/feedback/+page.svelte
+#: src/routes/(admin)/admin/feedback/+page.svelte
+#: src/routes/(admin)/admin/users/+page.svelte
+msgid "Status"
+msgstr "Status"
+
+#: src/routes/(admin)/admin/users/+page.svelte
+msgid "Joined"
+msgstr "Joined"
+
+#: src/routes/(admin)/admin/users/+page.svelte
+msgid "Banned"
+msgstr "Banned"
+
+#: src/routes/(admin)/admin/users/+page.svelte
+msgid "Active"
+msgstr "Active"
+
+#: src/routes/(admin)/admin/users/+page.svelte
+msgid "No users found"
+msgstr "No users found"
+
+#: src/routes/(admin)/admin/worlds/+page.svelte
+msgid "Host"
+msgstr "Host"
+
+#: src/routes/(admin)/admin/worlds/+page.svelte
+msgid "Visibility"
+msgstr "Visibility"
+
+#: src/routes/(admin)/admin/worlds/+page.svelte
+msgid "Created"
+msgstr "Created"
+
+#: src/routes/(admin)/admin/worlds/+page.svelte
+msgid "No worlds yet"
+msgstr "No worlds yet"
+
+#: src/routes/(admin)/+layout.svelte
+#: src/routes/(admin)/admin/feedback/+page.svelte
+msgid "Feedback"
+msgstr "Feedback"
+
+#: src/routes/(admin)/admin/feedback/+page.server.ts
+msgid "Invalid feedback status"
+msgstr "Invalid feedback status"
+
+#: src/routes/(admin)/admin/feedback/+page.server.ts
+msgid "Feedback entry not found"
+msgstr "Feedback entry not found"
+
+#: src/routes/(admin)/admin/feedback/+page.svelte
+msgid "Ideas and bugs from players, most voted first. Change the status to move an item through the roadmap."
+msgstr "Ideas and bugs from players, most voted first. Change the status to move an item through the roadmap."
+
+#: src/routes/(admin)/admin/feedback/+page.svelte
+msgid "All"
+msgstr "All"
+
+#: src/routes/(admin)/admin/feedback/+page.svelte
+msgid "Any type"
+msgstr "Any type"
+
+#: src/routes/(admin)/admin/feedback/+page.svelte
+msgid "Votes"
+msgstr "Votes"
+
+#: src/routes/(admin)/admin/feedback/+page.svelte
+msgid "Title"
+msgstr "Title"
+
+#: src/routes/(admin)/admin/feedback/+page.svelte
+msgid "Type"
+msgstr "Type"
+
+#: src/routes/(admin)/admin/feedback/+page.svelte
+msgid "Author"
+msgstr "Author"
+
+#: src/routes/(admin)/admin/feedback/+page.svelte
+msgid "No feedback yet"
+msgstr "No feedback yet"

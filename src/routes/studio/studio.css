@@ -1,7 +1,8 @@
 /* Studio design tokens and shared primitives. Everything is scoped under .studio
    so nothing leaks into the game or the auth pages. */
 .studio {
-	--bg: #0e1016;
+	/* The same near-black as the rest of the site (Tailwind `ink`), so Studio, Settings and Home share one background. */
+	--bg: var(--color-ink, #07070c);
 	--panel: #151821;
 	--panel-2: #1b1f2b;
 	--panel-3: #232838;

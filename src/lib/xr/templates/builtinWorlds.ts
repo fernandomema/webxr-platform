@@ -1,6 +1,7 @@
 import type { SlotTree } from '$lib/ecs/types';
 import { createSlot } from '$lib/ecs/types';
 import lobby from './lobby.json';
+import { buildLobbyBillboard } from './lobbyBillboard';
 import workshop from './workshop.json';
 import popUpStore from './popUpStore.json';
 import pulse from './pulse.json';
@@ -20,7 +21,7 @@ export interface BuiltinWorld {
 }
 
 /** Worlds listed under the Development category instead of the official ones. */
-export const DEV_WORLD_IDS: readonly BuiltinWorld['id'][] = ['archive-film-test', 'mirror-maze', 'archive-jukebox', 'polyheaven-materials', 'wish-engine'];
+export const DEV_WORLD_IDS: readonly BuiltinWorld['id'][] = ['archive-film-test', 'mirror-maze', 'polyheaven-materials', 'wish-engine'];
 
 export const BUILTIN_WORLDS: readonly BuiltinWorld[] = [
 	{
@@ -215,7 +216,7 @@ return {
 		description: 'A maze of mirrors, glass and silver walls that look alike: false corridors, 45° turns that are not there and a disorienting central room. Find the way out.',
 		scene: buildMirrorMaze()
 	},
-	{ id: 'lobby', name: 'Lobby', description: 'A glowing spawn pad, a welcome sign, a mirror, a paint brush and a record player.', scene: lobby as SlotTree },
+	{ id: 'lobby', name: 'Lobby', description: 'A glowing spawn pad, a welcome sign, a mirror, a paint brush, a record player and a board advertising other worlds.', scene: [...(lobby as SlotTree), ...buildLobbyBillboard()] },
 	{
 		id: 'workshop',
 		name: 'Workshop',

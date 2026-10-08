@@ -23,6 +23,7 @@ import { gameState, getInventoryContext } from '../gameState';
 import { xrSettings, saveSettings, DESKTOP_FOVS, MOUSE_SENSITIVITIES, type FoveationLevel, type MovementMode, type RotationMode } from '../settings';
 import { dashboardEditorOrder, dashboardItemLabel, moveDashboardItem, toggleDashboardItem, type DashboardItemId } from '../dashboardLayout';
 import { saveWithPreview } from '../inventorySave';
+import { captureItemThumbnail } from '../thumbnail/capture';
 import { typeWithKeyboard } from '../keyboard/guiInput';
 import { getLayout, layoutIds } from '../keyboard/layouts';
 import type { BuiltinWorld } from '../templates/builtinWorlds';
@@ -55,6 +56,8 @@ export interface DashPanelCallbacks {
 	onLaunchWorldItem(item: InventoryItem, adapterId: InventoryStorageAdapterId): Promise<void>;
 	/** Goes to one of the worlds that ship with the app, on your own. */
 	onLaunchBuiltinWorld(world: BuiltinWorld): Promise<void>;
+	/** Starts a new world from scratch, on your own. */
+	onCreateWorld(): Promise<void>;
 	/** Makes an avatar item the one worn from now on, here and in every world joined later. Rejects with a readable message if it cannot be worn. */
 	onWearAvatar(item: InventoryItem): Promise<void>;
 	onSetDefaultAvatar(item: InventoryItem, adapterId: InventoryAdapterId): Promise<void>;
@@ -355,8 +358,9 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	const worldsBrowser = createWorldsBrowser(contentByTab.worlds, sceneGraph, {
 		onJoinWorld: async (roomCode) => { await callbacks.onJoinWorld(roomCode); void refreshWorldsTab(); },
 		onSpawnPublishedWorld: callbacks.onSpawnPublishedWorld,
-		onLaunchBuiltinWorld: callbacks.onLaunchBuiltinWorld
-	});
+		onLaunchBuiltinWorld: callbacks.onLaunchBuiltinWorld,
+		onCreateWorld: callbacks.onCreateWorld
+	}, mesh);
 
 
 	// Cards of one width, like the settings: where this session stands, how to share the world, and saving it.
@@ -926,7 +930,8 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 					inventoryToolbar.addControl(actionButton('tb-publish', 'Publish', THEME.accent, 100, async () => {
 						try {
 							validateWorldScene(item.slotData);
-							const thumbnailAssetId = item.thumbnailAssetId ?? undefined;
+							// Items saved before previews existed have none: it is made now, once, and goes up with the world.
+							const thumbnailAssetId = item.thumbnailAssetId ?? (await captureItemThumbnail(item.slotData, 'world', { name: item.name })) ?? undefined;
 							if (thumbnailAssetId) await ensureCloudAssets([], getLocalAssetStore(), { extraIds: [thumbnailAssetId] }).catch(() => undefined);
 							const res = await fetch('/api/published-worlds', {
 								method: 'POST', headers: { 'content-type': 'application/json' },
