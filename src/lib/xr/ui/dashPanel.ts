@@ -53,6 +53,7 @@ export interface DashPanelCallbacks {
 	onSpawnItem(slotData: SlotTree): void;
 	onSpawnWorldOrb(item: InventoryItem, adapterId: InventoryStorageAdapterId): void;
 	onSpawnPublishedWorld(world: WorldPackage): void;
+	onLaunchPublishedWorld(world: WorldPackage): Promise<void>;
 	onLaunchWorldItem(item: InventoryItem, adapterId: InventoryStorageAdapterId): Promise<void>;
 	/** Goes to one of the worlds that ship with the app, on your own. */
 	onLaunchBuiltinWorld(world: BuiltinWorld): Promise<void>;
@@ -358,6 +359,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	const worldsBrowser = createWorldsBrowser(contentByTab.worlds, sceneGraph, {
 		onJoinWorld: async (roomCode) => { await callbacks.onJoinWorld(roomCode); void refreshWorldsTab(); },
 		onSpawnPublishedWorld: callbacks.onSpawnPublishedWorld,
+		onLaunchPublishedWorld: callbacks.onLaunchPublishedWorld,
 		onLaunchBuiltinWorld: callbacks.onLaunchBuiltinWorld,
 		onCreateWorld: callbacks.onCreateWorld
 	}, mesh);

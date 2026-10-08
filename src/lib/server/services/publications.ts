@@ -1,7 +1,7 @@
 import { prisma } from '../db';
 import { UnauthorizedError, ForbiddenError, NotFoundError } from '../errors';
 import { validateWorldScene } from '$lib/worlds/package';
-import { collectAssetIds, migrateSlotTree } from '$lib/assets/ref';
+import { collectAssetIds, migrateSlotTree, type AssetId } from '$lib/assets/ref';
 import { assertAssetsReady, assetSummaries, linkSceneAssets, resolveThumbnail, withThumbnail } from './assets';
 import type { AppInfoComponent, SlotTree } from '$lib/ecs/types';
 import { findAppInfo } from '$lib/worlds/appManifest';
@@ -78,6 +78,7 @@ export async function getPublishedWorld(publicationId: string, revisionId?: stri
     formatVersion: 1,
     name: publication.name,
     scene: migrated,
+    ...(publication.thumbnailAssetId ? { preview: publication.thumbnailAssetId as AssetId } : {}),
     assets: await assetSummaries(prisma, [...collectAssetIds(migrated)]),
     defaultVisibility: 'private',
     source: { kind: 'published', worldId: publication.id, revisionId: revision.id }

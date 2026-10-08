@@ -685,6 +685,7 @@ export async function mountGame(
 		},
 		onSpawnWorldOrb: spawnWorldOrb,
 		onSpawnPublishedWorld: spawnWorldOrbPackage,
+		onLaunchPublishedWorld: (world) => launchWorldPackage(world, 'solo'),
 		onLaunchWorldItem: async (item, adapterId: InventoryStorageAdapterId) => {
 			const world = worldFromInventory(item, adapterId, gameState.userId);
 			await launchWorldPackage(world, world.defaultVisibility);

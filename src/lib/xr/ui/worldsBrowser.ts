@@ -32,6 +32,8 @@ import { createStereoPanoramaPlane, type StereoPanoramaPlane } from './stereoPan
 export interface WorldsBrowserCallbacks {
 	onJoinWorld(roomCode: string): Promise<void>;
 	onSpawnPublishedWorld(world: WorldPackage): void;
+	/** Steps into a published world (on your own), like the official ones. */
+	onLaunchPublishedWorld(world: WorldPackage): Promise<void>;
 	onLaunchBuiltinWorld(world: BuiltinWorld): Promise<void>;
 	/** Starts a new world from scratch (a blank floor), on your own. */
 	onCreateWorld(): Promise<void>;
@@ -81,7 +83,7 @@ interface WorldEntry {
 	/** The same preview in 3D (a picture for each eye), if it can be made. Slower to come than `preview`. */
 	stereoPreview?(): Promise<string | null>;
 	primary: { label: string; run(): Promise<string> };
-	secondary?: { label: string; run(): Promise<string> };
+	secondary?: { label: string; run(): Promise<string> }[];
 }
 
 interface ActiveSession {
@@ -557,13 +559,14 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 		act(primary, entry.primary);
 		detail.addControl(primary);
 		top += 58;
-		if (entry.secondary) {
-			const secondary = topLeft(pill('world-detail-secondary', entry.secondary.label, width, 44, THEME.raised), column, top);
+		for (const [index, action] of (entry.secondary ?? []).entries()) {
+			const secondary = topLeft(pill(`world-detail-secondary-${index}`, action.label, width, 44, THEME.raised), column, top);
 			secondary.fontSize = 16;
-			act(secondary, entry.secondary);
+			act(secondary, action);
 			detail.addControl(secondary);
+			top += 50;
 		}
-		const back = topLeft(pill('world-detail-back', '‹ Back', 120, 40, C.surface), column, 392);
+		const back = topLeft(pill('world-detail-back', '‹ Back', 120, 40, C.surface), column, Math.max(top, 392));
 		back.fontSize = 16;
 		back.onPointerClickObservable.add(() => { selected = null; status.text = ''; void browser.refresh(); });
 		detail.addControl(back);
@@ -641,22 +644,25 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 		const publications = (await response.json()) as Publication[];
 		return publications.map((publication) => {
 			const owned = publication.ownerId === gameState.userId;
+			const fetchPublished = async (): Promise<WorldPackage> => {
+				const res = await fetch(`/api/published-worlds/${publication.id}`);
+				if (!res.ok) throw new Error('Could not load the published world');
+				return (await res.json()) as WorldPackage;
+			};
 			return {
 				key: `published-${publication.id}`,
 				name: publication.name,
 				subtitle: `Published · v${publication.latestRevision}${owned ? ' · yours' : ''}`,
-				description: 'A published world. Place its orb in your world to look inside it and step through.',
+				description: 'A published world. Step into it, or place its orb in your world to look inside it first.',
 				preview: async () => publication.thumbnailAssetId ?? null,
 				primary: {
-					label: 'Place orb',
-					run: async () => {
-						const res = await fetch(`/api/published-worlds/${publication.id}`);
-						if (!res.ok) throw new Error('Could not load the published world');
-						callbacks.onSpawnPublishedWorld((await res.json()) as WorldPackage);
-						return 'World orb placed.';
-					}
+					label: 'Go',
+					run: async () => { await callbacks.onLaunchPublishedWorld(await fetchPublished()); return `Welcome to ${publication.name}.`; }
 				},
-				secondary: owned ? {
+				secondary: [{
+					label: 'Place orb',
+					run: async () => { callbacks.onSpawnPublishedWorld(await fetchPublished()); return 'World orb placed.'; }
+				}, ...(owned ? [{
 					label: 'Publish current revision',
 					run: async () => {
 						const snapshot = sceneGraph.serialize({ withoutAvatars: true });
@@ -671,7 +677,7 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 						if (!res.ok) throw new Error('Could not publish the revision');
 						return 'Revision published.';
 					}
-				} : undefined
+				}] : [])]
 			};
 		});
 	}
