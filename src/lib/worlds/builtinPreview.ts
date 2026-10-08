@@ -5,21 +5,28 @@ import { captureItemThumbnail } from '$lib/xr/thumbnail/capture';
 import type { BuiltinWorld } from '$lib/xr/templates/builtinWorlds';
 
 // --- Previews of the official worlds -------------------------------------------------------------------------------
-// They ship with the app as static pictures (src/lib/worlds/previews/<id>.webp, and <id>-stereo.webp), so opening the Worlds
+// They ship with the app as static pictures (static/assets/world-previews/<id>.webp, and <id>-stereo.webp), so opening the Worlds
 // tab never loads a world's models just to draw its picture. Only a development build draws a missing one on the device
 // (kept in the local asset store, remembered by the content of its scene); `exportBuiltinPreviews()` downloads those
-// pictures so they can be dropped into src/lib/worlds/previews/.
+// pictures so they can be dropped into static/assets/world-previews/.
 
 const builtinPreviews = new Map<string, Promise<string | null>>();
 const builtinStereoPreviews = new Map<string, Promise<string | null>>();
 
 let builtinQueue: Promise<unknown> = Promise.resolve();
 
-/** The pictures that ship with the app, by file name; bundled, so looking one up never touches the network. */
-const SHIPPED = import.meta.glob('./previews/*.webp', { eager: true, query: '?url', import: 'default' }) as Record<string, string>;
+const SHIPPED_BASE = '/assets/world-previews';
+const shippedChecks = new Map<string, Promise<string | null>>();
 
+/** The picture that ships with the app for a world, if there is one: served from static/, so it is probed once and remembered. */
 function shippedPreview(id: string, kind: 'mono' | 'stereo'): Promise<string | null> {
-	return Promise.resolve(SHIPPED[`./previews/${id}${kind === 'stereo' ? '-stereo' : ''}.webp`] ?? null);
+	const url = `${SHIPPED_BASE}/${id}${kind === 'stereo' ? '-stereo' : ''}.webp`;
+	let check = shippedChecks.get(url);
+	if (!check) {
+		check = fetch(url, { method: 'HEAD' }).then((response) => (response.ok && (response.headers.get('content-type') ?? '').startsWith('image/') ? url : null)).catch(() => null);
+		shippedChecks.set(url, check);
+	}
+	return check;
 }
 
 function sceneHash(scene: unknown): string {
