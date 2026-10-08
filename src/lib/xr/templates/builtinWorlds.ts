@@ -11,19 +11,26 @@ import { buildBeatTurntable } from './beatTurntable';
 import { buildArchiveJukebox } from './archiveJukebox';
 import { buildPolyHeavenMaterials } from './polyHeavenMaterials';
 import { buildWishEngine } from './wishEngine';
+import { buildArcade } from './arcade';
 
 /** The worlds that ship with the app: always there to go to, and the starting points for the Studio's world templates. */
 export interface BuiltinWorld {
-	id: 'lobby' | 'workshop' | 'pop-up-store' | 'pulse' | 'avatarShowcase' | 'archive-film-test' | 'mirror-maze' | 'beat-turntable' | 'archive-jukebox' | 'polyheaven-materials' | 'wish-engine';
+	id: 'lobby' | 'workshop' | 'pop-up-store' | 'pulse' | 'avatarShowcase' | 'archive-film-test' | 'mirror-maze' | 'beat-turntable' | 'archive-jukebox' | 'polyheaven-materials' | 'wish-engine' | 'arcade';
 	name: string;
 	description: string;
 	scene: SlotTree;
 }
 
 /** Worlds listed under the Development category instead of the official ones. */
-export const DEV_WORLD_IDS: readonly BuiltinWorld['id'][] = ['archive-film-test', 'mirror-maze', 'polyheaven-materials', 'wish-engine'];
+export const DEV_WORLD_IDS: readonly BuiltinWorld['id'][] = ['archive-film-test', 'mirror-maze', 'polyheaven-materials', 'wish-engine', 'arcade'];
 
 export const BUILTIN_WORLDS: readonly BuiltinWorld[] = [
+	{
+		id: 'arcade',
+		name: 'The Arcade',
+		description: 'Darts, air hockey, basketball, ring toss, whack-a-mole and a strength tester. Every machine plays alone or against friends, with its own leaderboard.',
+		scene: buildArcade()
+	},
 	{
 		id: 'wish-engine',
 		name: 'The Wish Engine',
