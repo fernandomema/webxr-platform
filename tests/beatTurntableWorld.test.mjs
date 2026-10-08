@@ -828,11 +828,11 @@ test('the rack sign faces the stand and reads the right way round', () => {
 	assert.ok(DECK.x > sign.position[0]);
 });
 
-test('Beat Turntable is an official world, not a development one', async () => {
+test('Beat Turntable is a development world, not an official one', async () => {
 	const { readFile } = await import('node:fs/promises');
 	const source = await readFile(new URL('../src/lib/xr/templates/builtinWorlds.ts', import.meta.url), 'utf8');
 	const dev = /DEV_WORLD_IDS[^=]*=\s*\[([^\]]*)\]/.exec(source)[1];
-	assert.ok(!dev.includes('beat-turntable'), `dev worlds are ${dev}`);
+	assert.ok(dev.includes('beat-turntable'), `dev worlds are ${dev}`);
 	assert.ok(dev.includes('mirror-maze'), 'the others stay');
 	assert.match(source, /id: 'beat-turntable'/);
 });

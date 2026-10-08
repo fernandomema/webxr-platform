@@ -22,7 +22,7 @@ export interface BuiltinWorld {
 }
 
 /** Worlds listed under the Development category instead of the official ones. */
-export const DEV_WORLD_IDS: readonly BuiltinWorld['id'][] = ['archive-film-test', 'mirror-maze', 'polyheaven-materials', 'wish-engine', 'arcade'];
+export const DEV_WORLD_IDS: readonly BuiltinWorld['id'][] = ['archive-film-test', 'mirror-maze', 'beat-turntable', 'polyheaven-materials', 'wish-engine', 'arcade'];
 
 export const BUILTIN_WORLDS: readonly BuiltinWorld[] = [
 	{

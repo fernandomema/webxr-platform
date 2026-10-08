@@ -375,6 +375,7 @@ msgstr "Rotation"
 #~ msgstr "Media"
 
 #: src/lib/studio/components/TopBar.svelte
+#: src/routes/(admin)/admin/scoreboards/+page.svelte
 #: src/routes/(admin)/admin/worlds/+page.svelte
 #: src/routes/home/+page.svelte
 #: src/routes/studio/+page.svelte
@@ -1857,6 +1858,7 @@ msgid "Objects and worlds that use it will show a placeholder until it is import
 msgstr "Objects and worlds that use it will show a placeholder until it is imported again."
 
 #: src/lib/studio/components/AssetsPanel.svelte
+#: src/routes/(admin)/admin/scoreboards/+page.svelte
 #: src/routes/settings/+page.svelte
 #: src/routes/settings/cloud/+page.svelte
 msgid "Remove"
@@ -5377,3 +5379,78 @@ msgstr "Author"
 #: src/routes/(admin)/admin/feedback/+page.svelte
 msgid "No feedback yet"
 msgstr "No feedback yet"
+
+#: src/routes/(admin)/+layout.svelte
+#: src/routes/(admin)/admin/scoreboards/+page.svelte
+msgid "Scoreboards"
+msgstr "Scoreboards"
+
+#: src/routes/(admin)/admin/scoreboards/+page.server.ts
+msgid "Missing board or account"
+msgstr "Missing board or account"
+
+#: src/routes/(admin)/admin/scoreboards/+page.server.ts
+#: src/routes/(admin)/admin/scoreboards/+page.server.ts
+msgid "Missing board"
+msgstr "Missing board"
+
+#: src/routes/(admin)/admin/scoreboards/+page.svelte
+msgid "Leaderboards created by published worlds. Inspect scores and remove cheated or test entries."
+msgstr "Leaderboards created by published worlds. Inspect scores and remove cheated or test entries."
+
+#: src/routes/(admin)/admin/scoreboards/+page.svelte
+msgid "Board"
+msgstr "Board"
+
+#: src/routes/(admin)/admin/scoreboards/+page.svelte
+msgid "Order"
+msgstr "Order"
+
+#: src/routes/(admin)/admin/scoreboards/+page.svelte
+msgid "Entries"
+msgstr "Entries"
+
+#: src/routes/(admin)/admin/scoreboards/+page.svelte
+msgid "Highest"
+msgstr "Highest"
+
+#: src/routes/(admin)/admin/scoreboards/+page.svelte
+msgid "Lowest"
+msgstr "Lowest"
+
+#: src/routes/(admin)/admin/scoreboards/+page.svelte
+msgid "No scoreboards yet"
+msgstr "No scoreboards yet"
+
+#. 0: current.world; 1: new Date(current.createdAt).toLocaleDateString()
+#: src/routes/(admin)/admin/scoreboards/+page.svelte
+msgid "{0} · created {1}"
+msgstr "{0} · created {1}"
+
+#: src/routes/(admin)/admin/scoreboards/+page.svelte
+msgid "Clear entries"
+msgstr "Clear entries"
+
+#: src/routes/(admin)/admin/scoreboards/+page.svelte
+msgid "Delete board"
+msgstr "Delete board"
+
+#: src/routes/(admin)/admin/scoreboards/+page.svelte
+msgid "Player"
+msgstr "Player"
+
+#: src/routes/(admin)/admin/scoreboards/+page.svelte
+msgid "Score"
+msgstr "Score"
+
+#: src/routes/(admin)/admin/scoreboards/+page.svelte
+msgid "Updated"
+msgstr "Updated"
+
+#: src/routes/(admin)/admin/scoreboards/+page.svelte
+msgid "No entries"
+msgstr "No entries"
+
+#: src/routes/(admin)/admin/scoreboards/+page.svelte
+msgid "Select a board to inspect its entries"
+msgstr "Select a board to inspect its entries"

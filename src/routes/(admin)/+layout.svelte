@@ -8,6 +8,7 @@
 		{ href: '/admin', label: 'Dashboard' },
 		{ href: '/admin/users', label: 'Users' },
 		{ href: '/admin/worlds', label: 'Worlds' },
+		{ href: '/admin/scoreboards', label: 'Scoreboards' },
 		{ href: '/admin/feedback', label: 'Feedback' }
 	] as const;
 	let menuOpen = $state(false);
