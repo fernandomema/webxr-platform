@@ -2,6 +2,7 @@ import { Quaternion, Ray, Vector3, WebXRState, type AbstractMesh, type Scene, ty
 import { findComponent, isGrabbable, type Slot } from '$lib/ecs/types';
 import { isBuiltinMesh } from '$lib/assets/ref';
 import type { SceneGraph } from '../sceneGraph';
+import type { TeleportTarget } from '../playerPoses';
 
 const GRAVITY = 9.8; // m/s²
 const TERMINAL_SPEED = 25; // m/s
@@ -39,6 +40,8 @@ export interface PlayerBody {
 	jump(): void;
 	/** Puts the player back at the world's start point (its `spawnPoint` slot, else the default), facing the way it points, with nothing left of a fall. For entering a world. */
 	respawn(): void;
+	/** Puts the feet at `target.position` and turns to `target.yaw` when given, with nothing left of a fall. For a script that moves the player (see `ctx.world.teleportPlayer`). */
+	teleport(target: TeleportTarget): void;
 	/** Gravity, standing on the floor, and putting the player back if they fall out of the world. Call every frame. */
 	update(dt: number): void;
 }
@@ -112,6 +115,11 @@ export function setupPlayerBody(
 			const modelCollider = entry.slot.components.some((component) => component.type === 'collider' && component.shape === 'mesh');
 			const collisionMeshes = modelCollider ? entry.model?.instance?.root.getChildMeshes(false) ?? [] : [mesh];
 			for (const candidate of collisionMeshes) {
+				// Something switched off (a door that is open, a room that is not in use) is not there to walk into or stand on.
+				if (!candidate.isEnabled()) {
+					candidate.checkCollisions = false;
+					continue;
+				}
 				if (isFloorSlot(entry.slot)) floors.add(candidate);
 				else if (isSolidSlot(entry.slot) && !insideGrabbable(entry.slot)) solids.add(candidate);
 				// Desktop camera collisions use the same rule: floors and solids block, the rest is walked through.
@@ -121,6 +129,10 @@ export function setupPlayerBody(
 	}
 
 	refreshSets();
+	// A wall or a door that appears, goes or is switched off must count at once, not up to half a second later.
+	sceneGraph.onChanged((ids) => {
+		if (ids === null || ids.some((id) => sceneGraph.getSubtree(id).some((entry) => entry.slot.components.some((component) => component.type === 'collider')))) refreshedAt = -Infinity;
+	});
 	const inXr = () => Boolean(xr && xr.baseExperience.state === WebXRState.IN_XR);
 	// How far the whole rig is raised for seated mode. `null` while turned on but not measured yet (no head height reported).
 	let seated = false;
@@ -235,8 +247,29 @@ export function setupPlayerBody(
 		grounded = false;
 	}
 
+	function teleport({ position, yaw }: TeleportTarget): void {
+		verticalSpeed = 0;
+		refreshedAt = -Infinity; // the place arrived at may have just been switched on
+		if (inXr()) {
+			const camera = xr!.baseExperience.camera;
+			camera.position.x = position[0];
+			camera.position.z = position[2];
+			camera.position.y = position[1] + camera.realWorldHeight + (lift ?? 0);
+			if (yaw !== undefined) {
+				const forward = camera.getForwardRay().direction;
+				const sign = scene.useRightHandedSystem ? -1 : 1;
+				Quaternion.FromEulerAngles(0, (yaw - Math.atan2(forward.x, forward.z)) * sign, 0).multiplyToRef(camera.rotationQuaternion, camera.rotationQuaternion);
+			}
+			return;
+		}
+		desktopCamera.position.set(position[0], position[1] + DESKTOP_EYE_HEIGHT, position[2]);
+		if (yaw !== undefined) desktopCamera.rotation.y = yaw;
+		grounded = false;
+	}
+
 	return {
 		respawn,
+		teleport,
 		jump() {
 			if (inXr() || !grounded) return;
 			verticalSpeed = JUMP_SPEED;

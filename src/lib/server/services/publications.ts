@@ -4,7 +4,7 @@ import { validateWorldScene } from '$lib/worlds/package';
 import { collectAssetIds, migrateSlotTree, type AssetId } from '$lib/assets/ref';
 import { assertAssetsReady, assetSummaries, linkSceneAssets, resolveThumbnail, withThumbnail } from './assets';
 import type { AppInfoComponent, SlotTree } from '$lib/ecs/types';
-import { findAppInfo } from '$lib/worlds/appManifest';
+import { appInfoWithSettings } from '$lib/worlds/appManifest';
 import type { WorldPackage } from '$lib/worlds/types';
 import type { SessionUser } from './worlds';
 
@@ -113,7 +113,7 @@ export async function getPublishedWorldApp(publicationId: string): Promise<Publi
   const revision = await prisma.publishedWorldRevision.findUnique({ where: { publicationId_number: { publicationId, number: publication.latestRevision } } });
   if (!revision) throw new NotFoundError();
   const scene = revision.sceneData as unknown;
-  const info = Array.isArray(scene) ? findAppInfo(scene) : null;
+  const info = Array.isArray(scene) ? appInfoWithSettings(scene) : null;
   const icon = info?.icon;
   return {
     publicationId,

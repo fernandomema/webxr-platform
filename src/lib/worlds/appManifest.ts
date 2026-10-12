@@ -1,4 +1,4 @@
-import type { AppInfoComponent, Slot } from '../ecs/types';
+import type { AppInfoComponent, Slot, WorldSettingsComponent } from '../ecs/types';
 import { PLATFORM_NAME } from '../platform.ts';
 
 export const APP_ICON_SIZES = [192, 512] as const;
@@ -40,6 +40,23 @@ export function findAppInfo(scene: readonly Pick<Slot, 'components'>[]): AppInfo
 		if (found) return found;
 	}
 	return null;
+}
+
+/** The scene's `worldSettings` component, if it has one. */
+export function findWorldSettings(scene: readonly Pick<Slot, 'components'>[]): WorldSettingsComponent | null {
+	for (const slot of scene) {
+		const found = slot.components?.find((component): component is WorldSettingsComponent => component.type === 'worldSettings');
+		if (found) return found;
+	}
+	return null;
+}
+
+/** The app info of a world, with the description from its world settings filling in when the app info has none. */
+export function appInfoWithSettings(scene: readonly Pick<Slot, 'components'>[]): AppInfoComponent | null {
+	const info = findAppInfo(scene);
+	const description = findWorldSettings(scene)?.description?.trim();
+	if (!description || info?.description?.trim()) return info;
+	return { ...(info ?? { type: 'appInfo' as const }), description };
 }
 
 const text = (value: unknown, max: number): string => (typeof value === 'string' ? value.trim().slice(0, max) : '');

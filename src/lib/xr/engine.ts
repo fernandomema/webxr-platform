@@ -40,6 +40,10 @@ import { setupPanelToggle } from './interaction/panelToggle';
 import { setupRotationController } from './interaction/rotationController';
 import { setupMovementController } from './interaction/movementController';
 import { setupPlayerBody } from './interaction/playerBody';
+import { viewPlayerPose } from './playerPoses';
+import { registerIrradiancePlugin } from './irradiancePlugin';
+import { cameraHeadPose } from './avatar/headPose';
+import { readHandPoses } from './avatar/localHands';
 import { setupFpsController } from './interaction/desktop/fpsController';
 import { setupDesktopPanels } from './interaction/desktop/desktopPanels';
 import { setupDesktopHand } from './interaction/desktop/desktopHand';
@@ -108,6 +112,8 @@ export async function mountGame(
 	// Babylon 9 no longer creates its audio engine by default; without it every Sound (audio players,
 	// generated impact sounds) has no backend and throws on use.
 	const engine = new Engine(canvas, true, { audioEngine: true });
+	// Baked lighting: every lit material made from here on can read the world's baked volumes. It needs 3D textures (WebGL 2).
+	registerIrradiancePlugin(((engine as unknown as { webGLVersion?: number }).webGLVersion ?? 2) >= 2);
 	const scene = new Scene(engine);
 	// The desktop pointer only acts on clicks, and XR controllers do their own ray casts. Babylon's default hover pick
 	// traverses every pickable mesh on every pointer move, which is wasted CPU work (and costly in large worlds).
@@ -201,9 +207,10 @@ export async function mountGame(
 		},
 		// codeBlock's world.spawn()/deleteSelf()/deleteSlot() — same routing as
 		// spawnFromInventory/radialNetwork.onDelete below, just reusable for scripts.
-		onSpawnRequest: (slot) => {
+		onSpawnRequest: (slot, spawnOptions) => {
 			sceneGraph.addSlot(slot);
 			if (gameState.role === 'guest') guestSync?.requestSpawn(slot);
+			else if (spawnOptions?.ephemeral) hostAuthority?.broadcastEphemeral(slot);
 			else hostAuthority?.broadcastSnapshot();
 		},
 		onDeleteRequest: (slotId) => {
@@ -225,12 +232,30 @@ export async function mountGame(
 			const colonIndex = grabberId.indexOf(':');
 			if (colonIndex !== -1) {
 				const guestId = grabberId.slice(0, colonIndex);
-				return { id: guestId, name: hostAuthority?.getPlayerDisplayName(guestId) ?? 'Guest' };
+				// Scripts know a guest by the id it announced, the one `onPlayerReady` and `ctx.storage.player` use.
+				return { id: hostAuthority?.announcedIdFor(guestId) ?? guestId, name: hostAuthority?.getPlayerDisplayName(guestId) ?? 'Guest' };
 			}
 			return {
 				id: localPlayerId,
 				name: gameState.userName ?? (gameState.role === 'guest' ? 'Guest' : gameState.role === 'host' ? 'Host' : 'Player')
 			};
+		},
+		scriptPlayerId: (equipmentKey) => (equipmentKey === localPlayerId ? equipmentKey : (hostAuthority?.announcedIdFor(equipmentKey) ?? equipmentKey)),
+		getPlayers: () => [
+			{ id: localPlayerId, name: gameState.userName ?? 'Player', role: gameState.role === 'guest' ? ('guest' as const) : ('host' as const) },
+			...(hostAuthority?.listGuests() ?? [])
+		],
+		getPlayerPose: (playerId) => {
+			if (playerId === localPlayerId) return viewPlayerPose({ head: cameraHeadPose(getActiveCamera()), ...readHandPoses(xr) });
+			const pose = hostAuthority?.getGuestPose(playerId);
+			return pose ? viewPlayerPose(pose) : null;
+		},
+		teleportPlayer: (playerId, target) => {
+			if (playerId === localPlayerId) {
+				playerBody.teleport(target);
+				return true;
+			}
+			return hostAuthority?.teleportGuest(playerId, target) ?? false;
 		}
 	});
 	const startupParams = new URLSearchParams(window.location.search);
@@ -321,7 +346,9 @@ export async function mountGame(
 		() => localPlayerId,
 		(playerId) =>
 			hostAuthority?.getPlayerDisplayName(playerId) ??
-			(playerId === localPlayerId ? (gameState.userName ?? 'Player') : 'Player')
+			(playerId === localPlayerId ? (gameState.userName ?? 'Player') : 'Player'),
+		// Hand events carry the id a guest announced, like `onPlayerReady` and `ctx.storage.player` do.
+		(playerId) => (playerId === localPlayerId ? playerId : (hostAuthority?.announcedIdFor(playerId) ?? playerId))
 	);
 	// Same "grip if present, else pointer" node pointerController.ts already
 	// uses as each hand/controller's interaction point — reused here so a
@@ -505,7 +532,8 @@ export async function mountGame(
 			hostAuthority.setAvatarHooks(hostAvatarHooks);
 			hostAuthority.setStorageHooks({
 				getPublicationId: () => gameState.publication?.publicationId ?? null,
-				onPlayerReady: (player) => sceneGraph.dispatchPlayerReady({ id: player.playerId, name: player.displayName })
+				onPlayerReady: (player) => sceneGraph.dispatchPlayerReady({ id: player.playerId, name: player.displayName }),
+				onPlayerLeft: (player) => sceneGraph.dispatchPlayerLeft({ id: player.playerId, name: player.displayName })
 			});
 			announceLocalPlayerReady();
 			refreshWorldsTab();
@@ -613,6 +641,7 @@ export async function mountGame(
 			onPublication: (publicationId) => { gameState.publication = publicationId ? { publicationId, revisionId: null } : null; },
 			handlePlayerApi: (publicationId, call) => worldStorage.handleRelayed(publicationId, call)
 		});
+		guestSync.setTeleportHandler((target) => playerBody.teleport(target));
 	}
 
 	function spawnFromInventory(slotData: SlotTree): void {

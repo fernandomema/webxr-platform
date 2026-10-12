@@ -1,4 +1,4 @@
-import { Observable, Quaternion, Vector3, type Scene, type TransformNode } from '@babylonjs/core';
+import { Observable, Quaternion, Vector3, type AbstractMesh, type Scene, type TransformNode } from '@babylonjs/core';
 import { isEquippable } from '$lib/ecs/types';
 import { eulerToQuat } from '$lib/math/euler';
 import type { EquipQuery, SceneGraph } from '../sceneGraph';
@@ -42,6 +42,7 @@ export class EquipmentSystem implements GrabGuard, EquipQuery {
 	readonly registry = new EquipmentRegistry();
 	readonly onChanged = new Observable<EquipmentChange>();
 	private handNodes = new Map<string, TransformNode>(); // slotId -> the hand node it follows
+	private unpicked = new Map<string, AbstractMesh[]>(); // slotId -> the meshes made unpickable while it is equipped
 	private settling = new Map<string, Settling>(); // slotId -> its way into the hand
 
 	constructor(
@@ -49,7 +50,9 @@ export class EquipmentSystem implements GrabGuard, EquipQuery {
 		private sceneGraph: SceneGraph,
 		private grabSystem: GrabSystem,
 		private localPlayerId: () => string,
-		private playerName: (playerId: string) => string
+		private playerName: (playerId: string) => string,
+		/** The id scripts know a player by, given the id this system uses (a guest's connection id). */
+		private scriptId: (playerId: string) => string = (playerId) => playerId
 	) {
 		grabSystem.setGuard(this);
 		sceneGraph.setEquipQuery(this);
@@ -131,6 +134,7 @@ export class EquipmentSystem implements GrabGuard, EquipQuery {
 		// jumping there.
 		const pose = hand === 'left' ? equippable.left : equippable.right;
 		live.node.setParent(handNode);
+		this.passThrough(slotId, live.node);
 		const node = live.node;
 		this.settling.set(slotId, {
 			from: { position: node.position.clone(), rotation: (node.rotationQuaternion ?? Quaternion.FromEulerVector(node.rotation)).clone() },
@@ -208,7 +212,7 @@ export class EquipmentSystem implements GrabGuard, EquipQuery {
 	dispatchTrigger(playerId: string, hand: EquipHand, phase: TriggerEvent['phase'], value: number, requestedSlotId?: string | null): TriggerOutcome {
 		const slotId = this.getUsableSlot(playerId, hand, requestedSlotId);
 		if (!slotId) return 'none';
-		const event: TriggerEvent = { hand, playerId, playerName: this.playerName(playerId), phase, value };
+		const event: TriggerEvent = { hand, playerId: this.scriptId(playerId), playerName: this.playerName(playerId), phase, value };
 		let listening = false;
 		let consumed = false;
 		for (const entry of this.sceneGraph.getSubtree(slotId)) {
@@ -223,7 +227,20 @@ export class EquipmentSystem implements GrabGuard, EquipQuery {
 	// --- internals -------------------------------------------------------
 
 	/** Puts the node back under its real parent, keeping the world pose it had in the hand. */
+	/**
+	 * An object in a hand sits where the hand's laser starts, so left pickable it would be the first thing the laser hits and
+	 * nothing behind it (a screen to press) could be reached. While it is equipped none of its meshes can be picked.
+	 */
+	private passThrough(slotId: string, node: TransformNode): void {
+		if (this.unpicked.has(slotId)) return;
+		const meshes = [node, ...node.getChildMeshes(false)].filter((candidate): candidate is AbstractMesh => 'isPickable' in candidate && (candidate as AbstractMesh).isPickable);
+		for (const mesh of meshes) mesh.isPickable = false;
+		this.unpicked.set(slotId, meshes);
+	}
+
 	private restore(slotId: string): void {
+		for (const mesh of this.unpicked.get(slotId) ?? []) if (!mesh.isDisposed()) mesh.isPickable = true;
+		this.unpicked.delete(slotId);
 		this.handNodes.delete(slotId);
 		this.settling.delete(slotId);
 		const live = this.sceneGraph.getLive(slotId);
@@ -233,7 +250,7 @@ export class EquipmentSystem implements GrabGuard, EquipQuery {
 	}
 
 	private fire(slotId: string, playerId: string, hand: EquipHand, hook: 'onEquip' | 'onUnequip'): void {
-		const event: HandEvent = { hand, playerId, playerName: this.playerName(playerId) };
+		const event: HandEvent = { hand, playerId: this.scriptId(playerId), playerName: this.playerName(playerId) };
 		for (const entry of this.sceneGraph.getSubtree(slotId)) {
 			try {
 				entry.runtime?.[hook]?.(event);

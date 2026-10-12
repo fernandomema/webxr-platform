@@ -4,6 +4,7 @@
 	import XRLaunchOverlay from '$lib/xr/XRLaunchOverlay.svelte';
 	import DesktopHud from '$lib/xr/interaction/desktop/DesktopHud.svelte';
 	import type { WorldPackage } from '$lib/worlds/types';
+	import { getBuiltinWorld } from '$lib/xr/templates/builtinWorlds';
 
 	interface Props {
 		/** Join this live room. */
@@ -61,6 +62,8 @@
 	});
 
 	async function loadWorld(id: string): Promise<WorldPackage> {
+		const builtin = getBuiltinWorld(id);
+		if (builtin) return { formatVersion: 1, name: builtin.name, scene: structuredClone(builtin.scene), defaultVisibility: 'solo' };
 		const response = await fetch(`/api/published-worlds/${encodeURIComponent(id)}`);
 		if (!response.ok) throw new Error('Could not load the published world');
 		return (await response.json()) as WorldPackage;

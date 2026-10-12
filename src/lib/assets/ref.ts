@@ -139,6 +139,14 @@ const ASSET_REFERENCES: Record<string, (component: LooseComponent) => AssetId[]>
 		const ref = component[key] as SourceRef | undefined;
 		return ref?.kind === 'asset' && isAssetId(ref.assetId) ? [ref.assetId] : [];
 	}),
+	lightVolume: (component) => {
+		const ref = component.data as SourceRef | undefined;
+		return ref?.kind === 'asset' && isAssetId(ref.assetId) ? [ref.assetId] : [];
+	},
+	worldSettings: (component) => {
+		const preview = component.preview as SourceRef | undefined;
+		return preview?.kind === 'asset' && isAssetId(preview.assetId) ? [preview.assetId] : [];
+	},
 	appInfo: (component) => {
 		const icon = component.icon as SourceRef | undefined;
 		return icon?.kind === 'asset' ? [icon.assetId] : [];

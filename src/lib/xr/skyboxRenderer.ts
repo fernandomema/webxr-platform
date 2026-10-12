@@ -1,3 +1,4 @@
+import { setAmbientBase, resetAmbient } from './ambientControl';
 import { Color3, CubeTexture, Effect, HemisphericLight, ImageProcessingConfiguration, Mesh, MeshBuilder, ReflectionProbe, RenderTargetTexture, ShaderMaterial, type AbstractMesh, type Scene, type TransformNode } from '@babylonjs/core';
 import type { Slot, SkyboxComponent } from '$lib/ecs/types';
 import { POLYGON_QUEST_PROBE } from '$lib/assets/builtin';
@@ -164,7 +165,7 @@ export function setupSkybox(scene: Scene, node: TransformNode, initial: SkyboxCo
 		material.setColor3('horizonColor', Color3.FromHexString(component.horizonColor || '#7c3aed'));
 		material.setColor3('bottomColor', Color3.FromHexString(component.bottomColor || '#0f172a'));
 		material.setFloat('stars', Math.max(0, Math.min(1, component.stars ?? 0)));
-		if (ambient) ambient.intensity = Math.max(0, component.ambientIntensity ?? 1);
+		setAmbientBase(scene, Math.max(0, component.ambientIntensity ?? 1));
 	}
 	apply(initial);
 
@@ -172,7 +173,7 @@ export function setupSkybox(scene: Scene, node: TransformNode, initial: SkyboxCo
 		dispose() {
 			mesh.dispose();
 			material.dispose();
-			if (ambient && previousAmbientIntensity !== undefined) ambient.intensity = previousAmbientIntensity;
+			if (ambient && previousAmbientIntensity !== undefined) resetAmbient(scene, previousAmbientIntensity);
 			disposed = true;
 			for (const lease of leases) lease.release();
 			stopMeshWatch?.();

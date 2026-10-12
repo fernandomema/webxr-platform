@@ -8,7 +8,8 @@ import { CubeTexture, NullEngine, Scene, TransformNode } from '@babylonjs/core';
 const source = await readFile(new URL('../src/lib/xr/skyboxRenderer.ts', import.meta.url), 'utf8');
 const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText
  .replaceAll("'@babylonjs/core'", JSON.stringify(import.meta.resolve('@babylonjs/core')))
- .replaceAll("'$lib/assets/builtin'", JSON.stringify(new URL('../src/lib/assets/builtin.ts', import.meta.url).href));
+ .replaceAll("'$lib/assets/builtin'", JSON.stringify(new URL('../src/lib/assets/builtin.ts', import.meta.url).href))
+ .replaceAll("'./ambientControl'", JSON.stringify(new URL('../src/lib/xr/ambientControl.ts', import.meta.url).href));
 const { setupSkybox } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
 const tree = JSON.parse(await readFile(new URL('../src/lib/xr/templates/avatarShowcase.json', import.meta.url), 'utf8'));
 const component = tree[0].components.find((item) => item.type === 'skybox');

@@ -7,6 +7,7 @@ import { collectAssetIds, isAssetId, isBuiltinMeshId } from '$lib/assets/ref';
 import { isValidMaterialMap } from '$lib/xr/materialSources';
 
 export const MAX_WORLD_BYTES = 1_500_000;
+export const MAX_WORLD_DESCRIPTION = 2000;
 export const MAX_SHARED_SCENE_BYTES = 7_000_000;
 
 /** Treat the scene as data, including reactive Svelte proxies from the Studio. */
@@ -67,6 +68,21 @@ function validateAssetRefs(scene: SlotTree): void {
 					if (source === undefined) continue;
 					if (!source || !((source.kind === 'asset' && isAssetId(source.assetId)) || (source.kind === 'url' && typeof source.url === 'string' && source.url.length <= 2048))) throw new Error('Invalid reflection image source');
 				}
+				continue;
+			}
+			if (component?.type === 'lightVolume') {
+				// The baked data is an asset, never an address: its hash is what says which bake it is.
+				const c = component as unknown as { data?: { kind?: unknown; assetId?: unknown }; intensity?: unknown; tint?: unknown };
+				if (!c.data || c.data.kind !== 'asset' || !isAssetId(c.data.assetId)) throw new Error('Invalid lighting data');
+				if (c.intensity !== undefined && !(typeof c.intensity === 'number' && Number.isFinite(c.intensity) && c.intensity >= 0 && c.intensity <= 16)) throw new Error('Invalid lighting intensity');
+				if (c.tint !== undefined && !(typeof c.tint === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(c.tint))) throw new Error('Invalid lighting tint');
+				continue;
+			}
+			if (component?.type === 'worldSettings') {
+				const c = component as unknown as { description?: unknown; lighting?: unknown; preview?: { kind?: unknown; assetId?: unknown } };
+				if (c.description !== undefined && (typeof c.description !== 'string' || c.description.length > MAX_WORLD_DESCRIPTION)) throw new Error('Invalid world description');
+				if (c.lighting !== undefined && c.lighting !== 'live' && c.lighting !== 'baked' && c.lighting !== 'both') throw new Error('Invalid world lighting');
+				if (c.preview !== undefined && !(c.preview && c.preview.kind === 'asset' && isAssetId(c.preview.assetId))) throw new Error('Invalid world preview');
 				continue;
 			}
 			if (component?.type !== 'meshRenderer') continue;

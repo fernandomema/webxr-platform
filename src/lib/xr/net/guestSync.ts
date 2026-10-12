@@ -18,6 +18,7 @@ import { AssetPeer } from '$lib/assets/p2p';
 import { announceAssetSourcesChanged, getLocalAssetStore } from '$lib/assets/store';
 import type { SlotTree } from '$lib/ecs/types';
 import { cameraHeadPose } from '../avatar/headPose';
+import { parseTeleportTarget, type TeleportTarget } from '../playerPoses';
 
 const PRESENCE_INTERVAL_MS = 50;
 const HOLD_MOVE_INTERVAL_MS = 50;
@@ -40,6 +41,7 @@ export class GuestSync {
 	private avatars: AvatarHooks | null = null;
 	private storageHooks: { onPublication(publicationId: string | null): void; handlePlayerApi(publicationId: string, call: unknown): Promise<PlayerApiResult> } | null = null;
 	private assetPeer: AssetPeer | null = null;
+	private teleportHandler: ((target: TeleportTarget) => void) | null = null;
 	readonly hostProxy: TransformNode;
 	/** Stand-ins of the other players' keyboards while they type. */
 	private keyboards: RemoteKeyboards;
@@ -146,6 +148,11 @@ export class GuestSync {
 		this.avatars = hooks;
 	}
 
+	/** What to do when the host moves this player (see `ctx.world.teleportPlayer`). */
+	setTeleportHandler(handler: (target: TeleportTarget) => void): void {
+		this.teleportHandler = handler;
+	}
+
 	setStorageHooks(hooks: { onPublication(publicationId: string | null): void; handlePlayerApi(publicationId: string, call: unknown): Promise<PlayerApiResult> }): void {
 		this.storageHooks = hooks;
 	}
@@ -222,6 +229,16 @@ export class GuestSync {
 			case 'player-left':
 				this.removeAvatar(msg.playerId);
 				break;
+			case 'spawn-ephemeral': {
+				const slot = migrateSlotTree([msg.slot])[0];
+				if (slot && !this.sceneGraph.getLive(slot.id)) this.sceneGraph.addSlot(slot);
+				break;
+			}
+			case 'teleport': {
+				const target = parseTeleportTarget(msg);
+				if (target) this.teleportHandler?.(target);
+				break;
+			}
 			case 'player-api-request': {
 				const requestId = msg.requestId;
 				void (this.storageHooks?.handlePlayerApi(msg.publicationId, msg.call) ?? Promise.resolve<PlayerApiResult>({ ok: true, unavailable: true }))

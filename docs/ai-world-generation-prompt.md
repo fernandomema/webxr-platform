@@ -137,6 +137,7 @@ This applies to everything drawn on a plane: `textDisplay`, `scoreboard`, `uiPan
 ### Lighting and colour
 
 - There is always a soft ambient light from above. `skybox.ambientIntensity` scales it. Add `pointLight` components for local light (lamps, glowing objects).
+- Baked lighting (`lightVolume`, and `baked` on lights) is made by a tool, not written by hand: do not add `lightVolume` or `baked` to a world.
 - Colours are hex strings `"#rrggbb"`.
 - Performance: plain coloured built-in shapes (no `material`, `opacity` 1, positive scale) are drawn as cheap instances; prefer them. Keep a world under ~600 slots and ~10 point lights for headsets.
 

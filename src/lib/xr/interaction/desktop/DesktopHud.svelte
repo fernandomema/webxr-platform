@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { desktopHud, hudActions } from './desktopHud.svelte';
 
+	/** `?nopause` leaves the pause card out, so that a screenshot of the world is not covered by it. */
+	const hidePause = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('nopause');
+
 	/** Radius of the radial ring, in px. Slices sit on it; the pointer's offset is in units of it. */
 	const RING = 118;
 
@@ -51,7 +54,7 @@
 				<p class="radial-hint">{radial.sticky ? 'Click an option · Right click to cancel' : 'Move to an option and release'}</p>
 			</div>
 		{/if}
-	{:else}
+	{:else if !hidePause}
 		<div class="pause">
 			<h2>Paused</h2>
 			<p class="resume">Click to resume</p>

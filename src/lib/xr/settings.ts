@@ -41,7 +41,7 @@ export const MOUSE_SENSITIVITIES = [0.5, 1, 1.6, 2.5] as const;
 export const DESKTOP_FOVS = [46, 60, 75] as const;
 
 export const xrSettings: XrSettings = {
-	movementMode: 'teleport',
+	movementMode: 'smooth',
 	rotationMode: 'snap-45',
 	defaultAvatar: null,
 	defaultAvatarSource: null,

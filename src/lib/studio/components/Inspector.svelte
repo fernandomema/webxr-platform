@@ -6,6 +6,8 @@
 	import AddComponentMenu from './AddComponentMenu.svelte';
 	import ComponentCard from './ComponentCard.svelte';
 	import PreviewCameraTools from './PreviewCameraTools.svelte';
+	import BakeLightingDialog from './BakeLightingDialog.svelte';
+	import WorldPreviewDialog from './WorldPreviewDialog.svelte';
 	import NumberInput from './NumberInput.svelte';
 	import Icon from '../ui/Icon.svelte';
 	import { skeletons } from '../state/skeletons.svelte';
@@ -26,6 +28,7 @@
 	let { doc, advanced, onOpenCode, onGenerateProbe, getViewPose = () => null, footer }: Props = $props();
 
 	let showAdd = $state(false);
+	let dialog = $state<'bakeLighting' | 'worldPreview' | null>(null);
 	let bakingProbe = $state(false);
 	async function generateProbe(slotId: string) {
 		if (!onGenerateProbe || bakingProbe) return;
@@ -58,6 +61,13 @@
 		}
 	});
 	const slot = $derived(doc.selected);
+	const worldRoot = $derived(doc.tree.find((candidate) => candidate.parentId === null));
+	const needsWorldSettings = $derived(doc.kind === 'world' && !doc.readonly && Boolean(worldRoot) && !doc.tree.some((candidate) => candidate.components.some((component) => component.type === 'worldSettings')));
+	function addWorldSettings() {
+		if (!worldRoot) return;
+		doc.select(worldRoot.id);
+		doc.addComponent(worldRoot.id, 'worldSettings');
+	}
 	const euler = $derived(slot ? (quatToEuler(slot.rotation).map((value) => roundDisplay(value, 2)) as Vec3) : ([0, 0, 0] as Vec3));
 
 	function setAxis(kind: 'position' | 'rotation' | 'scale', axis: number, value: number) {
@@ -77,6 +87,12 @@
 </script>
 
 <aside class="inspector" aria-label="Inspector">
+	{#if needsWorldSettings}
+		<div class="world-callout">
+			<span>Set the world’s description, lighting, 360° preview and baked lighting.</span>
+			<button class="btn primary sm" onclick={addWorldSettings}>World settings</button>
+		</div>
+	{/if}
 	{#if !slot}
 		<div class="empty">
 			<Icon name="sliders" size={22} />
@@ -136,6 +152,7 @@
 						onremove={() => doc.removeComponent(slot.id, index)}
 						{onOpenCode}
 						joints={skeletons.get(boneModelFor(component)) ?? []}
+						onaction={(action) => (dialog = action === 'bakeLighting' || action === 'worldPreview' ? action : null)}
 					/>
 					{#if component.type === 'previewCamera'}<PreviewCameraTools {doc} {slot} {getViewPose} />{/if}
 					{#if component.type === 'skybox' && onGenerateProbe}<button class="btn sm" disabled={bakingProbe || doc.readonly} onclick={() => void generateProbe(slot.id)}>{bakingProbe ? 'Capturing…' : 'Generate reflection probe'}</button>{/if}
@@ -147,10 +164,16 @@
 		</fieldset>
 		{#if footer}{@render footer(slot)}{/if}
 	{/if}
+	{#if slot && dialog === 'bakeLighting'}
+		<BakeLightingDialog {doc} {slot} onclose={() => (dialog = null)} />
+	{:else if slot && dialog === 'worldPreview'}
+		<WorldPreviewDialog {doc} {slot} {getViewPose} onclose={() => (dialog = null)} />
+	{/if}
 </aside>
 
 <style>
 	.inspector { display: flex; flex-direction: column; height: 100%; overflow-y: auto; background: var(--panel); }
+	.world-callout { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--accent-soft); font-size: 12px; }
 	.editable { display: contents; min-width: 0; margin: 0; padding: 0; border: 0; }
 	.readonly { margin: 0; padding: 8px 12px 0; color: var(--warning); font-size: 12px; }
 	.section { display: grid; gap: 8px; padding: 12px; border-bottom: 1px solid var(--border); }

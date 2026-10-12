@@ -27,8 +27,10 @@ const place = (id, local, rotation, broadcast) => ctx.world.setWorldPose(id, rot
 const cues = [];
 const later = (seconds, fn) => cues.push({ t: seconds, fn });
 const runCues = (dt) => { for (let i = cues.length - 1; i >= 0; i--) { cues[i].t -= dt; if (cues[i].t <= 0) cues.splice(i, 1)[0].fn(); } };
-const soundAt = (local, frequency, volume, durationMs, drop, noise) => ctx.world.spawn({ name: 'Impact Sound', position: toWorld(local), components: [{ type: 'impactSound', frequency, pitchDrop: drop || 0, noiseMix: noise === undefined ? 0.1 : noise, durationMs: durationMs || 200, volume: volume === undefined ? 0.5 : volume }, { type: 'expires', expiresAt: Date.now() + (durationMs || 200) + 600 }] });
-const burstAt = (local, color, count) => ctx.world.spawn({ name: 'Particle Burst', position: toWorld(local), components: [{ type: 'particleBurst', color, count: count || 14, durationMs: 700 }, { type: 'expires', expiresAt: Date.now() + 700 }] });
+/** A world can set v (a fraction, 0.06 is six per cent) so that the same sound played again is a little higher or lower, and does not tire the ear. */
+const soundVar = { v: 0, n: 0 };
+const soundAt = (local, frequency, volume, durationMs, drop, noise) => ctx.world.spawn({ name: 'Impact Sound', position: toWorld(local), components: [{ type: 'impactSound', frequency: soundVar.v ? frequency * (1 + soundVar.v * Math.sin(++soundVar.n * 12.9898)) : frequency, pitchDrop: drop || 0, noiseMix: noise === undefined ? 0.1 : noise, durationMs: durationMs || 200, volume: volume === undefined ? 0.5 : volume }, { type: 'expires', expiresAt: Date.now() + (durationMs || 200) + 600 }] }, { ephemeral: true });
+const burstAt = (local, color, count) => ctx.world.spawn({ name: 'Particle Burst', position: toWorld(local), components: [{ type: 'particleBurst', color, count: count || 14, durationMs: 700 }, { type: 'expires', expiresAt: Date.now() + 700 }] }, { ephemeral: true });
 const thudAt = (local, volume) => soundAt(local, 130, volume === undefined ? 0.6 : volume, 140, 80, 0.6);
 const jingleAt = (local, win) => (win ? [523, 659, 784, 1047] : [392, 349, 311, 262]).forEach((frequency, i) => later(i * 0.14, () => soundAt(local, frequency, 0.5, 380)));
 `;

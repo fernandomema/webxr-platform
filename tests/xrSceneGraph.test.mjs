@@ -4,6 +4,7 @@ import test from 'node:test';
 import ts from 'typescript';
 import { AbstractMesh, MeshBuilder, NullEngine, Quaternion, Ray, Scene, TransformNode, UniversalCamera, Vector3, WebXRState } from '@babylonjs/core';
 import { createSlot } from '../src/lib/ecs/types.ts';
+import { LightVolumeManager } from '../src/lib/xr/lightVolumeManager.ts';
 
 const coreUrl = import.meta.resolve('@babylonjs/core');
 const libUrl = new URL('../src/lib/', import.meta.url);
@@ -17,6 +18,9 @@ const codeBlockUrl = moduleUrl(compile(await readFile(new URL('xr/codeBlockRunti
 	.replaceAll("'./scriptNet'", JSON.stringify(new URL('xr/scriptNet.ts', libUrl).href)));
 let graphCode = compile(await readFile(new URL('xr/sceneGraph.ts', libUrl), 'utf8'))
 	.replaceAll("'./slotRebuild'", JSON.stringify(new URL('xr/slotRebuild.ts', libUrl).href))
+	.replaceAll("'./playerPoses'", JSON.stringify(new URL('xr/playerPoses.ts', libUrl).href))
+	.replaceAll("'./lightVolumeRenderer'", JSON.stringify(new URL('xr/lightVolumeRenderer.ts', libUrl).href))
+	.replaceAll("'./lightVolumeManager'", JSON.stringify(new URL('xr/lightVolumeManager.ts', libUrl).href))
 	.replaceAll("'./performance'", JSON.stringify(new URL('xr/performance.ts', libUrl).href))
 	.replaceAll("'./codeBlockRuntime'", JSON.stringify(codeBlockUrl));
 // These tests exercise real scene nodes, picking, scripts and collisions without creating DOM/media surfaces.
@@ -336,6 +340,35 @@ test('the player holding a tool can take what sits in its socket, but not the to
 	} finally { graph.dispose(); f.dispose(); }
 });
 
+test('trigger and equip events reach a script with the id the player announced, and the name found by the connection id', async () => {
+	const equipmentCode = compile(await readFile(new URL('xr/interaction/equipmentSystem.ts', libUrl), 'utf8'))
+		.replaceAll("'./equipmentRegistry'", JSON.stringify(new URL('xr/interaction/equipmentRegistry.ts', libUrl).href))
+		.replace(/import \{[^}]*\} from '\.\/grabSystem';/, '')
+		.replace(/import \{ eulerToQuat \} from "[^"]+";/, 'const eulerToQuat = () => [0, 0, 0, 1];');
+	const { EquipmentSystem } = await import(moduleUrl(equipmentCode));
+	const f = fixture();
+	const graph = new SceneGraph(f.scene, {});
+	try {
+		globalThis.__events = [];
+		graph.load([createSlot({ id: 'gun', components: [
+			{ type: 'grabbable', scalable: false },
+			{ type: 'equippable', left: { position: [0, 0, 0], rotation: [0, 0, 0] }, right: { position: [0, 0, 0], rotation: [0, 0, 0] } },
+			{ type: 'codeBlock', code: 'return { onTrigger(e) { globalThis.__events.push(["trigger", e.playerId, e.playerName]); }, onUnequip(e) { globalThis.__events.push(["unequip", e.playerId, e.playerName]); } };' }
+		] })]);
+		const names = { 'conn-9': 'Ana', me: 'Host' };
+		const system = new EquipmentSystem(f.scene, graph, { setGuard() {} }, () => 'me', (key) => names[key], (key) => (key === 'conn-9' ? 'announced-9' : key));
+		system.registry.equip('conn-9', 'right', 'gun');
+		system.dispatchTrigger('conn-9', 'right', 'press', 1, 'gun');
+		system.unequip('conn-9', 'right');
+		assert.deepEqual(globalThis.__events, [['trigger', 'announced-9', 'Ana'], ['unequip', 'announced-9', 'Ana']]);
+		const plain = new EquipmentSystem(f.scene, graph, { setGuard() {} }, () => 'me', (key) => key);
+		plain.registry.equip('me', 'left', 'gun');
+		globalThis.__events.length = 0;
+		plain.dispatchTrigger('me', 'left', 'press', 1, 'gun');
+		assert.deepEqual(globalThis.__events, [['trigger', 'me', 'me']], 'without a mapping the id is passed as it is');
+	} finally { delete globalThis.__events; graph.dispose(); f.dispose(); }
+});
+
 test('a ray can pass through some slots and what hangs from them, and stops at the next thing', () => {
 	const f = fixture();
 	const graph = new SceneGraph(f.scene, {});
@@ -407,4 +440,176 @@ test('a script can move a slot under another and back, where it is in the world,
 		assert.equal(ctx.world.setWorldPose('part', { scale: [2, 0.5, 3] }), true);
 		assert.deepEqual(graph.getLive('part').slot.scale, [2, 0.5, 3]);
 	} finally { graph.dispose(); f.dispose(); }
+});
+
+test('scripts can list the players, read where each one is, and move them — only on the host, and only to a usable place', () => {
+	const f = fixture();
+	const moved = [];
+	const people = [{ id: 'host-1', name: 'Host', role: 'host' }, { id: 'guest-1', name: 'Ana', role: 'guest' }];
+	const pose = { head: { position: [1, 1.7, 2], rotation: [0, 0, 0, 1], forward: [0, 0, 1], up: [0, 1, 0], right: [1, 0, 0] } };
+	let host = true;
+	const graph = new SceneGraph(f.scene, {
+		isHost: () => host,
+		getPlayers: () => people,
+		getPlayerPose: (id) => (id === 'guest-1' ? pose : null),
+		teleportPlayer: (id, target) => { moved.push([id, target]); return id !== 'nobody'; }
+	});
+	try {
+		const ctx = scriptCtx(graph);
+		assert.deepEqual(ctx.world.getPlayers(), people);
+		assert.deepEqual(ctx.world.getPlayerPose('guest-1'), pose);
+		assert.equal(ctx.world.getPlayerPose('host-1'), null, 'the engine decides who is findable');
+		assert.equal(ctx.world.teleportPlayer('guest-1', { position: [400, 0, 12], yaw: 1.5 }), true);
+		assert.deepEqual(moved, [['guest-1', { position: [400, 0, 12], yaw: 1.5 }]]);
+		assert.equal(ctx.world.teleportPlayer('nobody', { position: [0, 0, 0] }), false, 'a player who is not here');
+		moved.length = 0;
+		for (const bad of [null, { position: [0, NaN, 0] }, { position: [1, 2] }, { position: [1e9, 0, 0] }, { position: [0, 0, 0], yaw: Infinity }]) {
+			assert.equal(ctx.world.teleportPlayer('guest-1', bad), false);
+		}
+		assert.deepEqual(moved, [], 'an unusable target never reaches the engine');
+		host = false;
+		assert.equal(ctx.world.teleportPlayer('guest-1', { position: [0, 0, 0] }), false, 'a guest cannot move people');
+		assert.deepEqual(moved, []);
+	} finally { graph.dispose(); f.dispose(); }
+});
+
+test('without those hooks a script sees an empty world of players and cannot move anyone', () => {
+	const f = fixture();
+	const graph = new SceneGraph(f.scene, {});
+	try {
+		const ctx = scriptCtx(graph);
+		assert.deepEqual(ctx.world.getPlayers(), []);
+		assert.equal(ctx.world.getPlayerPose('x'), null);
+		assert.equal(ctx.world.teleportPlayer('x', { position: [0, 0, 0] }), false);
+	} finally { graph.dispose(); f.dispose(); }
+});
+
+test('a script is told when a guest leaves, and one that throws does not stop the others', () => {
+	const f = fixture();
+	const graph = new SceneGraph(f.scene, {});
+	try {
+		globalThis.__left = [];
+		graph.load([
+			createSlot({ id: 'bad', components: [{ type: 'codeBlock', code: 'return { onPlayerLeft() { throw new Error("boom"); } };' }] }),
+			createSlot({ id: 'good', components: [{ type: 'codeBlock', code: 'return { onPlayerLeft(player) { globalThis.__left.push(player); } };' }] })
+		]);
+		graph.dispatchPlayerLeft({ id: 'guest-1', name: 'Ana' });
+		assert.deepEqual(globalThis.__left, [{ id: 'guest-1', name: 'Ana' }]);
+		assert.match(graph.getCodeBlockDebugLog('bad')[0].message, /boom/);
+	} finally { delete globalThis.__left; graph.dispose(); f.dispose(); }
+});
+
+test('the holder of an equipped tool is reported with the id scripts know the player by, not the connection id', () => {
+	const f = fixture();
+	const graph = new SceneGraph(f.scene, { scriptPlayerId: (key) => (key === 'conn-7' ? 'announced-7' : key) });
+	try {
+		graph.setEquipQuery({ getHolderOfSlotOrAncestor: (slotId) => (slotId === 'gun' ? { playerId: 'conn-7', hand: 'right' } : null) });
+		graph.load([createSlot({ id: 'gun', components: [{ type: 'codeBlock', code: 'globalThis.__holder = () => ctx.equip.holder(); return {};' }] })]);
+		assert.deepEqual(globalThis.__holder(), { playerId: 'announced-7', hand: 'right' });
+		graph.setEquipQuery({ getHolderOfSlotOrAncestor: () => null });
+		assert.equal(globalThis.__holder(), null);
+	} finally { delete globalThis.__holder; graph.dispose(); f.dispose(); }
+});
+
+test('the player body can be teleported on the desktop, keeping the way it looks when no yaw is given', () => {
+	const f = fixture();
+	const graph = new SceneGraph(f.scene, {});
+	try {
+		graph.load([createSlot({ id: 'floor', components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'ground' } }, { type: 'collider', shape: 'box' }] })]);
+		const body = setupPlayerBody(f.scene, graph, null, f.camera, { x: 0, z: 0 });
+		body.teleport({ position: [10, 0, 20], yaw: 1 });
+		assert.deepEqual(f.camera.position.asArray(), [10, 1.6, 20], 'feet on the target, eyes 1.6 m above');
+		assert.equal(f.camera.rotation.y, 1);
+		body.teleport({ position: [3, 0, 4] });
+		assert.equal(f.camera.rotation.y, 1, 'no yaw given: it keeps the way it looks');
+	} finally { graph.dispose(); f.dispose(); }
+});
+
+test('a wall that appears or is switched on stops a headset player in the same frame, not up to half a second later', () => {
+	const f = fixture();
+	const graph = new SceneGraph(f.scene, {});
+	try {
+		f.camera.position.set(0, 1.6, -1.5);
+		f.camera.realWorldHeight = 1.6;
+		const xr = { baseExperience: { state: WebXRState.IN_XR, camera: f.camera } };
+		const body = setupPlayerBody(f.scene, graph, xr, f.camera, { x: 0, z: 0 }); // nothing solid yet; the set is cached
+		const walk = () => { for (const mesh of f.scene.meshes) mesh.computeWorldMatrix(true); return body.constrainMove(new Vector3(0, 0, 1)).z; };
+		assert.equal(walk(), 1, 'free to walk');
+		graph.addSlot(createSlot({ id: 'wall', position: [0, 1, 0], components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'box' } }, { type: 'collider', shape: 'box' }] }));
+		assert.ok(walk() < 1, 'a wall that has just appeared blocks');
+		graph.setSlotEnabled('wall', false);
+		assert.equal(walk(), 1, 'a door that was opened lets them through');
+		graph.setSlotEnabled('wall', true);
+		assert.ok(walk() < 1, 'and blocks again when closed');
+	} finally { graph.dispose(); f.dispose(); }
+});
+
+test('teleporting in a headset puts the feet on the target and turns the rig to the yaw', () => {
+	const f = fixture();
+	const graph = new SceneGraph(f.scene, {});
+	try {
+		f.camera.rotationQuaternion = Quaternion.Identity();
+		f.camera.realWorldHeight = 1.7;
+		const xr = { baseExperience: { state: WebXRState.IN_XR, camera: f.camera } };
+		const body = setupPlayerBody(f.scene, graph, xr, f.camera, { x: 0, z: 0 });
+		body.teleport({ position: [400, 2, -6], yaw: Math.PI / 2 });
+		assert.deepEqual(f.camera.position.asArray().map((v) => Math.round(v * 1e6) / 1e6), [400, 3.7, -6]);
+		const forward = f.camera.getForwardRay().direction;
+		assert.ok(Math.abs(Math.atan2(forward.x, forward.z) - Math.PI / 2) < 1e-6, `facing ${Math.atan2(forward.x, forward.z)}`);
+	} finally { graph.dispose(); f.dispose(); }
+});
+
+test('a spot light shines along its slot’s forward direction with the cone it was given, and a live one is always drawn', () => {
+	const f = fixture();
+	const graph = new SceneGraph(f.scene, {});
+	try {
+		graph.load([createSlot({ id: 'torch', name: 'torch', position: [0, 2, 0], rotation: [Math.sin(Math.PI / 4), 0, 0, Math.cos(Math.PI / 4)], components: [{ type: 'spotLight', color: '#ffe0b0', intensity: 3, range: 15, angle: 50, exponent: 6 }] })]);
+		const light = f.scene.getLightByName('torch-light');
+		assert.equal(light.getClassName(), 'SpotLight');
+		assert.ok(Math.abs(light.angle - (50 * Math.PI) / 180) < 1e-9 && light.exponent === 6 && light.range === 15 && light.intensity === 3);
+		assert.equal(light.isEnabled(), true);
+		light.parent.computeWorldMatrix(true);
+		light.computeTransformedInformation();
+		const dir = light.transformedDirection;
+		assert.ok(dir.y < -0.99, `a quarter turn about X points +z straight down (${dir.x.toFixed(2)}, ${dir.y.toFixed(2)}, ${dir.z.toFixed(2)})`);
+		graph.setComponentField('torch', 'spotLight', 'angle', 30);
+		graph.getLive('torch').runtime.sync(graph.getLive('torch').slot);
+		assert.ok(Math.abs(light.angle - (30 * Math.PI) / 180) < 1e-9, 'a change of cone is followed live');
+	} finally { graph.dispose(); f.dispose(); }
+});
+
+test('a baked light is made, and drawn only until the baked lighting is in; taking the slot away forgets it', async () => {
+	const f = fixture();
+	Object.defineProperty(f.engine, 'webGLVersion', { value: 2 });
+	LightVolumeManager.textureFactory = () => ({ dispose() {} });
+	const graph = new SceneGraph(f.scene, {});
+	try {
+		graph.load([
+			createSlot({ id: 'lamp', name: 'lamp', position: [0, 2, 0], components: [{ type: 'pointLight', color: '#ffffff', intensity: 1, range: 8, baked: true }] }),
+			createSlot({ id: 'live', name: 'live', position: [3, 2, 0], components: [{ type: 'pointLight', color: '#ffffff', intensity: 1, range: 8 }] })
+		]);
+		const baked = f.scene.getLightByName('lamp-light'), live = f.scene.getLightByName('live-light');
+		assert.equal(baked.isEnabled(), true, 'with no baked lighting it is drawn live');
+		const manager = LightVolumeManager.for(f.scene);
+		manager.add('v', { min: [0, 0, 0], voxel: 1, dims: [2, 2, 2], range: 1 }, new Uint8Array(2 * 2 * 2 * 6 * 4), [1, 1, 1], 1, true);
+		await new Promise((resolve) => setTimeout(resolve, 80));
+		assert.equal(baked.isEnabled(), false, 'with it, the volume carries its light');
+		assert.equal(live.isEnabled(), true);
+		graph.removeSlot('lamp');
+		assert.equal(f.scene.getLightByName('lamp-light'), null);
+	} finally { LightVolumeManager.peek(f.scene)?.dispose(); graph.dispose(); f.dispose(); }
+});
+
+test('a lightVolume slot loads nothing it cannot find, and goes away cleanly: no volume, the flat ambient stays as it was', () => {
+	const f = fixture();
+	const graph = new SceneGraph(f.scene, {});
+	try {
+		const slot = createSlot({ id: 'gi', name: 'gi', components: [{ type: 'lightVolume', data: { kind: 'asset', assetId: `sha256:${'a'.repeat(64)}` }, intensity: 0.5, tint: '#ff0000' }] });
+		assert.doesNotThrow(() => graph.load([slot]));
+		const manager = LightVolumeManager.peek(f.scene);
+		assert.ok(manager, 'the scene has a manager now');
+		assert.equal(manager.texture, null);
+		assert.equal(manager.active, false);
+		assert.doesNotThrow(() => graph.removeSlot('gi'));
+	} finally { LightVolumeManager.peek(f.scene)?.dispose(); graph.dispose(); f.dispose(); }
 });

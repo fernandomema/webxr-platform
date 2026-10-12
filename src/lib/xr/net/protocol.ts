@@ -40,7 +40,11 @@ export type WorldSyncMessage =
 	| { kind: 'ui-event-request'; requestId: string; event: UIEvent }
 	/** Host to guest: run this storage/leaderboard call with the guest's own account. */
 	| { kind: 'player-api-request'; requestId: string; publicationId: string; call: PlayerApiCall }
-	| { kind: 'player-api-response'; requestId: string; result: PlayerApiResult };
+	| { kind: 'player-api-response'; requestId: string; result: PlayerApiResult }
+	/** Host to guest: put the player's feet at `position` (world space), turned to `yaw` radians when given. */
+	/** Host to guest: a slot that expires by itself, added without a whole snapshot. */
+	| { kind: 'spawn-ephemeral'; slot: Slot }
+	| { kind: 'teleport'; position: [number, number, number]; yaw?: number };
 
 /** High-frequency state messages sent on the unordered/unreliable channel. */
 export type WorldStateMessage =

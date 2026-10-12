@@ -256,6 +256,52 @@ export interface PointLightComponent {
 	color: string;
 	intensity: number;
 	range: number;
+	/** Its light is in the world's baked lighting (a `lightVolume`), so it is not drawn live as well. */
+	baked?: boolean;
+}
+
+/** A cone of light from this slot, along its local +Z. */
+export interface SpotLightComponent {
+	type: 'spotLight';
+	color: string;
+	intensity: number;
+	range: number;
+	/** The whole opening of the cone, in degrees. */
+	angle: number;
+	/** How fast the light fades towards the edge of the cone (1 is gentle, 8 is a tight beam). */
+	exponent?: number;
+	baked?: boolean;
+}
+
+/**
+ * Light baked into a grid of the world's space (see `lighting/`): the indirect light, the shadows and the glow of the
+ * `baked` lights, read by every lit surface by where it is, so that the world has dark corners and soft bounces at no cost
+ * per frame. The grid's place is in the file, in world coordinates: the slot's own position does not matter.
+ */
+export interface LightVolumeComponent {
+	type: 'lightVolume';
+	/** The baked data, a `lightmap` asset. */
+	data: SourceRef;
+	/** A multiplier on the baked light, 1 by default: a script can dim a room or flicker it. */
+	intensity?: number;
+	/** A colour the baked light is multiplied by (white by default): a red emergency light. */
+	tint?: string;
+	/** Off to see the world without it. */
+	enabled?: boolean;
+}
+
+/**
+ * The properties of a whole world, on its main node: what it is about, how it is lit and the picture that stands for it.
+ * Publishing takes them from here. Use one per scene.
+ */
+export interface WorldSettingsComponent {
+	type: 'worldSettings';
+	/** What the world is about, up to 2000 characters. */
+	description?: string;
+	/** `baked` (the default) lights it with its baked lighting, `live` ignores that and uses live lights only, `both` adds the baked lights' live light on top. */
+	lighting?: 'live' | 'baked' | 'both';
+	/** An image asset used as the 360° preview in place of the one taken from the Preview Camera when saving. */
+	preview?: SourceRef;
 }
 
 /** A gradient sky with optional stars, drawn behind everything and following the camera. Use one per scene. */
@@ -578,6 +624,9 @@ export type Component =
 	| SkyboxComponent
 	| AppInfoComponent
 	| PointLightComponent
+	| SpotLightComponent
+	| LightVolumeComponent
+	| WorldSettingsComponent
 	| VelocityComponent
 	| PressableButtonComponent
 	| ImpactSoundComponent

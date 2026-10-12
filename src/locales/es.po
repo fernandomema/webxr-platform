@@ -584,8 +584,10 @@ msgstr ""
 #: src/lib/studio/components/AddComponentMenu.svelte
 #: src/lib/studio/components/AddObjectMenu.svelte
 #: src/lib/studio/components/AvatarWizard.svelte
+#: src/lib/studio/components/BakeLightingDialog.svelte
 #: src/lib/studio/components/CommandPalette.svelte
 #: src/lib/studio/components/SaveDialog.svelte
+#: src/lib/studio/components/WorldPreviewDialog.svelte
 #: src/lib/studio/ui/ColorInput.svelte
 #: src/lib/studio/ui/Combobox.svelte
 #: src/lib/studio/ui/DialogHost.svelte
@@ -595,6 +597,7 @@ msgstr ""
 
 #: src/lib/studio/components/AvatarWizard.svelte
 #: src/lib/studio/components/SaveDialog.svelte
+#: src/lib/studio/components/WorldSettingsTools.svelte
 #: src/lib/studio/ui/DialogHost.svelte
 #: src/lib/studio/ui/DialogHost.svelte
 #: src/lib/studio/ui/DialogHost.svelte
@@ -1332,8 +1335,10 @@ msgstr ""
 #~ msgid "Publish world"
 #~ msgstr ""
 
-#~ msgid "Close"
-#~ msgstr ""
+#: src/lib/studio/components/BakeLightingDialog.svelte
+#: src/lib/studio/components/WorldPreviewDialog.svelte
+msgid "Close"
+msgstr ""
 
 #: src/lib/studio/components/PublishPanel.svelte
 msgid "You need to sign in to publish worlds."
@@ -3869,6 +3874,8 @@ msgid "Could not generate reflection probe"
 msgstr ""
 
 #: src/lib/studio/components/Inspector.svelte
+#: src/lib/studio/components/WorldPreviewDialog.svelte
+#: src/lib/studio/components/WorldSettingsTools.svelte
 msgid "Capturing…"
 msgstr ""
 
@@ -5453,4 +5460,158 @@ msgstr ""
 
 #: src/routes/(admin)/admin/scoreboards/+page.svelte
 msgid "Select a board to inspect its entries"
+msgstr ""
+
+#: src/lib/studio/components/BakeLightingDialog.svelte
+#: src/lib/studio/components/WorldSettingsTools.svelte
+msgid "Lighting baked. Save to keep it."
+msgstr ""
+
+#: src/lib/studio/components/BakeLightingDialog.svelte
+#: src/lib/studio/components/WorldSettingsTools.svelte
+msgid "Bake cancelled."
+msgstr ""
+
+#: src/lib/studio/components/BakeLightingDialog.svelte
+#: src/lib/studio/components/WorldSettingsTools.svelte
+msgid "Could not bake the lighting"
+msgstr ""
+
+#: src/lib/studio/components/WorldPreviewDialog.svelte
+#: src/lib/studio/components/WorldSettingsTools.svelte
+msgid "Could not capture the 360° preview"
+msgstr ""
+
+#~ msgid "This world has baked lighting. "
+#~ msgstr ""
+
+#~ msgid "Tick <0>Baked</0> on the lights you want in the bake."
+#~ msgstr ""
+
+#~ msgid "Quality <0/>"
+#~ msgstr ""
+
+#~ msgid "Sky light <0/>"
+#~ msgstr ""
+
+#: src/lib/studio/components/BakeLightingDialog.svelte
+#: src/lib/studio/components/WorldSettingsTools.svelte
+msgid "Bake progress"
+msgstr ""
+
+#: src/lib/studio/components/BakeLightingDialog.svelte
+#: src/lib/studio/components/WorldSettingsTools.svelte
+msgid "Bake again"
+msgstr ""
+
+#: src/lib/studio/components/BakeLightingDialog.svelte
+#: src/lib/studio/components/BakeLightingDialog.svelte
+#: src/lib/studio/components/BakeLightingDialog.svelte
+#: src/lib/studio/components/WorldSettingsTools.svelte
+msgid "Bake lighting"
+msgstr ""
+
+#: src/lib/studio/components/BakeLightingDialog.svelte
+#: src/lib/studio/components/WorldSettingsTools.svelte
+msgid "Remove baked lighting"
+msgstr ""
+
+#~ msgid "{0} voxels of {1} m, {2} light{3}, {4} s."
+#~ msgstr ""
+
+#: src/lib/studio/components/WorldPreviewDialog.svelte
+#: src/lib/studio/components/WorldSettingsTools.svelte
+msgid "Capture from editor view"
+msgstr ""
+
+#: src/lib/studio/components/WorldPreviewDialog.svelte
+#: src/lib/studio/components/WorldSettingsTools.svelte
+msgid "Use the Preview Camera"
+msgstr ""
+
+#: src/lib/studio/components/WorldPreviewDialog.svelte
+#: src/lib/studio/components/WorldSettingsTools.svelte
+msgid "The 360° preview of this world"
+msgstr ""
+
+#: src/lib/studio/components/WorldSettingsTools.svelte
+msgid "Taken from the Preview Camera when you save, unless you capture or choose a picture here."
+msgstr ""
+
+#: src/lib/studio/components/WorldSettingsTools.svelte
+msgid "Baked lighting"
+msgstr ""
+
+#~ msgid "<0/>{0} light{1} marked Baked. <1/>"
+#~ msgstr ""
+
+#: src/lib/studio/components/WorldPreviewDialog.svelte
+#: src/lib/studio/components/WorldSettingsTools.svelte
+msgid "360° preview"
+msgstr ""
+
+#: src/lib/studio/components/Inspector.svelte
+msgid "Set the world’s description, lighting, 360° preview and baked lighting."
+msgstr ""
+
+#: src/lib/studio/components/Inspector.svelte
+msgid "World settings"
+msgstr ""
+
+#~ msgid "{0} {1} marked Baked."
+#~ msgstr ""
+
+#~ msgid "No lights are marked Baked: tick Baked on the lights you want in the bake."
+#~ msgstr ""
+
+#~ msgid "{0} voxels of {1} m, {2} {3}, {4} s."
+#~ msgstr ""
+
+#: src/lib/studio/components/BakeLightingDialog.svelte
+#: src/lib/studio/components/WorldSettingsTools.svelte
+msgid "Draft (fast)"
+msgstr ""
+
+#: src/lib/studio/components/BakeLightingDialog.svelte
+#: src/lib/studio/components/WorldSettingsTools.svelte
+msgid "Normal"
+msgstr ""
+
+#: src/lib/studio/components/BakeLightingDialog.svelte
+#: src/lib/studio/components/WorldSettingsTools.svelte
+msgid "High (slow)"
+msgstr ""
+
+#: src/lib/studio/components/BakeLightingDialog.svelte
+#: src/lib/studio/components/WorldSettingsTools.svelte
+msgid "Quality"
+msgstr ""
+
+#: src/lib/studio/components/BakeLightingDialog.svelte
+#: src/lib/studio/components/WorldSettingsTools.svelte
+msgid "Sky light"
+msgstr ""
+
+#: src/lib/studio/components/WorldSettingsActions.svelte
+msgid "Bake lighting…"
+msgstr ""
+
+#: src/lib/studio/components/WorldSettingsActions.svelte
+msgid "360° preview…"
+msgstr ""
+
+#: src/lib/studio/components/BakeLightingDialog.svelte
+msgid "Cancel bake"
+msgstr ""
+
+#: src/lib/studio/components/WorldPreviewDialog.svelte
+msgid "The picture that stands for this world. Without one, it is taken from the Preview Camera when you save."
+msgstr ""
+
+#: src/lib/studio/components/FieldEditor.svelte
+msgid "Edit…"
+msgstr ""
+
+#: src/lib/studio/components/WorldPreviewDialog.svelte
+msgid "Choose image…"
 msgstr ""

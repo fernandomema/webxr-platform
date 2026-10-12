@@ -25,7 +25,7 @@ export type FieldDef = FieldBase &
 		| { kind: 'vec3'; step?: number; default?: [number, number, number] }
 		| { kind: 'mesh' }
 		/** A direct URL, or an asset of `assetType` (local, cloud or shared). Stored as a `SourceRef`. */
-		| { kind: 'asset'; assetType: string }
+		| { kind: 'asset'; assetType: string; /** Setting it opens this editor action (a dialog) instead of just picking a file. */ action?: string }
 		| { kind: 'pose' }
 		| { kind: 'lines' }
 		| { kind: 'code' }
@@ -34,6 +34,8 @@ export type FieldDef = FieldBase &
 		| { kind: 'boneMap' }
 		/** One bone of the parent slot's model. */
 		| { kind: 'bone' }
+		/** Not a value: a button that asks the editor to run `action` (open a dialog). */
+		| { kind: 'action'; action: string; button: string }
 	);
 
 export interface ComponentSchema {
@@ -68,9 +70,58 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		fields: [
 			{ key: 'color', label: 'Color', kind: 'color', default: '#ffffff' },
 			{ key: 'intensity', label: 'Intensity', kind: 'number', min: 0, max: 20, step: 0.1 },
-			{ key: 'range', label: 'Range', kind: 'number', min: 0.1, max: 100, step: 0.5, unit: 'm' }
+			{ key: 'range', label: 'Range', kind: 'number', min: 0.1, max: 100, step: 0.5, unit: 'm' },
+			{ key: 'baked', label: 'Baked', kind: 'bool', optional: true, default: false, help: 'Its light is in the world\'s baked lighting, so it is not drawn live as well.' }
 		],
 		create: () => ({ type: 'pointLight', color: '#ffffff', intensity: 2, range: 8 })
+	},
+	{
+		type: 'spotLight',
+		label: 'Spot Light',
+		group: 'Render',
+		description: 'A cone of light along this slot\'s forward direction.',
+		glyph: '◭',
+		fields: [
+			{ key: 'color', label: 'Color', kind: 'color', default: '#ffffff' },
+			{ key: 'intensity', label: 'Intensity', kind: 'number', min: 0, max: 20, step: 0.1 },
+			{ key: 'range', label: 'Range', kind: 'number', min: 0.1, max: 100, step: 0.5, unit: 'm' },
+			{ key: 'angle', label: 'Cone angle', kind: 'number', min: 5, max: 170, step: 1, unit: '°' },
+			{ key: 'exponent', label: 'Falloff', kind: 'number', min: 0, max: 32, step: 0.5, optional: true, default: 2 },
+			{ key: 'baked', label: 'Baked', kind: 'bool', optional: true, default: false }
+		],
+		create: () => ({ type: 'spotLight', color: '#ffffff', intensity: 2, range: 12, angle: 45, exponent: 2 })
+	},
+	{
+		type: 'lightVolume',
+		label: 'Baked Lighting',
+		group: 'World',
+		description: 'Light baked into the world: soft bounces, shadows and dark corners at no cost per frame. Made by baking, not by hand.',
+		glyph: '◐',
+		fields: [
+			{ key: 'data', label: 'Baked data', kind: 'asset', assetType: 'lightmap' },
+			{ key: 'intensity', label: 'Intensity', kind: 'number', min: 0, max: 4, step: 0.05, optional: true, default: 1 },
+			{ key: 'tint', label: 'Tint', kind: 'color', optional: true, default: '#ffffff' },
+			{ key: 'enabled', label: 'Enabled', kind: 'bool', optional: true, default: true }
+		],
+		create: () => ({ type: 'lightVolume', data: { kind: 'url', url: '' } })
+	},
+	{
+		type: 'worldSettings',
+		label: 'World settings',
+		group: 'World',
+		description: 'The world\u2019s description, how it is lit and its 360\u00b0 preview. Put it on the main object; publishing takes these from it.',
+		glyph: '\u25ce',
+		fields: [
+			{ key: 'description', label: 'Description', kind: 'text', multiline: true, optional: true, default: '', help: 'Up to 2000 characters.' },
+			{ key: 'lighting', label: 'Lighting', kind: 'enum', options: [
+				{ value: 'baked', label: 'Baked' },
+				{ value: 'live', label: 'Live' },
+				{ value: 'both', label: 'Both' }
+			], optional: true, default: 'baked', help: 'Baked uses the baked lighting and turns off the lights that were baked. Live ignores the baked lighting. Both also keeps those lights on.' },
+			{ key: 'bake', label: 'Baked lighting', kind: 'action', action: 'bakeLighting', button: 'Bake\u2026', optional: true, help: 'Calculates soft bounces and shadows from the lights marked Baked and keeps them in the world.' },
+			{ key: 'preview', label: '360\u00b0 preview', kind: 'asset', assetType: 'image', action: 'worldPreview', optional: true, help: 'An equirectangular picture. Leave empty to take it from the Preview Camera when saving.' }
+		],
+		create: () => ({ type: 'worldSettings', lighting: 'baked' })
 	},
 	{
 		type: 'meshRenderer',

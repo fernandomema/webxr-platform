@@ -12,9 +12,11 @@
 		onOpenCode?: () => void;
 		/** The bones of the model this component's fields refer to (avatar: its own model; bone attach: its parent's). */
 		joints?: readonly string[];
+		/** Runs an editor action named by one of the component's fields (opening a dialog). */
+		onaction?: (action: string) => void;
 	}
 
-	let { component, advanced, onfield, onremove, onOpenCode, joints }: Props = $props();
+	let { component, advanced, onfield, onremove, onOpenCode, joints, onaction }: Props = $props();
 
 	let open = $state(true);
 	const schema = $derived(componentSchema(component.type));
@@ -36,7 +38,7 @@
 				<p class="muted">{schema.description}</p>
 			{/if}
 			{#each fields as field (field.key)}
-				<FieldEditor {field} value={(component as unknown as Record<string, unknown>)[field.key]} onchange={(value) => onfield(field.key, value)} {onOpenCode} {joints} />
+				<FieldEditor {field} value={(component as unknown as Record<string, unknown>)[field.key]} onchange={(value) => onfield(field.key, value)} {onOpenCode} {joints} {onaction} />
 			{/each}
 		</div>
 	{/if}

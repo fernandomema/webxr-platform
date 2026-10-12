@@ -2,6 +2,7 @@ import type { SlotTree } from '$lib/ecs/types';
 import { getInventoryAdapter, isReadOnlyAdapter } from '$lib/inventory/registry';
 import type { InventoryContext, InventoryItem, InventoryKind } from '$lib/inventory/types';
 import { validateWorldScene } from '$lib/worlds/package';
+import { findWorldSettings } from '$lib/worlds/appManifest';
 import { ensureCloudAssets, type CloudSyncProgress } from '$lib/assets/cloudSync';
 import { getLocalAssetStore } from '$lib/assets/store';
 import { getTemplate } from '../templates';
@@ -175,6 +176,9 @@ export class StudioProject {
 
 	/** A preview of the tree as an image asset on this device, or null if it could not be made. Never throws. */
 	private makePreview(tree: SlotTree, kind: InventoryKind, name: string): Promise<AssetId | null> {
+		// A world's own settings can name the picture that stands for it; otherwise it is taken from the world as it is now.
+		const authored = kind === 'world' ? findWorldSettings(tree)?.preview : undefined;
+		if (authored?.kind === 'asset') return Promise.resolve(authored.assetId);
 		const cloud = this.context.userId ? [new CloudResolver()] : [];
 		return captureItemThumbnail(tree, kind, { name, getResolvers: () => cloud });
 	}
@@ -247,10 +251,11 @@ export class StudioProject {
 	async publish(publicationId?: string): Promise<PublishResult> {
 		const scene = cloneTree(this.doc.tree);
 		validateWorldScene(scene);
-		await this.sendModels(scene);
+		const thumbnail = (await this.makePreview(scene, 'world', this.doc.name)) ?? this.item?.thumbnailAssetId ?? undefined;
+		await this.sendModels(scene, thumbnail);
 		const response = publicationId
-			? await fetch(`/api/published-worlds/${publicationId}/revisions`, jsonPost({ scene }))
-			: await fetch('/api/published-worlds', jsonPost({ name: this.doc.name.trim(), scene }));
+			? await fetch(`/api/published-worlds/${publicationId}/revisions`, jsonPost({ scene, thumbnailAssetId: thumbnail }))
+			: await fetch('/api/published-worlds', jsonPost({ name: this.doc.name.trim(), scene, thumbnailAssetId: thumbnail }));
 		if (!response.ok) throw new Error(await errorMessage(response, 'Could not publish this world'));
 		const body = (await response.json()) as { id: string; latestRevision?: number; number?: number; name?: string };
 		const id = publicationId ?? body.id;

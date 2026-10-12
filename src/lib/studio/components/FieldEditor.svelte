@@ -22,9 +22,11 @@
 		onOpenCode?: () => void;
 		/** The bones of the model this field belongs to, for the bone editors. */
 		joints?: readonly string[];
+		/** Runs an editor action named by the field (opening a dialog). */
+		onaction?: (action: string) => void;
 	}
 
-	let { field, value, onchange, onOpenCode, joints = [] }: Props = $props();
+	let { field, value, onchange, onOpenCode, joints = [], onaction }: Props = $props();
 
 	const id = $props.id();
 	let jsonDraft = $state<string | null>(null);
@@ -42,6 +44,15 @@
 			default: return undefined;
 		}
 	});
+
+	/** Gives an unset optional field a value. An asset has no default: take the first one of its type, or ask for a file. */
+	async function setUnset() {
+		if (field.kind === 'asset' && field.action && onaction) return onaction(field.action);
+		if (field.kind !== 'asset') return onchange(fallback);
+		const [existing] = studioAssets.items.filter((item) => item.type === field.assetType);
+		const [chosen] = existing ? [existing] : await studioAssets.pickAndImport(field.assetType);
+		if (chosen) onchange(assetSource(chosen.assetId));
+	}
 
 	function meshOptions(current: string, known: boolean): (SelectOption | SelectGroup)[] {
 		return [
@@ -115,8 +126,10 @@
 	</label>
 
 	<div class="control">
-		{#if field.optional && unset}
-			<button class="btn sm" onclick={() => onchange(fallback)}><Icon name="plus" size={12} />Set</button>
+		{#if field.kind === 'action'}
+			<button class="btn sm" onclick={() => onaction?.(field.action)}>{field.button}</button>
+		{:else if field.optional && unset}
+			<button class="btn sm" onclick={() => void setUnset()}><Icon name="plus" size={12} />Set</button>
 		{:else if field.kind === 'number'}
 			<NumberInput value={Number(value ?? 0)} label={field.label} min={field.min} max={field.max} step={field.step ?? 1} onchange={onchange} />
 			{#if field.unit}<span class="unit">{field.unit}</span>{/if}
@@ -217,6 +230,9 @@
 			<textarea class="input" {id} rows="4" aria-invalid={jsonError ? 'true' : undefined} value={jsonDraft ?? JSON.stringify(value ?? null, null, 2)} oninput={(event) => commitJson(event.currentTarget.value)} onblur={() => { if (!jsonError) jsonDraft = null; }}></textarea>
 		{/if}
 
+		{#if field.kind === 'asset' && field.action && onaction && !unset}
+			<button class="btn sm" onclick={() => onaction(field.action!)}>Edit…</button>
+		{/if}
 		{#if field.optional && !unset}
 			<button class="icon-btn" aria-label={`Clear ${field.label}`} onclick={() => onchange(undefined)}><Icon name="close" size={12} /></button>
 		{/if}

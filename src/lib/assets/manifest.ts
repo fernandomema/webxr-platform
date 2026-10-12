@@ -47,8 +47,19 @@ export interface ImageManifest extends AssetManifestBase {
 	height: number;
 }
 
+/** A baked lighting volume: a grid of `dims` voxels of side `voxel` metres, its first corner at `min`, made from the scene with this fingerprint. */
+export interface LightmapManifest extends AssetManifestBase {
+	type: 'lightmap';
+	format: 'lvol';
+	mimeType: 'application/x-lighting-volume';
+	dims: [number, number, number];
+	voxel: number;
+	min: Vec3;
+	signature: string;
+}
+
 /** Add a kind's manifest here when registering a new kind. */
-export type AssetManifest = ModelManifest | AudioManifest | ImageManifest;
+export type AssetManifest = ModelManifest | AudioManifest | ImageManifest | LightmapManifest;
 export type AssetType = AssetManifest['type'];
 
 /** Where a peer can get the bytes from: the cloud, or (only) the host of the current session. */

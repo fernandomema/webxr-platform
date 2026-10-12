@@ -178,7 +178,7 @@ export class StudioDraft {
 		}
 		if (name === 'get_component_schema') {
 			const schema = COMPONENT_SCHEMAS.find((item) => item.type === args.type);
-			return { changed: false, value: schema ? { type: schema.type, description: schema.description, fields: schema.fields, example: schema.create(), codeBlockNote: schema.type === 'codeBlock' ? 'Return lifecycle handlers from the code string. Use ctx.self, ctx.world, ctx.hierarchy, ctx.math, ctx.grab, ctx.audio, ctx.net and ctx.ui. Never use document, window, fetch, or arbitrary globals.' : undefined } : { available: COMPONENT_SCHEMAS.map((item) => item.type) } };
+			return { changed: false, value: schema ? { type: schema.type, description: schema.description, fields: schema.fields.filter((field) => field.kind !== 'action'), example: schema.create(), codeBlockNote: schema.type === 'codeBlock' ? 'Return lifecycle handlers from the code string. Use ctx.self, ctx.world, ctx.hierarchy, ctx.math, ctx.grab, ctx.audio, ctx.net and ctx.ui. Never use document, window, fetch, or arbitrary globals.' : undefined } : { available: COMPONENT_SCHEMAS.map((item) => item.type) } };
 		}
 		if (name === 'validate_draft') return { changed: false, value: { visibleToUserInEditor: !this.changed, note: this.changed ? 'Clean validation only means the staged draft is internally consistent. It is still invisible to the person until they click Apply.' : undefined, diagnostics: this.diagnostics } };
 		if (name === 'get_script_api') return { changed: false, value: {

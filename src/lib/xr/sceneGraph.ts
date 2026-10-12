@@ -6,6 +6,7 @@ import {
 	Color3,
 	Color4,
 	PointLight,
+	SpotLight,
 	Vector3,
 	Quaternion,
 	Ray,
@@ -31,6 +32,8 @@ import { setupSurfaceMask } from './surfaceMaskRenderer';
 import { setupStroke } from './strokeRenderer';
 import { setupMaterialSurfaces, type MaterialSurfaces } from './materialSurface';
 import { setupSkybox } from './skyboxRenderer';
+import { setupLightVolume } from './lightVolumeRenderer';
+import { LightVolumeManager } from './lightVolumeManager';
 import { setupParticleEmitter } from './particleEmitter';
 import { setupWorldGlobe } from './worldGlobe';
 import { setupImpactSound } from './impactSoundEffects';
@@ -39,6 +42,7 @@ import { setupTextDisplay } from './textDisplaySurface';
 import { setupScoreboard } from './scoreboardSurface';
 import { setupUIPanel, type UIMediaState, type UIPanelBinding } from './uiPanelSurface';
 import type { WorldStorageService } from './worldStorageService';
+import { parseTeleportTarget, type PlayerPoseView, type PlayerSummary, type TeleportTarget } from './playerPoses';
 import { createCodeBlockHandlers, type CodeBlockHost, type RadialItemDef, type CodeBlockLogEntry, type HandEvent, type TriggerEvent, type RaycastHit } from './codeBlockRuntime';
 
 /**
@@ -87,6 +91,7 @@ interface LiveSlot {
 		onPress?: () => void;
 		onUIEvent?: (event: UIEvent) => void;
 		onPlayerReady?: (player: { id: string; name: string }) => void | Promise<void>;
+		onPlayerLeft?: (player: { id: string; name: string }) => void;
 		onEquip?: (event: HandEvent) => void;
 		onUnequip?: (event: HandEvent) => void;
 		onTrigger?: (event: TriggerEvent) => boolean | void;
@@ -104,7 +109,7 @@ export interface SceneGraphOptions {
 	/** Imports a Poly Haven model for a world codeBlock. */
 	onImportPolyHavenModel?: (id: string, name: string) => Promise<string>;
 	/** codeBlock's `world.spawn`/`deleteSelf`/`deleteSlot` — route through the host-authoritative sync pipeline (see engine.ts, mirrors onMediaControl). */
-	onSpawnRequest?: (slot: Slot) => void;
+	onSpawnRequest?: (slot: Slot, options?: { ephemeral?: boolean }) => void;
 	onDeleteRequest?: (slotId: string) => void;
 	/** codeBlock's `world.setComponentField` on ANOTHER slot — host/solo only, broadcasts the mutation. */
 	onSlotMutated?: (slotId: string) => void;
@@ -112,6 +117,14 @@ export interface SceneGraphOptions {
 	isHost?: () => boolean;
 	/** codeBlock's `world.getPlayer(grabberId)` — resolves a GrabSystem grabberId to a stable player id + display name. */
 	resolvePlayer?: (grabberId: string) => { id: string; name: string };
+	/** codeBlock's `world.getPlayers()`. */
+	getPlayers?: () => PlayerSummary[];
+	/** codeBlock's `world.getPlayerPose(id)` — the head and hands of a player of this session, in world space. */
+	getPlayerPose?: (playerId: string) => PlayerPoseView | null;
+	/** codeBlock's `world.teleportPlayer(id, target)` — already checked; returns whether the player was found and moved. */
+	teleportPlayer?: (playerId: string, target: TeleportTarget) => boolean;
+	/** The id a script knows a player by, given the id the equipment system uses (a guest's connection id): hand events and `ctx.equip.holder` report it. */
+	scriptPlayerId?: (equipmentKey: string) => string;
 	/** Persistent storage and leaderboards for `ctx.storage` / `ctx.leaderboards` (see worldStorageService.ts). */
 	storage?: WorldStorageService;
 	/** Audio analysis and clock-accurate playback for `ctx.audio.analyze` / `ctx.audio.playTrack` (see scriptAudio.ts). */
@@ -164,7 +177,10 @@ export class SceneGraph {
 	private invalidateIndexes(): void {
 		this.byComponent.clear();
 		this.subtrees.clear();
+		this.passThroughCache = new WeakMap();
 	}
+	/** Per `ignore` list (by identity), whether a mesh belongs to an ignored slot: a ray asks that of every mesh in the scene, and the answer only changes with the slot hierarchy. */
+	private passThroughCache = new WeakMap<readonly string[], WeakMap<object, boolean>>();
 	private grabQuery: GrabQuery | null = null;
 	private equipQuery: EquipQuery | null = null;
 
@@ -728,7 +744,35 @@ export class SceneGraph {
 				light.range = Math.max(0.1, value.range);
 			};
 			apply(pointLight);
-			entry.runtime = { dispose: () => light.dispose(), sync: (currentSlot) => { const next = findComponent(currentSlot, 'pointLight'); if (next) apply(next); } };
+			// A baked light is in the world's baked lighting: it is drawn live only while that is not in use.
+			const forget = pointLight.baked ? LightVolumeManager.for(this.scene).registerBakedLight(light) : null;
+			entry.runtime = { dispose: () => { forget?.(); light.dispose(); }, sync: (currentSlot) => { const next = findComponent(currentSlot, 'pointLight'); if (next) apply(next); } };
+		}
+		const spotLight = findComponent(slot, 'spotLight');
+		if (spotLight) {
+			const light = new SpotLight(`${slot.id}-light`, Vector3.Zero(), new Vector3(0, 0, 1), (spotLight.angle * Math.PI) / 180, spotLight.exponent ?? 2, this.scene);
+			light.parent = node;
+			const apply = (value: typeof spotLight) => {
+				light.diffuse = Color3.FromHexString(value.color);
+				light.intensity = Math.max(0, value.intensity);
+				light.range = Math.max(0.1, value.range);
+				light.angle = (Math.max(1, Math.min(179, value.angle)) * Math.PI) / 180;
+				light.exponent = value.exponent ?? 2;
+			};
+			apply(spotLight);
+			const forget = spotLight.baked ? LightVolumeManager.for(this.scene).registerBakedLight(light) : null;
+			entry.runtime = { dispose: () => { forget?.(); light.dispose(); }, sync: (currentSlot) => { const next = findComponent(currentSlot, 'spotLight'); if (next) apply(next); } };
+		}
+		const lightVolume = findComponent(slot, 'lightVolume');
+		if (lightVolume) {
+			const binding = setupLightVolume(this.scene, slot.id, lightVolume, this.options.mediaAssets);
+			entry.runtime = { dispose: () => binding.dispose(), sync: (currentSlot) => { const next = findComponent(currentSlot, 'lightVolume'); if (next) binding.sync(next); } };
+		}
+		const worldSettings = findComponent(slot, 'worldSettings');
+		if (worldSettings) {
+			const manager = LightVolumeManager.for(this.scene);
+			manager.setPolicy(worldSettings.lighting ?? 'baked');
+			entry.runtime = { dispose: () => manager.setPolicy('baked'), sync: (currentSlot) => { const next = findComponent(currentSlot, 'worldSettings'); manager.setPolicy(next?.lighting ?? 'baked'); } };
 		}
 		const skybox = findComponent(slot, 'skybox');
 		if (skybox) entry.runtime = setupSkybox(this.scene, node, skybox, this.options.mediaAssets);
@@ -771,7 +815,7 @@ export class SceneGraph {
 			allSlots: () => this.allSlots().map((entry) => entry.slot),
 			getGrabbers: (slotId) => this.grabQuery?.getGrabbersForSlot(slotId) ?? [],
 			isHost: () => this.options.isHost?.() ?? true,
-			requestSpawn: (slot) => this.options.onSpawnRequest?.(slot),
+			requestSpawn: (slot, options) => this.options.onSpawnRequest?.(slot, options),
 			requestDelete: (slotId) => this.options.onDeleteRequest?.(slotId),
 			setComponent: (slotId, component, broadcast = true) => {
 				if (!(this.options.isHost?.() ?? true)) return false;
@@ -813,6 +857,13 @@ export class SceneGraph {
 			raycast: (origin, direction, maxDistance, ignore) => this.raycastScene(origin, direction, maxDistance, ignore),
 			overlap: (from, to, radius, ignore) => this.overlapScene(from, to, radius, ignore),
 			resolvePlayer: (grabberId) => this.options.resolvePlayer?.(grabberId) ?? { id: grabberId, name: 'Player' },
+			getPlayers: () => this.options.getPlayers?.() ?? [],
+			getPlayerPose: (playerId) => this.options.getPlayerPose?.(playerId) ?? null,
+			teleportPlayer: (playerId, target) => {
+				if (!(this.options.isHost?.() ?? true)) return false;
+				const checked = parseTeleportTarget(target);
+				return checked ? (this.options.teleportPlayer?.(playerId, checked) ?? false) : false;
+			},
 			setSlotEnabled: (slotId, enabled, broadcast = true) => {
 				if (!(this.options.isHost?.() ?? true)) return false;
 				const changed = this.setSlotEnabled(slotId, enabled);
@@ -821,7 +872,10 @@ export class SceneGraph {
 			},
 			storage: this.options.storage,
 			audio: this.options.audio,
-			getEquipHolder: (slotId) => this.equipQuery?.getHolderOfSlotOrAncestor(slotId) ?? null,
+			getEquipHolder: (slotId) => {
+				const holder = this.equipQuery?.getHolderOfSlotOrAncestor(slotId);
+				return holder ? { ...holder, playerId: this.options.scriptPlayerId?.(holder.playerId) ?? holder.playerId } : null;
+			},
 			getUIMedia: (slotId) => this.getUIMedia(slotId),
 			getUIInputText: (slotId) => this.getUIInputText(slotId),
 			importPolyHavenModel: (id, name) => {
@@ -848,15 +902,28 @@ export class SceneGraph {
 		return results;
 	}
 
+	private skipSets = new WeakMap<readonly string[], Set<string>>();
+	private skipSet(ignore: readonly string[]): Set<string> {
+		let set = this.skipSets.get(ignore);
+		if (!set) this.skipSets.set(ignore, (set = new Set(ignore)));
+		return set;
+	}
+
 	/** Casts a ray through every pickable mesh in the scene and resolves the closest hit back to its owning Slot — see CodeBlockHost.raycast's doc comment. `null` if nothing pickable (or nothing owned by a Slot, e.g. a placeholder proxy) is hit within `maxDistance`. */
 	private raycastScene(origin: Vec3, direction: Vec3, maxDistance: number, ignore?: readonly string[]): RaycastHit | null {
 		const dir = Vector3.FromArray(direction).normalize();
 		const ray = new Ray(Vector3.FromArray(origin), dir, Math.max(0.001, maxDistance));
-		const skipped = ignore?.length ? new Set(ignore) : null;
+		const skipped = ignore?.length ? this.skipSet(ignore) : null;
+		let memo = ignore?.length ? this.passThroughCache.get(ignore) : undefined;
+		if (ignore?.length && !memo) this.passThroughCache.set(ignore, (memo = new WeakMap()));
 		const passesThrough = (mesh: AbstractMesh) => {
 			if (!skipped) return false;
-			for (let id = this.getSlotIdForNode(mesh); id; id = this.live.get(id)?.slot.parentId ?? null) if (skipped.has(id)) return true;
-			return false;
+			const known = memo!.get(mesh);
+			if (known !== undefined) return known;
+			let result = false;
+			for (let id = this.getSlotIdForNode(mesh); id && !result; id = this.live.get(id)?.slot.parentId ?? null) result = skipped.has(id);
+			memo!.set(mesh, result);
+			return result;
 		};
 		const pick = this.scene.pickWithRay(ray, (mesh) => mesh.isPickable && mesh.isEnabled() && !passesThrough(mesh));
 		if (!pick?.hit || !pick.pickedMesh || !pick.pickedPoint) return null;
@@ -1006,11 +1073,11 @@ export class SceneGraph {
 		}
 	}
 
-	/** codeBlock-contributed radial menu items for whatever this hand currently holds — see radialMenu.ts. */
+	/** codeBlock-contributed radial menu items of one slot (its own script, not its parts); the menu of a held object uses `getRadialExtrasForSubtree` — see radialMenu.ts. */
 	getRadialExtras(slotId: string): RadialItemDef[] {
 		try {
-			// The object's parts count too: a camera's screen is a child of its body.
-			return this.getSubtree(slotId).flatMap((entry) => entry.runtime?.getRadialItems?.() ?? []);
+			// Only this slot's own script: `getRadialExtrasForSubtree` adds the parts, and counting them here too would repeat their items.
+			return this.live.get(slotId)?.runtime?.getRadialItems?.() ?? [];
 		} catch (err) {
 			console.error(`[sceneGraph] getRadialExtras(${slotId}) threw`, err);
 			return [];
@@ -1084,6 +1151,11 @@ export class SceneGraph {
 		this.invalidateIndexes();
 		this.notifyChanged([slotId]);
 		return true;
+	}
+
+	/** Tells every code block a guest has left the world. */
+	dispatchPlayerLeft(player: { id: string; name: string }): void {
+		for (const entry of this.slotsWith('codeBlock')) entry.runtime?.onPlayerLeft?.(player);
 	}
 
 	/** Tells every code block a participant is identified and ready (its saved data can be restored). */

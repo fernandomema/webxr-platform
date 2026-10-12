@@ -12,19 +12,26 @@ import { buildArchiveJukebox } from './archiveJukebox';
 import { buildPolyHeavenMaterials } from './polyHeavenMaterials';
 import { buildWishEngine } from './wishEngine';
 import { buildArcade } from './arcade';
+import { buildDeadDrop } from './deadDrop';
 
 /** The worlds that ship with the app: always there to go to, and the starting points for the Studio's world templates. */
 export interface BuiltinWorld {
-	id: 'lobby' | 'workshop' | 'pop-up-store' | 'pulse' | 'avatarShowcase' | 'archive-film-test' | 'mirror-maze' | 'beat-turntable' | 'archive-jukebox' | 'polyheaven-materials' | 'wish-engine' | 'arcade';
+	id: 'lobby' | 'workshop' | 'pop-up-store' | 'pulse' | 'avatarShowcase' | 'archive-film-test' | 'mirror-maze' | 'beat-turntable' | 'archive-jukebox' | 'polyheaven-materials' | 'wish-engine' | 'arcade' | 'dead-drop';
 	name: string;
 	description: string;
 	scene: SlotTree;
 }
 
 /** Worlds listed under the Development category instead of the official ones. */
-export const DEV_WORLD_IDS: readonly BuiltinWorld['id'][] = ['archive-film-test', 'mirror-maze', 'beat-turntable', 'polyheaven-materials', 'wish-engine', 'arcade'];
+export const DEV_WORLD_IDS: readonly BuiltinWorld['id'][] = ['archive-film-test', 'mirror-maze', 'beat-turntable', 'polyheaven-materials', 'wish-engine', 'arcade', 'dead-drop'];
 
 export const BUILTIN_WORLDS: readonly BuiltinWorld[] = [
+	{
+		id: 'dead-drop',
+		name: 'Dead Drop',
+		description: 'A cooperative extraction shooter: raid a bunker with up to four players, loot it while soldiers and turrets hunt you by sight and by noise, and get out alive. What you carry is lost if you die.',
+		scene: buildDeadDrop()
+	},
 	{
 		id: 'arcade',
 		name: 'The Arcade',

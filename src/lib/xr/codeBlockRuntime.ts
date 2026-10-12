@@ -4,6 +4,7 @@ import { Vector3, Quaternion, type TransformNode } from '@babylonjs/core';
 import type { Component, Slot, UIEvent, Vec3, Quat } from '$lib/ecs/types';
 import type { UIMediaState } from './uiPanelSurface';
 import type { AudioTrackHandle, ScriptAudio } from './scriptAudio';
+import type { PlayerPoseView, PlayerSummary, TeleportTarget } from './playerPoses';
 
 /** What SceneGraph exposes to a codeBlock's compiled handlers — narrow, read-mostly, no Babylon types leak into `ctx`. */
 export interface CodeBlockHost {
@@ -13,7 +14,8 @@ export interface CodeBlockHost {
 	allSlots(): Slot[];
 	getGrabbers(slotId: string): string[];
 	isHost(): boolean;
-	requestSpawn(slot: Slot): void;
+	/** `ephemeral`: the slot expires by itself (a sound, a spark), so guests get just it and not a whole new snapshot of the world. */
+	requestSpawn(slot: Slot, options?: { ephemeral?: boolean }): void;
 	requestDelete(slotId: string): void;
 	/** Host/solo only — a guest's call is a documented no-op, corrected by the next broadcast anyway. */
 	setComponentField(slotId: string, componentType: string, field: string, value: unknown, broadcast?: boolean): void;
@@ -37,6 +39,12 @@ export interface CodeBlockHost {
 	overlap(from: Vec3, to: Vec3, radius: number, ignore?: readonly string[]): string[];
 	/** Resolves a grabberId (from `getGrabbers`/`ctx.grab.heldBy()`) to a stable player id + display name — generic attribution for scripts that need to know "who did this" (scoreboards, ownership tags, logs), not tied to any one demo. */
 	resolvePlayer(grabberId: string): { id: string; name: string };
+	/** Everyone in the world, the host included. Each `id` is the one `onPlayerReady`, `ctx.storage.player` and hand events use. */
+	getPlayers(): PlayerSummary[];
+	/** Where a player's head (and tracked hands) are now, in world space; `null` when that player is not in the world. */
+	getPlayerPose(playerId: string): PlayerPoseView | null;
+	/** Moves a player to a floor position and optionally turns them. Host/solo only; returns whether the player was found and the target was usable. */
+	teleportPlayer(playerId: string, target: TeleportTarget): boolean;
 	/** Which player/hand has this slot — or one of its ancestors — equipped, if any. */
 	getEquipHolder(slotId: string): { playerId: string; hand: 'left' | 'right' } | null;
 	/** Playback state, on this peer, of the `video` uiElement `slotId`. */
@@ -94,6 +102,8 @@ export interface CodeBlockHandlers {
 	 * same `{ id, name }` that `ctx.storage.player(player)` takes. May be async; a rejection is logged.
 	 */
 	onPlayerReady?(player: { id: string; name: string }): void | Promise<void>;
+	/** A guest left the world (closed the tab, lost the connection, or was dropped). Runs once, on the host (or solo player). */
+	onPlayerLeft?(player: { id: string; name: string }): void;
 	onGrab?(): void;
 	onRelease?(): void;
 	/** Fired by PressableButtonSystem once a `pressableButton` component's depression crosses its threshold — see interaction/pressableButtonSystem.ts. Unrelated to grabbing. */
@@ -294,7 +304,11 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 		},
 		world: {
 			isHost: () => host.isHost(),
-			spawn: (partial: Partial<Slot> & { name: string }) => {
+			/**
+			 * Adds a slot to the world for everyone. With `{ ephemeral: true }` the slot should carry an `expires` (a sound, a spark, a
+			 * tracer): guests then get only that slot, not a new snapshot of the whole world, so it is cheap enough to do every shot.
+			 */
+			spawn: (partial: Partial<Slot> & { name: string }, options?: { ephemeral?: boolean }) => {
 				const spawned: Slot = {
 					id: crypto.randomUUID(),
 					parentId: null,
@@ -304,7 +318,7 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 					components: [],
 					...partial
 				};
-				host.requestSpawn(spawned);
+				host.requestSpawn(spawned, options);
 			},
 			/** Switches a slot (and everything below it) on or off for all players: hidden, not pickable, not grabbable. Host/solo only; returns whether it changed. Its code blocks keep running. */
 			setSlotEnabled: (targetId: string, enabled: boolean, broadcast = true): boolean => host.setSlotEnabled(targetId, enabled, broadcast),
@@ -336,6 +350,27 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 				return true;
 			},
 			/**
+			 * Sets where ANOTHER slot is relative to its parent, and optionally its scale — for parts that move inside something
+			 * (a gauge needle, a bar that shrinks), including parts of a tool a player has equipped, which `setWorldPose` refuses.
+			 * Host/solo only. Refused for a slot a hand holds or has equipped itself. With `broadcast: false` guests still get the
+			 * new pose with the next ~20 Hz state update, so it is cheap enough to do every frame.
+			 */
+			setLocalPose: (targetId: string, pose: { position?: Vec3; rotation?: Quat; scale?: Vec3 }, broadcast = true): boolean => {
+				if (!host.isHost()) return false;
+				const target = host.getNode(targetId);
+				const slot = host.getSlot(targetId);
+				if (!target || !slot || host.getGrabbers(targetId).length > 0) return false;
+				// The holder of the slot's parent is the same hand: only the slot a hand actually holds is out of bounds.
+				if (host.getEquipHolder(targetId) && !(slot.parentId && host.getEquipHolder(slot.parentId))) return false;
+				const finite = (v: readonly number[] | undefined, length: number) => !v || (v.length === length && v.every(Number.isFinite));
+				if (!finite(pose.position, 3) || !finite(pose.rotation, 4) || (pose.scale && !(pose.scale.length === 3 && pose.scale.every((value) => Number.isFinite(value) && value > 0)))) return false;
+				if (pose.position) target.position.copyFromFloats(...pose.position);
+				if (pose.rotation) target.rotationQuaternion = Quaternion.FromArray(pose.rotation).normalize();
+				if (pose.scale) target.scaling.copyFromFloats(...pose.scale);
+				host.commitTransform(targetId, broadcast);
+				return true;
+			},
+			/**
 			 * Moves ANOTHER slot under `parentId` (or to the root, `null`), keeping where it is in the world — for tools that
 			 * group, attach or detach things. Host/solo only. Refused (returns false) while a hand holds or has equipped the
 			 * slot, and for a move that would put a slot under itself.
@@ -349,7 +384,16 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 			raycast: (origin: Vec3, direction: Vec3, maxDistance: number, options?: { ignore?: string[] }) => host.raycast(origin, direction, maxDistance, options?.ignore),
 			/** Ids of the slots touching the capsule `from`-`to` of `radius` (nearest first). `options.ignore` as for `raycast`. */
 			overlap: (from: Vec3, to: Vec3, radius: number, options?: { ignore?: string[] }) => host.overlap(from, to, radius, options?.ignore),
-			getPlayer: (grabberId: string) => host.resolvePlayer(grabberId)
+			getPlayer: (grabberId: string) => host.resolvePlayer(grabberId),
+			/** Everyone in the world, as `{ id, name, role }`. The ids are the ones hand events and `ctx.storage.player` take. */
+			getPlayers: () => host.getPlayers(),
+			/**
+			 * Where a player's head and hands are, as `{ head, left?, right? }` with `position`, `rotation` and the `forward`,
+			 * `up` and `right` directions of each; `null` for someone who is not here. A desktop player has no hands.
+			 */
+			getPlayerPose: (playerId: string) => host.getPlayerPose(playerId),
+			/** Puts a player's feet at `target.position`, facing `target.yaw` (radians, 0 looks along +Z). Host/solo only; returns whether it was done. */
+			teleportPlayer: (playerId: string, target: TeleportTarget) => host.teleportPlayer(playerId, target)
 		},
 		particles: {
 			burst: (opts: { color?: string; count?: number; durationMs?: number } = {}) => {
@@ -366,7 +410,7 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 						{ type: 'particleBurst', color: opts.color, count: opts.count, durationMs },
 						{ type: 'expires', expiresAt: Date.now() + durationMs }
 					]
-				});
+				}, { ephemeral: true });
 			}
 		},
 		audio: {
@@ -394,7 +438,7 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 						},
 						{ type: 'expires', expiresAt: Date.now() + durationMs + 500 }
 					]
-				});
+				}, { ephemeral: true });
 			},
 			/**
 			 * Decodes an audio source (`{ kind: 'url', url }`, an asset ref, or an `audioPlayer`'s `source`) and resolves with
@@ -550,6 +594,7 @@ export function createCodeBlockHandlers(slotId: string, node: TransformNode, cod
 
 	return {
 		onPlayerReady: safe('onPlayerReady'),
+		onPlayerLeft: safe('onPlayerLeft'),
 		onGrab: safe('onGrab'),
 		onRelease: safe('onRelease'),
 		onPress: safe('onPress'),

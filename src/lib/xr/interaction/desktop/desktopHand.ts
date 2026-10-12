@@ -166,7 +166,8 @@ export function setupDesktopHand(options: DesktopHandOptions): DesktopHand {
 			if (radial.sticky) commitRadial();
 			return;
 		}
-		const fire = triggerTarget();
+		// A panel under the crosshair gets the click before an equipped item's trigger does: otherwise a gun would never let you press a button.
+		const fire = aim.kind === 'ui' && aim.pick ? null : triggerTarget();
 		if (fire) {
 			useActive = fire;
 			dispatchUse(fire, 'press', 1);

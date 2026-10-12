@@ -7,6 +7,7 @@ import { SignalingClient, type SignalingMessage } from './signalingClient';
 import { PeerLink } from './peerConnection';
 import type { PlayerApiCall, PlayerApiResult } from '$lib/worldStorage/ops';
 import type { PlayerInfo, SlotTransform, WorldStateMessage, WorldSyncMessage } from './protocol';
+import type { Slot } from '$lib/ecs/types';
 import { createGhostRig, type GhostRig, type TransformPose } from '../avatar/defaultAvatar';
 import { validateWorldPackage, MAX_SHARED_SCENE_BYTES } from '$lib/worlds/package';
 import { migrateSlotTree } from '$lib/assets/ref';
@@ -18,9 +19,13 @@ import { RemoteKeyboards } from '../keyboard/remoteKeyboards';
 import { AssetPeer } from '$lib/assets/p2p';
 import { announceAssetSourcesChanged, getLocalAssetStore } from '$lib/assets/store';
 import { cameraHeadPose } from '../avatar/headPose';
+import { createThrottle } from './throttle';
+import type { PlayerSummary, TeleportTarget } from '../playerPoses';
 
 const PRESENCE_INTERVAL_MS = 50;
 const STATE_INTERVAL_MS = 50;
+/** Full snapshots go out at most this often: a script that spawns or switches things several times a frame costs one, not one each. */
+const SNAPSHOT_MIN_INTERVAL_MS = 100;
 
 interface GuestEntry {
 	link: PeerLink;
@@ -46,12 +51,13 @@ export class HostAuthority {
 	private presenceTimer: ReturnType<typeof setInterval>;
 	private stateTimer: ReturnType<typeof setInterval>;
 	private correctionTimer: ReturnType<typeof setInterval>;
+	private snapshotThrottle = createThrottle(() => this.sendSnapshotToAll(), SNAPSHOT_MIN_INTERVAL_MS);
 	private dirtyTransforms = new Map<string, SlotTransform>();
 	private revision = 0;
 	private lastTransforms = new Map<string, string>();
 	private presenceSequence = 0;
 	private avatars: AvatarHooks | null = null;
-	private storageHooks: { getPublicationId(): string | null; onPlayerReady(player: PlayerInfo): void } | null = null;
+	private storageHooks: { getPublicationId(): string | null; onPlayerReady(player: PlayerInfo): void; onPlayerLeft?(player: PlayerInfo): void } | null = null;
 	private pendingApi = new Map<string, { guestId: string; resolve(result: PlayerApiResult): void; timer: ReturnType<typeof setTimeout> }>();
 	/** Stand-ins of the guests' keyboards while they type. */
 	private keyboards: RemoteKeyboards;
@@ -83,7 +89,7 @@ export class HostAuthority {
 		this.avatars = hooks;
 	}
 
-	setStorageHooks(hooks: { getPublicationId(): string | null; onPlayerReady(player: PlayerInfo): void }): void {
+	setStorageHooks(hooks: { getPublicationId(): string | null; onPlayerReady(player: PlayerInfo): void; onPlayerLeft?(player: PlayerInfo): void }): void {
 		this.storageHooks = hooks;
 	}
 
@@ -110,6 +116,42 @@ export class HostAuthority {
 		return playerId;
 	}
 
+	/** The id scripts know a guest by (the one it announced), given its connection id; the connection id itself until it has announced one. */
+	announcedIdFor(guestId: string): string {
+		return this.guests.get(guestId)?.player.playerId ?? guestId;
+	}
+
+	/** The connected guests, as scripts see them. */
+	listGuests(): PlayerSummary[] {
+		return [...this.guests.values()].map((entry) => ({ id: entry.player.playerId, name: entry.player.displayName, role: 'guest' as const }));
+	}
+
+	private guestByPlayerId(playerId: string): GuestEntry | undefined {
+		for (const entry of this.guests.values()) if (entry.player.playerId === playerId) return entry;
+		return undefined;
+	}
+
+	/** Where a guest's head and tracked hands are now (world space), from the presence it last sent; `null` when it is not connected or has not sent any yet. */
+	getGuestPose(playerId: string): { head: TransformPose; left?: TransformPose; right?: TransformPose } | null {
+		const entry = this.guestByPlayerId(playerId);
+		if (!entry || entry.lastPresenceSequence === 0) return null;
+		const pose = (node: TransformNode): TransformPose => ({
+			position: node.position.asArray() as TransformPose['position'],
+			rotation: (node.rotationQuaternion ?? Quaternion.Identity()).asArray() as TransformPose['rotation']
+		});
+		const left = entry.handProxies.get('left');
+		const right = entry.handProxies.get('right');
+		return { head: pose(entry.headProxy), ...(left ? { left: pose(left) } : {}), ...(right ? { right: pose(right) } : {}) };
+	}
+
+	/** Asks a guest's browser to move its player. Returns whether that guest is connected. */
+	teleportGuest(playerId: string, target: TeleportTarget): boolean {
+		const entry = this.guestByPlayerId(playerId);
+		if (!entry) return false;
+		entry.link.send({ kind: 'teleport', position: target.position, ...(target.yaw === undefined ? {} : { yaw: target.yaw }) });
+		return true;
+	}
+
 	/** Connected guests whose asset channel is open: places to ask for a model only they have. */
 	getAssetPeers(): AssetPeer[] {
 		return [...this.guests.values()].filter((entry) => entry.link.assetChannelOpen).map((entry) => entry.assets);
@@ -122,7 +164,8 @@ export class HostAuthority {
 	/** Resolves a player id (the host's own `localPlayer.playerId`, or a connected guest's id) to its display name — used to attribute codeBlock-driven actions (e.g. who threw a ball) to a player. */
 	getPlayerDisplayName(playerId: string): string | undefined {
 		if (playerId === this.localPlayer.playerId) return this.localPlayer.displayName;
-		return this.guests.get(playerId)?.player.displayName;
+		// By connection id (the equipment system's key) or by the id the guest announced (what scripts use).
+		return (this.guests.get(playerId) ?? this.guestByPlayerId(playerId))?.player.displayName;
 	}
 
 	private getLocalPresence(): Extract<WorldStateMessage, { kind: 'presence' }> {
@@ -216,6 +259,11 @@ export class HostAuthority {
 		this.avatars?.players?.removePlayer(entry.player.playerId);
 		for (const { link } of this.guests.values()) link.send({ kind: 'player-left', playerId: entry.player.playerId });
 		this.broadcastSnapshot();
+		try {
+			this.storageHooks?.onPlayerLeft?.(entry.player);
+		} catch (error) {
+			console.warn('[host] a script failed on a player leaving', error);
+		}
 	}
 
 	private getHandProxy(guestId: string, hand: 'left' | 'right'): TransformNode {
@@ -425,7 +473,20 @@ export class HostAuthority {
 		});
 	}
 
+	/** Tells every guest the whole world, soon: calls that come close together are sent as one. */
 	broadcastSnapshot(): void {
+		this.snapshotThrottle();
+	}
+
+	/**
+	 * Tells every guest about a slot that comes and goes by itself (a sound, a spark: it has an `expires`), without sending the
+	 * whole world. The guests' next snapshot carries it if it is still there.
+	 */
+	broadcastEphemeral(slot: Slot): void {
+		for (const { link } of this.guests.values()) link.send({ kind: 'spawn-ephemeral', slot });
+	}
+
+	private sendSnapshotToAll(): void {
 		const tree = this.sceneGraph.serialize();
 		this.lastTransforms.clear();
 		this.dirtyTransforms.clear();
@@ -440,6 +501,7 @@ export class HostAuthority {
 		clearInterval(this.presenceTimer);
 		clearInterval(this.stateTimer);
 		clearInterval(this.correctionTimer);
+		this.snapshotThrottle.cancel();
 		for (const guestId of [...this.guests.keys()]) this.removeGuest(guestId);
 		this.keyboards.dispose();
 		this.signaling.close();
