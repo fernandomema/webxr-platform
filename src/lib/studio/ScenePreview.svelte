@@ -100,10 +100,21 @@
 		return bakeReflectionProbe(scene, live.node.getAbsolutePosition(), live.slot.name || 'Reflection probe');
 	}
 
-	/** Moves the camera to look at the selected slot. */
-	export function focusSelected(): void {
+	/** Turns the camera to look at the selected slot; with `approach` it also flies to it, as close as its size needs, whatever the distance. */
+	export function focusSelected(approach = false): void {
 		const node = selectedId ? sceneGraph?.getLive(selectedId)?.node : null;
-		if (node && camera) camera.setTarget(node.getAbsolutePosition().clone());
+		if (!node || !camera) return;
+		const target = node.getAbsolutePosition().clone();
+		if (approach) {
+			const { min, max } = node.getHierarchyBoundingVectors(true);
+			const size = Number.isFinite(min.x) && Number.isFinite(max.x) ? max.subtract(min).length() : 0;
+			const distance = Math.max(size * 1.2, 1.5);
+			const back = target.subtract(camera.position);
+			// Keep the direction the camera is already looking from; straight above or below, step back along the view instead.
+			const direction = back.lengthSquared() > 1e-6 ? back.normalize() : camera.getForwardRay().direction;
+			camera.position = target.subtract(direction.scale(distance));
+		}
+		camera.setTarget(target);
 	}
 
 	onMount(() => {

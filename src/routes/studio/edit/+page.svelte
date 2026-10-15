@@ -39,6 +39,7 @@
 	let showAddObject = $state(false);
 	let preview = $state<ScenePreview>();
 	let bypassGuard = false;
+	let lastFocusKey = 0;
 
 	onMount(() => {
 		try {
@@ -239,7 +240,13 @@
 		} else if (!mod && (event.key === 'Delete' || event.key === 'Backspace') && doc.selectedId) {
 			event.preventDefault();
 			removeSelected();
-		} else if (!mod && key === 'f') preview?.focusSelected();
+		} else if (!mod && key === 'f') {
+			// A second press right after the first also flies the camera to the object, for when it is far away.
+			if (event.repeat) return;
+			const now = performance.now();
+			preview?.focusSelected(now - lastFocusKey < 400);
+			lastFocusKey = now;
+		}
 		else if (!mod && event.key === '/') {
 			event.preventDefault();
 			leftTab = 'hierarchy';
@@ -319,7 +326,7 @@
 						}}
 						onTransformSlot={(id, position, rotation, scale) => doc.setTransform(id, position, rotation, scale)}
 					/>
-					<p class="hint">Drag to orbit · Scroll to zoom · Right-drag to pan · <span class="kbd">F</span> to focus</p>
+					<p class="hint">Drag to orbit · Scroll to zoom · Right-drag to pan · <span class="kbd">F</span> to focus · <span class="kbd">F F</span> to fly to it</p>
 				</div>
 				{#if centerView === 'code'}<div class="view"><CodeView {doc} /></div>{/if}
 				{#if centerView === 'json'}<div class="view"><JsonView {doc} /></div>{/if}

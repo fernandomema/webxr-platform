@@ -14,6 +14,11 @@ const WORLDS = {
 		const { buildDeadDrop } = await import(src('xr/templates/deadDrop.ts'));
 		const { LIGHT_REGIONS, LIGHTING_WORLD } = await import(src('xr/templates/deadDropLighting.ts'));
 		return { name: LIGHTING_WORLD, tree: buildDeadDrop(), regions: LIGHT_REGIONS, skyIntensity: 0, albedoScale: 0.4 };
+	},
+	'bistro-rush': async () => {
+		const { buildBistro } = await import(src('xr/templates/bistro.ts'));
+		const { BAKE, LIGHT_REGIONS, LIGHTING_WORLD } = await import(src('xr/templates/bistroLighting.ts'));
+		return { name: LIGHTING_WORLD, tree: buildBistro(), regions: LIGHT_REGIONS, ...BAKE };
 	}
 };
 

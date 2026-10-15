@@ -13,19 +13,26 @@ import { buildPolyHeavenMaterials } from './polyHeavenMaterials';
 import { buildWishEngine } from './wishEngine';
 import { buildArcade } from './arcade';
 import { buildDeadDrop } from './deadDrop';
+import { buildBistro } from './bistro';
 
 /** The worlds that ship with the app: always there to go to, and the starting points for the Studio's world templates. */
 export interface BuiltinWorld {
-	id: 'lobby' | 'workshop' | 'pop-up-store' | 'pulse' | 'avatarShowcase' | 'archive-film-test' | 'mirror-maze' | 'beat-turntable' | 'archive-jukebox' | 'polyheaven-materials' | 'wish-engine' | 'arcade' | 'dead-drop';
+	id: 'lobby' | 'workshop' | 'pop-up-store' | 'pulse' | 'avatarShowcase' | 'archive-film-test' | 'mirror-maze' | 'beat-turntable' | 'archive-jukebox' | 'polyheaven-materials' | 'wish-engine' | 'arcade' | 'dead-drop' | 'bistro-rush';
 	name: string;
 	description: string;
 	scene: SlotTree;
 }
 
 /** Worlds listed under the Development category instead of the official ones. */
-export const DEV_WORLD_IDS: readonly BuiltinWorld['id'][] = ['archive-film-test', 'mirror-maze', 'beat-turntable', 'polyheaven-materials', 'wish-engine', 'arcade', 'dead-drop'];
+export const DEV_WORLD_IDS: readonly BuiltinWorld['id'][] = ['archive-film-test', 'mirror-maze', 'beat-turntable', 'polyheaven-materials', 'wish-engine', 'arcade', 'dead-drop', 'bistro-rush'];
 
 export const BUILTIN_WORLDS: readonly BuiltinWorld[] = [
+	{
+		id: 'bistro-rush',
+		name: 'Bistro Rush',
+		description: 'Run a restaurant with friends: take ingredients, chop them with the knife, cook, plate and serve before the guests lose patience. Every restaurant is made from a seed; between the days you buy blueprints and move your kitchen about, and what you earn as a chef is saved to your account.',
+		scene: buildBistro()
+	},
 	{
 		id: 'dead-drop',
 		name: 'Dead Drop',
