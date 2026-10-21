@@ -6,7 +6,7 @@ import { isEquipHand } from '../interaction/equipmentRegistry.ts';
 import { SignalingClient, type SignalingMessage } from './signalingClient.ts';
 import { PeerLink } from './peerConnection.ts';
 import type { PlayerApiCall, PlayerApiResult } from '../../worldStorage/ops.ts';
-import type { PlayerInfo, SlotTransform, WorldStateMessage, WorldSyncMessage } from './protocol.ts';
+import { PROTOCOL_VERSION, type PlayerInfo, type SlotTransform, type WorldStateMessage, type WorldSyncMessage } from './protocol.ts';
 import type { Slot } from '../../ecs/types.ts';
 import { createGhostRig, type GhostRig, type TransformPose } from '../avatar/defaultAvatar.ts';
 import { validateWorldPackage, MAX_SHARED_SCENE_BYTES } from '../../worlds/package.ts';
@@ -347,6 +347,11 @@ export class HostAuthority {
 		if (!entry) return;
 		switch (msg.kind) {
 			case 'player-hello': {
+				if ((msg.protocol ?? 1) !== PROTOCOL_VERSION) {
+					entry.link.send({ kind: 'session-rejected', reason: 'incompatible-protocol', protocol: PROTOCOL_VERSION });
+					setTimeout(() => this.removeGuest(guestId), 250); // a moment for the refusal to arrive before the link closes
+					break;
+				}
 				// A player id is what owns an avatar, so one that is already taken cannot be claimed.
 				const taken = msg.player.playerId === this.localPlayer.playerId || [...this.guests.entries()].some(([id, other]) => id !== guestId && other.player.playerId === msg.player.playerId);
 				entry.player = { ...msg.player, playerId: taken ? guestId : msg.player.playerId, role: 'guest' };

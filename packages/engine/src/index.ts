@@ -4,7 +4,7 @@
  * (`@kithin/engine/xr/PlayShell.svelte`), which adds the launch screen and the desktop HUD. Everything else is importable by its
  * path (`@kithin/engine/ecs/types`, …) for apps that build on the engine's pieces, such as an editor.
  */
-export { configurePlatform, getPlatformConfig, platformFetch, platformUrl, assetUrl, type PlatformConfig } from './xr/platform/config.ts';
+export { configurePlatform, getPlatformConfig, platformFetch, platformUrl, assetUrl, useStoredToken, type PlatformConfig } from './xr/platform/config.ts';
 export { platformAuth } from './xr/platform/auth.ts';
 export { registerContent, type EngineContent, type BuiltinWorld, type StarterKit } from './xr/content/registry.ts';
 export { configureFeatures, getFeatures, type EngineFeatures } from './xr/features.ts';

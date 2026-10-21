@@ -37,10 +37,10 @@ export function engineLocale(): string {
 	return (detected ??= detect());
 }
 
-/** Chooses the language (a code the engine has a translation for, or English). `null` goes back to the browser's. */
+/** Chooses the language: a code the engine has a translation for, else English. `null` goes back to the browser's. */
 export function setEngineLocale(locale: string | null): void {
-	const next = locale ? supported(locale) : null;
-	if (next === override && (locale === null) === (override === null)) return;
+	const next = locale === null ? null : (supported(locale) ?? 'en');
+	if (next === override) return;
 	override = next;
 	if (locale === null) detected = null;
 	for (const listener of listeners) listener();

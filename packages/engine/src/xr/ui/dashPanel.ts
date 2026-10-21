@@ -1,4 +1,4 @@
-import { platformFetch } from '../platform/config.ts';
+import { getPlatformConfig, platformFetch } from '../platform/config.ts';
 import type { Scene, TransformNode, Mesh } from '@babylonjs/core';
 import {
 	AdvancedDynamicTexture,
@@ -14,6 +14,7 @@ import {
 import { createSlot, type SlotTree } from '../../ecs/types.ts';
 import type { SceneGraph } from '../sceneGraph.ts';
 import { platformAuth } from '../platform/auth.ts';
+import { startDeviceSignIn, type DeviceSignIn } from '../platform/deviceSignIn.ts';
 import { getFeatures } from '../features.ts';
 import { availableInventoryFolders, getInventoryAdapter, isReadOnlyAdapter } from '../../inventory/registry.ts';
 import type { InventoryAdapter, InventoryAdapterId, InventoryStorageAdapterId, InventoryFolder, InventoryItem } from '../../inventory/types.ts';
@@ -1556,7 +1557,8 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	signedOutView.addControl(passwordInput);
 
 	const statusText = new TextBlock('account-status', '');
-	statusText.height = '34px';
+	statusText.height = '52px';
+	statusText.textWrapping = true;
 	statusText.fontSize = 17;
 	statusText.color = INV.muted;
 	statusText.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -1574,6 +1576,39 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		await platformAuth().signIn.social({ provider: 'discord', callbackURL: window.location.href });
 	});
 	signedOutView.addControl(discordBtn);
+
+	// A game that is not on the platform's site has no cookie to share: it signs in with a code typed on the platform's own page.
+	let deviceSignIn: DeviceSignIn | null = null;
+	const tokenMode = Boolean(getPlatformConfig().setToken);
+	const deviceBtn = accountButton('device-btn', 'Sign in with a code', THEME.raised, `${ACCOUNT_WIDTH - 64}px`, async () => {
+		if (deviceSignIn) {
+			deviceSignIn.cancel();
+			deviceSignIn = null;
+			deviceBtn.textBlock!.text = 'Sign in with a code';
+			setStatus('');
+			return;
+		}
+		try {
+			setStatus('Asking for a code…');
+			const attempt = (deviceSignIn = await startDeviceSignIn());
+			deviceBtn.textBlock!.text = 'Cancel';
+			setStatus(`On any device, open ${attempt.verificationUri.replace(/^https?:\/\//, '')} and enter ${attempt.userCode}`);
+			const outcome = await attempt.done;
+			if (deviceSignIn === attempt) deviceSignIn = null;
+			deviceBtn.textBlock!.text = 'Sign in with a code';
+			if (outcome === 'approved') await refreshSession();
+			else if (outcome === 'denied') setStatus('The sign-in was refused.', 'error');
+			else if (outcome === 'expired') setStatus('The code ran out. Ask for a new one.', 'error');
+			else setStatus('');
+		} catch {
+			deviceSignIn = null;
+			deviceBtn.textBlock!.text = 'Sign in with a code';
+			setStatus('Could not reach the server. Try again.', 'error');
+		}
+	});
+	discordBtn.isVisible = !tokenMode;
+	deviceBtn.isVisible = tokenMode;
+	signedOutView.addControl(deviceBtn);
 
 	function setAuthMode(mode: AuthMode) {
 		authMode = mode;
@@ -1666,6 +1701,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	signedInView.addControl(signedInTag);
 	const signOutBtn = accountButton('logout-btn', 'Sign out', INV.danger, `${ACCOUNT_WIDTH - 64}px`, async () => {
 		await platformAuth().signOut();
+		getPlatformConfig().setToken?.(null);
 		await refreshSession();
 	});
 	signedInView.addControl(signOutBtn);

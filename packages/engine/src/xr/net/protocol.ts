@@ -9,6 +9,12 @@ export type SlotTransform = Pick<Slot, 'id' | 'position' | 'rotation' | 'scale'>
 /** Which object a player has equipped in which hand — session state, never part of the serialized scene. */
 export type EquippedEntry = { slotId: string; playerId: string; hand: 'left' | 'right' };
 
+/**
+ * The version of the messages two engines exchange. A game built on one release of the engine can host or join sessions with
+ * another as long as this number is the same; it goes up whenever a message changes in a way an older engine cannot read.
+ */
+export const PROTOCOL_VERSION = 1;
+
 export type PlayerInfo = {
 	playerId: string;
 	displayName: string;
@@ -20,7 +26,10 @@ export type WorldSyncMessage =
 	/** `publicationId` is the published world the host runs, so a guest's own storage calls target it (the server re-checks it against the room). */
 	| { kind: 'scene-snapshot'; revision: number; tree: SlotTree; players: PlayerInfo[]; equipped?: EquippedEntry[]; publicationId?: string | null }
 	| { kind: 'transform-correction'; revision: number; transforms: SlotTransform[] }
-	| { kind: 'player-hello'; player: PlayerInfo }
+	/** `protocol` is the sender's `PROTOCOL_VERSION`; a hello without one comes from an engine that predates the field (version 1). */
+	| { kind: 'player-hello'; player: PlayerInfo; protocol?: number }
+	/** The host refuses a guest it cannot talk to. */
+	| { kind: 'session-rejected'; reason: 'incompatible-protocol'; protocol: number }
 	/** A guest's chosen avatar. The host validates and rebuilds it; it is never applied as sent. */
 	| { kind: 'avatar-set-request'; slots: SlotTree }
 	| { kind: 'player-left'; playerId: string }

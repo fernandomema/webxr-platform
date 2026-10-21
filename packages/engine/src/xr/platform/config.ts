@@ -9,6 +9,10 @@ export interface PlatformConfig {
 	apiBase: string;
 	/** A bearer token for the account in use, for a page that is not on the platform's origin and cannot share its cookie. */
 	getToken: (() => string | null | undefined | Promise<string | null | undefined>) | null;
+	/** Stores the token a sign-in with a code produced (and clears it on sign-out). Without it, the dash offers no sign-in with a code. */
+	setToken: ((token: string | null) => void) | null;
+	/** Who is asking to sign in with a code: the engine's own id, or the id of a world published on the platform. */
+	clientId: string;
 	/** Where the engine's static files (decoders, controller profiles, the base avatar, input icons) are served from. */
 	assetBase: string;
 	/** The signaling WebSocket. Empty means `/signaling` on the page's own origin. */
@@ -24,6 +28,8 @@ export interface PlatformConfig {
 const defaults = (): PlatformConfig => ({
 	apiBase: '',
 	getToken: null,
+	setToken: null,
+	clientId: 'kithin-engine',
 	assetBase: '',
 	signalingUrl: '',
 	stunUrls: 'stun:stun.l.google.com:19302',
@@ -88,5 +94,32 @@ export async function platformFetch(input: RequestInfo | URL, init: RequestInit 
 	const headers = new Headers(init.headers);
 	const token = current.getToken ? await current.getToken() : null;
 	if (token && !headers.has('authorization')) headers.set('authorization', `Bearer ${token}`);
-	return fetch(platformUrl(input), { ...init, headers, credentials: current.apiBase ? 'include' : (init.credentials ?? 'same-origin') });
+	return fetch(platformUrl(input), { ...init, headers, credentials: current.apiBase ? (current.getToken ? 'omit' : 'include') : (init.credentials ?? 'same-origin') });
+}
+
+/**
+ * Keeps the account's bearer token in this browser's storage, for a game that is not on the platform's origin. Signing in with a
+ * code (the dash offers it once a token is configured) fills it; signing out empties it.
+ */
+export function useStoredToken(key = 'kithin.token'): void {
+	let memory: string | null | undefined; // undefined until this page has signed in or out; storage can be blocked
+	configurePlatform({
+		getToken: () => {
+			if (memory !== undefined) return memory;
+			try {
+				return localStorage.getItem(key);
+			} catch {
+				return null;
+			}
+		},
+		setToken: (token) => {
+			memory = token;
+			try {
+				if (token) localStorage.setItem(key, token);
+				else localStorage.removeItem(key);
+			} catch {
+				// The token is kept for this page only.
+			}
+		}
+	});
 }

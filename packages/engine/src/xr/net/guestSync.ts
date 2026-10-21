@@ -6,7 +6,7 @@ import type { MediaControlAction, Slot, UIEvent } from '../../ecs/types.ts';
 import { SignalingClient, type SignalingMessage } from './signalingClient.ts';
 import { PeerLink } from './peerConnection.ts';
 import type { PlayerApiResult } from '../../worldStorage/ops.ts';
-import type { PlayerInfo, WorldStateMessage, WorldSyncMessage } from './protocol.ts';
+import { PROTOCOL_VERSION, type PlayerInfo, type WorldStateMessage, type WorldSyncMessage } from './protocol.ts';
 import { migrateSlotTree } from '../../assets/ref.ts';
 import { createGhostRig, type GhostRig, type TransformPose } from '../avatar/defaultAvatar.ts';
 import type { AvatarHooks } from '../avatar/avatarHooks.ts';
@@ -105,7 +105,7 @@ export class GuestSync {
 				onBinary: (data) => this.assetPeer?.handle(data),
 				onAssetChannelOpen: announceAssetSourcesChanged,
 				onOpen: () => {
-					this.link?.send({ kind: 'player-hello', player: this.localPlayer });
+					this.link?.send({ kind: 'player-hello', player: this.localPlayer, protocol: PROTOCOL_VERSION });
 					this.onConnected?.();
 				},
 				onConnectionStateChange: (state) => {
@@ -216,6 +216,10 @@ export class GuestSync {
 
 		const msg = data as WorldSyncMessage;
 		switch (msg.kind) {
+			case 'session-rejected':
+				console.error(`[net] the host runs an incompatible version of the engine (protocol ${msg.protocol}, this one speaks ${PROTOCOL_VERSION})`);
+				this.endSession();
+				break;
 			case 'scene-snapshot':
 				if (msg.revision < this.snapshotRevision) break;
 				this.snapshotRevision = msg.revision;

@@ -8,7 +8,7 @@ function build() {
 		baseURL: config.apiBase || undefined,
 		plugins: [usernameClient()],
 		fetchOptions: {
-			credentials: config.apiBase ? 'include' : 'same-origin',
+			credentials: config.apiBase ? (config.getToken ? 'omit' : 'include') : 'same-origin',
 			// On a page that is not on the platform's origin the account travels as a bearer token instead of a cookie.
 			auth: { type: 'Bearer', token: async () => (config.getToken ? ((await config.getToken()) ?? undefined) : undefined) }
 		}
