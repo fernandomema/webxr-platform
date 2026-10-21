@@ -5,7 +5,6 @@
 	"type": "module",
 	"license": "UNLICENSED",
 	"private": true,
-	"sideEffects": false,
 	"exports": {
 		".": "./src/index.ts",
 		"./xr/i18n/svelte.svelte": "./src/xr/i18n/svelte.svelte.ts",

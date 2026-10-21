@@ -68,4 +68,15 @@
 
 <XRLaunchOverlay state={launchState} error={launchError} onEnterVR={enterVR} onContinueDesktop={continueOnDesktop} />
 <DesktopHud />
-<canvas bind:this={canvas} class="h-screen w-screen touch-none outline-none"></canvas>
+<canvas bind:this={canvas}></canvas>
+
+<style>
+	/* The engine draws on the whole window; it cannot lean on the app's own CSS (a game may have none). */
+	canvas {
+		display: block;
+		width: 100vw;
+		height: 100vh;
+		touch-action: none;
+		outline: none;
+	}
+</style>
