@@ -17,7 +17,7 @@ import {
 } from '@babylonjs/core';
 import { initBrowserCodeBlockSandbox } from './sandbox/browserInit.ts';
 import { getPlatformConfig, platformFetch, platformUrl, assetUrl } from './platform/config.ts';
-import { getContent, findBuiltinWorld } from './content/registry.ts';
+import { getContent, findBuiltinWorld, loadBuiltinWorlds } from './content/registry.ts';
 import { publicationFor } from './appPublication.ts';
 import { getFeatures } from './features.ts';
 import { engineLocale } from './i18n/locale.ts';
@@ -977,6 +977,13 @@ export async function mountGame(
 	// Last of the per-frame work: GUI textures changed during this frame are uploaded before the cameras draw (see guiUploads.ts).
 	const stopGuiUploads = uploadGuiBeforeDrawing(scene);
 	engine.runRenderLoop(() => scene.render());
+	// The first time a world is asked for, its module has to be fetched and built: with a click that seems to do nothing for seconds.
+	// Doing it once the game is up (and the device has a moment to spare) makes the click instant.
+	if (getContent().preloadWorlds) {
+		const warm = () => void loadBuiltinWorlds().catch((error) => console.warn('[content] could not preload the worlds', error));
+		if (typeof requestIdleCallback === 'function') requestIdleCallback(warm, { timeout: 8000 });
+		else setTimeout(warm, 3000);
+	}
 	const onResize = () => engine.resize();
 	window.addEventListener('resize', onResize);
 

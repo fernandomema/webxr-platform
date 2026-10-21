@@ -26,6 +26,7 @@ registerContent({
 		const [{ default: lobby }, { buildLobbyExtras }] = await Promise.all([import('$lib/content/templates/lobby.json'), import('$lib/content/templates/lobbyExtras')]);
 		return [...lobby, ...buildLobbyExtras()] as SlotTree;
 	},
+	preloadWorlds: true,
 	loadStarterKit: async () => (await import('$lib/content/starterKit/catalog')).starterKit,
 	// A record disc's label, rim and grooves follow its title, author and colours.
 	repainters: { recordDisc: paintDisc },

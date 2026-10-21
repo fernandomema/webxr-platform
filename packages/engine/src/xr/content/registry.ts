@@ -40,6 +40,11 @@ export interface EngineContent {
 	loadWorlds: () => Promise<{ worlds: readonly BuiltinWorld[]; devWorldIds: readonly string[] }>;
 	/** The scene shown when no world was asked for (a lobby). Without it the player starts on a plain floor. */
 	loadHome: () => Promise<SlotTree>;
+	/**
+	 * Load the worlds in the background once the game is up, so going to one from a portal or the Worlds tab is instant. Leave it off for
+	 * an app with many worlds: they are then loaded when asked for.
+	 */
+	preloadWorlds: boolean;
 	loadStarterKit: () => Promise<StarterKit>;
 	/** Files that ship with the app, by the content hash they have, for worlds that name them. */
 	bundledAssets: Partial<Record<AssetId, string>>;
