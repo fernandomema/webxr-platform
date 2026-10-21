@@ -1,3 +1,4 @@
+import { platformFetch } from '../platform/config.ts';
 import type { Scene, TransformNode, Mesh } from '@babylonjs/core';
 import {
 	AdvancedDynamicTexture,
@@ -12,7 +13,8 @@ import {
 } from '@babylonjs/gui';
 import { createSlot, type SlotTree } from '$lib/ecs/types';
 import type { SceneGraph } from '../sceneGraph';
-import { authClient } from '$lib/auth-client';
+import { platformAuth } from '../platform/auth.ts';
+import { getFeatures } from '../features.ts';
 import { availableInventoryFolders, getInventoryAdapter, isReadOnlyAdapter } from '$lib/inventory/registry';
 import type { InventoryAdapter, InventoryAdapterId, InventoryStorageAdapterId, InventoryFolder, InventoryItem } from '$lib/inventory/types';
 import { validateWorldScene } from '$lib/worlds/package';
@@ -26,7 +28,7 @@ import { saveWithPreview } from '../inventorySave';
 import { captureItemThumbnail } from '../thumbnail/capture';
 import { typeWithKeyboard } from '../keyboard/guiInput';
 import { getLayout, layoutIds } from '../keyboard/layouts';
-import type { BuiltinWorld } from '../templates/builtinWorlds';
+import type { BuiltinWorld } from '../content/registry.ts';
 import { createWorldsBrowser } from './worldsBrowser';
 import { thumbnailUrl } from '$lib/assets/thumbnails';
 import type { AssetId } from '$lib/assets/ref';
@@ -66,7 +68,8 @@ export interface DashPanelCallbacks {
 	onUnsetDefaultAvatar(): Promise<void>;
 	onLocomotionSettingsChanged(): void;
 	onExitVr(): Promise<void>;
-	onToggleInspector(): void;
+	/** Opens or closes the in-game inspector; null when the app has none (see `EngineFeatures.inspector`). */
+	onToggleInspector: (() => void) | null;
 	/** Seated mode was switched on or off (`xrSettings.seatedMode` already holds the new value). */
 	onSeatedModeChanged(): void;
 	/** Foveated rendering or the performance readout was changed (`xrSettings` already holds the new values). */
@@ -90,6 +93,7 @@ export interface DashPanelHandle {
 }
 
 export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks: DashPanelCallbacks): DashPanelHandle {
+	const features = getFeatures();
 	const slot = createSlot({
 		id: 'dash-panel',
 		name: 'Dash',
@@ -255,7 +259,16 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		{ id: 'settings', label: 'Settings', icon: 'settings', order: 40, onShow: () => refreshSettingsTab() },
 		{ id: 'account', label: 'Account', icon: 'user', order: 50 }
 	];
-	for (const tab of BUILTIN_TABS) addTab({ ...tab, build: () => {} });
+	// An app can turn tabs off (see `EngineFeatures`). A tab that is off still gets its page, so the code below that fills it
+	// needs no special cases, but the page is never shown and the tab is not on the bar.
+	const enabledTabs: Record<string, boolean> = {
+		home: features.homeTab, session: features.sessionTab, worlds: features.worldsTab,
+		inventory: features.inventoryTab, settings: features.settingsTab, account: features.accountTab
+	};
+	for (const tab of BUILTIN_TABS) {
+		if (enabledTabs[tab.id]) addTab({ ...tab, build: () => {} });
+		else contentByTab[tab.id] = new Rectangle(`panel-${tab.id}-off`);
+	}
 
 	// --- Home tab: the player's own shortcuts ---
 	const homePanel = new StackPanel('home-panel');
@@ -301,7 +314,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			background: xrSettings.seatedMode ? THEME.accent : THEME.raised,
 			run: () => setSeatedMode(!xrSettings.seatedMode)
 		}),
-		inspector: () => ({ text: 'Inspector', background: THEME.raised, run: () => callbacks.onToggleInspector() }),
+		inspector: () => ({ text: 'Inspector', background: THEME.raised, run: () => callbacks.onToggleInspector?.() }),
 		'exit-vr': () => ({ text: 'Exit VR', background: THEME.danger, run: () => void callbacks.onExitVr() })
 	};
 
@@ -319,6 +332,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			const layout = xrSettings.dashboardLayout;
 			if (layout.length === 0) homePanel.addControl(homeText('Nothing here yet. Use Customise to add your shortcuts.', THEME.muted, 20, 60));
 			for (const id of layout) {
+				if (id === 'inspector' && !callbacks.onToggleInspector) continue;
 				const action = HOME_ACTIONS[id]();
 				homePanel.addControl(homeButton(`home-${id}`, action.text, action.background, 420, action.run));
 			}
@@ -331,7 +345,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 
 		homePanel.addControl(homeText('Choose the shortcuts you want here, and their order.', THEME.muted, 20, 40));
 		const layout = xrSettings.dashboardLayout;
-		for (const { id, shown } of dashboardEditorOrder(layout)) {
+		for (const { id, shown } of dashboardEditorOrder(layout).filter((entry) => entry.id !== 'inspector' || callbacks.onToggleInspector)) {
 			const row = new StackPanel(`home-edit-${id}`);
 			row.isVertical = false;
 			row.height = '60px';
@@ -613,6 +627,8 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	saveAsNewBtn.onPointerClickObservable.add(() => void saveWorld(true));
 
 	async function refreshWorldsTab() {
+		// Nothing shows the sessions or the worlds, so there is nothing to ask the platform for.
+		if (!tabs.has('session') && !tabs.has('worlds')) return;
 		refreshSaveWorld();
 		const hosting = gameState.role === 'host';
 		const visiting = gameState.role === 'guest';
@@ -912,8 +928,8 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 						await ensureCloudAssets(item.slotData, getLocalAssetStore(), { extraIds: preview ? [preview] : [] });
 						const body: Record<string, unknown> = { name: item.name, description: '', thumbnailAssetId: preview, slotData: item.slotData };
 						const response = item.marketplaceItemId
-							? await fetch(`/api/marketplace/items/${item.marketplaceItemId}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ slotData: item.slotData, thumbnailAssetId: preview }) })
-							: await fetch('/api/marketplace/items', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...body, source: adapter.id === 'local' || adapter.id === 'filesystem' ? undefined : { adapterId: adapter.id, itemId: item.id, worldId: gameState.worldId } }) });
+							? await platformFetch(`/api/marketplace/items/${item.marketplaceItemId}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ slotData: item.slotData, thumbnailAssetId: preview }) })
+							: await platformFetch('/api/marketplace/items', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...body, source: adapter.id === 'local' || adapter.id === 'filesystem' ? undefined : { adapterId: adapter.id, itemId: item.id, worldId: gameState.worldId } }) });
 						if (!response.ok) throw new Error(response.status === 401 ? 'Sign in to publish objects.' : 'Could not publish marketplace object.');
 						const result = await response.json() as { id: string; latestRevision: number };
 						if (adapter.id === 'local' || adapter.id === 'filesystem') await adapter.setMarketplaceItemId?.(getInventoryContext(), item.id, result.id);
@@ -935,7 +951,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 							// Items saved before previews existed have none: it is made now, once, and goes up with the world.
 							const thumbnailAssetId = item.thumbnailAssetId ?? (await captureItemThumbnail(item.slotData, 'world', { name: item.name })) ?? undefined;
 							if (thumbnailAssetId) await ensureCloudAssets([], getLocalAssetStore(), { extraIds: [thumbnailAssetId] }).catch(() => undefined);
-							const res = await fetch('/api/published-worlds', {
+							const res = await platformFetch('/api/published-worlds', {
 								method: 'POST', headers: { 'content-type': 'application/json' },
 								body: JSON.stringify({ name: item.name, scene: item.slotData, thumbnailAssetId })
 							});
@@ -1256,6 +1272,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	}
 
 	function refreshInventoryTab() {
+		if (!tabs.has('inventory')) return;
 		refreshRoots();
 		if (activeAdapter) void refreshUsage();
 	}
@@ -1554,7 +1571,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	submitBtn.paddingBottom = '8px';
 	signedOutView.addControl(submitBtn);
 	const discordBtn = accountButton('discord-btn', 'Continue with Discord', '#5865f2', `${ACCOUNT_WIDTH - 64}px`, async () => {
-		await authClient.signIn.social({ provider: 'discord', callbackURL: window.location.href });
+		await platformAuth().signIn.social({ provider: 'discord', callbackURL: window.location.href });
 	});
 	signedOutView.addControl(discordBtn);
 
@@ -1589,10 +1606,10 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		try {
 			const { error } =
 				authMode === 'register'
-					? await authClient.signUp.email({ email: identifier, password, name: username, username })
+					? await platformAuth().signUp.email({ email: identifier, password, name: username, username })
 					: identifier.includes('@')
-						? await authClient.signIn.email({ email: identifier, password })
-						: await authClient.signIn.username({ username: identifier, password });
+						? await platformAuth().signIn.email({ email: identifier, password })
+						: await platformAuth().signIn.username({ username: identifier, password });
 			if (error) {
 				setStatus(error.message ?? (authMode === 'register' ? 'Could not create the account.' : 'Could not sign in.'), 'error');
 			} else {
@@ -1648,7 +1665,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	signedInTag.color = INV.ok;
 	signedInView.addControl(signedInTag);
 	const signOutBtn = accountButton('logout-btn', 'Sign out', INV.danger, `${ACCOUNT_WIDTH - 64}px`, async () => {
-		await authClient.signOut();
+		await platformAuth().signOut();
 		await refreshSession();
 	});
 	signedInView.addControl(signOutBtn);
@@ -1657,7 +1674,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	setStatus('Checking your session…');
 
 	async function refreshSession() {
-		const { data } = await authClient.getSession();
+		const { data } = await platformAuth().getSession();
 		const user = data?.user ?? null;
 		gameState.userId = user?.id ?? null;
 		gameState.userName = user?.name ?? null;
@@ -1676,7 +1693,8 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	void refreshSession();
 
 	ready = true;
-	showTab('home');
+	const firstTab = tabs.has('home') ? 'home' : tabs.list()[0]?.id;
+	if (firstTab) showTab(firstTab);
 
 	return {
 		root: node,

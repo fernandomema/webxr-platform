@@ -1,3 +1,4 @@
+import { platformFetch } from '../../xr/platform/config.ts';
 import { migrateItems } from '../migrate';
 import type { InventoryAdapter, InventoryFolder, InventoryItem } from '../types';
 import type { AssetId } from '$lib/assets/ref';
@@ -27,14 +28,14 @@ export const worldInventoryAdapter: InventoryAdapter = {
 	async listFolders(ctx, parentId) {
 		if (!ctx.worldId) return [];
 		const qs = parentId ? `?parentId=${parentId}` : '';
-		const res = await fetch(`/api/worlds/${ctx.worldId}/inventory/folders${qs}`);
+		const res = await platformFetch(`/api/worlds/${ctx.worldId}/inventory/folders${qs}`);
 		if (!res.ok) return [];
 		return (await res.json()) as InventoryFolder[];
 	},
 
 	async createFolder(ctx, parentId, name) {
 		if (!ctx.worldId) throw new Error('No active world');
-		const res = await fetch(`/api/worlds/${ctx.worldId}/inventory/folders`, {
+		const res = await platformFetch(`/api/worlds/${ctx.worldId}/inventory/folders`, {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
 			body: JSON.stringify({ parentId, name })
@@ -45,13 +46,13 @@ export const worldInventoryAdapter: InventoryAdapter = {
 
 	async deleteFolder(ctx, folderId) {
 		if (!ctx.worldId) return;
-		await fetch(`/api/worlds/${ctx.worldId}/inventory/folders/${folderId}`, { method: 'DELETE' });
+		await platformFetch(`/api/worlds/${ctx.worldId}/inventory/folders/${folderId}`, { method: 'DELETE' });
 	},
 
 	async listItems(ctx, folderId) {
 		if (!ctx.worldId) return [];
 		const qs = folderId ? `?folderId=${folderId}` : '';
-		const res = await fetch(`/api/worlds/${ctx.worldId}/inventory${qs}`);
+		const res = await platformFetch(`/api/worlds/${ctx.worldId}/inventory${qs}`);
 		if (!res.ok) return [];
 		return migrateItems((await res.json()) as InventoryItem[]);
 	},
@@ -59,7 +60,7 @@ export const worldInventoryAdapter: InventoryAdapter = {
 	async saveItem(ctx, folderId, name, slotData, kind = 'object', worldLineageId, thumbnailAssetId) {
 		if (!ctx.worldId) throw new Error('No active world to save into');
 		const preview = await sendPreview(ctx.userId, thumbnailAssetId);
-		const res = await fetch(`/api/worlds/${ctx.worldId}/inventory`, {
+		const res = await platformFetch(`/api/worlds/${ctx.worldId}/inventory`, {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
 			body: JSON.stringify({ folderId, name, slotData, kind, worldLineageId, thumbnailAssetId: preview })
@@ -71,7 +72,7 @@ export const worldInventoryAdapter: InventoryAdapter = {
 	async updateItem(ctx, itemId, folderId, name, slotData, thumbnailAssetId) {
 		if (!ctx.worldId) throw new Error('No active world to update');
 		const preview = await sendPreview(ctx.userId, thumbnailAssetId);
-		const res = await fetch(`/api/worlds/${ctx.worldId}/inventory/${itemId}`, {
+		const res = await platformFetch(`/api/worlds/${ctx.worldId}/inventory/${itemId}`, {
 			method: 'PUT',
 			headers: { 'content-type': 'application/json' },
 			body: JSON.stringify({ folderId, name, slotData, thumbnailAssetId: preview })
@@ -82,6 +83,6 @@ export const worldInventoryAdapter: InventoryAdapter = {
 
 	async deleteItem(ctx, itemId) {
 		if (!ctx.worldId) return;
-		await fetch(`/api/worlds/${ctx.worldId}/inventory/${itemId}`, { method: 'DELETE' });
+		await platformFetch(`/api/worlds/${ctx.worldId}/inventory/${itemId}`, { method: 'DELETE' });
 	}
 };

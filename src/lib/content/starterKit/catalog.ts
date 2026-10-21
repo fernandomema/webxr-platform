@@ -10,20 +10,7 @@ import { buildAtm } from '../../xr/templates/atm.ts';
 import { PROP_ENTRIES, PROP_FOLDERS } from './props.ts';
 import { TOOLS, toolEquippable } from '../../../../scripts/workshop-tools.mjs';
 
-export interface BuiltinFolder {
-	id: string;
-	name: string;
-	/** The folder this one is inside; none (the default) for a folder at the top of the kit. */
-	parentId?: string;
-}
-
-export interface BuiltinEntry {
-	id: string;
-	folderId: string;
-	name: string;
-	/** A fresh tree on every call, so nobody shares (or edits) the catalog's own data. */
-	build: () => SlotTree;
-}
+import type { StarterKit, StarterKitEntry as BuiltinEntry, StarterKitFolder as BuiltinFolder } from '../../xr/content/registry.ts';
 
 export const BUILTIN_FOLDERS: BuiltinFolder[] = [
 	{ id: 'basics', name: 'Basics' },
@@ -180,3 +167,6 @@ function withGrabbableRoot(tree: SlotTree): SlotTree {
 }
 
 export const BUILTIN_ENTRIES: BuiltinEntry[] = ENTRIES.map((entry) => ({ ...entry, build: () => withGrabbableRoot(entry.build()) }));
+
+/** What the engine's starter kit inventory lists (see `registerContent`). */
+export const starterKit: StarterKit = { folders: BUILTIN_FOLDERS, entries: BUILTIN_ENTRIES };

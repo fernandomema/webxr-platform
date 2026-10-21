@@ -1,3 +1,4 @@
+import { platformFetch } from '../../xr/platform/config.ts';
 import { migrateItems } from '../migrate';
 import { CloudAssetError } from '$lib/assets/cloud';
 import { ensureCloudAssets } from '$lib/assets/cloudSync';
@@ -28,13 +29,13 @@ export const cloudInventoryAdapter: InventoryAdapter = {
 
 	async listFolders(_ctx, parentId) {
 		const qs = parentId ? `?parentId=${parentId}` : '';
-		const res = await fetch(`/api/inventory/folders${qs}`);
+		const res = await platformFetch(`/api/inventory/folders${qs}`);
 		if (!res.ok) return [];
 		return (await res.json()) as InventoryFolder[];
 	},
 
 	async createFolder(_ctx, parentId, name) {
-		const res = await fetch('/api/inventory/folders', {
+		const res = await platformFetch('/api/inventory/folders', {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
 			body: JSON.stringify({ parentId, name })
@@ -44,12 +45,12 @@ export const cloudInventoryAdapter: InventoryAdapter = {
 	},
 
 	async deleteFolder(_ctx, folderId) {
-		await fetch(`/api/inventory/folders/${folderId}`, { method: 'DELETE' });
+		await platformFetch(`/api/inventory/folders/${folderId}`, { method: 'DELETE' });
 	},
 
 	async listItems(_ctx, folderId) {
 		const qs = folderId ? `?folderId=${folderId}` : '';
-		const res = await fetch(`/api/inventory${qs}`);
+		const res = await platformFetch(`/api/inventory${qs}`);
 		if (!res.ok) return [];
 		return migrateItems((await res.json()) as InventoryItem[]);
 	},
@@ -57,7 +58,7 @@ export const cloudInventoryAdapter: InventoryAdapter = {
 	async saveItem(_ctx, folderId, name, slotData, kind = 'object', worldLineageId, thumbnailAssetId) {
 		// Models are stored once, by hash: send the ones the cloud does not have yet, then the scene that uses them, and its preview.
 		await ensureCloudAssets(slotData, getLocalAssetStore(), { extraIds: previewIds(thumbnailAssetId) });
-		const res = await fetch('/api/inventory', {
+		const res = await platformFetch('/api/inventory', {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
 			body: JSON.stringify({ folderId, name, slotData, kind, worldLineageId, thumbnailAssetId })
@@ -68,7 +69,7 @@ export const cloudInventoryAdapter: InventoryAdapter = {
 
 	async updateItem(_ctx, itemId, folderId, name, slotData, thumbnailAssetId) {
 		await ensureCloudAssets(slotData, getLocalAssetStore(), { extraIds: previewIds(thumbnailAssetId) });
-		const res = await fetch(`/api/inventory/${itemId}`, {
+		const res = await platformFetch(`/api/inventory/${itemId}`, {
 			method: 'PUT',
 			headers: { 'content-type': 'application/json' },
 			body: JSON.stringify({ folderId, name, slotData, thumbnailAssetId })
@@ -78,11 +79,11 @@ export const cloudInventoryAdapter: InventoryAdapter = {
 	},
 
 	async deleteItem(_ctx, itemId) {
-		await fetch(`/api/inventory/${itemId}`, { method: 'DELETE' });
+		await platformFetch(`/api/inventory/${itemId}`, { method: 'DELETE' });
 	},
 
 	async usage() {
-		const res = await fetch('/api/assets/usage');
+		const res = await platformFetch('/api/assets/usage');
 		if (!res.ok) return null;
 		const { bytes, quota } = (await res.json()) as { bytes: number; quota: number };
 		return { used: bytes, total: quota, unit: 'bytes' };

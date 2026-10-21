@@ -16,11 +16,11 @@ import {
 	type WebXRDefaultExperience
 } from '@babylonjs/core';
 import { initBrowserCodeBlockSandbox } from './sandbox/browserInit';
-import lobbyTemplate from './templates/lobby.json';
-import { buildLobbyExtras } from './templates/lobbyExtras';
-import { clientLocale } from '$lib/locale';
+import { getPlatformConfig, platformFetch, platformUrl, assetUrl } from './platform/config.ts';
+import { getContent, findBuiltinWorld } from './content/registry.ts';
+import { getFeatures } from './features.ts';
+import { engineLocale } from './i18n/locale.ts';
 import type { InputDevice } from './inputHints';
-import { getBuiltinWorld } from './templates/builtinWorlds';
 import { createSlot, opensWorldMenu, type SlotTree } from '$lib/ecs/types';
 import { atRest, instantiate } from '$lib/ecs/serialize';
 import { isBuiltinMesh, migrateSlotTree } from '$lib/assets/ref';
@@ -85,12 +85,11 @@ import { createPurchasePrompt } from './ui/purchasePrompt';
 import type { PayResult } from './payments/types';
 import { ProximityVoice } from './net/voice';
 import { parseIceServers } from './net/peerConnection';
-import { authClient } from '$lib/auth-client';
-import { BLANK_WORLD_NAME, buildBlankWorld } from './templates/blankWorld';
+import { platformAuth } from './platform/auth.ts';
+import { BLANK_WORLD_NAME, buildBlankWorld } from './blankWorld';
 import { gameState, type LoadedWorld, type PublicationContext } from './gameState';
 import type { HostedWorldVisibility } from '$lib/worldVisibility';
 import type { PlayerInfo } from './net/protocol';
-import { PUBLIC_STUN_URLS } from '$env/static/public';
 import { createWorldOrb, copyScene, validateWorldPackage, validateWorldScene, worldFromInventory, MAX_SHARED_SCENE_BYTES } from '$lib/worlds/package';
 import type { WorldPackage } from '$lib/worlds/types';
 import type { InventoryAdapterId, InventoryStorageAdapterId, InventoryItem } from '$lib/inventory/types';
@@ -120,6 +119,8 @@ export async function mountGame(
 ): Promise<MountedGame> {
 	// Code blocks run in a sandbox that has to be loaded before the first scene is.
 	await initBrowserCodeBlockSandbox();
+	// The scene to stand in when no world is asked for: the hosting app's lobby, if it has one.
+	const homeScene = options.initialWorld ? null : ((await getContent().loadHome?.()) ?? null);
 	// Babylon 9 no longer creates its audio engine by default; without it every Sound (audio players,
 	// generated impact sounds) has no backend and throws on use.
 	const engine = new Engine(canvas, true, { audioEngine: true });
@@ -167,6 +168,7 @@ export async function mountGame(
 	configureThumbnails({ engine, getResolvers: () => assetResolvers });
 	configureThumbnailSources(() => assetResolvers);
 	const worldStorage = new WorldStorageService({
+		fetch: (input, init) => platformFetch(input, init),
 		getLocalPlayerId: () => localPlayerId,
 		getPlayerName: (playerId) => playerId === localPlayerId ? (gameState.userName ?? 'Player') : (hostAuthority?.getPlayerDisplayName(playerId) ?? 'Player'),
 		getPublication: () => gameState.publication,
@@ -178,10 +180,10 @@ export async function mountGame(
 	// Paying: the prompt and the service belong to the game, outside everything a world's scripts can reach (see ui/purchasePrompt.ts).
 	const purchasePrompt = createPurchasePrompt(scene, () => getActiveCamera());
 	// In-app purchases with Meta's payments (see payments/metaPayments.ts): used by the ATM and by the purchase prompt's "Add credits".
-	const metaPayments = createMetaPayments({ fetch: (input, init) => fetch(input, init) });
-	const metaTopUp = metaPayments.topUp(async () => ((await fetch('/api/credits').then((response) => response.json())) as { packs: Array<{ id: string; credits: number; metaSku: string }> }).packs);
+	const metaPayments = createMetaPayments({ fetch: (input, init) => platformFetch(input, init) });
+	const metaTopUp = metaPayments.topUp(async () => ((await platformFetch('/api/credits').then((response) => response.json())) as { packs: Array<{ id: string; credits: number; metaSku: string }> }).packs);
 	const paymentService = new PaymentService({
-		fetch: (input, init) => fetch(input, init),
+		fetch: (input, init) => platformFetch(input, init),
 		isSignedIn: () => !!gameState.userId,
 		prompt: (details) => purchasePrompt.show(details),
 		topUp: metaTopUp
@@ -189,12 +191,9 @@ export async function mountGame(
 	let viewerCamera: () => { globalPosition: Vector3 } = () => desktopCamera;
 	// Which device's controls the texts of the world name (`{dash}`, `{use}`…). It follows the headset session, and the panels are redrawn when it changes.
 	let inputDevice: InputDevice = 'desktop';
-	// The only scripts allowed to call a route of our own site are the ones the game ships: the Feedback Center's, byte for byte.
-	let shippedFeedbackCode: Set<string> | null = null;
-	const feedbackCode = () => (shippedFeedbackCode ??= new Set((getBuiltinWorld('pulse')?.scene ?? []).flatMap((slot) => slot.components.flatMap((component) => (component.type === 'codeBlock' ? [component.code] : [])))));
 	const sceneGraph = new SceneGraph(scene, {
-		getUiContext: () => ({ locale: clientLocale(), device: inputDevice }),
-		sameOriginPathsFor: (code) => (feedbackCode().has(code) ? ['/api/feedback'] : []),
+		getUiContext: () => ({ locale: engineLocale(), device: inputDevice }),
+		sameOriginPathsFor: (code) => getContent().sameOriginPathsFor?.(code) ?? [],
 		storage: worldStorage,
 		audio: scriptAudio,
 		payments: {
@@ -230,7 +229,7 @@ export async function mountGame(
 		onImportPolyHavenModel: async (id, name) => {
 			if (gameState.role === 'guest') throw new Error('Only the host can import models into this world.');
 			if (!/^[A-Za-z0-9_]{1,90}$/.test(id)) throw new Error('Invalid Poly Haven model ID.');
-			const response = await fetch(`/api/polyhaven/models/${id}/glb`);
+			const response = await platformFetch(`/api/polyhaven/models/${id}/glb`);
 			if (!response.ok) {
 				const body = await response.json().catch(() => null) as { message?: string } | null;
 				throw new Error(body?.message ?? 'Could not download this model.');
@@ -302,18 +301,15 @@ export async function mountGame(
 			return hostAuthority?.teleportGuest(playerId, target) ?? false;
 		}
 	});
-	const startupParams = new URLSearchParams(window.location.search);
-	const startupBuiltin = !initialRoomCode && !options.initialWorld && !startupParams.has('studioPlay')
-		? getBuiltinWorld(startupParams.get('world') ?? '') : undefined;
-	// A direct world link only needs a temporary floor during input setup. Avoid starting lobby media that would be disposed mid-load.
-	sceneGraph.load((startupBuiltin ? lobbyTemplate.filter((slot) => slot.id === 'floor') : [...lobbyTemplate, ...buildLobbyExtras()]) as SlotTree);
+	// A world asked for on its own only needs a temporary floor during input setup. Avoid starting lobby media that would be disposed mid-load.
+	sceneGraph.load(options.initialWorld || !homeScene ? buildBlankWorld() : homeScene);
 
 	const floorMesh = sceneGraph.getLive('floor')?.node as AbstractMesh | undefined;
 	// Controller profiles + models (Meta/Oculus Touch) are served from /static/xr-input-profiles instead of
 	// Babylon's default of immersive-web.github.io: a headset on a LAN without a route to GitHub Pages
 	// never gets an answer (the request hangs rather than fails), and no motion controller would ever
 	// initialise. A controller not in the local set falls back to Babylon's built-in profiles.
-	WebXRMotionControllerManager.BaseRepositoryUrl = '/xr-input-profiles';
+	WebXRMotionControllerManager.BaseRepositoryUrl = assetUrl('/xr-input-profiles');
 	const xrSystem = (navigator as Navigator & { xr?: XRSystem }).xr;
 	let xr: WebXRDefaultExperience | null = null;
 	let xrSupported = false;
@@ -447,12 +443,12 @@ export async function mountGame(
 			console.error('[engine] sceneGraph.tick threw', err);
 		}
 	});
-	const iceServers = parseIceServers(PUBLIC_STUN_URLS);
+	const iceServers = parseIceServers(getPlatformConfig().stunUrls);
 	const voice = new ProximityVoice();
 	let localAudio: { track: MediaStreamTrack; stream: MediaStream } | null = null;
 
 	async function refreshUser(): Promise<void> {
-		const { data } = await authClient.getSession();
+		const { data } = await platformAuth().getSession();
 		gameState.userId = data?.user.id ?? null;
 		gameState.userName = data?.user.name ?? null;
 	}
@@ -510,7 +506,7 @@ export async function mountGame(
 		const wasGuest = guestSync !== null;
 		equipment.releaseAll(); // nothing stays equipped across worlds
 		if (hostAuthority && gameState.worldId) {
-			const res = await fetch(`/api/worlds/${gameState.worldId}/host`, { method: 'DELETE' });
+			const res = await platformFetch(`/api/worlds/${gameState.worldId}/host`, { method: 'DELETE' });
 			if (!res.ok) throw new Error('Could not close the hosted session');
 		}
 		hostAuthority?.dispose();
@@ -538,7 +534,7 @@ export async function mountGame(
 		let worldId: string | null = null;
 		let startedAt = new Date().toISOString();
 		if (visibility !== 'solo' && gameState.userId) {
-			const res = await fetch('/api/worlds', {
+			const res = await platformFetch('/api/worlds', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ name, visibility, sceneSnapshot: snapshot, publicationId: publication?.publicationId })
@@ -594,7 +590,7 @@ export async function mountGame(
 				refreshTeleportFloors();
 				resetSessionState();
 			}
-			if (worldId) void fetch(`/api/worlds/${worldId}/host`, { method: 'DELETE' });
+			if (worldId) void platformFetch(`/api/worlds/${worldId}/host`, { method: 'DELETE' });
 			throw error;
 		}
 	}
@@ -605,7 +601,7 @@ export async function mountGame(
 			const thumbnailAssetId = await captureItemThumbnail(snapshot, 'world');
 			if (!thumbnailAssetId) return;
 			await ensureCloudAssets([], getLocalAssetStore(), { extraIds: [thumbnailAssetId] });
-			await fetch(`/api/worlds/${worldId}/preview`, {
+			await platformFetch(`/api/worlds/${worldId}/preview`, {
 				method: 'PUT',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ thumbnailAssetId })
@@ -721,7 +717,8 @@ export async function mountGame(
 		spawnWorldOrbPackage(worldFromInventory(item, adapterId, gameState.userId));
 	}
 
-	const inspector = createInspectorHost(scene, sceneGraph, {
+	// The in-game inspector is the hosting app's own page in a panel: an app that does not serve one turns it off.
+	const inspector = getFeatures().inspector ? createInspectorHost(scene, sceneGraph, {
 		onSceneChanged: () => {
 			if (gameState.role !== 'guest') hostAuthority?.broadcastSnapshot();
 		},
@@ -729,9 +726,9 @@ export async function mountGame(
 			const camera = getActiveCamera();
 			return { position: camera.globalPosition.asArray() as [number, number, number], rotation: camera.absoluteRotation.asArray() as [number, number, number, number] };
 		}
-	});
+	}) : null;
 	// A drop zone has no mesh of its own: its box is drawn while the inspector has it marked, so it can be seen and adjusted there.
-	createDropZoneOutline(scene, sceneGraph, () => inspector.selectedSlotId());
+	if (inspector) createDropZoneOutline(scene, sceneGraph, () => inspector.selectedSlotId());
 
 	/**
 	 * The display refresh rates the headset offers, known once a session has started (the last session's otherwise).
@@ -775,7 +772,7 @@ export async function mountGame(
 		onCreateWorld: () => launchScene(BLANK_WORLD_NAME, buildBlankWorld(), 'solo'),
 		onLocomotionSettingsChanged: async () => { await locomotion?.applySettings(); },
 		onExitVr: async () => { await xr?.baseExperience.exitXRAsync(); },
-		onToggleInspector: () => inspector.root.setEnabled(!inspector.root.isEnabled()),
+		onToggleInspector: inspector ? () => inspector.root.setEnabled(!inspector.root.isEnabled()) : null,
 		onSeatedModeChanged: () => playerBody.setSeated(xrSettings.seatedMode),
 		onDesktopSettingsChanged: () => fps.applySettings(),
 		onAudioSettingsChanged: () => AbstractEngine.audioEngine?.setGlobalVolume(xrSettings.masterVolume),
@@ -786,10 +783,10 @@ export async function mountGame(
 
 	// The ATM's window belongs to the game: an `atm` component only asks for it to open.
 	const atmPanel = createAtmPanel(scene, getActiveCamera, createAtmController({
-		fetch: (input, init) => fetch(input, init),
+		fetch: (input, init) => platformFetch(input, init),
 		meta: metaPayments,
 		isSignedIn: () => !!gameState.userId
-	}), { openWebsite: () => { window.open('/settings/credits', '_blank', 'noopener'); }, inXr });
+	}), { openWebsite: () => { window.open(platformUrl(getPlatformConfig().creditsPageUrl), '_blank', 'noopener'); }, inXr });
 	const worldPortalMenu = createWorldPortalMenu(scene, sceneGraph, getActiveCamera, launchWorldPackage, async (world) => {
 		validateWorldPackage(world);
 		const selected = getInventoryAdapter(gameState.currentInventoryAdapterId ?? 'local');
@@ -798,7 +795,7 @@ export async function mountGame(
 		const folderId = adapter.id === gameState.currentInventoryAdapterId ? gameState.currentInventoryFolderId : null;
 		await saveWithPreview(adapter, getInventoryContext(), folderId, world.name, copyScene(world.scene), 'world');
 	}, async (id) => {
-		const world = getBuiltinWorld(id);
+		const world = await findBuiltinWorld(id);
 		if (!world) throw new Error(`There is no built-in world "${id}"`);
 		await launchScene(world.name, copyScene(world.scene), 'solo');
 	}, () => launchScene(BLANK_WORLD_NAME, buildBlankWorld(), 'solo'));
@@ -853,10 +850,10 @@ export async function mountGame(
 	};
 	const pointerState = xr ? setupPointerAndGrabControllers(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, pointerHooks) : null;
 	setupPanelToggle(scene, xr, dash.root, getActiveCamera, { keyboardKey: 'tab', buttonIdPattern: /x-button|menu/i });
-	setupPanelToggle(scene, xr, inspector.root, getActiveCamera, { keyboardKey: 'i', buttonIdPattern: /a-button/i });
+	if (inspector) setupPanelToggle(scene, xr, inspector.root, getActiveCamera, { keyboardKey: 'i', buttonIdPattern: /a-button/i });
 	const radialNetwork = {
-		getInspectTarget: (hand: 'left' | 'right') => inspector.root.isEnabled() ? pointerState?.getLaserTarget(hand) ?? null : null,
-		onInspect: (slotId: string) => { inspector.select(slotId); },
+		getInspectTarget: (hand: 'left' | 'right') => inspector?.root.isEnabled() ? pointerState?.getLaserTarget(hand) ?? null : null,
+		onInspect: (slotId: string) => { inspector?.select(slotId); },
 		onEquip: (hand: 'left' | 'right', slotId: string) => {
 			if (gameState.role === 'guest') guestSync?.requestEquip(hand, slotId);
 			else hostAuthority?.broadcastSnapshot();
@@ -879,7 +876,7 @@ export async function mountGame(
 	}
 	// Mouse and keyboard. The menu and the inspector fill the screen instead of standing in the world, and the mouse plays
 	// the right hand: the same grabs, uses and radial menu a controller has (see interaction/desktop).
-	const desktopPanels = setupDesktopPanels(scene, desktopCamera, [{ name: 'Menu', root: dash.root }, { name: 'Inspector', root: inspector.root }], {
+	const desktopPanels = setupDesktopPanels(scene, desktopCamera, [{ name: 'Menu', root: dash.root }, ...(inspector ? [{ name: 'Inspector', root: inspector.root }] : [])], {
 		isXr: inXr,
 		onDockChange: (panel) => {
 			desktopHud.panelOpen = panel !== null;
@@ -906,13 +903,14 @@ export async function mountGame(
 			onUnequip: radialNetwork.onUnequip,
 			onDelete: radialNetwork.onDelete,
 			onInspect: (slotId) => {
+				if (!inspector) return;
 				openPanel(inspector.root);
 				inspector.select(slotId);
 			}
 		},
 		globalItems: (): RadialItem[] => [
 			{ label: 'Menu', isEnabled: () => true, onSelect: () => openPanel(dash.root) },
-			{ label: 'Inspector', isEnabled: () => true, onSelect: () => openPanel(inspector.root) }
+			...(inspector ? [{ label: 'Inspector', isEnabled: () => true, onSelect: () => openPanel(inspector.root) }] : [])
 		]
 	});
 	// Fixed foveated rendering (less detail at the edges of the view) applies to a headset session's layer, so it is set
@@ -968,26 +966,6 @@ export async function mountGame(
 	else if (options.initialWorld) {
 		const world = options.initialWorld;
 		void launchWorldPackage(world, 'solo').catch((error) => console.error('Could not open the world', error));
-	}
-
-	// "Play" in the Studio hands its scene over through localStorage and opens `/play?studioPlay=<key>`.
-	const studioPlayKey = new URLSearchParams(window.location.search).get('studioPlay');
-	if (startupBuiltin) {
-		void launchScene(startupBuiltin.name, structuredClone(startupBuiltin.scene), 'solo').catch((error) => console.error('Could not open the built-in world', error));
-	}
-	if (studioPlayKey && !initialRoomCode && !options.initialWorld) {
-		void (async () => {
-			const storageKey = `studio:play:${studioPlayKey}`;
-			try {
-				const raw = localStorage.getItem(storageKey);
-				localStorage.removeItem(storageKey);
-				if (!raw) return;
-				const { name, scene: studioScene } = JSON.parse(raw) as { name: string; scene: SlotTree };
-				await launchScene(name, studioScene, 'solo');
-			} catch (error) {
-				console.error('Could not play the Studio scene', error);
-			}
-		})();
 	}
 
 	void applyLocalAvatar();

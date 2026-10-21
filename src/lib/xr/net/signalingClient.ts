@@ -1,3 +1,5 @@
+import { signalingAddress } from '../platform/config.ts';
+
 export type SignalingMessage =
 	| { type: 'guest-joined'; roomCode: string; guestId: string }
 	| { type: 'guest-left'; roomCode: string; guestId: string }
@@ -20,8 +22,7 @@ export class SignalingClient {
 		private roomCode: string,
 		role: 'host' | 'join'
 	) {
-		const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-		this.ws = new WebSocket(`${protocol}://${location.host}/signaling`);
+		this.ws = new WebSocket(signalingAddress());
 		this.ws.addEventListener('open', () => this.send({ type: role, roomCode } as never));
 		this.ws.addEventListener('message', (event) => {
 			try {

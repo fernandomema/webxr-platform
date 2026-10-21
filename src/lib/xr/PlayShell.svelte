@@ -4,16 +4,16 @@
 	import XRLaunchOverlay from '$lib/xr/XRLaunchOverlay.svelte';
 	import DesktopHud from '$lib/xr/interaction/desktop/DesktopHud.svelte';
 	import type { WorldPackage } from '$lib/worlds/types';
-	import { getBuiltinWorld } from '$lib/xr/templates/builtinWorlds';
+	import { t } from '$lib/xr/i18n/svelte.svelte';
 
 	interface Props {
 		/** Join this live room. */
 		roomCode?: string;
-		/** Open this published world on its own (the world played as an installed app). */
-		worldId?: string;
+		/** Finds the world to open on its own, if the app wants one (a published world played as an app, a level of its own…). */
+		loadWorld?: () => Promise<WorldPackage | undefined>;
 	}
 
-	let { roomCode, worldId }: Props = $props();
+	let { roomCode, loadWorld }: Props = $props();
 
 	let canvas: HTMLCanvasElement;
 	let game: MountedGame | null = null;
@@ -28,7 +28,7 @@
 			launchState = 'playing';
 		} catch (error) {
 			launchState = 'vr';
-			launchError = error instanceof Error ? error.message : 'Could not enter VR';
+			launchError = error instanceof Error ? error.message : t('Could not enter VR');
 		}
 	}
 
@@ -43,7 +43,7 @@
 
 	onMount(async () => {
 		try {
-			const initialWorld = worldId ? await loadWorld(worldId) : undefined;
+			const initialWorld = roomCode ? undefined : await loadWorld?.();
 			const { mountGame } = await import('$lib/xr/engine');
 			game = await mountGame(canvas, roomCode, {
 				initialWorld,
@@ -60,14 +60,6 @@
 			launchState = 'desktop';
 		}
 	});
-
-	async function loadWorld(id: string): Promise<WorldPackage> {
-		const builtin = getBuiltinWorld(id);
-		if (builtin) return { formatVersion: 1, name: builtin.name, scene: structuredClone(builtin.scene), defaultVisibility: 'solo' };
-		const response = await fetch(`/api/published-worlds/${encodeURIComponent(id)}`);
-		if (!response.ok) throw new Error('Could not load the published world');
-		return (await response.json()) as WorldPackage;
-	}
 
 	onDestroy(() => {
 		game?.dispose();

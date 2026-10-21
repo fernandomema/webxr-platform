@@ -1,8 +1,9 @@
 import type { AssetId } from '$lib/assets/ref';
 import { thumbnailUrl } from '$lib/assets/thumbnails';
 import { copyScene } from '$lib/worlds/package';
+import { getContent } from '$lib/xr/content/registry';
 import { captureItemThumbnail } from '$lib/xr/thumbnail/capture';
-import type { BuiltinWorld } from '$lib/xr/templates/builtinWorlds';
+import type { BuiltinWorld } from '$lib/xr/content/registry';
 
 // --- Previews of the official worlds -------------------------------------------------------------------------------
 // They ship with the app as static pictures (static/assets/world-previews/<id>.webp, and <id>-stereo.webp), so opening the Worlds
@@ -15,12 +16,11 @@ const builtinStereoPreviews = new Map<string, Promise<string | null>>();
 
 let builtinQueue: Promise<unknown> = Promise.resolve();
 
-const SHIPPED_BASE = '/assets/world-previews';
 const shippedChecks = new Map<string, Promise<string | null>>();
 
 /** The picture that ships with the app for a world, if there is one: served from static/, so it is probed once and remembered. */
 function shippedPreview(id: string, kind: 'mono' | 'stereo'): Promise<string | null> {
-	const url = `${SHIPPED_BASE}/${id}${kind === 'stereo' ? '-stereo' : ''}.webp`;
+	const url = `${getContent().worldPreviewBase ?? '/assets/world-previews'}/${id}${kind === 'stereo' ? '-stereo' : ''}.webp`;
 	let check = shippedChecks.get(url);
 	if (!check) {
 		check = fetch(url, { method: 'HEAD' }).then((response) => (response.ok && (response.headers.get('content-type') ?? '').startsWith('image/') ? url : null)).catch(() => null);

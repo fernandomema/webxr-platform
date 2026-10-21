@@ -4,6 +4,8 @@
  * Controls are pictures (`[[name]]`, see richText.ts), drawn from the Kenney Input Prompts pack (static/assets/inputs, CC0), with a
  * word to say in places that cannot draw them. An unknown `{name}` is left as it is.
  */
+import { assetUrl } from './platform/config.ts';
+
 export type InputDevice = 'desktop' | 'xr';
 type Languages = Record<string, string>;
 
@@ -32,7 +34,7 @@ const ICON_WORDS: Record<string, string> = {
 
 /** The names of every picture a hint can draw: each is a file in static/assets/inputs. */
 export const INPUT_ICON_NAMES: readonly string[] = Object.keys(ICON_WORDS);
-export const inputIconUrl = (name: string): string => `/assets/inputs/${name}.png`;
+export const inputIconUrl = (name: string): string => assetUrl(`/assets/inputs/${name}.png`);
 
 /** A text with its pictures written as words, for elements that cannot draw them. */
 export function iconsAsWords(text: string): string {

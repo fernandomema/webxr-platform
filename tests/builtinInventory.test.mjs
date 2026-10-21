@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BUILTIN_ENTRIES, BUILTIN_FOLDERS } from '../src/lib/inventory/builtin/catalog.ts';
+import { BUILTIN_ENTRIES, BUILTIN_FOLDERS, starterKit } from '../src/lib/content/starterKit/catalog.ts';
+import { registerContent } from '../src/lib/xr/content/registry.ts';
 import { collectAssetIds } from '../src/lib/assets/ref.ts';
 import { paintDisc } from '../src/lib/xr/templates/recordDisc.ts';
 import { TOOLS } from '../scripts/workshop-tools.mjs';
@@ -102,6 +103,7 @@ test('the furniture, lighting and decor are whole objects standing on the floor'
 });
 
 test('the home-building tools sit in a Home Builder folder inside Tools', async () => {
+  registerContent({ loadStarterKit: async () => starterKit });
   const { builtinInventoryAdapter } = await import('../src/lib/inventory/adapters/builtin.ts');
   const top = await builtinInventoryAdapter.listFolders({}, null);
   assert.ok(top.some((folder) => folder.id === 'tools'));

@@ -1,6 +1,7 @@
 import { importGlb } from '$lib/assets/importGlb';
 import { getLocalAssetStore } from '$lib/assets/store';
 import type { SlotTree } from '$lib/ecs/types';
+import { assetUrl } from '../platform/config.ts';
 import { buildAvatarTree } from './build';
 import type { HumanoidMap } from './humanoid';
 
@@ -39,7 +40,7 @@ let cached: Promise<SlotTree | null> | null = null;
 export function loadBaseAvatar(): Promise<SlotTree | null> {
 	cached ??= (async () => {
 		try {
-			const response = await fetch(BASE_AVATAR_URL);
+			const response = await fetch(assetUrl(BASE_AVATAR_URL));
 			if (!response.ok) throw new Error(`HTTP ${response.status}`);
 			const { manifest } = await importGlb(new Uint8Array(await response.arrayBuffer()), 'Subject 7', getLocalAssetStore());
 			if (manifest.type !== 'model') return null;

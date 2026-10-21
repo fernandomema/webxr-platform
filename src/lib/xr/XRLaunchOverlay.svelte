@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { PLATFORM_NAME } from '$lib/platform';
+	import { getPlatformConfig } from './platform/config.ts';
+	import { getFeatures } from './features.ts';
+	import { t } from './i18n/svelte.svelte.ts';
 	interface Props {
 		state: 'loading' | 'vr' | 'desktop' | 'playing';
 		error?: string;
@@ -8,6 +10,8 @@
 	}
 
 	let { state, error = '', onEnterVR, onContinueDesktop }: Props = $props();
+	const platformName = getPlatformConfig().name;
+	const inspectorOn = getFeatures().inspector;
 </script>
 
 {#if state !== 'playing'}
@@ -15,27 +19,27 @@
 		<div class="card">
 			<div class="mark" aria-hidden="true">◈</div>
 			{#if state === 'loading'}
-				<p class="eyebrow">{PLATFORM_NAME}</p>
-				<h1>Preparing your space</h1>
-				<p class="copy">Checking the available experience and loading the world.</p>
-				<div class="spinner" aria-label="Loading"></div>
+				<p class="eyebrow">{platformName}</p>
+				<h1>{t('Preparing your space')}</h1>
+				<p class="copy">{t('Checking the available experience and loading the world.')}</p>
+				<div class="spinner" aria-label={t('Loading')}></div>
 			{:else if state === 'vr'}
-				<p class="eyebrow">{PLATFORM_NAME}</p>
-				<h1>Your space is ready</h1>
-				<p class="copy">Put on your headset and enter the shared world.</p>
+				<p class="eyebrow">{platformName}</p>
+				<h1>{t('Your space is ready')}</h1>
+				<p class="copy">{t('Put on your headset and enter the shared world.')}</p>
 				{#if error}<p class="error">{error}</p>{/if}
-				<button class="primary" type="button" onclick={onEnterVR}>Enter VR</button>
-				<button class="secondary" type="button" onclick={onContinueDesktop}>Continue on desktop</button>
+				<button class="primary" type="button" onclick={onEnterVR}>{t('Enter VR')}</button>
+				<button class="secondary" type="button" onclick={onContinueDesktop}>{t('Continue on desktop')}</button>
 			{:else}
-				<p class="eyebrow">Desktop mode</p>
-				<h1>Your space is ready</h1>
-				<p class="copy">WebXR is not available in this browser. You can continue with keyboard and mouse.</p>
-				<button class="primary" type="button" onclick={onContinueDesktop}>Continue on desktop</button>
+				<p class="eyebrow">{t('Desktop mode')}</p>
+				<h1>{t('Your space is ready')}</h1>
+				<p class="copy">{t('WebXR is not available in this browser. You can continue with keyboard and mouse.')}</p>
+				<button class="primary" type="button" onclick={onContinueDesktop}>{t('Continue on desktop')}</button>
 				<ul class="controls">
-					<li><kbd>W A S D</kbd> move · <kbd>Shift</kbd> run · <kbd>Space</kbd> jump</li>
-					<li><kbd>Click</kbd> grab and drag · <kbd>E</kbd> carry · <kbd>Wheel</kbd> push / pull</li>
-					<li><kbd>Right click</kbd> options · <kbd>Tab</kbd> menu · <kbd>I</kbd> inspector</li>
-					<li><kbd>Esc</kbd> release the mouse</li>
+					<li><kbd>W A S D</kbd> {t('move')} · <kbd>Shift</kbd> {t('run')} · <kbd>Space</kbd> {t('jump')}</li>
+					<li><kbd>{t('Click')}</kbd> {t('grab and drag')} · <kbd>E</kbd> {t('carry')} · <kbd>{t('Wheel')}</kbd> {t('push / pull')}</li>
+					<li><kbd>{t('Right click')}</kbd> {t('options')} · <kbd>Tab</kbd> {t('menu')}{#if inspectorOn} · <kbd>I</kbd> {t('inspector')}{/if}</li>
+					<li><kbd>Esc</kbd> {t('release the mouse')}</li>
 				</ul>
 			{/if}
 		</div>

@@ -1,4 +1,5 @@
 import { DracoCompression } from '@babylonjs/core';
+import { assetUrl } from './platform/config.ts';
 
 /**
  * Draco-compressed glTF meshes are decoded with the copy of the decoder in /static/draco instead of
@@ -8,11 +9,12 @@ import { DracoCompression } from '@babylonjs/core';
  */
 export function configureDraco(): void {
 	if (typeof location === 'undefined') return;
+	const absolute = (path: string) => new URL(assetUrl(path), location.href).href;
 	DracoCompression.Configuration = {
 		decoder: {
-			wasmUrl: `${location.origin}/draco/draco_wasm_wrapper.js`,
-			wasmBinaryUrl: `${location.origin}/draco/draco_decoder.wasm`,
-			fallbackUrl: `${location.origin}/draco/draco_decoder.js`
+			wasmUrl: absolute('/draco/draco_wasm_wrapper.js'),
+			wasmBinaryUrl: absolute('/draco/draco_decoder.wasm'),
+			fallbackUrl: absolute('/draco/draco_decoder.js')
 		}
 	};
 }

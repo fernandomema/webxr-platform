@@ -1,3 +1,4 @@
+import { platformFetch } from '../xr/platform/config.ts';
 import type { AssetManifest } from './manifest.ts';
 import type { AssetId } from './ref.ts';
 import type { AssetResolver } from './resolve.ts';
@@ -25,7 +26,7 @@ async function failure(response: Response): Promise<CloudAssetError> {
 }
 
 async function post<T>(path: string, json: unknown): Promise<T> {
-	const response = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(json) });
+	const response = await platformFetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(json) });
 	if (!response.ok) throw await failure(response);
 	return (await response.json()) as T;
 }
@@ -65,19 +66,19 @@ export const cloudAssets = {
 	},
 
 	async list(): Promise<MyCloudAsset[]> {
-		const response = await fetch('/api/assets');
+		const response = await platformFetch('/api/assets');
 		if (!response.ok) throw await failure(response);
 		return (await response.json()) as MyCloudAsset[];
 	},
 
 	async usage(): Promise<{ bytes: number; count: number; quota: number }> {
-		const response = await fetch('/api/assets/usage');
+		const response = await platformFetch('/api/assets/usage');
 		if (!response.ok) throw await failure(response);
 		return await response.json();
 	},
 
 	async release(id: AssetId): Promise<void> {
-		const response = await fetch(`/api/assets/${encodeURIComponent(id)}`, { method: 'DELETE' });
+		const response = await platformFetch(`/api/assets/${encodeURIComponent(id)}`, { method: 'DELETE' });
 		if (!response.ok) throw await failure(response);
 	}
 };

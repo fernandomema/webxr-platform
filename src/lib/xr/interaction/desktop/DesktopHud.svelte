@@ -1,5 +1,9 @@
 <script lang="ts">
 	import { desktopHud, hudActions } from './desktopHud.svelte';
+	import { t } from '../../i18n/svelte.svelte.ts';
+	import { getFeatures } from '../../features.ts';
+
+	const inspectorOn = getFeatures().inspector;
 
 	/** `?nopause` leaves the pause card out, so that a screenshot of the world is not covered by it. */
 	const hidePause = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('nopause');
@@ -11,15 +15,15 @@
 		const { holding, aim } = desktopHud;
 		if (holding) {
 			const parts = [];
-			if (holding.usable) parts.push('Click: use');
-			else if (!holding.equipped) parts.push('Click: drop');
-			if (!holding.equipped) parts.push('Wheel: push / pull');
-			parts.push('Right click: options');
-			return { title: holding.equipped ? `${holding.label} (equipped)` : holding.label, detail: parts.join('  ·  ') };
+			if (holding.usable) parts.push(t('Click: use'));
+			else if (!holding.equipped) parts.push(t('Click: drop'));
+			if (!holding.equipped) parts.push(t('Wheel: push / pull'));
+			parts.push(t('Right click: options'));
+			return { title: holding.equipped ? t('{label} (equipped)', { label: holding.label }) : holding.label, detail: parts.join('  ·  ') };
 		}
-		if (aim.kind === 'grab') return { title: aim.label, detail: 'Hold click: grab  ·  E: carry  ·  Right click: options' };
-		if (aim.kind === 'ui') return { title: aim.label, detail: 'Click' };
-		if (aim.kind === 'object') return { title: aim.label, detail: 'Right click: options' };
+		if (aim.kind === 'grab') return { title: aim.label, detail: t('Hold click: grab  ·  E: carry  ·  Right click: options') };
+		if (aim.kind === 'ui') return { title: aim.label, detail: t('Click') };
+		if (aim.kind === 'object') return { title: aim.label, detail: t('Right click: options') };
 		return null;
 	});
 
@@ -33,7 +37,7 @@
 	{#if desktopHud.panelOpen}
 		<button class="close" type="button" onclick={() => hudActions.closePanel()}>
 			<span>{desktopHud.panelName}</span>
-			<kbd>Esc</kbd> Close
+			<kbd>Esc</kbd> {t('Close')}
 		</button>
 	{:else if desktopHud.locked}
 		<div class="crosshair" class:grab={desktopHud.aim.kind === 'grab'} class:ui={desktopHud.aim.kind === 'ui'} class:holding={desktopHud.holding !== null} class:hidden={desktopHud.radial !== null}></div>
@@ -51,19 +55,19 @@
 					<div class="slice" class:hovered={radial.hovered === index} class:disabled={!item.enabled} style={slicePosition(index, radial.items.length)}>{item.label}</div>
 				{/each}
 				<div class="pointer" style={`left: ${radial.pointer.x * RING}px; top: ${radial.pointer.y * RING}px;`}></div>
-				<p class="radial-hint">{radial.sticky ? 'Click an option · Right click to cancel' : 'Move to an option and release'}</p>
+				<p class="radial-hint">{radial.sticky ? t('Click an option · Right click to cancel') : t('Move to an option and release')}</p>
 			</div>
 		{/if}
 	{:else if !hidePause}
 		<div class="pause">
-			<h2>Paused</h2>
-			<p class="resume">Click to resume</p>
+			<h2>{t('Paused')}</h2>
+			<p class="resume">{t('Click to resume')}</p>
 			<ul>
-				<li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move <kbd>Shift</kbd> Run <kbd>Space</kbd> Jump</li>
-				<li><kbd>Click</kbd> Click / grab and drag <kbd>E</kbd> Carry <kbd>Q</kbd> Drop</li>
-				<li><kbd>Wheel</kbd> Push / pull <kbd>Ctrl</kbd>+<kbd>Wheel</kbd> Scale <kbd>Shift</kbd>+<kbd>Wheel</kbd> Turn</li>
-				<li><kbd>Right click</kbd> Options of what you aim at or carry</li>
-				<li><kbd>Tab</kbd> Menu <kbd>I</kbd> Inspector <kbd>Esc</kbd> Release the mouse</li>
+				<li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> {t('Move')} <kbd>Shift</kbd> {t('Run')} <kbd>Space</kbd> {t('Jump')}</li>
+				<li><kbd>{t('Click')}</kbd> {t('Click / grab and drag')} <kbd>E</kbd> {t('Carry')} <kbd>Q</kbd> {t('Drop')}</li>
+				<li><kbd>{t('Wheel')}</kbd> {t('Push / pull')} <kbd>Ctrl</kbd>+<kbd>{t('Wheel')}</kbd> {t('Scale')} <kbd>Shift</kbd>+<kbd>{t('Wheel')}</kbd> {t('Turn')}</li>
+				<li><kbd>{t('Right click')}</kbd> {t('Options of what you aim at or carry')}</li>
+				<li><kbd>Tab</kbd> {t('Menu')}{#if inspectorOn} <kbd>I</kbd> {t('Inspector')}{/if} <kbd>Esc</kbd> {t('Release the mouse')}</li>
 			</ul>
 		</div>
 	{/if}

@@ -4,7 +4,7 @@ import test from 'node:test';
 import { opensWorldMenu } from '../src/lib/ecs/types.ts';
 import { buildAtm, LOBBY_ATM } from '../src/lib/xr/templates/atm.ts';
 import { isBuiltinMeshId } from '../src/lib/assets/ref.ts';
-import { BUILTIN_ENTRIES } from '../src/lib/inventory/builtin/catalog.ts';
+import { BUILTIN_ENTRIES } from '../src/lib/content/starterKit/catalog.ts';
 
 const rotate = (q, v) => {
 	const [x, y, z, w] = q;
@@ -62,8 +62,8 @@ test('the Starter Kit lists the ATM, and the lobby world has one', async () => {
 	assert.notEqual(entry.build(), entry.build(), 'a fresh tree every time');
 	const worlds = await readFile(new URL('../src/lib/xr/templates/builtinWorlds.ts', import.meta.url), 'utf8');
 	assert.match(worlds, /buildLobbyExtras\(\)/);
-	const engine = await readFile(new URL('../src/lib/xr/engine.ts', import.meta.url), 'utf8');
-	assert.match(engine, /buildLobbyExtras\(\)/);
+	const setup = await readFile(new URL('../src/lib/engineSetup.ts', import.meta.url), 'utf8');
+	assert.match(setup, /buildLobbyExtras\(\)/);
 	const { buildLobbyExtras } = await import('../src/lib/xr/templates/lobbyExtras.ts');
 	assert.ok(buildLobbyExtras().some((slot) => slot.id === 'lobby-atm' && slot.components.some((c) => c.type === 'container')));
 });

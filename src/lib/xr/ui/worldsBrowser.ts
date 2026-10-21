@@ -1,3 +1,4 @@
+import { platformFetch } from '../platform/config.ts';
 import type { Mesh } from '@babylonjs/core';
 import {
 	Button,
@@ -9,7 +10,7 @@ import {
 	StackPanel,
 	TextBlock
 } from '@babylonjs/gui';
-import { authClient } from '$lib/auth-client';
+import { platformAuth } from '../platform/auth.ts';
 import { ensureCloudAssets } from '$lib/assets/cloudSync';
 import type { AssetId } from '$lib/assets/ref';
 import { getLocalAssetStore } from '$lib/assets/store';
@@ -18,7 +19,7 @@ import { copyScene, validateWorldScene } from '$lib/worlds/package';
 import type { WorldPackage } from '$lib/worlds/types';
 import { gameState } from '../gameState';
 import type { SceneGraph } from '../sceneGraph';
-import { BUILTIN_WORLDS, DEV_WORLD_IDS, type BuiltinWorld } from '../templates/builtinWorlds';
+import { loadBuiltinWorlds, type BuiltinWorld } from '../content/registry.ts';
 import { builtinPreview, builtinStereoPreview, exportBuiltinPreviews } from '$lib/worlds/builtinPreview';
 import { captureItemThumbnail } from '../thumbnail/capture';
 import { THEME } from './theme';
@@ -320,7 +321,7 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 		let visible = import.meta.env.DEV;
 		if (!visible) {
 			try {
-				const { data } = await authClient.getSession();
+				const { data } = await platformAuth().getSession();
 				const roles = ((data?.user as { role?: string | null } | undefined)?.role ?? '').split(',').map((r) => r.trim());
 				visible = roles.includes('admin');
 			} catch {
@@ -573,11 +574,13 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 	}
 
 	// Development: `await __exportWorldPreviews()` in the console downloads the pictures to put in src/lib/worlds/previews/.
-	if (import.meta.env.DEV) (window as unknown as Record<string, unknown>).__exportWorldPreviews = () => exportBuiltinPreviews(BUILTIN_WORLDS);
+	if (import.meta.env.DEV) (window as unknown as Record<string, unknown>).__exportWorldPreviews = async () => exportBuiltinPreviews((await loadBuiltinWorlds()).worlds);
 
 	// --- Lists of worlds ---
+	/** The worlds the hosting app ships, known once the Worlds tab has been opened. */
+	let builtin: Awaited<ReturnType<typeof loadBuiltinWorlds>> = { worlds: [], devWorldIds: [] };
 	function officialEntries(): WorldEntry[] {
-		return BUILTIN_WORLDS.filter((world) => !DEV_WORLD_IDS.includes(world.id)).map((world) => ({
+		return builtin.worlds.filter((world) => !builtin.devWorldIds.includes(world.id)).map((world) => ({
 			key: `official-${world.id}`,
 			name: world.name,
 			subtitle: 'Official world',
@@ -592,7 +595,7 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 	}
 
 	function devEntries(): WorldEntry[] {
-		return BUILTIN_WORLDS.filter((world) => DEV_WORLD_IDS.includes(world.id)).map((world) => ({
+		return builtin.worlds.filter((world) => builtin.devWorldIds.includes(world.id)).map((world) => ({
 			key: `dev-${world.id}`,
 			name: world.name,
 			subtitle: 'Development world',
@@ -628,7 +631,7 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 
 	async function loadActiveSessions(): Promise<void> {
 		try {
-			const response = await fetch('/api/worlds');
+			const response = await platformFetch('/api/worlds');
 			if (response.ok) activeSessions = (await response.json()) as ActiveSession[];
 		} catch {
 			// offline: the list keeps what it had
@@ -639,13 +642,13 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 	}
 
 	async function publishedEntries(): Promise<WorldEntry[]> {
-		const response = await fetch('/api/published-worlds');
+		const response = await platformFetch('/api/published-worlds');
 		if (!response.ok) return [];
 		const publications = (await response.json()) as Publication[];
 		return publications.map((publication) => {
 			const owned = publication.ownerId === gameState.userId;
 			const fetchPublished = async (): Promise<WorldPackage> => {
-				const res = await fetch(`/api/published-worlds/${publication.id}`);
+				const res = await platformFetch(`/api/published-worlds/${publication.id}`);
 				if (!res.ok) throw new Error('Could not load the published world');
 				return (await res.json()) as WorldPackage;
 			};
@@ -670,7 +673,7 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 						// A new preview goes with the revision when one can be made in time; the old one stays otherwise.
 						const thumbnailAssetId = await captureItemThumbnail(snapshot, 'world');
 						if (thumbnailAssetId) await ensureCloudAssets([], getLocalAssetStore(), { extraIds: [thumbnailAssetId] }).catch(() => undefined);
-						const res = await fetch(`/api/published-worlds/${publication.id}/revisions`, {
+						const res = await platformFetch(`/api/published-worlds/${publication.id}/revisions`, {
 							method: 'POST', headers: { 'content-type': 'application/json' },
 							body: JSON.stringify({ scene: snapshot, thumbnailAssetId: thumbnailAssetId ?? undefined })
 						});
@@ -713,8 +716,8 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 		clear(market.stack);
 		try {
 			const [catalogResponse, purchasesResponse] = await Promise.all([
-				fetch('/api/marketplace/items'),
-				gameState.userId ? fetch('/api/marketplace/purchases') : Promise.resolve(null)
+				platformFetch('/api/marketplace/items'),
+				gameState.userId ? platformFetch('/api/marketplace/purchases') : Promise.resolve(null)
 			]);
 			if (token !== loadToken || !catalogResponse.ok) return;
 			const items = (await catalogResponse.json()) as MarketplaceItem[];
@@ -744,7 +747,7 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 				button.isEnabled = !done;
 				button.onPointerClickObservable.add(async () => {
 					try {
-						const response = await fetch(`/api/marketplace/items/${item.id}/purchase`, { method: 'POST' });
+						const response = await platformFetch(`/api/marketplace/items/${item.id}/purchase`, { method: 'POST' });
 						if (!response.ok) throw new Error(response.status === 401 ? 'Sign in to acquire this object.' : 'Could not acquire this object.');
 						button.textBlock!.text = 'Acquired';
 						button.background = THEME.raised;
@@ -772,6 +775,8 @@ export function createWorldsBrowser(parent: Rectangle, sceneGraph: SceneGraph, c
 		async refresh() {
 			const token = ++loadToken;
 			await refreshDevAccess();
+			builtin = await loadBuiltinWorlds();
+			if (token !== loadToken) return;
 			for (const [id, button] of categoryButtons) button.background = id === category ? C.accent : C.surface;
 			title.text = CATEGORIES.find((entry) => entry.id === category)?.label ?? '';
 			refreshButton.isVisible = category !== 'join';
