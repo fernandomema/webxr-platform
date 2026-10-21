@@ -6,6 +6,7 @@ import { WORLD_VISIBILITY_INFO } from '$lib/worldVisibility';
 import { createRadialView } from './radialView';
 import { sourceLabel, validateWorldPackage } from '$lib/worlds/package';
 import type { WorldPackage } from '$lib/worlds/types';
+import { yawFacing } from './panelFacing';
 import { THEME } from './theme';
 
 /** How long the orb's menu stays open when nobody uses it. */
@@ -17,7 +18,8 @@ export function createWorldPortalMenu(
   getCamera: () => Camera,
   launch: (world: WorldPackage, visibility: HostedWorldVisibility | 'solo') => Promise<void>,
   saveCopy: (world: WorldPackage) => Promise<void>,
-  launchBuiltin: (id: string) => Promise<void>
+  launchBuiltin: (id: string) => Promise<void>,
+  createWorld: () => Promise<void>
 ) {
   const radial = createRadialView(scene, 'world-portal', getCamera, {
     pointerSelectable: true,
@@ -96,9 +98,7 @@ export function createWorldPortalMenu(
     refresh();
     const camera = getCamera();
     panel.position.copyFrom(camera.globalPosition.add(camera.getForwardRay().direction.scale(1.1)));
-    const dx = camera.globalPosition.x - panel.position.x;
-    const dz = camera.globalPosition.z - panel.position.z;
-    panel.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.atan2(dx, dz), 0);
+    panel.rotationQuaternion = Quaternion.FromEulerAngles(0, yawFacing(panel.position, camera.globalPosition), 0);
     panel.setEnabled(true);
   }
 
@@ -117,7 +117,7 @@ export function createWorldPortalMenu(
     if (radial.isOpen && openFor === slotId) return closeRadial();
     const entry = sceneGraph.getLive(slotId);
     const link = entry?.slot.components.find((component) => component.type === 'worldLink');
-    if (entry && link) return openLink(slotId, entry.node, link.target.id, link.label);
+    if (entry && link) return openLink(slotId, entry.node, link.target, link.label);
     const world = entry?.slot.components.find((component) => component.type === 'worldPortal')?.world;
     if (!entry || !world) return;
     try { validateWorldPackage(world); } catch { return; }
@@ -131,11 +131,16 @@ export function createWorldPortalMenu(
   }
 
   /** A link to a built-in world offers to go there, and to stay. */
-  function openLink(slotId: string, node: TransformNode, worldId: string, label?: string) {
+  function openLink(slotId: string, node: TransformNode, target: { kind: 'builtin'; id: string } | { kind: 'new' }, label?: string) {
     panel.setEnabled(false);
+    const isNew = target.kind === 'new';
     radial.open(node, [
-      { label: `Go to ${label || worldId}`, isEnabled: () => true, onSelect: () => void launchBuiltin(worldId).catch((error) => console.error('Could not open the world', error)) },
-      { label: 'Stay here', isEnabled: () => true, onSelect: () => {} }
+      {
+        label: isNew ? 'Create a new world' : `Go to ${label || target.id}`,
+        isEnabled: () => true,
+        onSelect: () => void (isNew ? createWorld() : launchBuiltin(target.id)).catch((error) => console.error('Could not open the world', error))
+      },
+      { label: isNew ? 'Not now' : 'Stay here', isEnabled: () => true, onSelect: () => {} }
     ]);
     keepOpen(slotId);
   }

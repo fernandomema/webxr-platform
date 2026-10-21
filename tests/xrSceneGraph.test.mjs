@@ -4,6 +4,7 @@ import test from 'node:test';
 import ts from 'typescript';
 import { AbstractMesh, MeshBuilder, NullEngine, Quaternion, Ray, Scene, TransformNode, UniversalCamera, Vector3, WebXRState } from '@babylonjs/core';
 import { createSlot } from '../src/lib/ecs/types.ts';
+import { runtimeUrl, buildCodeBlockCtx } from './helpers/codeBlockRuntimeModule.mjs';
 import { LightVolumeManager } from '../src/lib/xr/lightVolumeManager.ts';
 
 const coreUrl = import.meta.resolve('@babylonjs/core');
@@ -14,8 +15,7 @@ function compile(source) {
 		.replace(/'\$lib\/([^']+)'/g, (_, path) => JSON.stringify(new URL(`${path}.ts`, libUrl).href));
 }
 const moduleUrl = (code) => `data:text/javascript;base64,${Buffer.from(code).toString('base64')}`;
-const codeBlockUrl = moduleUrl(compile(await readFile(new URL('xr/codeBlockRuntime.ts', libUrl), 'utf8'))
-	.replaceAll("'./scriptNet'", JSON.stringify(new URL('xr/scriptNet.ts', libUrl).href)));
+const codeBlockUrl = runtimeUrl;
 let graphCode = compile(await readFile(new URL('xr/sceneGraph.ts', libUrl), 'utf8'))
 	.replaceAll("'./slotRebuild'", JSON.stringify(new URL('xr/slotRebuild.ts', libUrl).href))
 	.replaceAll("'./playerPoses'", JSON.stringify(new URL('xr/playerPoses.ts', libUrl).href))
@@ -349,24 +349,23 @@ test('trigger and equip events reach a script with the id the player announced, 
 	const f = fixture();
 	const graph = new SceneGraph(f.scene, {});
 	try {
-		globalThis.__events = [];
+		const events = () => graph.getCodeBlockDebugLog('gun').map((entry) => JSON.parse(entry.message));
 		graph.load([createSlot({ id: 'gun', components: [
 			{ type: 'grabbable', scalable: false },
 			{ type: 'equippable', left: { position: [0, 0, 0], rotation: [0, 0, 0] }, right: { position: [0, 0, 0], rotation: [0, 0, 0] } },
-			{ type: 'codeBlock', code: 'return { onTrigger(e) { globalThis.__events.push(["trigger", e.playerId, e.playerName]); }, onUnequip(e) { globalThis.__events.push(["unequip", e.playerId, e.playerName]); } };' }
+			{ type: 'codeBlock', code: 'return { onTrigger(e) { ctx.log(JSON.stringify(["trigger", e.playerId, e.playerName])); }, onUnequip(e) { ctx.log(JSON.stringify(["unequip", e.playerId, e.playerName])); } };' }
 		] })]);
 		const names = { 'conn-9': 'Ana', me: 'Host' };
 		const system = new EquipmentSystem(f.scene, graph, { setGuard() {} }, () => 'me', (key) => names[key], (key) => (key === 'conn-9' ? 'announced-9' : key));
 		system.registry.equip('conn-9', 'right', 'gun');
 		system.dispatchTrigger('conn-9', 'right', 'press', 1, 'gun');
 		system.unequip('conn-9', 'right');
-		assert.deepEqual(globalThis.__events, [['trigger', 'announced-9', 'Ana'], ['unequip', 'announced-9', 'Ana']]);
+		assert.deepEqual(events(), [['trigger', 'announced-9', 'Ana'], ['unequip', 'announced-9', 'Ana']]);
 		const plain = new EquipmentSystem(f.scene, graph, { setGuard() {} }, () => 'me', (key) => key);
 		plain.registry.equip('me', 'left', 'gun');
-		globalThis.__events.length = 0;
 		plain.dispatchTrigger('me', 'left', 'press', 1, 'gun');
-		assert.deepEqual(globalThis.__events, [['trigger', 'me', 'me']], 'without a mapping the id is passed as it is');
-	} finally { delete globalThis.__events; graph.dispose(); f.dispose(); }
+		assert.deepEqual(events().slice(2), [['trigger', 'me', 'me']], 'without a mapping the id is passed as it is');
+	} finally { graph.dispose(); f.dispose(); }
 });
 
 test('a ray can pass through some slots and what hangs from them, and stops at the next thing', () => {
@@ -383,12 +382,10 @@ test('a ray can pass through some slots and what hangs from them, and stops at t
 	} finally { graph.dispose(); f.dispose(); }
 });
 
-/** The `ctx` a script on a slot of `graph` gets, taken from inside a script. */
+/** The host half of the `ctx` a script on a slot of `graph` gets (scripts themselves run in a sandbox that tests cannot reach into). */
 function scriptCtx(graph) {
-	graph.addSlot(createSlot({ id: 'probe', components: [{ type: 'codeBlock', code: 'globalThis.__probeCtx = ctx; return {};' }] }));
-	const ctx = globalThis.__probeCtx;
-	delete globalThis.__probeCtx;
-	return ctx;
+	graph.addSlot(createSlot({ id: 'probe' }));
+	return buildCodeBlockCtx('probe', graph.getLive('probe').node, graph.buildCodeBlockHost(), () => {}, { disposed: false, tracks: new Set() });
 }
 
 test('a capsule touches what comes within its radius, by each mesh’s true box, nearest first', () => {
@@ -488,15 +485,14 @@ test('a script is told when a guest leaves, and one that throws does not stop th
 	const f = fixture();
 	const graph = new SceneGraph(f.scene, {});
 	try {
-		globalThis.__left = [];
 		graph.load([
 			createSlot({ id: 'bad', components: [{ type: 'codeBlock', code: 'return { onPlayerLeft() { throw new Error("boom"); } };' }] }),
-			createSlot({ id: 'good', components: [{ type: 'codeBlock', code: 'return { onPlayerLeft(player) { globalThis.__left.push(player); } };' }] })
+			createSlot({ id: 'good', components: [{ type: 'codeBlock', code: 'return { onPlayerLeft(player) { ctx.log(JSON.stringify(player)); } };' }] })
 		]);
 		graph.dispatchPlayerLeft({ id: 'guest-1', name: 'Ana' });
-		assert.deepEqual(globalThis.__left, [{ id: 'guest-1', name: 'Ana' }]);
+		assert.deepEqual(graph.getCodeBlockDebugLog('good').map((entry) => JSON.parse(entry.message)), [{ id: 'guest-1', name: 'Ana' }]);
 		assert.match(graph.getCodeBlockDebugLog('bad')[0].message, /boom/);
-	} finally { delete globalThis.__left; graph.dispose(); f.dispose(); }
+	} finally { graph.dispose(); f.dispose(); }
 });
 
 test('the holder of an equipped tool is reported with the id scripts know the player by, not the connection id', () => {
@@ -504,11 +500,12 @@ test('the holder of an equipped tool is reported with the id scripts know the pl
 	const graph = new SceneGraph(f.scene, { scriptPlayerId: (key) => (key === 'conn-7' ? 'announced-7' : key) });
 	try {
 		graph.setEquipQuery({ getHolderOfSlotOrAncestor: (slotId) => (slotId === 'gun' ? { playerId: 'conn-7', hand: 'right' } : null) });
-		graph.load([createSlot({ id: 'gun', components: [{ type: 'codeBlock', code: 'globalThis.__holder = () => ctx.equip.holder(); return {};' }] })]);
-		assert.deepEqual(globalThis.__holder(), { playerId: 'announced-7', hand: 'right' });
+		graph.load([createSlot({ id: 'gun', components: [{ type: 'codeBlock', code: 'return { tick() { ctx.log(JSON.stringify(ctx.equip.holder())); } };' }] })]);
+		const holder = () => { graph.getLive('gun').runtime.tick(0); return JSON.parse(graph.getCodeBlockDebugLog('gun').at(-1).message); };
+		assert.deepEqual(holder(), { playerId: 'announced-7', hand: 'right' });
 		graph.setEquipQuery({ getHolderOfSlotOrAncestor: () => null });
-		assert.equal(globalThis.__holder(), null);
-	} finally { delete globalThis.__holder; graph.dispose(); f.dispose(); }
+		assert.equal(holder(), null);
+	} finally { graph.dispose(); f.dispose(); }
 });
 
 test('the player body can be teleported on the desktop, keeping the way it looks when no yaw is given', () => {

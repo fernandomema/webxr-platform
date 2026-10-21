@@ -1,10 +1,12 @@
 import type { WorldStorageService } from './worldStorageService';
 import { requestScriptJson } from './scriptNet';
+import { CodeBlockVm, isCodeBlockSandboxReady, type ReturnMode } from './sandbox/codeBlockVm';
 import { Vector3, Quaternion, type TransformNode } from '@babylonjs/core';
 import type { Component, Slot, UIEvent, Vec3, Quat } from '$lib/ecs/types';
 import type { UIMediaState } from './uiPanelSurface';
 import type { AudioTrackHandle, ScriptAudio } from './scriptAudio';
 import type { PlayerPoseView, PlayerSummary, TeleportTarget } from './playerPoses';
+import type { PayResult, ScriptPayments } from './payments/types';
 
 /** What SceneGraph exposes to a codeBlock's compiled handlers — narrow, read-mostly, no Babylon types leak into `ctx`. */
 export interface CodeBlockHost {
@@ -57,6 +59,13 @@ export interface CodeBlockHost {
 	storage?: WorldStorageService;
 	/** Audio analysis and clock-accurate playback. Absent where the engine has no audio. */
 	audio?: ScriptAudio;
+	/**
+	 * Routes of our own site a script with this source may call through `ctx.net` (with the player's session). The game answers for
+	 * the scripts it ships itself, so a world's own code can never reach our API; absent means none.
+	 */
+	sameOriginPathsFor?(code: string): readonly string[];
+	/** Paying for the products a published world sells. Absent where credits cannot be spent (an unpublished world, a guest that is not the host). */
+	payments?: ScriptPayments;
 	/** Imports a Poly Haven model into this device's asset store and local inventory. Host/solo only. */
 	importPolyHavenModel(id: string, name: string): Promise<string>;
 }
@@ -255,12 +264,18 @@ function requireStorage(host: CodeBlockHost): WorldStorageService {
 	return host.storage;
 }
 
+/** A player named the way scripts name them: an id, or anything with an `id` (`{ id, name }` from an event or `world.getPlayer`). */
+function playerIdOf(player: unknown): string | undefined {
+	const id = typeof player === 'string' ? player : (player as { id?: unknown } | null | undefined)?.id;
+	return typeof id === 'string' && id ? id : undefined;
+}
+
 function requireAudio(host: CodeBlockHost): ScriptAudio {
 	if (!host.audio) throw new Error('Audio is not available here');
 	return host.audio;
 }
 
-function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, pushLog: (level: 'log' | 'error', hook: string, message: string) => void, scope: ScriptScope) {
+function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, pushLog: (level: 'log' | 'error', hook: string, message: string) => void, scope: ScriptScope, sameOriginPaths: readonly string[] = []) {
 	return {
 		self: {
 			id: slotId,
@@ -462,10 +477,10 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 			}
 		},
 		net: {
-			/** GET JSON from a local route or an external HTTPS endpoint. Gate shared work behind world.isHost(). */
-			fetchJson: (url: string) => requestScriptJson(url),
+			/** GET JSON from an external HTTPS endpoint. Gate shared work behind world.isHost(). */
+			fetchJson: (url: string) => requestScriptJson(url, 'GET', undefined, { sameOriginPaths }),
 			/** POST a JSON body and read the JSON response. */
-			postJson: (url: string, body: unknown) => requestScriptJson(url, 'POST', body)
+			postJson: (url: string, body: unknown) => requestScriptJson(url, 'POST', body, { sameOriginPaths })
 		},
 		storage: {
 			/** False when nothing can be saved (a published world played without an account): reads return your default, writes do nothing. */
@@ -500,6 +515,27 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 				return rows;
 			}
 		},
+		pay: {
+			/** Whether credits can be spent here: a published world, played by someone signed in. */
+			get available(): boolean {
+				return Boolean(host.payments) && host.isHost();
+			},
+			/**
+			 * Asks a player (`options.player`: an id or `{ id }` from an event; the local player when left out) to pay for the product
+			 * `options.sku` of this world's `shop` component. The price is the one published with the world; the player sees it in a
+			 * window of the game that no script controls and decides there. Resolves `{ ok: true }` once it is paid, or
+			 * `{ ok: false, reason }` with `declined`, `insufficient`, `owned`, `limit`, `busy` or `unavailable`. Host/solo only.
+			 */
+			request: async (options: { sku: string; player?: unknown }): Promise<PayResult> => {
+				if (!host.payments || !host.isHost() || typeof options?.sku !== 'string') return { ok: false, reason: 'unavailable' };
+				return host.payments.request(playerIdOf(options.player), options.sku);
+			},
+			/** Whether a player owns a product they paid for (the local player when `player` is left out). */
+			owns: async (sku: string, player?: unknown): Promise<boolean> => {
+				if (!host.payments || !host.isHost() || typeof sku !== 'string') return false;
+				return host.payments.owns(playerIdOf(player), sku);
+			}
+		},
 		assets: {
 			/** Imports a Poly Haven model as a reusable local object and returns its content-addressed asset id. */
 			importPolyHavenModel: (id: string, name: string) => host.importPolyHavenModel(id, name)
@@ -521,11 +557,35 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 
 export type CodeBlockCtx = ReturnType<typeof buildCtx>;
 
+/** The host half of `ctx`, before it is handed to the sandbox. Exported so tests can exercise what each call does on the host. */
+export { buildCtx as buildCodeBlockCtx };
+
 /**
- * Compiles `code` (the body of a function receiving `ctx` and returning
- * handlers) and runs it once. Every entry point into script-authored code is
- * try/caught: a broken script must never abort SceneGraph.load()'s loop or
- * stall other onBeforeRenderObservable listeners for every peer.
+ * How the results of ctx functions reach a script. The objects of the world (slots, their components) are handed over as live
+ * handles — a script still sees and edits the real thing, as it always has — and so are the storage and track handles with
+ * methods. Everything else is copied into the sandbox as plain data.
+ */
+const RETURN_MODES: Record<string, ReturnMode> = {
+	'self.getSlot': 'live',
+	'self.getComponent': 'live',
+	'hierarchy.getSlot': 'live',
+	'hierarchy.getParent': 'live',
+	'hierarchy.findByName': 'live',
+	'hierarchy.getChildren': 'list',
+	'world.findNear': 'list',
+	'storage.player': 'live',
+	'storage.world': 'live',
+	'audio.playTrack': 'live'
+};
+
+const isThenable = (value: unknown): value is PromiseLike<unknown> => !!value && typeof (value as { then?: unknown }).then === 'function';
+const describeError = (err: unknown) => (err instanceof Error ? err.message : String(err));
+
+/**
+ * Runs `code` (the body of a function receiving `ctx` and returning handlers) once, inside a QuickJS sandbox (see
+ * sandbox/codeBlockVm.ts): the script gets `ctx` and the standard language, and nothing of the page. Every entry point into
+ * script-authored code is try/caught: a broken script must never abort SceneGraph.load()'s loop or stall other
+ * onBeforeRenderObservable listeners for every peer, and one that spins or allocates without end is cut off by the VM's limits.
  */
 export function createCodeBlockHandlers(slotId: string, node: TransformNode, code: string, host: CodeBlockHost): CodeBlockRuntime {
 	const debugLog: CodeBlockLogEntry[] = [];
@@ -534,63 +594,60 @@ export function createCodeBlockHandlers(slotId: string, node: TransformNode, cod
 		if (debugLog.length > MAX_LOG_ENTRIES) debugLog.shift();
 	};
 	const getDebugLog = () => debugLog.slice();
+	const fail = (hook: string, err: unknown, what: string) => {
+		console.error(`[codeBlock:${slotId}] ${what}`, err);
+		pushLog('error', hook, describeError(err));
+	};
 
 	const scope: ScriptScope = { disposed: false, tracks: new Set() };
+	let vm: CodeBlockVm | undefined;
 	const dispose = () => {
 		scope.disposed = true;
 		for (const track of scope.tracks) track.stop();
 		scope.tracks.clear();
+		vm?.dispose();
 	};
-	const ctx = buildCtx(slotId, node, host, pushLog, scope);
-	let handlers: CodeBlockHandlers = {};
-	try {
-		// eslint-disable-next-line no-new-func -- intentional: bounded API, no real sandbox (see plan/ecs/types.ts docs)
-		const factory = new Function('ctx', code) as (ctx: CodeBlockCtx) => CodeBlockHandlers | undefined;
-		handlers = factory(ctx) ?? {};
-	} catch (err) {
-		const message = err instanceof Error ? err.message : String(err);
-		console.error(`[codeBlock:${slotId}] failed to compile/run`, err);
-		pushLog('error', 'compile', message);
+
+	// Scripts never run outside the sandbox: if it is not loaded yet, the block stays inert instead of falling back to the page.
+	if (!isCodeBlockSandboxReady()) {
+		fail('compile', new Error('The code block sandbox is not loaded'), 'sandbox not ready');
 		return { getDebugLog, dispose };
 	}
 
+	let handlerNames: string[];
+	try {
+		const ctx = buildCtx(slotId, node, host, pushLog, scope, host.sameOriginPathsFor?.(code) ?? []);
+		vm = new CodeBlockVm({
+			api: ctx as unknown as Record<string, unknown>,
+			returnModes: RETURN_MODES,
+			onConsole: (level, text) => console[level](`[codeBlock:${slotId}]`, text),
+			onError: (where, err) => fail(where, err, `${where} failed`)
+		});
+		handlerNames = vm.load(code);
+	} catch (err) {
+		fail('compile', err, 'failed to compile/run');
+		dispose();
+		return { getDebugLog, dispose };
+	}
+	const sandbox = vm;
+
+	const run = (key: string, args: unknown[]): unknown => {
+		if (scope.disposed || !handlerNames.includes(key)) return undefined;
+		try {
+			const result = sandbox.invoke(key, args);
+			// An async handler's failure arrives later as a rejected promise: it goes to the log like a thrown one.
+			if (isThenable(result)) result.then(undefined, (err: unknown) => fail(key, err, `${key} rejected`));
+			return result;
+		} catch (err) {
+			fail(key, err, `${key} threw`);
+		}
+	};
 	const safe = <K extends keyof CodeBlockHandlers>(key: K): CodeBlockHandlers[K] => {
-		const fn = handlers[key];
-		if (!fn) return undefined;
-		return ((...args: unknown[]) => {
-			try {
-				// @ts-expect-error -- generic passthrough wrapper over heterogeneous handler signatures
-				const result = fn(...args);
-				// An async handler's failure arrives later as a rejected promise: it goes to the log like a thrown one.
-				if (result && typeof (result as Promise<unknown>).then === 'function') {
-					(result as Promise<unknown>).then(undefined, (err: unknown) => {
-						const message = err instanceof Error ? err.message : String(err);
-						console.error(`[codeBlock:${slotId}] ${key} rejected`, err);
-						pushLog('error', key, message);
-					});
-				}
-				return result;
-			} catch (err) {
-				const message = err instanceof Error ? err.message : String(err);
-				console.error(`[codeBlock:${slotId}] ${key} threw`, err);
-				pushLog('error', key, message);
-			}
-		}) as CodeBlockHandlers[K];
+		if (!handlerNames.includes(key)) return undefined;
+		return ((...args: unknown[]) => run(key, args)) as CodeBlockHandlers[K];
 	};
 
-	try {
-		const spawned = handlers.onSpawn?.() as unknown;
-		if (spawned && typeof (spawned as Promise<unknown>).then === 'function') {
-			(spawned as Promise<unknown>).then(undefined, (err: unknown) => {
-				console.error(`[codeBlock:${slotId}] onSpawn rejected`, err);
-				pushLog('error', 'onSpawn', err instanceof Error ? err.message : String(err));
-			});
-		}
-	} catch (err) {
-		const message = err instanceof Error ? err.message : String(err);
-		console.error(`[codeBlock:${slotId}] onSpawn threw`, err);
-		pushLog('error', 'onSpawn', message);
-	}
+	run('onSpawn', []);
 
 	return {
 		onPlayerReady: safe('onPlayerReady'),
@@ -604,14 +661,25 @@ export function createCodeBlockHandlers(slotId: string, node: TransformNode, cod
 		onTrigger: safe('onTrigger'),
 		tick: safe('tick'),
 		getRadialItems: () => {
-			try {
-				return handlers.getRadialItems?.() ?? [];
-			} catch (err) {
-				const message = err instanceof Error ? err.message : String(err);
-				console.error(`[codeBlock:${slotId}] getRadialItems threw`, err);
-				pushLog('error', 'getRadialItems', message);
-				return [];
-			}
+			if (!handlerNames.includes('getRadialItems')) return [];
+			const items = run('getRadialItems', []);
+			if (!Array.isArray(items)) return [];
+			const guard = <T>(key: string, fn: () => T, fallback: T): T => {
+				try {
+					return fn();
+				} catch (err) {
+					fail(key, err, `${key} threw`);
+					return fallback;
+				}
+			};
+			return (items as RadialItemDef[]).map((item) => ({
+				label: String(item.label),
+				isEnabled: () => guard('getRadialItems.isEnabled', () => Boolean(item.isEnabled?.()), false),
+				onSelect: () => {
+					const result = guard('getRadialItems.onSelect', () => item.onSelect?.(), undefined);
+					if (isThenable(result)) result.then(undefined, (err: unknown) => fail('getRadialItems.onSelect', err, 'onSelect rejected'));
+				}
+			}));
 		},
 		getDebugLog,
 		dispose

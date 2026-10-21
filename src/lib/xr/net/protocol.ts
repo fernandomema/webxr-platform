@@ -2,6 +2,7 @@ import type { MediaControlAction, Slot, SlotTree, UIEvent } from '$lib/ecs/types
 import type { KeyboardPresence } from '../keyboard/presence';
 import type { PlayerApiCall, PlayerApiResult } from '$lib/worldStorage/ops';
 import type { HandPose, TransformPose } from '../avatar/defaultAvatar';
+import type { PayResult } from '../payments/types';
 
 export type SlotTransform = Pick<Slot, 'id' | 'position' | 'rotation' | 'scale'>;
 
@@ -41,6 +42,9 @@ export type WorldSyncMessage =
 	/** Host to guest: run this storage/leaderboard call with the guest's own account. */
 	| { kind: 'player-api-request'; requestId: string; publicationId: string; call: PlayerApiCall }
 	| { kind: 'player-api-response'; requestId: string; result: PlayerApiResult }
+	/** Host to guest: ask the player to approve a purchase in the world, or whether they own a product. The guest's own client prices it with the server and shows its own prompt; the host only learns the outcome. */
+	| { kind: 'pay-request'; requestId: string; publicationId: string; sku: string; op: 'buy' | 'owns' }
+	| { kind: 'pay-response'; requestId: string; result: PayResult | { owns: boolean } }
 	/** Host to guest: put the player's feet at `position` (world space), turned to `yaw` radians when given. */
 	/** Host to guest: a slot that expires by itself, added without a whole snapshot. */
 	| { kind: 'spawn-ephemeral'; slot: Slot }

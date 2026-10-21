@@ -42,5 +42,17 @@ Specific incidents, statutory retention or legal claims may justify exceptions. 
 
 - Obtain a complete postal contact address. Reus is a city, not a full postal address. Do not invent a street or publish a private address without the owner's instruction.
 - Age recommendation: initially adults only (18+), pending the owner's choice. No age restriction has been added to the public page yet. A chosen limit must also be communicated and supported in registration, guest entry and Discord sign-in; the statement alone is not age verification.
-- Verify public Meta Quest store declarations against the final APK and privacy policy. The reviewed packaging code disables Android backups and opens the web app; no separate Meta identity, purchase or analytics integration was found in the reviewed source.
+- Verify public Meta Quest store declarations against the final APK and privacy policy. The packaging code disables Android backups and opens the web app. Since October 2026 the app also uses Meta in-app purchases and the Meta user ID (`getLoggedInUserId`, User ID grant) to sell credits; the privacy page (sections 2 to 6) and the Data Use Checkup answers must keep describing exactly that.
+
+## Credits and purchases (data held)
+
+| Data | Where | Kept | Removed by |
+| --- | --- | --- | --- |
+| Credit balance | `creditAccount` | While the account is open | Account deletion (cascade) |
+| Movements of the balance, with provider payment reference | `creditTransaction` | While the account is open | Account deletion (cascade) |
+| What was bought in worlds | `productEntitlement` | While the account is open | Account deletion (cascade) |
+| Meta user ID (app-scoped) linked to the account | `paymentIdentity` | While the account is open | Account deletion (cascade) |
+| Card details | Stripe only; Kithin never receives them | Stripe's own retention | Stripe |
+
+The data export (`/api/account/export`) includes all of the rows above. Backups keep the same 30-day limit. If a financial or tax obligation to keep purchase records appears, add a retention exception here and in the privacy page before relying on it: today nothing is kept after account deletion except in backups.
 - Confirm mailbox operation, backup configuration, retention jobs and one test erasure/restore workflow before publishing the numeric limits.

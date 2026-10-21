@@ -1,19 +1,10 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import ts from 'typescript';
 import { TransformNode, NullEngine, Scene } from '@babylonjs/core';
 
-const coreUrl = import.meta.resolve('@babylonjs/core');
-const libUrl = new URL('../src/lib/', import.meta.url);
-const compile = (source) => ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText
-	.replaceAll("'@babylonjs/core'", JSON.stringify(coreUrl))
-	.replace(/'\$lib\/([^']+)'/g, (_, path) => JSON.stringify(new URL(`${path}.ts`, libUrl).href));
-const moduleUrl = (code) => `data:text/javascript;base64,${Buffer.from(code).toString('base64')}`;
-const { createCodeBlockHandlers } = await import(moduleUrl(compile(await readFile(new URL('xr/codeBlockRuntime.ts', libUrl), 'utf8'))
-	.replaceAll("'./scriptNet'", JSON.stringify(new URL('xr/scriptNet.ts', libUrl).href))));
+import { buildCodeBlockCtx } from './helpers/codeBlockRuntimeModule.mjs';
 
-/** The real ctx on a fake host that records what the script asks for. */
+/** The host half of the real ctx (what each call does, before it crosses into the sandbox) on a fake host that records what the script asks for. */
 function setup({ host = true, slots = {}, equipped = {}, grabbed = [] } = {}) {
 	const scene = new Scene(new NullEngine());
 	const nodes = new Map();
@@ -27,9 +18,7 @@ function setup({ host = true, slots = {}, equipped = {}, grabbed = [] } = {}) {
 		requestSpawn: (slot, options) => spawns.push({ slot, options }), requestDelete() {},
 		commitTransform: (id, broadcast) => commits.push([id, broadcast])
 	};
-	let ctx;
-	createCodeBlockHandlers('self', node('self'), 'globalThis.__ctx = ctx; return {};', fake);
-	ctx = globalThis.__ctx; delete globalThis.__ctx;
+	const ctx = buildCodeBlockCtx('self', node('self'), fake, () => {}, { disposed: false, tracks: new Set() });
 	return { ctx, spawns, commits, node };
 }
 

@@ -19,6 +19,7 @@ import { announceAssetSourcesChanged, getLocalAssetStore } from '$lib/assets/sto
 import type { SlotTree } from '$lib/ecs/types';
 import { cameraHeadPose } from '../avatar/headPose';
 import { parseTeleportTarget, type TeleportTarget } from '../playerPoses';
+import type { PayResult } from '../payments/types';
 
 const PRESENCE_INTERVAL_MS = 50;
 const HOLD_MOVE_INTERVAL_MS = 50;
@@ -41,6 +42,7 @@ export class GuestSync {
 	private avatars: AvatarHooks | null = null;
 	private storageHooks: { onPublication(publicationId: string | null): void; handlePlayerApi(publicationId: string, call: unknown): Promise<PlayerApiResult> } | null = null;
 	private assetPeer: AssetPeer | null = null;
+	private paymentHandler: ((publicationId: string, sku: string, op: 'buy' | 'owns') => Promise<PayResult | { owns: boolean }>) | null = null;
 	private teleportHandler: ((target: TeleportTarget) => void) | null = null;
 	readonly hostProxy: TransformNode;
 	/** Stand-ins of the other players' keyboards while they type. */
@@ -153,6 +155,11 @@ export class GuestSync {
 		this.teleportHandler = handler;
 	}
 
+	/** What to do when the host asks this player to pay or whether they own something. Answered by this player's own client, with this player's account. */
+	setPaymentHandler(handler: (publicationId: string, sku: string, op: 'buy' | 'owns') => Promise<PayResult | { owns: boolean }>): void {
+		this.paymentHandler = handler;
+	}
+
 	setStorageHooks(hooks: { onPublication(publicationId: string | null): void; handlePlayerApi(publicationId: string, call: unknown): Promise<PlayerApiResult> }): void {
 		this.storageHooks = hooks;
 	}
@@ -243,6 +250,14 @@ export class GuestSync {
 				const requestId = msg.requestId;
 				void (this.storageHooks?.handlePlayerApi(msg.publicationId, msg.call) ?? Promise.resolve<PlayerApiResult>({ ok: true, unavailable: true }))
 					.then((result) => this.link?.send({ kind: 'player-api-response', requestId, result }));
+				break;
+			}
+			case 'pay-request': {
+				const { requestId, publicationId, sku, op } = msg;
+				const unavailable = op === 'buy' ? { ok: false, reason: 'unavailable' as const } : { owns: false };
+				void (this.paymentHandler?.(publicationId, sku, op) ?? Promise.resolve(unavailable))
+					.catch(() => unavailable)
+					.then((result) => this.link?.send({ kind: 'pay-response', requestId, result }));
 				break;
 			}
 			case 'interaction-result':

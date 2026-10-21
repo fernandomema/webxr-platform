@@ -3,6 +3,7 @@ import type { SlotTree } from '$lib/ecs/types';
 import { validateWorldScene } from '$lib/worlds/package';
 import { COMPONENT_SCHEMAS } from '../schema/components';
 import { lintCode } from '../lint/code';
+import { lintUiPanels } from '$lib/xr/uiLayout';
 
 export interface SceneDiagnostic {
 	severity: 'error' | 'warning';
@@ -85,9 +86,13 @@ export function validateAiScene(tree: SlotTree): SceneDiagnostic[] {
 				for (const issue of lintCode(component.code)) {
 					if (issue.severity !== 'info') diagnostics.push({ severity: issue.severity, slotId: slot.id, message: `Code line ${issue.line}: ${issue.message}` });
 				}
-				if (component.code.trim()) diagnostics.push({ severity: 'warning', slotId: slot.id, message: 'Review this JavaScript before playing or publishing. Code blocks are not sandboxed.' });
+				if (component.code.trim()) diagnostics.push({ severity: 'warning', slotId: slot.id, message: 'Review this JavaScript before playing or publishing. Code blocks run in a sandbox with only the ctx API.' });
 			}
 		}
+	}
+	// A UI panel whose elements ask for more room than they have: the game shrinks them to fit, but the author should know.
+	if (!diagnostics.some((item) => item.severity === 'error')) {
+		for (const issue of lintUiPanels(tree)) diagnostics.push({ severity: 'warning', slotId: issue.id, message: `UI: ${issue.message}.` });
 	}
 	return diagnostics;
 }

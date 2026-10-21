@@ -238,6 +238,8 @@ Required fields are marked **(req)**. Everything else is optional; omit a field 
 
 **`codeBlock`**: `code` **(req)**: JavaScript source as a JSON string. See [section 8](#8-code-blocks-scripting).
 
+**`shop`**: `products` **(req)**: a list of `{ sku, name, price, repeatable? }` this world sells for credits. `sku` is lowercase letters, digits, `-` and `_` (max 48); `price` is a whole number of credits from 1 to 10000; `repeatable: true` lets the same player buy it again (otherwise they can buy it once). Scripts only name the `sku` in `ctx.pay.request({ sku })`; the price is always the published one. Put one `shop` on any slot.
+
 **`scriptState`**: `data` **(req)**: any JSON object. Shared memory that scripts read and the host writes; it is synchronised to every player.
 
 ### World
@@ -271,6 +273,8 @@ A UI is a slot tree:
    - The panel's direct children are stacked **top to bottom in array order**.
    - A `container` lays its children out in `flexDirection` `"column"` (default) or `"row"`, with `gap`, `padding`, `margin`.
 
+**Room.** A panel keeps a margin of its own: its elements have 92% of its width and 88% of its height. A `container` is exactly the `height` it is given (without one, it is as tall as its content), with its content from the top; an empty container with a `height` is a spacer. What is wider than the room it has is shrunk to fit (the children of a row share the room, like CSS `flex-shrink`) and text wraps in what it gets, so nothing is cut off. The Studio and the validator warn where an element asks for more than it has (`UI: ... is 1000 px wide in 920 px of room`): make the panel bigger, or the elements smaller, so the numbers are right.
+
 `uiElement` fields:
 
 | Field | Applies to | Meaning |
@@ -279,6 +283,8 @@ A UI is a slot tree:
 | `width`, `height` | all | pixels. Give every element an explicit width and height. |
 | `visible` | all | boolean |
 | `text` | text, button | the label |
+| `translations` | text, button | the label in other languages, `{ "es": { "text": "Hola" } }`. Each player sees their own language's, or `text` when there is none. A script that changes `text` should change `translations` too. |
+| `{dash}` `{use}` `{grab}` `{drop}` `{move}` `{turn}` | inside `text` | the control of the device the player holds, drawn as a picture of the key or controller button ("Press {dash} → Worlds"). `{dash}` opens the menu, `{use}` is a verb ("point at it and {use}"), `{grab}`/`{drop}` too, `{move}`/`{turn}` are nouns. Pictures are from the Kenney Input Prompts pack (CC0). A `text` shows them in line with the words; in a button they are written as words. |
 | `fontSize` (8–128), `fontWeight` (`"normal"`/`"bold"`), `color`, `textAlign` (`"left"`/`"center"`/`"right"`) | text, button | typography |
 | `background` | container, button | hex |
 | `cornerRadius`, `borderColor` + `borderWidth` | container (radius also button) | box style |
@@ -410,6 +416,13 @@ ctx.ui
 ctx.net
   .fetchJson(url) -> Promise            HTTPS GET returning JSON (CORS must allow it)
   .postJson(url, body) -> Promise
+
+ctx.pay                                 charging credits, only in PUBLISHED worlds (host/solo calls only)
+  .request({ sku, player? }) -> Promise<{ ok, reason? }>   asks the player (`event.playerId` of onTrigger/onEquip, or the local player when omitted) to approve buying a product of
+        this world's `shop` component. The player sees the published price in a window of the game and decides; reason is one of
+        declined, insufficient, owned, limit, busy, unavailable. Never charge without it, never assume it succeeded.
+  .owns(sku, player?) -> Promise<boolean>  whether the player already bought it
+  .available -> boolean
 
 ctx.storage                             persistent data, only in PUBLISHED worlds with a signed-in player
   .available -> boolean                 false: reads return the default, writes do nothing

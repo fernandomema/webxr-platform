@@ -21,6 +21,7 @@ import { announceAssetSourcesChanged, getLocalAssetStore } from '$lib/assets/sto
 import { cameraHeadPose } from '../avatar/headPose';
 import { createThrottle } from './throttle';
 import type { PlayerSummary, TeleportTarget } from '../playerPoses';
+import type { PayResult } from '../payments/types';
 
 const PRESENCE_INTERVAL_MS = 50;
 const STATE_INTERVAL_MS = 50;
@@ -58,6 +59,7 @@ export class HostAuthority {
 	private presenceSequence = 0;
 	private avatars: AvatarHooks | null = null;
 	private storageHooks: { getPublicationId(): string | null; onPlayerReady(player: PlayerInfo): void; onPlayerLeft?(player: PlayerInfo): void } | null = null;
+	private pendingPay = new Map<string, { guestId: string; resolve(result: PayResult | { owns: boolean }): void; timer: ReturnType<typeof setTimeout> }>();
 	private pendingApi = new Map<string, { guestId: string; resolve(result: PlayerApiResult): void; timer: ReturnType<typeof setTimeout> }>();
 	/** Stand-ins of the guests' keyboards while they type. */
 	private keyboards: RemoteKeyboards;
@@ -107,6 +109,25 @@ export class HostAuthority {
 			}, 15_000);
 			this.pendingApi.set(requestId, { guestId, resolve, timer });
 			entry.link.send({ kind: 'player-api-request', requestId, publicationId, call });
+		});
+	}
+
+	/** Asks a connected guest to pay for `sku` (or say whether they own it) with their own account. Never rejects: a guest who is gone or silent is `unavailable`. */
+	relayPayment(playerId: string, op: 'buy' | 'owns', sku: string): Promise<PayResult | { owns: boolean }> {
+		const publicationId = this.storageHooks?.getPublicationId();
+		const found = [...this.guests.entries()].find(([, entry]) => entry.player.playerId === playerId);
+		const unavailable = op === 'buy' ? { ok: false, reason: 'unavailable' as const } : { owns: false };
+		if (!found || !publicationId) return Promise.resolve(unavailable);
+		const [guestId, entry] = found;
+		const requestId = crypto.randomUUID();
+		return new Promise((resolve) => {
+			// A purchase waits for a person to read and decide, so it is given longer than a storage call.
+			const timer = setTimeout(() => {
+				this.pendingPay.delete(requestId);
+				resolve(unavailable);
+			}, op === 'buy' ? 90_000 : 15_000);
+			this.pendingPay.set(requestId, { guestId, resolve, timer });
+			entry.link.send({ kind: 'pay-request', requestId, publicationId, sku, op });
 		});
 	}
 
@@ -244,6 +265,12 @@ export class HostAuthority {
 			this.pendingApi.delete(requestId);
 			pending.resolve({ ok: false, error: 'That player left' });
 		}
+		for (const [requestId, pending] of this.pendingPay) {
+			if (pending.guestId !== guestId) continue;
+			clearTimeout(pending.timer);
+			this.pendingPay.delete(requestId);
+			pending.resolve({ ok: false, reason: 'unavailable' });
+		}
 		this.grabSystem.release(`${guestId}:left`);
 		this.grabSystem.release(`${guestId}:right`);
 		// Whatever they had equipped goes back into the world at its current pose.
@@ -345,6 +372,14 @@ export class HostAuthority {
 				if (!pending || pending.guestId !== guestId) break; // only the guest that was asked can answer
 				clearTimeout(pending.timer);
 				this.pendingApi.delete(msg.requestId);
+				pending.resolve(msg.result);
+				break;
+			}
+			case 'pay-response': {
+				const pending = this.pendingPay.get(msg.requestId);
+				if (!pending || pending.guestId !== guestId) break; // only the guest that was asked can answer
+				clearTimeout(pending.timer);
+				this.pendingPay.delete(msg.requestId);
 				pending.resolve(msg.result);
 				break;
 			}

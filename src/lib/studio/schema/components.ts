@@ -492,6 +492,25 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		create: () => ({ type: 'scriptState', data: { enabled: true } })
 	},
 	{
+		type: 'atm',
+		label: 'ATM',
+		group: 'Interaction',
+		description: 'Pressing it opens the credits window: see your balance and buy credits. The window belongs to the game.',
+		glyph: '¤',
+		fields: [],
+		create: () => ({ type: 'atm' })
+	},
+	{
+		type: 'shop',
+		label: 'Shop',
+		group: 'Logic',
+		description: 'Products this world sells for credits. Code blocks ask to charge for one with ctx.pay.request({ sku }).',
+		glyph: '¤',
+		advanced: true,
+		fields: [{ key: 'products', label: 'Products (JSON)', kind: 'json', help: 'A list of { sku, name, price, repeatable? }. The price is in credits and is the only one that can be charged.' }],
+		create: () => ({ type: 'shop', products: [{ sku: 'example-item', name: 'Example item', price: 100 }] })
+	},
+	{
 		type: 'velocity',
 		label: 'Velocity',
 		group: 'World',
@@ -636,11 +655,11 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		type: 'worldLink',
 		label: 'World Link',
 		group: 'World',
-		description: 'Pressing it offers a menu to go to one of the built-in worlds.',
+		description: 'Pressing it offers a menu to go to one of the built-in worlds, or to start a new empty one.',
 		glyph: '➜',
 		advanced: true,
 		fields: [
-			{ key: 'target', label: 'Destination', kind: 'json', advanced: true, help: '{ "kind": "builtin", "id": "beat-turntable" }' },
+			{ key: 'target', label: 'Destination', kind: 'json', advanced: true, help: '{ "kind": "builtin", "id": "beat-turntable" }, or { "kind": "new" } for a new empty world' },
 			{ key: 'label', label: 'Name in the menu', kind: 'text', optional: true, default: '' }
 		],
 		create: () => ({ type: 'worldLink', target: { kind: 'builtin', id: 'lobby' } })

@@ -102,12 +102,13 @@ export interface WorldPortalComponent {
 }
 
 /**
- * A doorway to one of the worlds that ship with the app. Pointing at the slot and pressing opens a small radial menu that offers to
- * go there; nothing is loaded until it is chosen. `label` names the destination in the menu (the world's name when empty).
+ * A doorway to one of the worlds that ship with the app, or to a new empty world to build in. Pointing at the slot and pressing opens
+ * a small radial menu that offers to go there; nothing is loaded until it is chosen. `label` names the destination in the menu (the
+ * world's name when empty).
  */
 export interface WorldLinkComponent {
 	type: 'worldLink';
-	target: { kind: 'builtin'; id: string };
+	target: { kind: 'builtin'; id: string } | { kind: 'new' };
 	label?: string;
 }
 
@@ -179,9 +180,10 @@ export interface CodeBlockComponent {
 	 * The body of a function receiving a bounded `ctx` API object and
 	 * returning an optional handlers object: `{ onSpawn?, onGrab?, onRelease?,
 	 * onEquip?, onUnequip?, onTrigger?, tick?, getRadialItems? }`. Compiled once per live instantiation via
-	 * `new Function('ctx', code)` — NOT a real sandbox (see sceneGraph.ts):
-	 * this data travels over the network like any other Slot field, so it
-	 * runs inside the page of anyone who joins a world using it.
+	 * `new Function('ctx', code)` inside a QuickJS sandbox (see sandbox/codeBlockVm.ts):
+	 * this data travels over the network like any other Slot field, so it runs on
+	 * the machine of anyone who joins a world using it — but it only sees `ctx`
+	 * and the standard language, never the page, its network or the session.
 	 */
 	code: string;
 }
@@ -415,6 +417,11 @@ export interface UIElementComponent {
 	background?: string;
 	color?: string;
 	text?: string;
+	/**
+	 * The same text in other languages, keyed by language code (`{ es: { text: 'Hola' } }`). Each player sees their own language's, and
+	 * `text` for any language that is not here, so one world can speak to everyone without a copy per language.
+	 */
+	translations?: Record<string, { text?: string }>;
 	fontSize?: number;
 	fontWeight?: 'normal' | 'bold';
 	/** `text` and `button`: where the text sits across the element. Text is left-aligned unless set. */
@@ -468,6 +475,20 @@ export interface ScriptStateComponent {
 	 * to any one demo.
 	 */
 	data: Record<string, unknown>;
+}
+
+/**
+ * A cash machine: pressing it opens the game's credits window (balance, buying credits). The window and everything it does belong
+ * to the game, not to the world, so this component carries nothing and no script can change what the machine does.
+ */
+export interface AtmComponent {
+	type: 'atm';
+}
+
+/** What a published world sells for credits. Scripts name a product by its `sku` (`ctx.pay.request`); the price is only ever the one written here. */
+export interface ShopComponent {
+	type: 'shop';
+	products: Array<{ sku: string; name: string; price: number; repeatable?: boolean }>;
 }
 
 export interface PressableButtonComponent {
@@ -609,6 +630,8 @@ export type Component =
 	| AudioSourceComponent
 	| ContainerComponent
 	| WorldPortalComponent
+	| ShopComponent
+	| AtmComponent
 	| WorldLinkComponent
 	| SpawnPointComponent
 	| MirrorComponent
@@ -678,9 +701,9 @@ export function findComponent<T extends Component['type']>(
 	return slot.components.find((c) => c.type === type) as Extract<Component, { type: T }> | undefined;
 }
 
-/** Whether pointing at this slot and pressing opens a world menu (a world orb's, or a link to a built-in world's). */
+/** Whether pointing at this slot and pressing opens a menu of the game: a world orb's, a link to a built-in world's, or a cash machine's. */
 export function opensWorldMenu(slot: Slot): boolean {
-	return slot.components.some((component) => component.type === 'worldPortal' || component.type === 'worldLink');
+	return slot.components.some((component) => component.type === 'worldPortal' || component.type === 'worldLink' || component.type === 'atm');
 }
 
 export function isEquippable(slot: Slot): EquippableComponent | undefined {

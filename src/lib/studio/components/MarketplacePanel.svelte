@@ -96,7 +96,7 @@
 					<span class="badge {listing?.status === 'hidden' ? 'warning' : 'success'}">{loading ? 'Loading…' : listing?.status === 'hidden' ? 'Hidden' : 'Published'}</span>
 					{#if listing}<span class="muted">Revision {listing.latestRevision} · updated {timeLabel(listing.updatedAt)}</span>{/if}
 				</div>
-				{#if listing?.containsCode}<p class="muted small">Contains a code block — anyone who acquires this runs it as unsandboxed JavaScript.</p>{/if}
+				{#if listing?.containsCode}<p class="muted small">Contains a code block — anyone who acquires this runs it in a sandbox that only reaches the world through the ctx API.</p>{/if}
 			{:else}
 				<p class="muted">Publishing shares this object on the marketplace. Acquisitions are free and automatically include revisions you publish later.</p>
 			{/if}

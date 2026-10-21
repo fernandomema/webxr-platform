@@ -80,7 +80,7 @@ export function lintCode(code: string): CodeDiagnostic[] {
 	}
 	lines.forEach((text, index) => {
 		if (/\b(document|window)\.|\bfetch\(/.test(text.replace(/\/\/.*$/, ''))) {
-			diagnostics.push({ severity: 'warning', message: 'Prefer the bounded ctx API inside a code block.', line: index + 1 });
+			diagnostics.push({ severity: 'warning', message: 'The browser page is not available inside a code block; use the ctx API.', line: index + 1 });
 		}
 	});
 	return diagnostics;

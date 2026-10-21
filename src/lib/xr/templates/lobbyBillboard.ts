@@ -1,5 +1,5 @@
-import type { Slot, SlotTree } from '../../ecs/types';
-import { createSlot } from '../../ecs/types';
+import type { Slot, SlotTree } from '../../ecs/types.ts';
+import { createSlot } from '../../ecs/types.ts';
 
 /** A world a lobby banner advertises: the picture, the built-in world it leads to and its name in the menu. */
 export interface LobbyBanner {
@@ -20,9 +20,13 @@ const ROOT = 'lobby-billboard';
 const PANEL = 'lobby-billboard-panel';
 const IMAGE = 'lobby-billboard-image';
 /** The banners are portrait (2:3). */
-const PX_WIDTH = 512;
-const PX_HEIGHT = 768;
-const WIDTH = 1.2;
+const IMAGE_WIDTH = 512;
+const IMAGE_HEIGHT = 768;
+/** A panel keeps a margin of its own (see uiLayout.ts): it is made big enough for the picture to sit inside it, not on its edges. */
+const PX_WIDTH = 560;
+const PX_HEIGHT = 880;
+/** The picture is 1.2 m wide, as it always was; the panel around it is as much bigger as its pixels are. */
+const WIDTH = (1.2 * PX_WIDTH) / IMAGE_WIDTH;
 const HEIGHT = (WIDTH * PX_HEIGHT) / PX_WIDTH;
 const FRAME = 0.08;
 const POST_HEIGHT = 0.3;
@@ -86,8 +90,8 @@ export function buildLobbyBillboard(banners: readonly LobbyBanner[] = LOBBY_BANN
 				{ type: 'worldLink', target: { kind: 'builtin', id: first.world }, label: first.label }
 			]
 		}),
-		createSlot({ id: `${ROOT}-picture`, parentId: PANEL, name: 'Billboard Picture Frame', components: [{ type: 'uiElement', kind: 'container', width: PX_WIDTH, height: PX_HEIGHT }] }),
-		createSlot({ id: IMAGE, parentId: `${ROOT}-picture`, name: 'Billboard Picture', components: [{ type: 'uiElement', kind: 'image', src: first.image, width: PX_WIDTH, height: PX_HEIGHT }] }),
+		createSlot({ id: `${ROOT}-picture`, parentId: PANEL, name: 'Billboard Picture Frame', components: [{ type: 'uiElement', kind: 'container', width: IMAGE_WIDTH, height: IMAGE_HEIGHT }] }),
+		createSlot({ id: IMAGE, parentId: `${ROOT}-picture`, name: 'Billboard Picture', components: [{ type: 'uiElement', kind: 'image', src: first.image, width: IMAGE_WIDTH, height: IMAGE_HEIGHT }] }),
 		createSlot({ id: `${ROOT}-rotator`, parentId: ROOT, name: 'Billboard Rotator', components: [{ type: 'codeBlock', code: rotationCode(banners) }] })
 	];
 	return slots;

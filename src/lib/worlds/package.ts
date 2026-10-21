@@ -5,6 +5,7 @@ import type { WorldPackage, WorldSource } from './types';
 import { ASSET_LIMITS } from '$lib/assets/manifest';
 import { collectAssetIds, isAssetId, isBuiltinMeshId } from '$lib/assets/ref';
 import { isValidMaterialMap } from '$lib/xr/materialSources';
+import { collectProducts } from '$lib/credits/catalog';
 
 export const MAX_WORLD_BYTES = 1_500_000;
 export const MAX_WORLD_DESCRIPTION = 2000;
@@ -28,6 +29,7 @@ export function validateWorldScene(value: unknown): asserts value is SlotTree {
 		ids.add(slot.id);
 	}
 	validateAssetRefs(value as SlotTree);
+	try { collectProducts(value); } catch (err) { throw new Error(err instanceof Error ? err.message : 'Invalid shop'); }
 	for (const slot of value as SlotTree) {
 		if (slot.parentId !== null && !ids.has(slot.parentId)) throw new Error('World has a missing parent slot');
 		let parentId = slot.parentId;

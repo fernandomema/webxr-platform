@@ -39,6 +39,10 @@ model user {
   feedbackInteractions feedbackInteraction[]
   feedbackMoodResponses feedbackMoodResponse[]
   worldVisits worldVisit[]
+  creditAccount creditAccount?
+  creditTransactions creditTransaction[]
+  productEntitlements productEntitlement[]
+  paymentIdentities paymentIdentity[]
 
   @@unique([email])
   @@unique([username])
@@ -499,4 +503,63 @@ model leaderboardEntry {
   @@id([leaderboardId, accountId])
   @@index([leaderboardId, score])
   @@index([accountId])
+}
+
+// --- credits ---------------------------------------------------------------
+// The balance only moves through creditTransaction rows (see services/credits.ts): every change writes one with a unique
+// idempotencyKey, so a retried request, a replayed challenge or a repeated webhook can never apply twice.
+
+model creditAccount {
+  userId    String @id
+  user      user @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance   Int @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model creditTransaction {
+  id             String @id @default(cuid())
+  userId         String
+  user           user @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Positive when credits arrive (purchase, grant, refund), negative when they are spent.
+  delta          Int
+  balanceAfter   Int
+  kind           String // purchase | spend | refund | grant
+  /// Where it came from: a payment provider ('stripe', 'meta') for purchases, 'world' for spending in a published world.
+  provider       String?
+  providerRef    String?
+  publicationId  String?
+  sku            String?
+  idempotencyKey String @unique
+  createdAt      DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, kind, createdAt])
+  @@index([publicationId, createdAt])
+}
+
+/// What a player has bought in a published world: kept per publication and product code, so publishing an update keeps it.
+model productEntitlement {
+  userId        String
+  user          user @relation(fields: [userId], references: [id], onDelete: Cascade)
+  publicationId String
+  sku           String
+  /// How many times it was bought (a consumable can be bought again).
+  quantity      Int @default(1)
+  updatedAt     DateTime @updatedAt
+
+  @@id([userId, publicationId, sku])
+  @@index([publicationId])
+}
+
+/// Which of our accounts a store account (Meta) has paid for. The first verified purchase links them; after that, receipts that name
+/// that store account only credit this player, so a receipt cannot be pointed at someone else's store account.
+model paymentIdentity {
+  provider   String
+  externalId String
+  userId     String
+  user       user @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@id([provider, externalId])
+  @@index([userId])
 }

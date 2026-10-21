@@ -16,6 +16,7 @@
 		Vector3
 	} from '@babylonjs/core';
 	import { SceneGraph } from '$lib/xr/sceneGraph';
+	import { initBrowserCodeBlockSandbox } from '$lib/xr/sandbox/browserInit';
 	import { bakeReflectionProbe, type ProbeFaces } from '$lib/xr/bakeReflectionProbe';
 	import { BlobAssetLibrary } from '$lib/xr/blobAssetLibrary';
 	import { ModelLibrary } from '$lib/xr/modelLibrary';
@@ -264,7 +265,8 @@
 			viewSize = { width: canvas.clientWidth, height: canvas.clientHeight };
 		});
 		observer.observe(canvas);
-		ready = true;
+		// The first scene is loaded once the code block sandbox is: scripts never run outside it.
+		void initBrowserCodeBlockSandbox().catch((error) => console.error('code block sandbox failed to load', error)).then(() => { ready = true; });
 
 		return () => {
 			observer.disconnect();

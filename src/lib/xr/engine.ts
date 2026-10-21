@@ -15,8 +15,11 @@ import {
 	type AbstractMesh,
 	type WebXRDefaultExperience
 } from '@babylonjs/core';
+import { initBrowserCodeBlockSandbox } from './sandbox/browserInit';
 import lobbyTemplate from './templates/lobby.json';
-import { buildLobbyBillboard } from './templates/lobbyBillboard';
+import { buildLobbyExtras } from './templates/lobbyExtras';
+import { clientLocale } from '$lib/locale';
+import type { InputDevice } from './inputHints';
 import { getBuiltinWorld } from './templates/builtinWorlds';
 import { createSlot, opensWorldMenu, type SlotTree } from '$lib/ecs/types';
 import { atRest, instantiate } from '$lib/ecs/serialize';
@@ -74,6 +77,12 @@ import type { AvatarHooks } from './avatar/avatarHooks';
 import { HostAuthority } from './net/hostAuthority';
 import { GuestSync } from './net/guestSync';
 import { WorldStorageService } from './worldStorageService';
+import { PaymentService } from './payments/paymentService';
+import { createMetaPayments } from './payments/metaPayments';
+import { createAtmController } from './payments/atmController';
+import { createAtmPanel } from './ui/atmPanel';
+import { createPurchasePrompt } from './ui/purchasePrompt';
+import type { PayResult } from './payments/types';
 import { ProximityVoice } from './net/voice';
 import { parseIceServers } from './net/peerConnection';
 import { authClient } from '$lib/auth-client';
@@ -109,6 +118,8 @@ export async function mountGame(
 	initialRoomCode?: string,
 	options: MountGameOptions = {}
 ): Promise<MountedGame> {
+	// Code blocks run in a sandbox that has to be loaded before the first scene is.
+	await initBrowserCodeBlockSandbox();
 	// Babylon 9 no longer creates its audio engine by default; without it every Sound (audio players,
 	// generated impact sounds) has no backend and throws on use.
 	const engine = new Engine(canvas, true, { audioEngine: true });
@@ -164,10 +175,43 @@ export async function mountGame(
 		isSignedIn: () => !!gameState.userId,
 		relay: (playerId, call) => hostAuthority?.relayPlayerApi(playerId, call) ?? Promise.resolve({ ok: false, error: 'No session is hosted' })
 	});
+	// Paying: the prompt and the service belong to the game, outside everything a world's scripts can reach (see ui/purchasePrompt.ts).
+	const purchasePrompt = createPurchasePrompt(scene, () => getActiveCamera());
+	// In-app purchases with Meta's payments (see payments/metaPayments.ts): used by the ATM and by the purchase prompt's "Add credits".
+	const metaPayments = createMetaPayments({ fetch: (input, init) => fetch(input, init) });
+	const metaTopUp = metaPayments.topUp(async () => ((await fetch('/api/credits').then((response) => response.json())) as { packs: Array<{ id: string; credits: number; metaSku: string }> }).packs);
+	const paymentService = new PaymentService({
+		fetch: (input, init) => fetch(input, init),
+		isSignedIn: () => !!gameState.userId,
+		prompt: (details) => purchasePrompt.show(details),
+		topUp: metaTopUp
+	});
 	let viewerCamera: () => { globalPosition: Vector3 } = () => desktopCamera;
+	// Which device's controls the texts of the world name (`{dash}`, `{use}`…). It follows the headset session, and the panels are redrawn when it changes.
+	let inputDevice: InputDevice = 'desktop';
+	// The only scripts allowed to call a route of our own site are the ones the game ships: the Feedback Center's, byte for byte.
+	let shippedFeedbackCode: Set<string> | null = null;
+	const feedbackCode = () => (shippedFeedbackCode ??= new Set((getBuiltinWorld('pulse')?.scene ?? []).flatMap((slot) => slot.components.flatMap((component) => (component.type === 'codeBlock' ? [component.code] : [])))));
 	const sceneGraph = new SceneGraph(scene, {
+		getUiContext: () => ({ locale: clientLocale(), device: inputDevice }),
+		sameOriginPathsFor: (code) => (feedbackCode().has(code) ? ['/api/feedback'] : []),
 		storage: worldStorage,
 		audio: scriptAudio,
+		payments: {
+			// The host asks for a player; the player's own client does the paying, with their own account.
+			request: async (playerId, sku): Promise<PayResult> => {
+				const id = playerId ?? localPlayerId;
+				if (id === localPlayerId) return paymentService.buy(gameState.publication?.publicationId, sku);
+				const answer = await (hostAuthority?.relayPayment(id, 'buy', sku) ?? Promise.resolve<PayResult>({ ok: false, reason: 'unavailable' }));
+				return 'ok' in answer ? answer : { ok: false, reason: 'error' };
+			},
+			owns: async (playerId, sku) => {
+				const id = playerId ?? localPlayerId;
+				if (id === localPlayerId) return paymentService.owns(gameState.publication?.publicationId, sku);
+				const answer = await (hostAuthority?.relayPayment(id, 'owns', sku) ?? Promise.resolve({ owns: false }));
+				return 'owns' in answer && answer.owns === true;
+			}
+		},
 		models,
 		mediaAssets,
 		getViewerPosition: () => viewerCamera().globalPosition,
@@ -262,7 +306,7 @@ export async function mountGame(
 	const startupBuiltin = !initialRoomCode && !options.initialWorld && !startupParams.has('studioPlay')
 		? getBuiltinWorld(startupParams.get('world') ?? '') : undefined;
 	// A direct world link only needs a temporary floor during input setup. Avoid starting lobby media that would be disposed mid-load.
-	sceneGraph.load((startupBuiltin ? lobbyTemplate.filter((slot) => slot.id === 'floor') : [...lobbyTemplate, ...buildLobbyBillboard()]) as SlotTree);
+	sceneGraph.load((startupBuiltin ? lobbyTemplate.filter((slot) => slot.id === 'floor') : [...lobbyTemplate, ...buildLobbyExtras()]) as SlotTree);
 
 	const floorMesh = sceneGraph.getLive('floor')?.node as AbstractMesh | undefined;
 	// Controller profiles + models (Meta/Oculus Touch) are served from /static/xr-input-profiles instead of
@@ -302,6 +346,10 @@ export async function mountGame(
 		xrSupported = xr !== null;
 	}
 	if (xr) xr.baseExperience.onStateChangedObservable.add((state) => {
+		if (state === WebXRState.IN_XR || state === WebXRState.NOT_IN_XR) {
+			inputDevice = state === WebXRState.IN_XR ? 'xr' : 'desktop';
+			sceneGraph.refreshUI();
+		}
 		if (state === WebXRState.IN_XR) options.onXRStateChange?.('in-xr');
 		else if (state === WebXRState.NOT_IN_XR) options.onXRStateChange?.('not-in-xr');
 	});
@@ -642,6 +690,9 @@ export async function mountGame(
 			handlePlayerApi: (publicationId, call) => worldStorage.handleRelayed(publicationId, call)
 		});
 		guestSync.setTeleportHandler((target) => playerBody.teleport(target));
+		guestSync.setPaymentHandler(async (publicationId, sku, op) => op === 'buy'
+			? paymentService.buy(publicationId, sku, gameState.roomCode)
+			: { owns: await paymentService.owns(publicationId, sku) });
 	}
 
 	function spawnFromInventory(slotData: SlotTree): void {
@@ -733,6 +784,12 @@ export async function mountGame(
 	});
 	refreshWorldsTab = dash.refreshWorldsTab;
 
+	// The ATM's window belongs to the game: an `atm` component only asks for it to open.
+	const atmPanel = createAtmPanel(scene, getActiveCamera, createAtmController({
+		fetch: (input, init) => fetch(input, init),
+		meta: metaPayments,
+		isSignedIn: () => !!gameState.userId
+	}), { openWebsite: () => { window.open('/settings/credits', '_blank', 'noopener'); }, inXr });
 	const worldPortalMenu = createWorldPortalMenu(scene, sceneGraph, getActiveCamera, launchWorldPackage, async (world) => {
 		validateWorldPackage(world);
 		const selected = getInventoryAdapter(gameState.currentInventoryAdapterId ?? 'local');
@@ -744,17 +801,27 @@ export async function mountGame(
 		const world = getBuiltinWorld(id);
 		if (!world) throw new Error(`There is no built-in world "${id}"`);
 		await launchScene(world.name, copyScene(world.scene), 'solo');
-	});
+	}, () => launchScene(BLANK_WORLD_NAME, buildBlankWorld(), 'solo'));
+	/** Pointing at a slot of the game's own menus and pressing: a cash machine opens the credits window, a world orb or link its menu. */
+	function openSlotMenu(slotId: string): void {
+		if (sceneGraph.getLive(slotId)?.slot.components.some((component) => component.type === 'atm')) {
+			worldPortalMenu.close();
+			atmPanel.open();
+			return;
+		}
+		atmPanel.close();
+		worldPortalMenu.open(slotId);
+	}
 	scene.onPointerObservable.add((event) => {
 		// With the mouse captured the hand opens portals itself (see desktopHand.ts); this is for a free cursor.
 		if (event.type !== PointerEventTypes.POINTERPICK || inXr() || fps.locked) return;
 		const slotId = sceneGraph.getSlotIdForNode(event.pickInfo?.pickedMesh);
 		const slot = slotId ? sceneGraph.getLive(slotId)?.slot : undefined;
-		if (slotId && slot && opensWorldMenu(slot)) worldPortalMenu.open(slotId);
+		if (slotId && slot && opensWorldMenu(slot)) openSlotMenu(slotId);
 	});
 	// The reactions to a trigger, a grab or a portal are the same whether a controller or the mouse's hand does it.
 	const pointerHooks: PointerControllerNetworkHooks = {
-		onWorldPortal: (slotId) => worldPortalMenu.open(slotId),
+		onWorldPortal: (slotId) => openSlotMenu(slotId),
 		onUse: (slotId, hand, phase, value) => {
 			// A camera takes its pictures here, on the device of whoever holds it.
 			const usable = equipment.getUsableSlot(localPlayerId, hand, slotId);
@@ -954,6 +1021,8 @@ export async function mountGame(
 			hostAuthority?.dispose();
 			guestSync?.dispose();
 			worldPortalMenu.dispose();
+			purchasePrompt.dispose();
+			atmPanel.dispose();
 			voice.dispose();
 			sceneGraph.dispose();
 			scriptAudio.dispose();

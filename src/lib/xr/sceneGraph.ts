@@ -43,6 +43,8 @@ import { setupScoreboard } from './scoreboardSurface';
 import { setupUIPanel, type UIMediaState, type UIPanelBinding } from './uiPanelSurface';
 import type { WorldStorageService } from './worldStorageService';
 import { parseTeleportTarget, type PlayerPoseView, type PlayerSummary, type TeleportTarget } from './playerPoses';
+import type { ScriptPayments } from './payments/types';
+import type { UiContext } from './uiLocale';
 import { createCodeBlockHandlers, type CodeBlockHost, type RadialItemDef, type CodeBlockLogEntry, type HandEvent, type TriggerEvent, type RaycastHit } from './codeBlockRuntime';
 
 /**
@@ -125,6 +127,12 @@ export interface SceneGraphOptions {
 	teleportPlayer?: (playerId: string, target: TeleportTarget) => boolean;
 	/** The id a script knows a player by, given the id the equipment system uses (a guest's connection id): hand events and `ctx.equip.holder` report it. */
 	scriptPlayerId?: (equipmentKey: string) => string;
+	/** The language the player reads and the device they hold, so a UI element's text reads for them (see `UIElementComponent.translations` and inputHints.ts). */
+	getUiContext?: () => UiContext;
+	/** Which routes of our own site a script with this source may call (see `CodeBlockHost.sameOriginPathsFor`). */
+	sameOriginPathsFor?: (code: string) => readonly string[];
+	/** Paying for a published world's products, for `ctx.pay` (see payments/paymentService.ts). */
+	payments?: ScriptPayments;
 	/** Persistent storage and leaderboards for `ctx.storage` / `ctx.leaderboards` (see worldStorageService.ts). */
 	storage?: WorldStorageService;
 	/** Audio analysis and clock-accurate playback for `ctx.audio.analyze` / `ctx.audio.playTrack` (see scriptAudio.ts). */
@@ -711,7 +719,8 @@ export class SceneGraph {
 				(event) => {
 					if (this.options.onUIEvent) this.options.onUIEvent(event);
 					else this.dispatchUIEvent(event);
-				}
+				},
+				this.options.getUiContext
 			);
 			entry.ui = binding;
 			const previousRuntime = entry.runtime;
@@ -871,6 +880,8 @@ export class SceneGraph {
 				return changed;
 			},
 			storage: this.options.storage,
+			payments: this.options.payments,
+			sameOriginPathsFor: this.options.sameOriginPathsFor,
 			audio: this.options.audio,
 			getEquipHolder: (slotId) => {
 				const holder = this.equipQuery?.getHolderOfSlotOrAncestor(slotId);
@@ -1122,6 +1133,11 @@ export class SceneGraph {
 	}
 
 	private uiDirty = new Set<string>();
+
+	/** Redraws every UI panel before the next frame, for when something the texts depend on changed (the device in hand). */
+	refreshUI(): void {
+		for (const [id, entry] of this.live) if (entry.ui) this.uiDirty.add(id);
+	}
 
 	/** Remembers the panel that `entry` is part of (or is) as needing a redraw before the next frame. */
 	private markUIDirty(entry: LiveSlot): void {

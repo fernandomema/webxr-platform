@@ -6,6 +6,7 @@
 import type { Component, Slot, SlotTree } from '../../ecs/types';
 import lobby from '../../xr/templates/lobby.json' with { type: 'json' };
 import { buildDisc } from '../../xr/templates/recordDisc.ts';
+import { buildAtm } from '../../xr/templates/atm.ts';
 import { PROP_ENTRIES, PROP_FOLDERS } from './props.ts';
 import { TOOLS, toolEquippable } from '../../../../scripts/workshop-tools.mjs';
 
@@ -106,6 +107,7 @@ const SOURCES = {
 
 const ENTRIES: BuiltinEntry[] = [
 	...PROP_ENTRIES,
+	{ id: 'atm', folderId: 'basics', name: 'ATM', build: () => buildAtm({ id: 'atm', grabbable: true }) },
 	{ id: 'cube', folderId: 'basics', name: 'Cube', build: () => shape('cube', 'Cube', 'box', '#8b7cf6', [0.3, 0.3, 0.3]) },
 	{ id: 'sphere', folderId: 'basics', name: 'Sphere', build: () => shape('sphere', 'Sphere', 'sphere', '#38bdf8', [0.3, 0.3, 0.3]) },
 	{ id: 'cylinder', folderId: 'basics', name: 'Cylinder', build: () => shape('cylinder', 'Cylinder', 'cylinder', '#f59e0b', [0.2, 0.3, 0.2]) },

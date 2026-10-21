@@ -14,6 +14,10 @@ import {
 import { findComponent, type Slot, type UIElementComponent, type UIEvent, type UIPanelComponent } from '$lib/ecs/types';
 import { typeWithKeyboard } from './keyboard/guiInput';
 import { hasInteractiveControls } from './uiPanelInteractivity';
+import { plainUiText, uiText, type UiContext } from './uiLocale';
+import { hasIcons, layoutRichText, parseRichText } from './richText';
+import { inputIconUrl } from './inputHints';
+import { layoutUiTree, type UiLayout } from './uiLayout';
 
 /** Playback state of a `video` element on this peer, as read by `ctx.ui.getMedia`. */
 export interface UIMediaState {
@@ -39,6 +43,8 @@ interface Entry {
 	kind: UIElementComponent['kind'];
 	/** The layout stack that holds this container's children. */
 	stack?: StackPanel;
+	/** `text` with pictures in it (a key, a button): the words and pictures are laid out by `createRichText`, not drawn as one block of text. */
+	rich?: RichText;
 	/** `input`: the last `component.text` pushed into the field, so a script can reset it without a keystroke being overwritten. */
 	appliedText?: string;
 	dragging?: boolean;
@@ -105,8 +111,9 @@ function defaultHeight(component: UIElementComponent): string {
 	}
 }
 
-function setSize(control: Control, component: UIElementComponent): void {
-	control.width = component.width === undefined ? '100%' : `${component.width}px`;
+/** `width` is the one the layout gave the element (see uiLayout.ts): never more than the room it has, so it is not cut off. */
+function setSize(control: Control, component: UIElementComponent, width: number | undefined = component.width): void {
+	control.width = width === undefined ? '100%' : `${width}px`;
 	if (component.kind !== 'container' || component.height !== undefined) control.height = defaultHeight(component);
 	if (component.padding !== undefined) control.setPaddingInPixels(component.padding);
 	control.isVisible = component.visible !== false;
@@ -131,14 +138,100 @@ function isScrollable(component: UIElementComponent): boolean {
 	return component.kind === 'container' && component.overflow === 'scroll' && component.height !== undefined;
 }
 
-function shapeOf(slots: Slot[]): string {
+function shapeOf(slots: Slot[], context: UiContext | undefined): string {
 	return slots
 		.map((slot) => {
 			const component = findComponent(slot, 'uiElement');
-			return `${slot.id}:${component?.kind}:${Number((component?.margin ?? 0) > 0)}:${Number(component ? isScrollable(component) : 0)}:${Number(component?.overlayBottom ?? false)}`;
+			// A text with pictures in it is a different control from one without, so a text gaining or losing them rebuilds the panel.
+			const rich = component?.kind === 'text' ? Number(hasIcons(uiText(component, context) ?? slot.name)) : 0;
+			return `${slot.id}:${component?.kind}:${Number((component?.margin ?? 0) > 0)}:${Number(component ? isScrollable(component) : 0)}:${Number(component?.overlayBottom ?? false)}:${rich}`;
 		})
 		.sort()
 		.join('|');
+}
+
+let measureContext: CanvasRenderingContext2D | null = null;
+
+/** How wide `text` is when drawn at `fontSize` in the font the GUI uses. */
+function measureText(text: string, fontSize: number, bold: boolean): number {
+	measureContext ??= document.createElement('canvas').getContext('2d');
+	if (!measureContext) return text.length * fontSize * 0.55;
+	measureContext.font = `${bold ? 'bold ' : ''}${fontSize}px Arial`;
+	return measureContext.measureText(text).width;
+}
+
+const ROW_ALIGNMENT = { left: Control.HORIZONTAL_ALIGNMENT_LEFT, center: Control.HORIZONTAL_ALIGNMENT_CENTER, right: Control.HORIZONTAL_ALIGNMENT_RIGHT } as const;
+
+interface RichText {
+	control: StackPanel;
+	render(text: string, component: UIElementComponent, width?: number): void;
+}
+
+/**
+ * A text with pictures in it, as a stack of lines of words and pictures (see richText.ts for where each goes). It is drawn again
+ * only when its text or its look changes.
+ */
+function createRichText(name: string): RichText {
+	const control = new StackPanel(name);
+	control.isVertical = true;
+	control.clipChildren = false;
+	let drawn = '';
+	return {
+		control,
+		render(text, component, layoutWidth) {
+			const width = layoutWidth ?? component.width ?? 800;
+			const fontSize = component.fontSize ?? 24;
+			const bold = component.fontWeight === 'bold';
+			const align = component.textAlign ?? 'left';
+			const layout = layoutRichText(parseRichText(text), { width, fontSize, align, measure: (word) => measureText(word, fontSize, bold) });
+			// The element's own height is the room the text sits in, in the middle of it, like a plain text.
+			control.width = `${width}px`;
+			control.height = `${component.height ?? layout.height}px`;
+			control.paddingTopInPixels = component.height !== undefined && layout.height < component.height ? Math.floor((component.height - layout.height) / 2) : 0;
+			const key = JSON.stringify([text, width, fontSize, bold, align, component.color]);
+			if (key === drawn) return;
+			drawn = key;
+			for (const child of [...control.children]) {
+				control.removeControl(child);
+				child.dispose();
+			}
+			for (const line of layout.lines) {
+				// A line is as wide as what is in it, whatever the font made of the measure; words size themselves, and the space between is its own control.
+				const row = new StackPanel(`${name}-line`);
+				row.isVertical = false;
+				row.adaptWidthToChildren = true;
+				row.clipChildren = false;
+				row.height = `${line.height}px`;
+				row.horizontalAlignment = ROW_ALIGNMENT[align];
+				for (const placement of line.placements) {
+					if (placement.gap > 0) {
+						const gap = new Rectangle(`${name}-gap`);
+						gap.thickness = 0;
+						gap.width = `${Math.round(placement.gap)}px`;
+						gap.height = `${line.height}px`;
+						row.addControl(gap);
+					}
+					if (placement.item.kind === 'icon') {
+						const icon = new Image(`${name}-icon`, inputIconUrl(placement.item.name));
+						icon.stretch = Image.STRETCH_UNIFORM;
+						icon.width = `${layout.iconSize}px`;
+						icon.height = `${layout.iconSize}px`;
+						row.addControl(icon);
+					} else {
+						const word = new TextBlock(`${name}-word`, placement.item.text);
+						word.color = component.color ?? 'white';
+						word.fontSize = fontSize;
+						word.fontWeight = bold ? 'bold' : 'normal';
+						word.textWrapping = false;
+						word.resizeToFit = true;
+						word.height = `${line.height}px`;
+						row.addControl(word);
+					}
+				}
+				control.addControl(row);
+			}
+		}
+	};
 }
 
 /** Renders a normal Slot subtree as Babylon GUI controls on a mesh surface. */
@@ -147,8 +240,13 @@ export function setupUIPanel(
 	mesh: AbstractMesh,
 	panel: UIPanelComponent,
 	getSubtree: () => Slot[],
-	onEvent: (event: UIEvent) => void
+	onEvent: (event: UIEvent) => void,
+	getContext?: () => UiContext
 ): UIPanelBinding {
+	/** What an element says to whoever is looking, in their language and with the controls of their device: its slot's name when it has no text at all. */
+	const textOf = (component: UIElementComponent, slot: Slot): string => plainUiText(component, getContext?.()) ?? slot.name;
+	/** The text of a `text` element, with its pictures still in it (`[[name]]`). */
+	const richTextOf = (component: UIElementComponent, slot: Slot): string => uiText(component, getContext?.()) ?? slot.name;
 	// The XR trigger handler uses this marker to distinguish a UI click from
 	// an empty-space laser toggle (see interaction/pointerController.ts).
 	mesh.metadata = { ...(mesh.metadata ?? {}), interactive: true, uiPanel: true };
@@ -167,6 +265,25 @@ export function setupUIPanel(
 	texture.addControl(background);
 
 
+	/** The widths the elements really get (see uiLayout.ts); worked out again whenever the panel is built or synced. */
+	let layout: UiLayout = layoutUiTree([], panel);
+	const warned = new Set<string>();
+	function relayout(slots: Slot[]): void {
+		const nodes = slots.flatMap((slot) => {
+			const component = findComponent(slot, 'uiElement');
+			return component ? [{ id: slot.id, parentId: slot.parentId, component }] : [];
+		});
+		layout = layoutUiTree(nodes, panel);
+		// While a world is being made, say where an element asked for more room than it has (once for each, not every frame).
+		if (import.meta.env?.DEV) {
+			for (const issue of layout.issues) {
+				const key = `${issue.kind}:${issue.id}:${issue.message}`;
+				if (warned.has(key)) continue;
+				warned.add(key);
+				console.warn(`[ui] ${issue.message}`);
+			}
+		}
+	}
 	const entries = new Map<string, Entry>();
 	const margins = new Map<string, MarginSpacers>();
 	const videos = new Map<string, VideoRuntime>();
@@ -339,6 +456,7 @@ export function setupUIPanel(
 
 		let control: Control;
 		let stack: StackPanel | undefined;
+		let rich: RichText | undefined;
 		let appliedText: string | undefined;
 		if (component.kind === 'container') {
 			const box = new Rectangle(`ui-${slot.id}`);
@@ -364,10 +482,14 @@ export function setupUIPanel(
 				viewer.addControl(stack);
 				box.addControl(viewer);
 			} else {
-				box.adaptHeightToChildren = true;
+				// A box is the height it was given, with its content from the top (an empty one is a spacer); only one with no height grows to its content.
+				box.adaptHeightToChildren = component.height === undefined;
+				if (component.height !== undefined) stack.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
 				box.addControl(stack);
 			}
-			setSize(box, component);
+			// What does not fit is drawn over the edge, not cut off at it (an author can see that, and the layout warns about it).
+			box.clipChildren = isScrollable(component);
+			setSize(box, component, layout.widths.get(slot.id));
 			for (const childSlot of getChildren(slot.id)) {
 				const childComponent = findComponent(childSlot, 'uiElement');
 				if (!childComponent?.overlayBottom) {
@@ -383,7 +505,7 @@ export function setupUIPanel(
 			}
 			control = box;
 		} else if (component.kind === 'button') {
-			const button = Button.CreateSimpleButton(`ui-${slot.id}`, component.text ?? slot.name);
+			const button = Button.CreateSimpleButton(`ui-${slot.id}`, textOf(component, slot));
 			button.color = component.color ?? 'white';
 			button.background = component.background ?? '#2563eb';
 			button.cornerRadius = component.cornerRadius ?? 6;
@@ -396,15 +518,15 @@ export function setupUIPanel(
 			}
 			button.onPointerClickObservable.add(() => onEvent({ type: 'press', slotId: slot.id }));
 			control = button;
-			setSize(control, component);
+			setSize(control, component, layout.widths.get(slot.id));
 		} else if (component.kind === 'input') {
 			({ control, appliedText } = createInput(slot, component));
-			setSize(control, component);
+			setSize(control, component, layout.widths.get(slot.id));
 		} else if (component.kind === 'image') {
 			const image = new Image(`ui-${slot.id}`, component.src || null);
 			image.stretch = Image.STRETCH_UNIFORM;
 			control = image;
-			setSize(control, component);
+			setSize(control, component, layout.widths.get(slot.id));
 		} else if (component.kind === 'video') {
 			const runtime = ensureVideo(slot.id);
 			const image = new Image(`ui-${slot.id}`, null);
@@ -413,7 +535,7 @@ export function setupUIPanel(
 			runtime.image = image;
 			runtime.dirty = true;
 			control = image;
-			setSize(control, component);
+			setSize(control, component, layout.widths.get(slot.id));
 			applyVideo(slot.id, component);
 		} else if (component.kind === 'slider') {
 			const slider = new Slider(`ui-${slot.id}`);
@@ -434,19 +556,24 @@ export function setupUIPanel(
 				onEvent({ type: 'submit', slotId: slot.id, value: slider.value });
 			});
 			control = slider;
-			setSize(control, component);
+			setSize(control, component, layout.widths.get(slot.id));
+		} else if (hasIcons(richTextOf(component, slot))) {
+			rich = createRichText(`ui-${slot.id}`);
+			rich.render(richTextOf(component, slot), component, layout.widths.get(slot.id));
+			control = rich.control;
+			control.isVisible = component.visible !== false;
 		} else {
-			const text = new TextBlock(`ui-${slot.id}`, component.text ?? slot.name);
+			const text = new TextBlock(`ui-${slot.id}`, textOf(component, slot));
 			text.color = component.color ?? 'white';
 			text.fontSize = component.fontSize ?? 24;
 			text.fontWeight = component.fontWeight === 'bold' ? 'bold' : 'normal';
 			text.textWrapping = true;
 			text.textHorizontalAlignment = TEXT_ALIGN[component.textAlign ?? 'left'];
 			control = text;
-			setSize(control, component);
+			setSize(control, component, layout.widths.get(slot.id));
 		}
 
-		entries.set(slot.id, { slot, component, control, kind: component.kind, stack, appliedText });
+		entries.set(slot.id, { slot, component, control, kind: component.kind, stack, appliedText, rich });
 		return control;
 	}
 
@@ -472,11 +599,12 @@ export function setupUIPanel(
 		background.addControl(rootStack);
 
 		const slots = getUiSlots();
+		relayout(slots);
 		const ids = new Set(slots.map((slot) => slot.id));
 		for (const slot of slots.filter((candidate) => !candidate.parentId || !ids.has(candidate.parentId))) {
 			addWithMargin(rootStack, slot);
 		}
-		knownShape = shapeOf(slots);
+		knownShape = shapeOf(slots, getContext?.());
 		// Only a panel with something to press takes the pointer; a picture or a label is part of what it is on (and is grabbed with it).
 		mesh.metadata = { ...(mesh.metadata ?? {}), interactive: hasInteractiveControls(slots) };
 
@@ -493,10 +621,11 @@ export function setupUIPanel(
 
 	function sync(): void {
 		const slots = getUiSlots();
-		if (shapeOf(slots) !== knownShape) {
+		if (shapeOf(slots, getContext?.()) !== knownShape) {
 			build();
 			return;
 		}
+		relayout(slots);
 
 		const rootSlot = getSubtree()[0];
 		background.background = (rootSlot ? findComponent(rootSlot, 'uiPanel')?.background : undefined) ?? panel.background ?? '#111827';
@@ -507,12 +636,14 @@ export function setupUIPanel(
 			entry.slot = slot;
 			entry.component = component;
 			entry.control.isVisible = component.visible !== false;
-			entry.control.width = component.width === undefined ? '100%' : `${component.width}px`;
+			const width = layout.widths.get(slot.id);
+			entry.control.width = width === undefined ? '100%' : `${width}px`;
 			entry.control.height = defaultHeight(component);
 			if (component.padding !== undefined) entry.control.setPaddingInPixels(component.padding);
 			if (component.kind === 'container') {
 				const box = entry.control as Rectangle;
 				box.descendantsOnlyPadding = true;
+				box.adaptHeightToChildren = !isScrollable(component) && component.height === undefined;
 				styleBox(box, component);
 				if (entry.stack) {
 					entry.stack.isVertical = component.flexDirection !== 'row';
@@ -520,7 +651,7 @@ export function setupUIPanel(
 				}
 			} else if (component.kind === 'button') {
 				const button = entry.control as Button;
-				button.textBlock!.text = component.text ?? slot.name;
+				button.textBlock!.text = textOf(component, slot);
 				button.textBlock!.fontSize = component.fontSize ?? 24;
 				button.textBlock!.fontWeight = component.fontWeight === 'bold' ? 'bold' : 'normal';
 				button.textBlock!.textHorizontalAlignment = TEXT_ALIGN[component.textAlign ?? 'center'];
@@ -550,9 +681,12 @@ export function setupUIPanel(
 				slider.maximum = Math.max(slider.minimum, component.maxValue ?? 100);
 				slider.step = Math.max(0, component.step ?? 0);
 				if (!entry.dragging && component.value !== undefined) slider.value = Math.min(slider.maximum, Math.max(slider.minimum, component.value));
+			} else if (entry.rich) {
+				entry.rich.render(richTextOf(component, slot), component, layout.widths.get(slot.id));
+				entry.control.isVisible = component.visible !== false;
 			} else {
 				const text = entry.control as TextBlock;
-				text.text = component.text ?? slot.name;
+				text.text = textOf(component, slot);
 				text.color = component.color ?? 'white';
 				text.fontSize = component.fontSize ?? 24;
 				text.fontWeight = component.fontWeight === 'bold' ? 'bold' : 'normal';

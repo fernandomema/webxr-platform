@@ -28,14 +28,14 @@
 <div class="space-y-10">
 	<section>
 		<h2 class="text-lg font-medium">Export your data</h2>
-		<p class="mt-1 text-sm text-bone/60">Download a JSON file with your profile, worlds, inventory, published worlds, marketplace activity, model list and feedback. Passwords and access tokens are never included, and model files are listed by id rather than bundled.</p>
+		<p class="mt-1 text-sm text-bone/60">Download a JSON file with your profile, worlds, inventory, published worlds, marketplace activity, model list, feedback, and your credits (balance, purchases and the store accounts linked to you). Passwords and access tokens are never included, and model files are listed by id rather than bundled.</p>
 		<a class="mt-4 inline-block rounded-full bg-bone px-4 py-2 text-sm font-medium text-ink hover:bg-glow" href="/api/account/export" download>Download my data</a>
 	</section>
 
 	<section>
 		<h2 class="text-lg font-medium text-red-300">Delete account</h2>
 		<form class="mt-4 space-y-4 rounded-xl border border-red-500/30 bg-red-500/5 p-5" onsubmit={deleteAccount}>
-			<p class="text-sm text-bone/70">This permanently deletes your account and everything you own: worlds, inventory, published worlds, marketplace listings, feedback and uploaded models. It can't be undone. Download your data first if you want a copy.</p>
+			<p class="text-sm text-bone/70">This permanently deletes your account and everything you own: worlds, inventory, published worlds, marketplace listings, feedback, credits (any balance left is lost) and uploaded models. It can't be undone. Download your data first if you want a copy.</p>
 			{#if hasPassword}
 				<label class="block text-sm text-bone/60">Password
 					<input class="mt-1 w-full rounded-lg border border-white/10 bg-ink px-3 py-2 text-sm text-bone outline-none focus:border-red-400/60" type="password" bind:value={password} required autocomplete="current-password" />

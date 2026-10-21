@@ -1,7 +1,7 @@
 import type { SlotTree } from '$lib/ecs/types';
 import { createSlot } from '$lib/ecs/types';
 import lobby from './lobby.json';
-import { buildLobbyBillboard } from './lobbyBillboard';
+import { buildLobbyExtras } from './lobbyExtras';
 import workshop from './workshop.json';
 import popUpStore from './popUpStore.json';
 import pulse from './pulse.json';
@@ -237,7 +237,7 @@ return {
 		description: 'A maze of mirrors, glass and silver walls that look alike: false corridors, 45° turns that are not there and a disorienting central room. Find the way out.',
 		scene: buildMirrorMaze()
 	},
-	{ id: 'lobby', name: 'Lobby', description: 'A glowing spawn pad, a welcome sign, a mirror, a paint brush, a record player and a board advertising other worlds.', scene: [...(lobby as SlotTree), ...buildLobbyBillboard()] },
+	{ id: 'lobby', name: 'Lobby', description: 'A glowing spawn pad and a welcome guide with doors to other worlds and to a new world of your own, a mirror, a paint brush, a record player, a board advertising other worlds and an ATM for your credits.', scene: [...(lobby as SlotTree), ...buildLobbyExtras()] },
 	{
 		id: 'workshop',
 		name: 'Workshop',

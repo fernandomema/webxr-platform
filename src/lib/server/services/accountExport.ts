@@ -10,7 +10,7 @@ import type { SessionUser } from './worlds';
 export async function exportAccountData(user: SessionUser | null) {
 	if (!user) throw new UnauthorizedError();
 	const userId = user.id;
-	const [profile, accounts, sessions, worlds, worldSessions, worldInventoryFolders, worldInventoryItems, cloudFolders, cloudItems, publications, publicationRevisions, marketplaceItems, marketplaceRevisions, purchases, assets, feedbackEntries, feedbackVotes, feedbackInteractions, moodResponses] = await Promise.all([
+	const [profile, accounts, sessions, worlds, worldSessions, worldInventoryFolders, worldInventoryItems, cloudFolders, cloudItems, publications, publicationRevisions, marketplaceItems, marketplaceRevisions, purchases, assets, feedbackEntries, feedbackVotes, feedbackInteractions, moodResponses, creditAccount, creditTransactions, productEntitlements, paymentIdentities] = await Promise.all([
 		prisma.user.findUnique({ where: { id: userId } }),
 		prisma.account.findMany({ where: { userId }, select: { providerId: true, accountId: true, createdAt: true } }),
 		prisma.session.findMany({ where: { userId }, select: { id: true, ipAddress: true, userAgent: true, createdAt: true, expiresAt: true } }),
@@ -29,7 +29,11 @@ export async function exportAccountData(user: SessionUser | null) {
 		prisma.feedbackEntry.findMany({ where: { userId } }),
 		prisma.feedbackVote.findMany({ where: { userId } }),
 		prisma.feedbackInteraction.findMany({ where: { userId } }),
-		prisma.feedbackMoodResponse.findMany({ where: { userId } })
+		prisma.feedbackMoodResponse.findMany({ where: { userId } }),
+		prisma.creditAccount.findUnique({ where: { userId } }),
+		prisma.creditTransaction.findMany({ where: { userId }, orderBy: { createdAt: 'asc' } }),
+		prisma.productEntitlement.findMany({ where: { userId } }),
+		prisma.paymentIdentity.findMany({ where: { userId } })
 	]);
 	return {
 		exportedAt: new Date().toISOString(),
@@ -43,6 +47,8 @@ export async function exportAccountData(user: SessionUser | null) {
 		publishedWorlds: { publications, revisions: publicationRevisions },
 		marketplace: { items: marketplaceItems, revisions: marketplaceRevisions, purchases },
 		models: assets,
-		feedback: { entries: feedbackEntries, votes: feedbackVotes, interactions: feedbackInteractions, moodResponses }
+		feedback: { entries: feedbackEntries, votes: feedbackVotes, interactions: feedbackInteractions, moodResponses },
+		/** Credits: the balance, every movement of it (with the provider's payment reference), what was bought in worlds, and the store accounts (Meta user id) linked to this account. Card details are held by Stripe, never by Kithin. */
+		credits: { account: creditAccount, transactions: creditTransactions, productEntitlements, linkedStoreAccounts: paymentIdentities }
 	};
 }

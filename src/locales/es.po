@@ -1641,7 +1641,7 @@ msgstr ""
 #~ msgstr ""
 
 #: src/lib/studio/components/AiPanel.svelte
-msgid "Code blocks are JavaScript bodies returning handlers. They are not sandboxed. Prefer the bounded ctx API."
+msgid "Code blocks are JavaScript bodies returning handlers. They run in a sandbox with only the ctx API."
 msgstr ""
 
 #: src/lib/studio/components/AiPanel.svelte
@@ -2104,7 +2104,7 @@ msgid "Revision {0} · updated {1}"
 msgstr ""
 
 #: src/lib/studio/components/MarketplacePanel.svelte
-msgid "Contains a code block — anyone who acquires this runs it as unsandboxed JavaScript."
+msgid "Contains a code block — anyone who acquires this runs it in a sandbox that only reaches the world through the ctx API."
 msgstr ""
 
 #: src/lib/studio/components/MarketplacePanel.svelte
@@ -5617,4 +5617,83 @@ msgstr ""
 
 #: src/routes/studio/edit/+page.svelte
 msgid "Drag to orbit · Scroll to zoom · Right-drag to pan · <0>F</0> to focus · <1>F F</1> to fly to it"
+msgstr ""
+
+#: src/routes/settings/+layout.svelte
+#: src/routes/settings/credits/+page.svelte
+msgid "Credits"
+msgstr ""
+
+#: src/routes/settings/credits/+page.svelte
+msgid "Bought with Meta Quest"
+msgstr ""
+
+#: src/routes/settings/credits/+page.svelte
+msgid "Bought with card"
+msgstr ""
+
+#. 0: row.sku ?? 'an item'
+#: src/routes/settings/credits/+page.svelte
+msgid "Spent on {0}"
+msgstr ""
+
+#: src/routes/settings/credits/+page.svelte
+msgid "Refund"
+msgstr ""
+
+#: src/routes/settings/credits/+page.svelte
+msgid "Credits added"
+msgstr ""
+
+#: src/routes/settings/credits/+page.svelte
+msgid "Could not start the payment."
+msgstr ""
+
+#. 0: PLATFORM_NAME
+#: src/routes/settings/credits/+page.svelte
+msgid "Credits · {0}"
+msgstr ""
+
+#: src/routes/settings/credits/+page.svelte
+msgid "Thank you. Your credits arrive as soon as the payment is confirmed."
+msgstr ""
+
+#: src/routes/settings/credits/+page.svelte
+msgid "The payment was cancelled."
+msgstr ""
+
+#: src/routes/settings/credits/+page.svelte
+msgid "Your balance"
+msgstr ""
+
+#: src/routes/settings/credits/+page.svelte
+msgid "Buying credits is not available yet."
+msgstr ""
+
+#: src/routes/settings/credits/+page.svelte
+msgid "Opening…"
+msgstr ""
+
+#: src/routes/settings/credits/+page.svelte
+msgid "credits"
+msgstr ""
+
+#: src/routes/settings/credits/+page.svelte
+msgid "On a Meta Quest you can also buy credits from inside the game."
+msgstr ""
+
+#: src/routes/settings/credits/+page.svelte
+msgid "Nothing yet."
+msgstr ""
+
+#: src/routes/settings/credits/+page.svelte
+msgid "Credits pay for things inside worlds. Every purchase asks you first, and shows what it costs."
+msgstr ""
+
+#: src/routes/settings/credits/+page.svelte
+msgid "Get credits"
+msgstr ""
+
+#: src/routes/settings/credits/+page.svelte
+msgid "History"
 msgstr ""
