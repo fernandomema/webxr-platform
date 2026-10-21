@@ -40,7 +40,7 @@ Copy them with `kithin-engine-static [destination]` (default `./static`), or hos
 
 | Call | What it decides |
 | --- | --- |
-| `configurePlatform` | `apiBase` (Kithin's API), `getToken`/`setToken` (bearer token), `assetBase`, `signalingUrl`, `stunUrls`, `clientId`, `name` |
+| `configurePlatform` | `apiBase` (Kithin's API), `getToken`/`setToken` (bearer token), `assetBase`, `signalingUrl`, `stunUrls`, `appId`, `name` |
 | `configureFeatures` | the dash tabs (`homeTab`, `sessionTab`, `worldsTab`, `inventoryTab`, `settingsTab`, `accountTab`) and the `inspector` |
 | `registerContent` | what the app ships: built-in worlds, the scene to start in, a starter kit, files by content hash, repainters |
 | `loadBundle` | the same, read from a `bundle.json` (below) |
@@ -66,8 +66,21 @@ when a scene needs it. Pictures, sounds and videos can also be plain URLs in the
 
 On the Kithin site the engine shares the session cookie. A game on another origin calls `useStoredToken()`: the dash then offers
 **Sign in with a code**: the player types a short code on `https://<kithin>/device` (on a phone, say) and the game receives a
-bearer token. Kithin must list the game's origin in `ENGINE_ALLOWED_ORIGINS` (CORS and trusted origins). Saves, leaderboards and
-purchases belong to a published world: give the game's world `source: { kind: 'published', worldId }` and use that id as `clientId`.
+bearer token.
+
+### Apps: one identity for all the levels of a game
+
+A game can have hundreds of levels, and none of them is published on Kithin. Register the game once in **Settings → Apps** on Kithin:
+that gives an **app id**, the sites the game runs on (the only ones allowed to call the API) and the products it sells with their
+prices in credits. Then:
+
+```ts
+configurePlatform({ apiBase: 'https://kithin.example', appId: '<the app id>' });
+```
+
+Every world the game opens, from its bundle or built in code, then shares that app's saved data (`ctx.storage`), leaderboards,
+purchases and hosted sessions. Prices come from Kithin, never from the game. A world published on Kithin keeps its own set.
+`ENGINE_ALLOWED_ORIGINS` is for sites that need access without being an app (your own tools).
 
 ## Multiplayer
 

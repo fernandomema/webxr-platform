@@ -9,7 +9,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		assetUsage(user),
 		listMyAssets(user),
 		prisma.world.count({ where: { hostUserId: userId } }),
-		prisma.publishedWorld.count({ where: { ownerId: userId } }),
+		prisma.publishedWorld.count({ where: { ownerId: userId, kind: 'world' } }),
 		prisma.cloudInventoryItem.count({ where: { ownerId: userId } }),
 		prisma.cloudInventoryFolder.count({ where: { ownerId: userId } }),
 		prisma.marketplaceItem.count({ where: { ownerId: userId } }),

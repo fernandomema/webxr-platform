@@ -18,6 +18,7 @@ import {
 import { initBrowserCodeBlockSandbox } from './sandbox/browserInit.ts';
 import { getPlatformConfig, platformFetch, platformUrl, assetUrl } from './platform/config.ts';
 import { getContent, findBuiltinWorld } from './content/registry.ts';
+import { publicationFor } from './appPublication.ts';
 import { getFeatures } from './features.ts';
 import { engineLocale } from './i18n/locale.ts';
 import type { InputDevice } from './inputHints.ts';
@@ -522,6 +523,8 @@ export async function mountGame(
 	}
 
 	async function launchScene(name: string, snapshot: SlotTree, visibility: HostedWorldVisibility | 'solo', loaded: LoadedWorld | null = null, publication: PublicationContext | null = null): Promise<void> {
+		// A world with no publication of its own belongs to the game's app, if it is one (see appPublication.ts).
+		publication ??= publicationFor(undefined, getPlatformConfig().appId);
 		validateWorldScene(snapshot);
 		snapshot = migrateSlotTree(snapshot);
 		if (visibility === 'friends' || visibility === 'friends-plus') throw new Error('Friend-only access is not available yet');
@@ -628,8 +631,7 @@ export async function mountGame(
 		const loaded: LoadedWorld | null = source?.kind === 'inventory' && source.worldLineageId
 			? { adapterId: source.adapterId, worldLineageId: source.worldLineageId, folderId: source.folderId ?? null, name: world.name, revisionNumber: source.revisionNumber ?? null }
 			: null;
-		const publication: PublicationContext | null = source?.kind === 'published' ? { publicationId: source.worldId, revisionId: source.revisionId ?? null } : null;
-		await launchScene(world.name, world.scene, visibility, loaded, publication);
+		await launchScene(world.name, world.scene, visibility, loaded, publicationFor(source, null));
 	}
 
 	function spawnWorldOrbPackage(world: WorldPackage): void {

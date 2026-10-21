@@ -6,15 +6,18 @@ import { locales } from './locales/data.js';
 import { env } from '$env/dynamic/private';
 import { dev } from '$app/environment';
 import { allowedOrigin, corsHeaders, parseAllowedOrigins } from '$lib/server/cors';
+import { appAllowsOrigin } from '$lib/server/appOrigins';
 import * as main from './locales/main.loader.server.svelte.js';
 
 loadLocales(main.key, main.loadCount, main.loadCatalog, locales);
 
-/** A game on another site may call the API with a bearer token if its origin is on the list (see lib/server/cors.ts). */
+/** A game on another site may call the API with a bearer token if its origin is on the list or an app runs there (see lib/server/cors.ts). */
 const engineOrigins = [...parseAllowedOrigins(env.ENGINE_ALLOWED_ORIGINS), ...(dev ? ['http://localhost:*', 'http://127.0.0.1:*', 'https://localhost:*'] : [])];
 
 export const handle: Handle = async ({ event, resolve }) => {
-	const origin = event.url.pathname.startsWith('/api/') ? allowedOrigin(event.request.headers.get('origin'), engineOrigins) : null;
+	const asked = event.url.pathname.startsWith('/api/') ? event.request.headers.get('origin') : null;
+	// The sites listed in the settings, and the ones apps registered to run on.
+	const origin = asked && asked !== event.url.origin ? (allowedOrigin(asked, engineOrigins) ?? ((await appAllowsOrigin(asked)) ? asked : null)) : null;
 	if (origin && event.request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(origin) });
 
 	const session = await auth.api.getSession({ headers: event.request.headers });

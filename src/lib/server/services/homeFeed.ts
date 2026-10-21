@@ -49,7 +49,7 @@ export async function popularWorlds(): Promise<HomeWorld[]> {
 	});
 	const ids = ranked.flatMap((row) => (row.publicationId ? [row.publicationId] : []));
 	if (ids.length === 0) return [];
-	const worlds = await prisma.publishedWorld.findMany({ where: { id: { in: ids } }, select: worldSelect });
+	const worlds = await prisma.publishedWorld.findMany({ where: { id: { in: ids }, kind: 'world' }, select: worldSelect });
 	const byId = new Map(worlds.map((world) => [world.id, world]));
 	return ranked.flatMap((row) => {
 		const world = row.publicationId ? byId.get(row.publicationId) : undefined;
@@ -58,9 +58,9 @@ export async function popularWorlds(): Promise<HomeWorld[]> {
 }
 
 export async function staffPicks(): Promise<HomeWorld[]> {
-	return prisma.publishedWorld.findMany({ where: { staffPick: true }, orderBy: { updatedAt: 'desc' }, take: LIMIT, select: worldSelect });
+	return prisma.publishedWorld.findMany({ where: { staffPick: true, kind: 'world' }, orderBy: { updatedAt: 'desc' }, take: LIMIT, select: worldSelect });
 }
 
 export async function newestWorlds(): Promise<HomeWorld[]> {
-	return prisma.publishedWorld.findMany({ orderBy: { createdAt: 'desc' }, take: LIMIT, select: worldSelect });
+	return prisma.publishedWorld.findMany({ where: { kind: 'world' }, orderBy: { createdAt: 'desc' }, take: LIMIT, select: worldSelect });
 }

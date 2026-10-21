@@ -79,7 +79,7 @@ test('useStoredToken keeps the token in storage and in memory when storage is bl
 
 test('signing in with a code asks for one, waits for the approval and stores the token', async () => {
 	const stored = [];
-	configurePlatform({ apiBase: 'https://kithin.example', setToken: (token) => stored.push(token), clientId: 'my-world-id' });
+	configurePlatform({ apiBase: 'https://kithin.example', setToken: (token) => stored.push(token), appId: 'my-app-id' });
 	const answers = [
 		Response.json({ device_code: 'dev', user_code: 'ABCD1234', verification_uri: 'https://kithin.example/device', verification_uri_complete: 'https://kithin.example/device?user_code=ABCD1234', expires_in: 600, interval: 0.01 }),
 		Response.json({ error: 'authorization_pending' }, { status: 400 }),
@@ -88,7 +88,7 @@ test('signing in with a code asks for one, waits for the approval and stores the
 	globalThis.fetch = async (url, init) => { calls.push({ url: String(url), init }); return answers.shift(); };
 	const attempt = await startDeviceSignIn();
 	assert.equal(attempt.userCode, 'ABCD1234');
-	assert.equal(JSON.parse(calls[0].init.body).client_id, 'my-world-id');
+	assert.equal(JSON.parse(calls[0].init.body).client_id, 'my-app-id');
 	assert.equal(await attempt.done, 'approved');
 	assert.deepEqual(stored, ['session-token']);
 	assert.equal(JSON.parse(calls[2].init.body).grant_type, 'urn:ietf:params:oauth:grant-type:device_code');

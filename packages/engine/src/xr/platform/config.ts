@@ -11,8 +11,11 @@ export interface PlatformConfig {
 	getToken: (() => string | null | undefined | Promise<string | null | undefined>) | null;
 	/** Stores the token a sign-in with a code produced (and clears it on sign-out). Without it, the dash offers no sign-in with a code. */
 	setToken: ((token: string | null) => void) | null;
-	/** Who is asking to sign in with a code: the engine's own id, or the id of a world published on the platform. */
-	clientId: string;
+	/**
+	 * The id of the app this game is registered as in Kithin's settings (Settings → Apps). Every world the game opens shares that
+	 * app's saved data, leaderboards and shop, and signing in with a code is done in its name. Without it the game is anonymous.
+	 */
+	appId: string | null;
 	/** Where the engine's static files (decoders, controller profiles, the base avatar, input icons) are served from. */
 	assetBase: string;
 	/** The signaling WebSocket. Empty means `/signaling` on the page's own origin. */
@@ -29,7 +32,7 @@ const defaults = (): PlatformConfig => ({
 	apiBase: '',
 	getToken: null,
 	setToken: null,
-	clientId: 'kithin-engine',
+	appId: null,
 	assetBase: '',
 	signalingUrl: '',
 	stunUrls: 'stun:stun.l.google.com:19302',

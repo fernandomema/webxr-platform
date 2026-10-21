@@ -16,6 +16,7 @@ function validateInput(name: unknown, scene: unknown): { name: string; scene: Sl
 
 export async function listPublications() {
   return prisma.publishedWorld.findMany({
+    where: { kind: 'world' },
     select: { id: true, name: true, ownerId: true, latestRevision: true, thumbnailAssetId: true, updatedAt: true },
     orderBy: { updatedAt: 'desc' }, take: 50
   });
@@ -49,7 +50,7 @@ export async function publishRevision(user: SessionUser | null, publicationId: s
   const migrated = migrateSlotTree(scene);
   return prisma.$transaction(async (tx) => {
     const publication = await tx.publishedWorld.findUnique({ where: { id: publicationId } });
-    if (!publication) throw new NotFoundError();
+    if (!publication || publication.kind !== 'world') throw new NotFoundError();
     if (publication.ownerId !== user.id) throw new ForbiddenError();
     const assetIds = await assertAssetsReady(tx, migrated);
     // A revision without a preview of its own keeps the previous one: the picture may be a little out of date, never missing.
@@ -66,7 +67,7 @@ export async function publishRevision(user: SessionUser | null, publicationId: s
 
 export async function getPublishedWorld(publicationId: string, revisionId?: string): Promise<WorldPackage> {
   const publication = await prisma.publishedWorld.findUnique({ where: { id: publicationId } });
-  if (!publication) throw new NotFoundError();
+  if (!publication || publication.kind !== 'world') throw new NotFoundError();
   const revision = revisionId
     ? await prisma.publishedWorldRevision.findFirst({ where: { id: revisionId, publicationId } })
     : await prisma.publishedWorldRevision.findUnique({ where: { publicationId_number: { publicationId, number: publication.latestRevision } } });
@@ -109,7 +110,7 @@ export interface PublishedWorldApp {
 /** What a published world needs to present itself as an installable app (its latest revision). */
 export async function getPublishedWorldApp(publicationId: string): Promise<PublishedWorldApp> {
   const publication = await prisma.publishedWorld.findUnique({ where: { id: publicationId } });
-  if (!publication) throw new NotFoundError();
+  if (!publication || publication.kind !== 'world') throw new NotFoundError();
   const revision = await prisma.publishedWorldRevision.findUnique({ where: { publicationId_number: { publicationId, number: publication.latestRevision } } });
   if (!revision) throw new NotFoundError();
   const scene = revision.sceneData as unknown;

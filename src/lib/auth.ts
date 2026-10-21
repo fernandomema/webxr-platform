@@ -7,6 +7,7 @@ import { dev } from '$app/environment';
 import { prisma } from '$lib/server/db';
 import { env } from '$env/dynamic/private';
 import { parseAllowedOrigins } from '$lib/server/cors';
+import { appAllowsOrigin } from '$lib/server/appOrigins';
 
 /** The client id a game gives when it asks to sign in without being a published world of its own. */
 export const ENGINE_CLIENT_ID = 'kithin-engine';
@@ -17,15 +18,18 @@ export const auth = betterAuth({
 	// A headset is tested over the LAN from whatever IP the network hands out
 	// that day — allow any https origin on the dev port instead of chasing a
 	// moving target. Production keeps a real allow-list (comma-separated).
-	trustedOrigins: dev
-		? ['https://*:5173', 'http://*:5173']
-		: [
-				...(env.BETTER_AUTH_TRUSTED_ORIGINS?.split(',')
-					.map((s) => s.trim())
-					.filter(Boolean) ?? []),
-				// The sites of games built on the engine (see lib/server/cors.ts).
-				...parseAllowedOrigins(env.ENGINE_ALLOWED_ORIGINS)
-			],
+	trustedOrigins: async (request) => {
+		if (dev) return ['https://*:5173', 'http://*:5173'];
+		const asked = request?.headers.get('origin');
+		return [
+			...(env.BETTER_AUTH_TRUSTED_ORIGINS?.split(',')
+				.map((s) => s.trim())
+				.filter(Boolean) ?? []),
+			// The sites of games built on the engine: the ones listed, and the ones an app registered to run on (see lib/server/cors.ts).
+			...parseAllowedOrigins(env.ENGINE_ALLOWED_ORIGINS),
+			...(asked && (await appAllowsOrigin(asked)) ? [asked] : [])
+		];
+	},
 	database: prismaAdapter(prisma, {
 		provider: 'postgresql'
 	}),
@@ -53,7 +57,7 @@ export const auth = betterAuth({
 	plugins: [
 		username(),
 		admin({ adminRoles: ['admin'], defaultRole: 'user' }),
-		// A game on another site signs in with a token instead of a cookie: the engine's own client, or a published world's id.
+		// A game on another site signs in with a token instead of a cookie. It says who it is with its app id (or a published world's id).
 		bearer(),
 		deviceAuthorization({
 			verificationUri: '/device',

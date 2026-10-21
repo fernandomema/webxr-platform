@@ -53,6 +53,7 @@ msgstr "Error al registrarse"
 #: src/lib/studio/components/SaveDialog.svelte
 #: src/routes/register/+page.svelte
 #: src/routes/register/+page.svelte
+#: src/routes/settings/apps/+page.svelte
 msgid "Name"
 msgstr "Nombre"
 
@@ -172,6 +173,7 @@ msgstr ""
 
 #: src/lib/studio/components/TopBar.svelte
 #: src/routes/settings/+page.svelte
+#: src/routes/settings/apps/+page.svelte
 msgid "Saving…"
 msgstr ""
 
@@ -244,6 +246,7 @@ msgstr ""
 #~ msgstr ""
 
 #: src/routes/(admin)/admin/feedback/+page.svelte
+#: src/routes/settings/apps/+page.svelte
 #: src/routes/studio/+page.svelte
 #: src/routes/studio/+page.svelte
 #: src/routes/studio/edit/+page.svelte
@@ -916,6 +919,7 @@ msgstr ""
 
 #: src/lib/studio/components/SaveDialog.svelte
 #: src/lib/studio/components/TopBar.svelte
+#: src/routes/settings/apps/+page.svelte
 #: src/routes/studio/edit/+page.svelte
 msgid "Save"
 msgstr ""
@@ -1092,6 +1096,7 @@ msgid "Unsaved changes"
 msgstr ""
 
 #: src/lib/studio/components/TopBar.svelte
+#: src/routes/settings/apps/+page.svelte
 msgid "Saved"
 msgstr ""
 
@@ -5816,3 +5821,102 @@ msgstr "Denegado"
 #: src/routes/device/+page.svelte
 msgid "The game was not signed in."
 msgstr "No se ha iniciado sesión en el juego."
+
+#: src/routes/settings/apps/+page.svelte
+msgid "Something went wrong."
+msgstr "Algo ha ido mal."
+
+#. 0: draft.name
+#: src/routes/settings/apps/+page.svelte
+msgid "Delete \"{0}\" and everything it saved: players' data, leaderboards and purchases?"
+msgstr "¿Borrar \"{0}\" y todo lo que guardó: datos de jugadores, clasificaciones y compras?"
+
+#. 0: PLATFORM_NAME
+#: src/routes/settings/apps/+page.svelte
+msgid "Apps · {0}"
+msgstr "Apps · {0}"
+
+#: src/routes/settings/apps/+page.svelte
+msgid "Name of your game"
+msgstr "Nombre de tu juego"
+
+#: src/routes/settings/apps/+page.svelte
+msgid "Name of the new app"
+msgstr "Nombre de la nueva app"
+
+#: src/routes/settings/apps/+page.svelte
+msgid "Create app"
+msgstr "Crear app"
+
+#: src/routes/settings/apps/+page.svelte
+msgid "App name"
+msgstr "Nombre de la app"
+
+#: src/routes/settings/apps/+page.svelte
+msgid "Copy the app id"
+msgstr "Copiar el id de la app"
+
+#: src/routes/settings/apps/+page.svelte
+msgid "Sites"
+msgstr "Sitios"
+
+#: src/routes/settings/apps/+page.svelte
+msgid "Product code"
+msgstr "Código del producto"
+
+#: src/routes/settings/apps/+page.svelte
+msgid "Product name"
+msgstr "Nombre del producto"
+
+#: src/routes/settings/apps/+page.svelte
+msgid "Price"
+msgstr "Precio"
+
+#: src/routes/settings/apps/+page.svelte
+msgid "Price in credits"
+msgstr "Precio en créditos"
+
+#: src/routes/settings/apps/+page.svelte
+msgid "Remove product"
+msgstr "Quitar producto"
+
+#: src/routes/settings/apps/+page.svelte
+msgid "<0/> repeatable"
+msgstr "<0/> repetible"
+
+#: src/routes/settings/apps/+page.svelte
+msgid "Give this id to the engine: <0/>"
+msgstr "Dale este id al motor: <0/>"
+
+#: src/routes/settings/apps/+page.svelte
+msgid "Sites it runs on"
+msgstr "Sitios donde funciona"
+
+#: src/routes/settings/apps/+page.svelte
+msgid "One per line, such as https://mygame.example (http is only for localhost). Only these sites may use your app."
+msgstr "Uno por línea, como https://migame.example (http solo para localhost). Solo estos sitios pueden usar tu app."
+
+#: src/routes/settings/apps/+page.svelte
+msgid "What it sells"
+msgstr "Qué vende"
+
+#: src/routes/settings/apps/+page.svelte
+msgid "Prices are in credits. The game asks to buy a product by its code; the player always confirms."
+msgstr "Los precios son en créditos. El juego pide comprar un producto por su código; el jugador siempre confirma."
+
+#: src/routes/settings/apps/+page.svelte
+msgid "+ Add a product"
+msgstr "+ Añadir un producto"
+
+#: src/routes/settings/apps/+page.svelte
+msgid "You have no apps yet."
+msgstr "Todavía no tienes apps."
+
+#: src/routes/settings/apps/+page.svelte
+msgid "Apps"
+msgstr "Apps"
+
+#. 0: PLATFORM_NAME
+#: src/routes/settings/apps/+page.svelte
+msgid "An app is a game of your own, on its own site, that uses {0} for accounts, saved data, leaderboards, credits and multiplayer. All its levels share the app's id, so you do not publish each one here."
+msgstr "Una app es un juego tuyo, en su propio sitio, que usa {0} para cuentas, datos guardados, clasificaciones, créditos y multijugador. Todos sus niveles comparten el id de la app, así que no hace falta publicar cada uno aquí."

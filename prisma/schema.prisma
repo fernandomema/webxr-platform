@@ -235,6 +235,11 @@ model publishedWorld {
   id               String @id @default(cuid())
   ownerId          String
   owner            user @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  /// 'world' is a world people play. 'app' is the identity of a game built on the engine whose levels ship with the game itself (so there
+  /// can be hundreds): it owns the storage, leaderboards and shop those levels share. Its one revision holds only the shop; it is never listed or played.
+  kind             String @default("world")
+  /// For an app: the sites it runs on, which may call the API with a bearer token (exact origins).
+  origins          String[] @default([])
   name             String
   latestRevision   Int @default(1)
   /// The 360° preview (an `image` asset) of the latest revision, when it has one.
@@ -250,6 +255,7 @@ model publishedWorld {
 
   @@index([ownerId])
   @@index([staffPick])
+  @@index([kind])
 }
 
 /// One row per user and published world: when they last opened it (feeds "Recently visited" on the home screen).

@@ -26,7 +26,8 @@ const json = { 'content-type': 'application/json' };
 
 /** Asks the platform for a code and waits, in the background, for someone to approve it. Needs `setToken` (see `useStoredToken`). */
 export async function startDeviceSignIn(): Promise<DeviceSignIn> {
-	const { setToken, clientId } = getPlatformConfig();
+	const { setToken, appId } = getPlatformConfig();
+	const clientId = appId ?? 'kithin-engine';
 	if (!setToken) throw new Error('This game is not set up to keep a sign-in token');
 	const response = await platformFetch('/api/auth/device/code', { method: 'POST', headers: json, body: JSON.stringify({ client_id: clientId }) });
 	if (!response.ok) throw new Error('Could not ask for a code');
