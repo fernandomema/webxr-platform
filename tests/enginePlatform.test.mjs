@@ -1,6 +1,7 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { assetUrl, configurePlatform, platformFetch, platformUrl, resetPlatform, signalingAddress, useStoredToken, getPlatformConfig } from '../packages/engine/src/xr/platform/config.ts';
+import { currentUser } from '../packages/engine/src/xr/platform/auth.ts';
 import { startDeviceSignIn } from '../packages/engine/src/xr/platform/deviceSignIn.ts';
 
 const realFetch = globalThis.fetch;
@@ -109,4 +110,16 @@ test('a refused or cancelled code ends the wait without storing anything', async
 
 test('without a place to keep the token, signing in with a code is refused up front', async () => {
 	await assert.rejects(startDeviceSignIn(), /token/);
+});
+
+test('a platform that cannot be reached leaves the game playable without an account', async () => {
+	configurePlatform({ apiBase: 'https://unreachable.test' });
+	globalThis.fetch = async () => { throw new TypeError('Failed to fetch'); };
+	const warn = console.warn;
+	console.warn = () => {};
+	try {
+		assert.equal(await currentUser(), null);
+	} finally {
+		console.warn = warn;
+	}
 });

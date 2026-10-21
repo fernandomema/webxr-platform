@@ -29,3 +29,17 @@ export function platformAuth(): PlatformAuthClient {
 	}
 	return client;
 }
+
+/**
+ * Who is signed in, or nobody when the platform cannot be reached: a game has to start offline (the platform being down, or a
+ * browser refusing its certificate, must not stop anyone from playing), and sign-in is for what needs the platform.
+ */
+export async function currentUser() {
+	try {
+		const { data } = await platformAuth().getSession();
+		return data?.user ?? null;
+	} catch (error) {
+		console.warn('[platform] could not check the session; playing without an account', error);
+		return null;
+	}
+}

@@ -86,7 +86,7 @@ import { createPurchasePrompt } from './ui/purchasePrompt.ts';
 import type { PayResult } from './payments/types.ts';
 import { ProximityVoice } from './net/voice.ts';
 import { parseIceServers } from './net/peerConnection.ts';
-import { platformAuth } from './platform/auth.ts';
+import { currentUser } from './platform/auth.ts';
 import { BLANK_WORLD_NAME, buildBlankWorld } from './blankWorld.ts';
 import { gameState, type LoadedWorld, type PublicationContext } from './gameState.ts';
 import type { HostedWorldVisibility } from '../worldVisibility.ts';
@@ -449,9 +449,9 @@ export async function mountGame(
 	let localAudio: { track: MediaStreamTrack; stream: MediaStream } | null = null;
 
 	async function refreshUser(): Promise<void> {
-		const { data } = await platformAuth().getSession();
-		gameState.userId = data?.user.id ?? null;
-		gameState.userName = data?.user.name ?? null;
+		const user = await currentUser();
+		gameState.userId = user?.id ?? null;
+		gameState.userName = user?.name ?? null;
 	}
 	await refreshUser();
 	const localPlayerId = crypto.randomUUID();

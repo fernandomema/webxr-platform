@@ -19,7 +19,8 @@ export const auth = betterAuth({
 	// that day — allow any https origin on the dev port instead of chasing a
 	// moving target. Production keeps a real allow-list (comma-separated).
 	trustedOrigins: async (request) => {
-		if (dev) return ['https://*:5173', 'http://*:5173'];
+		// In development a game under test runs on another local port.
+		if (dev) return ['https://*:5173', 'http://*:5173', 'http://localhost:*', 'http://127.0.0.1:*'];
 		const asked = request?.headers.get('origin');
 		return [
 			...(env.BETTER_AUTH_TRUSTED_ORIGINS?.split(',')
