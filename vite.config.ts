@@ -2,12 +2,16 @@ import tailwindcss from '@tailwindcss/vite';
 import adapter from '@sveltejs/adapter-node';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
+import { resolve } from 'node:path';
 import { mdsvex } from 'mdsvex';
 import { wuchale } from 'wuchale/vite';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { signalingDevPlugin } from './src/lib/server/wsDevPlugin.ts';
 
 export default defineConfig({
+	// SvelteKit only lets the dev server serve src/ and node_modules/. The engine's source is in packages/ (see the alias below), so it
+	// has to be allowed too, or the browser gets a 404 for every file of it.
+	server: { fs: { allow: [resolve('packages'), resolve('scripts')] } },
 	plugins: [
 		wuchale(),
 		tailwindcss(),
