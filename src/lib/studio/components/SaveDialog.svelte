@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { InventoryAdapter } from '$lib/inventory/types';
+	import type { InventoryAdapter } from '@kithin/engine/inventory/types';
 	import type { SaveTarget } from '../state/project.svelte';
 
 	interface Props {

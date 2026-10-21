@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { signedDistance, solveFinger, solveGrasp, fingerJoints, defaultHandModel, holdingBends } from '../src/lib/xr/avatar/grasp.ts';
+import { signedDistance, solveFinger, solveGrasp, fingerJoints, defaultHandModel, holdingBends } from '../packages/engine/src/xr/avatar/grasp.ts';
 
 const I = [0, 0, 0, 1];
 const box = (center, half) => ({ kind: 'box', center, rotation: I, half });
@@ -63,7 +63,7 @@ test('a finger that starts inside the object is left to the relaxed hold instead
 	assert.deepEqual(solveGrasp(hand, [enveloping], holdingBends()), holdingBends());
 });
 
-import { solveThumb, solveGraspFull, withSwing } from '../src/lib/xr/avatar/grasp.ts';
+import { solveThumb, solveGraspFull, withSwing } from '../packages/engine/src/xr/avatar/grasp.ts';
 
 test('laser-held objects outside finger reach keep the relaxed hold without searching thumb poses', () => {
 	const hand = defaultHandModel('right');
@@ -138,7 +138,7 @@ test('the thumb adapts its pose to the shape it grips', () => {
 	assert.notDeepEqual(thin.bends.slice(0, 3), thick.bends.slice(0, 3));
 });
 
-import { palmShift, shiftPrimitives } from '../src/lib/xr/avatar/grasp.ts';
+import { palmShift, shiftPrimitives } from '../packages/engine/src/xr/avatar/grasp.ts';
 
 const sphere = (center, r) => ({ kind: 'sphere', center, rotation: I, half: [r, r, r] });
 

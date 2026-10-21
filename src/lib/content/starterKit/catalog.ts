@@ -3,14 +3,14 @@
  * `builtin` inventory adapter lists them read-only; spawning one (or opening it in the Studio) gives a copy to edit.
  * Objects that already have a generator are built from it (record discs, with their own title, author and colours).
  */
-import type { Component, Slot, SlotTree } from '../../ecs/types';
-import lobby from '../../xr/templates/lobby.json' with { type: 'json' };
-import { buildDisc } from '../../xr/templates/recordDisc.ts';
-import { buildAtm } from '../../xr/templates/atm.ts';
+import type { Component, Slot, SlotTree } from '@kithin/engine/ecs/types';
+import lobby from '../templates/lobby.json' with { type: 'json' };
+import { buildDisc } from '../templates/recordDisc.ts';
+import { buildAtm } from '../templates/atm.ts';
 import { PROP_ENTRIES, PROP_FOLDERS } from './props.ts';
 import { TOOLS, toolEquippable } from '../../../../scripts/workshop-tools.mjs';
 
-import type { StarterKit, StarterKitEntry as BuiltinEntry, StarterKitFolder as BuiltinFolder } from '../../xr/content/registry.ts';
+import type { StarterKit, StarterKitEntry as BuiltinEntry, StarterKitFolder as BuiltinFolder } from '@kithin/engine/xr/content/registry';
 
 export const BUILTIN_FOLDERS: BuiltinFolder[] = [
 	{ id: 'basics', name: 'Basics' },

@@ -1,0 +1,34 @@
+{
+	"name": "@kithin/engine",
+	"version": "0.1.0",
+	"description": "The Kithin WebXR engine: scene graph, interaction, networking, scripting and the in-game interface, for games that run on Kithin's services.",
+	"type": "module",
+	"license": "UNLICENSED",
+	"private": true,
+	"sideEffects": false,
+	"exports": {
+		".": "./src/index.ts",
+		"./xr/i18n/svelte.svelte": "./src/xr/i18n/svelte.svelte.ts",
+		"./xr/panels/remoteDocument.svelte": "./src/xr/panels/remoteDocument.svelte.ts",
+		"./xr/interaction/desktop/desktopHud.svelte": "./src/xr/interaction/desktop/desktopHud.svelte.ts",
+		"./*.svelte": "./src/*.svelte",
+		"./*.json": "./src/*.json",
+		"./*": "./src/*.ts"
+	},
+	"files": [
+		"src",
+		"static",
+		"bin"
+	],
+	"peerDependencies": {
+		"@babylonjs/core": "^9.28.0",
+		"@babylonjs/gui": "^9.28.0",
+		"@babylonjs/loaders": "^9.28.0",
+		"svelte": "^5.56.1"
+	},
+	"dependencies": {
+		"@jitl/quickjs-wasmfile-release-sync": "^0.32.0",
+		"better-auth": "^1.7.6",
+		"quickjs-emscripten-core": "^0.32.0"
+	}
+}

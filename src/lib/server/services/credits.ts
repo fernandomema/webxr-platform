@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/private';
-import { CREDIT_LIMITS, CREDIT_PACKS, SKU_PATTERN, collectProducts, type CreditPack } from '$lib/credits/catalog';
+import { CREDIT_LIMITS, CREDIT_PACKS, SKU_PATTERN, collectProducts, type CreditPack } from '@kithin/engine/credits/catalog';
 import { prisma } from '../db';
 import { newNonce, signChallenge, verifyChallenge } from '../creditChallenge';
 import { BadRequestError, ForbiddenError, NotFoundError, TooManyRequestsError, UnauthorizedError } from '../errors';

@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { Vec3 } from '$lib/ecs/types';
-	import { quatToEuler, roundDisplay } from '$lib/math/euler';
+	import type { Vec3 } from '@kithin/engine/ecs/types';
+	import { quatToEuler, roundDisplay } from '@kithin/engine/math/euler';
 	import type { Snippet } from 'svelte';
-	import type { InspectorDocument } from '../state/docOps';
+	import type { InspectorDocument } from '@kithin/engine/document/docOps';
 	import AddComponentMenu from './AddComponentMenu.svelte';
 	import ComponentCard from './ComponentCard.svelte';
 	import PreviewCameraTools from './PreviewCameraTools.svelte';
@@ -11,8 +11,8 @@
 	import NumberInput from './NumberInput.svelte';
 	import Icon from '../ui/Icon.svelte';
 	import { skeletons } from '../state/skeletons.svelte';
-	import { normalizeMeshRef, type AssetId } from '$lib/assets/ref';
-	import type { Component, Slot } from '$lib/ecs/types';
+	import { normalizeMeshRef, type AssetId } from '@kithin/engine/assets/ref';
+	import type { Component, Slot } from '@kithin/engine/ecs/types';
 
 	interface Props {
 		doc: InspectorDocument;

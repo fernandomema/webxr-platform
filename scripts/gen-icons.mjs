@@ -1,4 +1,4 @@
-// Writes src/lib/xr/ui/icons.generated.ts: the Iconify (Lucide) icons the in-game panels use, and only those, so the
+// Writes packages/engine/src/xr/ui/icons.generated.ts: the Iconify (Lucide) icons the in-game panels use, and only those, so the
 // whole icon set does not end up in the bundle. Add a name below and run `npm run icons`.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -18,5 +18,5 @@ export const ICON_SIZE = ${set.width ?? 24};
 
 export const ICON_BODIES: Record<string, string> = ${JSON.stringify(icons, null, '\t')};
 `;
-writeFileSync(new URL('../src/lib/xr/ui/icons.generated.ts', import.meta.url), out);
+writeFileSync(new URL('../packages/engine/src/xr/ui/icons.generated.ts', import.meta.url), out);
 console.log(`Wrote ${NAMES.length} icons`);

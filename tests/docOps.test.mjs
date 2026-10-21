@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import * as ops from '../src/lib/studio/tree/ops.ts';
-import { reduceDocOp, coalesceKeyOf } from '../src/lib/studio/state/docOps.ts';
-import { quatToEuler } from '../src/lib/math/euler.ts';
+import * as ops from '../packages/engine/src/document/tree.ts';
+import { reduceDocOp, coalesceKeyOf } from '../packages/engine/src/document/docOps.ts';
+import { quatToEuler } from '../packages/engine/src/math/euler.ts';
 
 function sample() {
   let n = 0;

@@ -1,9 +1,9 @@
 import { prisma } from '../db';
 import { BadRequestError, ForbiddenError, NotFoundError, UnauthorizedError } from '../errors';
-import { validateWorldScene } from '$lib/worlds/package';
-import { migrateSlotTree, collectAssetIds } from '$lib/assets/ref';
+import { validateWorldScene } from '@kithin/engine/worlds/package';
+import { migrateSlotTree, collectAssetIds } from '@kithin/engine/assets/ref';
 import { assertAssetsReady, assetSummaries, linkSceneAssets, resolveThumbnail, withThumbnail } from './assets';
-import type { SlotTree } from '$lib/ecs/types';
+import type { SlotTree } from '@kithin/engine/ecs/types';
 import type { SessionUser } from './worlds';
 
 const MAX_DESCRIPTION = 2000;

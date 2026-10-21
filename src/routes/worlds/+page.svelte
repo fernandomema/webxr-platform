@@ -4,8 +4,8 @@
 	import { resolve } from '$app/paths';
 	import { PLATFORM_NAME } from '$lib/platform';
 	import { worldAppPath } from '$lib/worlds/appManifest';
-	import { thumbnailUrl } from '$lib/assets/thumbnails';
-	import type { AssetId } from '$lib/assets/ref';
+	import { thumbnailUrl } from '@kithin/engine/assets/thumbnails';
+	import type { AssetId } from '@kithin/engine/assets/ref';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -19,9 +19,9 @@
 		void (async () => {
 			try {
 				const [{ getBuiltinWorld }, { builtinPreview }, { thumbnailUrl: urlOf }] = await Promise.all([
-					import('$lib/xr/templates/builtinWorlds'),
-					import('$lib/worlds/builtinPreview'),
-					import('$lib/assets/thumbnails')
+					import('$lib/content/templates/builtinWorlds'),
+					import('@kithin/engine/worlds/builtinPreview'),
+					import('@kithin/engine/assets/thumbnails')
 				]);
 				for (const entry of data.official) {
 					const world = getBuiltinWorld(entry.id);

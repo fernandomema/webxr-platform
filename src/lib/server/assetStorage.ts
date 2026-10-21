@@ -10,7 +10,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { createHash } from 'node:crypto';
 import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
-import type { AssetId } from '$lib/assets/ref';
+import type { AssetId } from '@kithin/engine/assets/ref';
 
 /**
  * Model files live in an S3-compatible bucket, one object per content hash and

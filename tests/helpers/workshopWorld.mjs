@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 // Runs the Workshop tools' scripts against a small stand-in for the codeBlock runtime (codeBlockRuntime.ts), built from the
 // generated world itself. Quaternions follow Babylon's conventions: [x, y, z, w], a.multiply(b) applies b first.
 
-export const workshop = JSON.parse(readFileSync(new URL('../../src/lib/xr/templates/workshop.json', import.meta.url), 'utf8'));
+export const workshop = JSON.parse(readFileSync(new URL('../../src/lib/content/templates/workshop.json', import.meta.url), 'utf8'));
 
 export const qMul = (a, b) => [
 	a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],

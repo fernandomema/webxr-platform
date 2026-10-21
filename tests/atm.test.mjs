@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { opensWorldMenu } from '../src/lib/ecs/types.ts';
-import { buildAtm, LOBBY_ATM } from '../src/lib/xr/templates/atm.ts';
-import { isBuiltinMeshId } from '../src/lib/assets/ref.ts';
+import { opensWorldMenu } from '../packages/engine/src/ecs/types.ts';
+import { buildAtm, LOBBY_ATM } from '../src/lib/content/templates/atm.ts';
+import { isBuiltinMeshId } from '../packages/engine/src/assets/ref.ts';
 import { BUILTIN_ENTRIES } from '../src/lib/content/starterKit/catalog.ts';
 
 const rotate = (q, v) => {
@@ -48,7 +48,7 @@ test('in the lobby its screen faces the spawn pad, and it stands clear of everyt
 	const length = Math.hypot(...toSpawn);
 	const dot = (front[0] * toSpawn[0] + front[2] * toSpawn[2]) / length;
 	assert.ok(dot > 0.99, `facing the spawn pad (${dot.toFixed(3)})`);
-	const lobby = JSON.parse(await readFile(new URL('../src/lib/xr/templates/lobby.json', import.meta.url), 'utf8'));
+	const lobby = JSON.parse(await readFile(new URL('../src/lib/content/templates/lobby.json', import.meta.url), 'utf8'));
 	for (const slot of lobby.filter((candidate) => !candidate.parentId && candidate.position[1] > 0.1 && !/floor|skybox|pad/.test(candidate.id))) {
 		assert.ok(Math.hypot(slot.position[0] - LOBBY_ATM.position[0], slot.position[2] - LOBBY_ATM.position[2]) > 1.5, `${slot.id} is not on top of the machine`);
 	}
@@ -60,10 +60,10 @@ test('the Starter Kit lists the ATM, and the lobby world has one', async () => {
 	assert.ok(entry);
 	assert.equal(entry.build().some((slot) => slot.components.some((c) => c.type === 'atm')), true);
 	assert.notEqual(entry.build(), entry.build(), 'a fresh tree every time');
-	const worlds = await readFile(new URL('../src/lib/xr/templates/builtinWorlds.ts', import.meta.url), 'utf8');
+	const worlds = await readFile(new URL('../src/lib/content/templates/builtinWorlds.ts', import.meta.url), 'utf8');
 	assert.match(worlds, /buildLobbyExtras\(\)/);
 	const setup = await readFile(new URL('../src/lib/engineSetup.ts', import.meta.url), 'utf8');
 	assert.match(setup, /buildLobbyExtras\(\)/);
-	const { buildLobbyExtras } = await import('../src/lib/xr/templates/lobbyExtras.ts');
+	const { buildLobbyExtras } = await import('../src/lib/content/templates/lobbyExtras.ts');
 	assert.ok(buildLobbyExtras().some((slot) => slot.id === 'lobby-atm' && slot.components.some((c) => c.type === 'container')));
 });

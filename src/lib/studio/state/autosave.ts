@@ -1,5 +1,5 @@
-import type { SlotTree } from '$lib/ecs/types';
-import { migrateSlotTree } from '$lib/assets/ref';
+import type { SlotTree } from '@kithin/engine/ecs/types';
+import { migrateSlotTree } from '@kithin/engine/assets/ref';
 
 export interface Draft {
 	key: string;

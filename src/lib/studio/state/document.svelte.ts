@@ -1,7 +1,7 @@
-import type { Component, Slot, SlotTree, Vec3 } from '$lib/ecs/types';
-import type { ComponentType } from '../schema/components';
-import * as ops from '../tree/ops';
-import { coalesceKeyOf, reduceDocOp, type DocOp, type DocOpResult, type InspectorDocument } from './docOps';
+import type { Component, Slot, SlotTree, Vec3 } from '@kithin/engine/ecs/types';
+import type { ComponentType } from '@kithin/engine/document/components';
+import * as ops from '@kithin/engine/document/tree';
+import { coalesceKeyOf, reduceDocOp, type DocOp, type DocOpResult, type InspectorDocument } from '@kithin/engine/document/docOps';
 import { History } from './history';
 
 export type DocumentKind = 'object' | 'world';

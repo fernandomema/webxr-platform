@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { rotateVector, headYaw, followYaw, restFacingYaw, yawQuat, updateStandingHeight, solveTwoBone, arcBetween, stepToReach } from '../src/lib/xr/avatar/ik.ts';
+import { rotateVector, headYaw, followYaw, restFacingYaw, yawQuat, updateStandingHeight, solveTwoBone, arcBetween, stepToReach } from '../packages/engine/src/xr/avatar/ik.ts';
 
 const near = (a, b, eps = 1e-4) => assert.ok(a.every((v, i) => Math.abs(v - b[i]) < eps), `${a} vs ${b}`);
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);

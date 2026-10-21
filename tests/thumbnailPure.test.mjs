@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { stripActiveComponents } from '../src/lib/xr/thumbnail/inertTree.ts';
-import { frameBounds, bustBounds, THUMBNAIL_FOV } from '../src/lib/xr/thumbnail/framing.ts';
-import { cubeToEquirect, faceLookup, FACE_ORDER } from '../src/lib/xr/thumbnail/cubeToEquirect.ts';
+import { stripActiveComponents } from '../packages/engine/src/xr/thumbnail/inertTree.ts';
+import { frameBounds, bustBounds, THUMBNAIL_FOV } from '../packages/engine/src/xr/thumbnail/framing.ts';
+import { cubeToEquirect, faceLookup, FACE_ORDER } from '../packages/engine/src/xr/thumbnail/cubeToEquirect.ts';
 
 const slot = (id, components) => ({ id, parentId: null, name: id, position: [0, 0, 0], rotation: [0, 0, 0, 1], scale: [1, 1, 1], components });
 
@@ -63,7 +63,7 @@ test('the panorama rotates 180 degrees around Y: -Z in the middle, with -X on th
 	assert.throws(() => cubeToEquirect([], size, width, height));
 });
 
-import { flipRows } from '../src/lib/xr/thumbnail/cubeToEquirect.ts';
+import { flipRows } from '../packages/engine/src/xr/thumbnail/cubeToEquirect.ts';
 
 test('flipRows turns a texture read back bottom-first into top-first, leaving pixels intact', () => {
 	const size = 3;
@@ -83,8 +83,8 @@ test('a mirror is drawn as a pale panel when it cannot reflect, unless it alread
 	assert.equal(stripActiveComponents([mirror('#ff0000')])[0].components[0].color, '#ff0000');
 });
 
-import { monoAtSides } from '../src/lib/xr/thumbnail/cubeToEquirect.ts';
-import { findSpawnPoint, spawnViewpoint, DEFAULT_SPAWN } from '../src/lib/xr/thumbnail/cameraPose.ts';
+import { monoAtSides } from '../packages/engine/src/xr/thumbnail/cubeToEquirect.ts';
+import { findSpawnPoint, spawnViewpoint, DEFAULT_SPAWN } from '../packages/engine/src/xr/thumbnail/cameraPose.ts';
 
 test('the right eye keeps its own picture in front of the player and takes the left eye’s picture behind', () => {
 	const width = 8, height = 1;

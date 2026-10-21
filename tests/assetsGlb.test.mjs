@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseGlb, GlbError } from '../src/lib/assets/glb.ts';
-import { sha256Hex, assetIdOf } from '../src/lib/assets/hash.ts';
-import { MemoryAssetStore } from '../src/lib/assets/store.ts';
-import { importGlb, modelNameFromFile } from '../src/lib/assets/importGlb.ts';
-import { isAssetId } from '../src/lib/assets/ref.ts';
+import { parseGlb, GlbError } from '../packages/engine/src/assets/glb.ts';
+import { sha256Hex, assetIdOf } from '../packages/engine/src/assets/hash.ts';
+import { MemoryAssetStore } from '../packages/engine/src/assets/store.ts';
+import { importGlb, modelNameFromFile } from '../packages/engine/src/assets/importGlb.ts';
+import { isAssetId } from '../packages/engine/src/assets/ref.ts';
 import { buildGlb } from './helpers/glb.mjs';
 
 const limits = { maxBytes: 1_000_000, maxTriangles: 100, maxImages: 2 };

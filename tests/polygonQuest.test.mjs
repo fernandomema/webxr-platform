@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { parseGlb } from '../src/lib/assets/glb.ts';
-import { ASSET_LIMITS } from '../src/lib/assets/limits.ts';
+import { parseGlb } from '../packages/engine/src/assets/glb.ts';
+import { ASSET_LIMITS } from '../packages/engine/src/assets/limits.ts';
 
-const scenePath = new URL('../src/lib/xr/templates/avatarShowcase.json', import.meta.url);
+const scenePath = new URL('../src/lib/content/templates/avatarShowcase.json', import.meta.url);
 const modelPath = new URL('../static/worlds/polygon-quest/room.glb', import.meta.url);
 
 test('Avatar Showcase scene refers to the bundled, valid GLB and has a walkable floor', async () => {

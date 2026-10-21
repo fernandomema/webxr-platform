@@ -1,7 +1,7 @@
-import type { SlotTree } from '$lib/ecs/types';
-import type { AssetId } from '$lib/assets/ref';
-import { importAsset } from '$lib/assets/importAsset';
-import { getLocalAssetStore } from '$lib/assets/store';
+import type { SlotTree } from '@kithin/engine/ecs/types';
+import type { AssetId } from '@kithin/engine/assets/ref';
+import { importAsset } from '@kithin/engine/assets/importAsset';
+import { getLocalAssetStore } from '@kithin/engine/assets/store';
 import type { BakeQuality, BakeReply, BakeStats } from './bakeJob';
 
 export interface BakeResult {

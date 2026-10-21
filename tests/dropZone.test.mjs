@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { rotateVector } from '../src/lib/xr/avatar/ik.ts';
-import { alignedRotation, boundsCenter, isInsideZone, multiply, settleInZone, worldCorners } from '../src/lib/xr/interaction/dropZoneMath.ts';
-import { reduceDocOp } from '../src/lib/studio/state/docOps.ts';
-import * as ops from '../src/lib/studio/tree/ops.ts';
+import { rotateVector } from '../packages/engine/src/xr/avatar/ik.ts';
+import { alignedRotation, boundsCenter, isInsideZone, multiply, settleInZone, worldCorners } from '../packages/engine/src/xr/interaction/dropZoneMath.ts';
+import { reduceDocOp } from '../packages/engine/src/document/docOps.ts';
+import * as ops from '../packages/engine/src/document/tree.ts';
 
 const near = (actual, expected, message, epsilon = 1e-6) => {
   for (let i = 0; i < expected.length; i++) assert.ok(Math.abs(actual[i] - expected[i]) < epsilon, `${message}: ${JSON.stringify(actual)} vs ${JSON.stringify(expected)}`);

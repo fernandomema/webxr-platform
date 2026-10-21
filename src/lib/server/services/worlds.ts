@@ -1,11 +1,11 @@
 import { randomBytes } from 'node:crypto';
 import { prisma } from '../db';
 import { UnauthorizedError, ForbiddenError, NotFoundError, BadRequestError } from '../errors';
-import { validateWorldScene } from '$lib/worlds/package';
-import { migrateSlotTree } from '$lib/assets/ref';
+import { validateWorldScene } from '@kithin/engine/worlds/package';
+import { migrateSlotTree } from '@kithin/engine/assets/ref';
 import { linkSceneAssets, readyAssetIds, resolveThumbnail, withThumbnail } from './assets';
-import type { SlotTree } from '$lib/ecs/types';
-import type { HostedWorldVisibility } from '$lib/worldVisibility';
+import type { SlotTree } from '@kithin/engine/ecs/types';
+import type { HostedWorldVisibility } from '@kithin/engine/worldVisibility';
 import { getActiveRoomCodes } from '../rooms';
 
 export interface SessionUser {

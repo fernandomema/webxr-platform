@@ -4,8 +4,8 @@
 // Not part of `npm test` (it needs the server, the database and S3).
 import assert from 'node:assert/strict';
 import { buildGlb } from '../helpers/glb.mjs';
-import { assetIdOf } from '../../src/lib/assets/hash.ts';
-import { parseGlb } from '../../src/lib/assets/glb.ts';
+import { assetIdOf } from '../../packages/engine/src/assets/hash.ts';
+import { parseGlb } from '../../packages/engine/src/assets/glb.ts';
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const BASE = process.env.BASE_URL ?? 'https://localhost:5180';

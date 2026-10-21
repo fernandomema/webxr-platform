@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeFrame } from '../src/lib/xr/templates/arcadeKit.ts';
-import { STRIKER, STRIKER_IDS, buildStriker } from '../src/lib/xr/templates/arcadeStriker.ts';
+import { makeFrame } from '../src/lib/content/templates/arcadeKit.ts';
+import { STRIKER, STRIKER_IDS, buildStriker } from '../src/lib/content/templates/arcadeStriker.ts';
 import { DT, runMachine } from './helpers/arcadeMachine.mjs';
 
 const frame = makeFrame(11, 9, Math.PI / 2);

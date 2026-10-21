@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { batchMaterialUpdates, batchMeshDisposal, MIN_STORE_FRAME_RATE, selectTargetFrameRate, XR_FRAMEBUFFER_SCALE } from '../src/lib/xr/performance.ts';
+import { batchMaterialUpdates, batchMeshDisposal, MIN_STORE_FRAME_RATE, selectTargetFrameRate, XR_FRAMEBUFFER_SCALE } from '../packages/engine/src/xr/performance.ts';
 import { readFileSync } from 'node:fs';
 import { MeshBuilder, NullEngine, Scene, StandardMaterial } from '@babylonjs/core';
 
@@ -72,8 +72,8 @@ test('automatic refresh rate never selects 60 FPS or invalid values', () => {
 });
 
 test('the render loop indexes dynamic slots and skips pointer-move picking', () => {
-	const sceneGraph = readFileSync(new URL('../src/lib/xr/sceneGraph.ts', import.meta.url), 'utf8');
-	const engine = readFileSync(new URL('../src/lib/xr/engine.ts', import.meta.url), 'utf8');
+	const sceneGraph = readFileSync(new URL('../packages/engine/src/xr/sceneGraph.ts', import.meta.url), 'utf8');
+	const engine = readFileSync(new URL('../packages/engine/src/xr/engine.ts', import.meta.url), 'utf8');
 	assert.match(sceneGraph, /slotsWith\('codeBlock'\)/);
 	assert.match(sceneGraph, /slotsWith\('velocity'\)/);
 	assert.match(sceneGraph, /slotsWith\('expires'\)/);

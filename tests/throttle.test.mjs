@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createThrottle } from '../src/lib/xr/net/throttle.ts';
+import { createThrottle } from '../packages/engine/src/xr/net/throttle.ts';
 
 /** A clock the test moves by hand, with timers that fire when it passes them. */
 function fakeClock() {

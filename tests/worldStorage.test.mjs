@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { STORAGE_LIMITS, StorageOpError, applyOps, isBetterScore, parseStorageRequest } from '../src/lib/worldStorage/ops.ts';
+import { STORAGE_LIMITS, StorageOpError, applyOps, isBetterScore, parseStorageRequest } from '../packages/engine/src/worldStorage/ops.ts';
 
 const entries = (obj = {}) => new Map(Object.entries(obj).map(([k, [value, version]]) => [k, { value, version }]));
 
@@ -66,7 +66,7 @@ test('leaderboard orders decide which score is better', () => {
 });
 
 // --- the service that routes a script's calls ---
-import { WorldStorageService } from '../src/lib/xr/worldStorageService.ts';
+import { WorldStorageService } from '../packages/engine/src/xr/worldStorageService.ts';
 
 const service = (over = {}) => {
   const state = { publication: null, role: 'solo', signedIn: true, room: null, relayed: [], fetched: [], ...over };

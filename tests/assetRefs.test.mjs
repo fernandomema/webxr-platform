@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeMeshRef, migrateSlotTree, collectAssetIds, isAssetId, meshRefKey, builtinMesh } from '../src/lib/assets/ref.ts';
+import { normalizeMeshRef, migrateSlotTree, collectAssetIds, isAssetId, meshRefKey, builtinMesh } from '../packages/engine/src/assets/ref.ts';
 
 const A = 'sha256:' + 'a'.repeat(64);
 const B = 'sha256:' + 'b'.repeat(64);

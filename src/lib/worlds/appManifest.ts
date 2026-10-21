@@ -1,4 +1,4 @@
-import type { AppInfoComponent, Slot, WorldSettingsComponent } from '../ecs/types';
+import type { AppInfoComponent, Slot, WorldSettingsComponent } from '@kithin/engine/ecs/types';
 import { PLATFORM_NAME } from '../platform.ts';
 
 export const APP_ICON_SIZES = [192, 512] as const;

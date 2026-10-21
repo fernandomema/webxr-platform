@@ -1,5 +1,5 @@
-import type { AssetId } from '$lib/assets/ref';
-import { BUNDLED_LIGHTING } from '$lib/assets/bundledLighting';
+import type { AssetId } from '@kithin/engine/assets/ref';
+import { BUNDLED_LIGHTING } from '$lib/content/bundledLighting';
 
 /** Files that ship with the app, addressed by their actual content hash. */
 export const BUNDLED_ASSETS: Partial<Record<AssetId, string>> = {

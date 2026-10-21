@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { hasIcons, layoutRichText, parseRichText } from '../src/lib/xr/richText.ts';
+import { hasIcons, layoutRichText, parseRichText } from '../packages/engine/src/xr/richText.ts';
 
 const measure = (text) => text.length * 10;
 const layout = (text, over = {}) => layoutRichText(parseRichText(text), { width: 400, fontSize: 20, align: 'left', measure, ...over });

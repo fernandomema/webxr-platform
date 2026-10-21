@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { placePopover, type Placement } from '../ui/popover';
-	import { addableComponents, COMPONENT_GROUPS, type ComponentType } from '../schema/components';
+	import { addableComponents, COMPONENT_GROUPS, type ComponentType } from '@kithin/engine/document/components';
 
 	interface Props {
 		advanced: boolean;

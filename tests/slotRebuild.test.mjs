@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { needsRebuild } from '../src/lib/xr/slotRebuild.ts';
+import { needsRebuild } from '../packages/engine/src/xr/slotRebuild.ts';
 
 const slot = (components, extra = {}) => ({ id: 's', parentId: null, name: 'S', position: [0, 0, 0], rotation: [0, 0, 0, 1], scale: [1, 1, 1], components, ...extra });
 const mesh = (id = 'box', color) => ({ type: 'meshRenderer', meshRef: { kind: 'builtin', id }, ...(color ? { color } : {}) });

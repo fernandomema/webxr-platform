@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { isAssetId } from '$lib/assets/ref';
-	import { thumbnailUrl } from '$lib/assets/thumbnails';
+	import { isAssetId } from '@kithin/engine/assets/ref';
+	import { thumbnailUrl } from '@kithin/engine/assets/thumbnails';
 
 	interface Props {
 		/** `user.image`: an asset id (uploaded picture), an external URL (e.g. Discord), or empty. */

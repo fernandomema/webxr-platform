@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { NullEngine, Quaternion, Scene, TransformNode, Vector3 } from '@babylonjs/core';
-import { compose, determinant3, identity, invert, multiply, transformDirection, transformNormal, transformPoint } from '../src/lib/lighting/matrix.ts';
+import { compose, determinant3, identity, invert, multiply, transformDirection, transformNormal, transformPoint } from '../packages/engine/src/lighting/matrix.ts';
 
 const near = (a, b, eps = 1e-9) => assert.ok(a.length === b.length && a.every((v, i) => Math.abs(v - b[i]) < eps), `${Array.from(a).map((v) => v.toFixed(6))} vs ${Array.from(b).map((v) => v.toFixed(6))}`);
 const norm = (q) => { const l = Math.hypot(...q); return q.map((v) => v / l); };

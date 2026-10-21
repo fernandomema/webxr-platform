@@ -2,7 +2,7 @@
 	import Select, { type SelectOption } from '../ui/Select.svelte';
 	import Tooltip from '../ui/Tooltip.svelte';
 	import Icon from '../ui/Icon.svelte';
-	import { BODY_BONES, REQUIRED_BONES, avatarCapabilities, detectHumanoidMap, fingerJoints, pruneHumanoidMap, type HumanoidBone, type HumanoidMap } from '../../xr/avatar/humanoid';
+	import { BODY_BONES, REQUIRED_BONES, avatarCapabilities, detectHumanoidMap, fingerJoints, pruneHumanoidMap, type HumanoidBone, type HumanoidMap } from '@kithin/engine/xr/avatar/humanoid';
 
 	interface Props {
 		value: HumanoidMap;

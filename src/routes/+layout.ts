@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import { loadLocale } from 'wuchale/load-utils';
 import { clientLocale } from '$lib/locale';
-import { setEngineLocale } from '$lib/xr/i18n/locale';
+import { setEngineLocale } from '@kithin/engine/xr/i18n/locale';
 
 // Says where the platform's services are and what the site ships to the engine (see engineSetup.ts).
 import '$lib/engineSetup';

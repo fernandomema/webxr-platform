@@ -2,12 +2,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { BUNDLED_LIGHTING } from '../src/lib/assets/bundledLighting.ts';
-import { extractScene, sceneSignature } from '../src/lib/lighting/sceneExtract.ts';
-import { specFor } from '../src/lib/lighting/bake.ts';
-import { readHeader } from '../src/lib/lighting/format.ts';
-import { buildDeadDrop } from '../src/lib/xr/templates/deadDrop.ts';
-import { LIGHT_REGIONS, LIGHTING_WORLD, lightVolumeId } from '../src/lib/xr/templates/deadDropLighting.ts';
+import { BUNDLED_LIGHTING } from '../src/lib/content/bundledLighting.ts';
+import { extractScene, sceneSignature } from '../packages/engine/src/lighting/sceneExtract.ts';
+import { specFor } from '../packages/engine/src/lighting/bake.ts';
+import { readHeader } from '../packages/engine/src/lighting/format.ts';
+import { buildDeadDrop } from '../src/lib/content/templates/deadDrop.ts';
+import { LIGHT_REGIONS, LIGHTING_WORLD, lightVolumeId } from '../src/lib/content/templates/deadDropLighting.ts';
 
 const tree = buildDeadDrop();
 const find = (slot, type) => slot.components.find((c) => c.type === type);

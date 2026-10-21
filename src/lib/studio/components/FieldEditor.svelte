@@ -1,10 +1,10 @@
 <script lang="ts">
-	import type { FieldDef } from '../schema/components';
+	import type { FieldDef } from '@kithin/engine/document/components';
 	import NumberInput from './NumberInput.svelte';
 	import Icon from '../ui/Icon.svelte';
 	import { handPreview } from '../state/handPreview.svelte';
-	import type { EquipPose } from '$lib/ecs/types';
-	import { assetMesh, assetSource, BUILTIN_MESH_IDS, isAssetId, normalizeMeshRef, normalizeSourceRef, urlSource, type BuiltinMeshId } from '$lib/assets/ref';
+	import type { EquipPose } from '@kithin/engine/ecs/types';
+	import { assetMesh, assetSource, BUILTIN_MESH_IDS, isAssetId, normalizeMeshRef, normalizeSourceRef, urlSource, type BuiltinMeshId } from '@kithin/engine/assets/ref';
 	import { studioAssets, studioModels } from '../state/models.svelte';
 	import BoneMapEditor from './BoneMapEditor.svelte';
 	import Select, { type SelectGroup, type SelectOption } from '../ui/Select.svelte';
@@ -12,7 +12,7 @@
 	import ColorInput from '../ui/ColorInput.svelte';
 	import Combobox from '../ui/Combobox.svelte';
 	import Tooltip from '../ui/Tooltip.svelte';
-	import type { HumanoidMap } from '../../xr/avatar/humanoid';
+	import type { HumanoidMap } from '@kithin/engine/xr/avatar/humanoid';
 
 	interface Props {
 		field: FieldDef;

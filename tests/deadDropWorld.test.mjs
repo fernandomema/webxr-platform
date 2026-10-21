@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { isBuiltinMeshId } from '../src/lib/assets/ref.ts';
-import { buildDeadDrop } from '../src/lib/xr/templates/deadDrop.ts';
-import { ID, nonSolidIds } from '../src/lib/xr/templates/deadDropKit.ts';
-import { GRID, POOLS } from '../src/lib/xr/templates/deadDropData.ts';
-import { HUB_ROOM } from '../src/lib/xr/templates/deadDropHub.ts';
+import { isBuiltinMeshId } from '../packages/engine/src/assets/ref.ts';
+import { buildDeadDrop } from '../src/lib/content/templates/deadDrop.ts';
+import { ID, nonSolidIds } from '../src/lib/content/templates/deadDropKit.ts';
+import { GRID, POOLS } from '../src/lib/content/templates/deadDropData.ts';
+import { HUB_ROOM } from '../src/lib/content/templates/deadDropHub.ts';
 
 const tree = buildDeadDrop();
 const byId = new Map(tree.map((slot) => [slot.id, slot]));
@@ -79,7 +79,7 @@ test('the raid lies far from the bunker, whose guns hang from a rack the squad c
 });
 
 test('Dead Drop is registered as a development world, with a description', async () => {
-	const source = await readFile(new URL('../src/lib/xr/templates/builtinWorlds.ts', import.meta.url), 'utf8');
+	const source = await readFile(new URL('../src/lib/content/templates/builtinWorlds.ts', import.meta.url), 'utf8');
 	assert.match(source, /id: 'dead-drop'/);
 	assert.match(/DEV_WORLD_IDS[^=]*=\s*\[([^\]]*)\]/.exec(source)[1], /'dead-drop'/);
 	assert.match(source, /scene: buildDeadDrop\(\)/);

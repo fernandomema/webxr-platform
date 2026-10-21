@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createSlot } from '../src/lib/ecs/types.ts';
-import { collectAssetIds } from '../src/lib/assets/ref.ts';
-import { needsRebuild } from '../src/lib/xr/slotRebuild.ts';
-import { isMaterialUrl, isValidMaterialMap, materialSourceKey, materialSources } from '../src/lib/xr/materialSources.ts';
+import { createSlot } from '../packages/engine/src/ecs/types.ts';
+import { collectAssetIds } from '../packages/engine/src/assets/ref.ts';
+import { needsRebuild } from '../packages/engine/src/xr/slotRebuild.ts';
+import { isMaterialUrl, isValidMaterialMap, materialSourceKey, materialSources } from '../packages/engine/src/xr/materialSources.ts';
 
 const assetId = `sha256:${'a'.repeat(64)}`;
 const url = (value) => ({ kind: 'url', url: value });

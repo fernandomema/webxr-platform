@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cameraRotation } from '../src/lib/xr/avatar/headPose.ts';
+import { cameraRotation } from '../packages/engine/src/xr/avatar/headPose.ts';
 
 const near = (a, b) => a.every((v, i) => Math.abs(v - b[i]) < 1e-6);
 

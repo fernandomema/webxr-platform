@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DISHES, HALL, KINDS, MODELS, SIZES, STARTER_KIT } from '../src/lib/xr/templates/bistroData.ts';
-import { findPath, layoutFor } from '../src/lib/xr/templates/bistroGen.ts';
+import { DISHES, HALL, KINDS, MODELS, SIZES, STARTER_KIT } from '../src/lib/content/templates/bistroData.ts';
+import { findPath, layoutFor } from '../src/lib/content/templates/bistroGen.ts';
 
 const key = (gx, gz) => gx * 100 + gz;
 const DOORS = [HALL.w / 2 - 1, HALL.w / 2];

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { AssetId } from '$lib/assets/ref';
-	import { thumbnailUrl } from '$lib/assets/thumbnails';
+	import type { AssetId } from '@kithin/engine/assets/ref';
+	import { thumbnailUrl } from '@kithin/engine/assets/thumbnails';
 	import Icon from '../ui/Icon.svelte';
 
 	interface Props {

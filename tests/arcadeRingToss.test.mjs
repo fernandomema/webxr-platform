@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeFrame } from '../src/lib/xr/templates/arcadeKit.ts';
-import { RING_TOSS, buildRingToss, ringId } from '../src/lib/xr/templates/arcadeRingToss.ts';
+import { makeFrame } from '../src/lib/content/templates/arcadeKit.ts';
+import { RING_TOSS, buildRingToss, ringId } from '../src/lib/content/templates/arcadeRingToss.ts';
 import { aim, runMachine } from './helpers/arcadeMachine.mjs';
 
 const frame = makeFrame(0, 15, 0);

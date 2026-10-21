@@ -1,0 +1,682 @@
+import type { Component } from '../ecs/types.ts';
+import { BUILTIN_MESH_IDS, urlSource } from '../assets/ref.ts';
+
+export type ComponentType = Component['type'];
+export type ComponentGroup = 'Render' | 'Interaction' | 'Logic' | 'Media' | 'World';
+
+interface FieldBase {
+	key: string;
+	label: string;
+	help?: string;
+	/** Only shown in Advanced mode. */
+	advanced?: boolean;
+	/** Optional fields can be cleared, which removes the key from the component. */
+	optional?: boolean;
+}
+
+export type FieldDef = FieldBase &
+	(
+		| { kind: 'number'; min?: number; max?: number; step?: number; unit?: string; default?: number }
+		| { kind: 'text'; multiline?: boolean; suggestions?: string[]; default?: string }
+		| { kind: 'url'; default?: string }
+		| { kind: 'bool'; default?: boolean }
+		| { kind: 'color'; default?: string }
+		| { kind: 'enum'; options: { value: string; label: string }[]; default?: string }
+		| { kind: 'vec3'; step?: number; default?: [number, number, number] }
+		| { kind: 'mesh' }
+		/** A direct URL, or an asset of `assetType` (local, cloud or shared). Stored as a `SourceRef`. */
+		| { kind: 'asset'; assetType: string; /** Setting it opens this editor action (a dialog) instead of just picking a file. */ action?: string }
+		| { kind: 'pose' }
+		| { kind: 'lines' }
+		| { kind: 'code' }
+		| { kind: 'json' }
+		/** Humanoid role to bone name, edited against the bones of the model. */
+		| { kind: 'boneMap' }
+		/** One bone of the parent slot's model. */
+		| { kind: 'bone' }
+		/** Not a value: a button that asks the editor to run `action` (open a dialog). */
+		| { kind: 'action'; action: string; button: string }
+	);
+
+export interface ComponentSchema {
+	type: ComponentType;
+	label: string;
+	group: ComponentGroup;
+	description: string;
+	glyph: string;
+	/** Hidden from the Simple-mode "Add component" list. */
+	advanced?: boolean;
+	fields: FieldDef[];
+	create: () => Component;
+}
+
+export const DEFAULT_CODE = `// A code block returns event handlers.\nreturn {\n  onSpawn() {\n    ctx.log('Ready:', ctx.self.getSlot()?.name);\n  },\n  onGrab() {\n    ctx.log('Grabbed by', ctx.grab.heldBy());\n  },\n  tick(dt) {\n    // Use ctx.self, ctx.world, ctx.hierarchy and ctx.math here.\n  }\n};`;
+
+/** A `resolution` × `resolution` fully-covered coverage mask (every byte 255), base64-encoded — the starting state for a freshly added `surfaceMask`. */
+function fullCoverageMask(resolution: number): string {
+	const bytes = new Uint8ClampedArray(resolution * resolution).fill(255);
+	let binary = '';
+	for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+	return btoa(binary);
+}
+
+export const COMPONENT_SCHEMAS: ComponentSchema[] = [
+	{
+		type: 'pointLight',
+		label: 'Point Light',
+		group: 'Render',
+		description: 'Illuminate nearby surfaces from this slot.',
+		glyph: '☼',
+		fields: [
+			{ key: 'color', label: 'Color', kind: 'color', default: '#ffffff' },
+			{ key: 'intensity', label: 'Intensity', kind: 'number', min: 0, max: 20, step: 0.1 },
+			{ key: 'range', label: 'Range', kind: 'number', min: 0.1, max: 100, step: 0.5, unit: 'm' },
+			{ key: 'baked', label: 'Baked', kind: 'bool', optional: true, default: false, help: 'Its light is in the world\'s baked lighting, so it is not drawn live as well.' }
+		],
+		create: () => ({ type: 'pointLight', color: '#ffffff', intensity: 2, range: 8 })
+	},
+	{
+		type: 'spotLight',
+		label: 'Spot Light',
+		group: 'Render',
+		description: 'A cone of light along this slot\'s forward direction.',
+		glyph: '◭',
+		fields: [
+			{ key: 'color', label: 'Color', kind: 'color', default: '#ffffff' },
+			{ key: 'intensity', label: 'Intensity', kind: 'number', min: 0, max: 20, step: 0.1 },
+			{ key: 'range', label: 'Range', kind: 'number', min: 0.1, max: 100, step: 0.5, unit: 'm' },
+			{ key: 'angle', label: 'Cone angle', kind: 'number', min: 5, max: 170, step: 1, unit: '°' },
+			{ key: 'exponent', label: 'Falloff', kind: 'number', min: 0, max: 32, step: 0.5, optional: true, default: 2 },
+			{ key: 'baked', label: 'Baked', kind: 'bool', optional: true, default: false }
+		],
+		create: () => ({ type: 'spotLight', color: '#ffffff', intensity: 2, range: 12, angle: 45, exponent: 2 })
+	},
+	{
+		type: 'lightVolume',
+		label: 'Baked Lighting',
+		group: 'World',
+		description: 'Light baked into the world: soft bounces, shadows and dark corners at no cost per frame. Made by baking, not by hand.',
+		glyph: '◐',
+		fields: [
+			{ key: 'data', label: 'Baked data', kind: 'asset', assetType: 'lightmap' },
+			{ key: 'intensity', label: 'Intensity', kind: 'number', min: 0, max: 4, step: 0.05, optional: true, default: 1 },
+			{ key: 'tint', label: 'Tint', kind: 'color', optional: true, default: '#ffffff' },
+			{ key: 'enabled', label: 'Enabled', kind: 'bool', optional: true, default: true }
+		],
+		create: () => ({ type: 'lightVolume', data: { kind: 'url', url: '' } })
+	},
+	{
+		type: 'worldSettings',
+		label: 'World settings',
+		group: 'World',
+		description: 'The world\u2019s description, how it is lit and its 360\u00b0 preview. Put it on the main object; publishing takes these from it.',
+		glyph: '\u25ce',
+		fields: [
+			{ key: 'description', label: 'Description', kind: 'text', multiline: true, optional: true, default: '', help: 'Up to 2000 characters.' },
+			{ key: 'lighting', label: 'Lighting', kind: 'enum', options: [
+				{ value: 'baked', label: 'Baked' },
+				{ value: 'live', label: 'Live' },
+				{ value: 'both', label: 'Both' }
+			], optional: true, default: 'baked', help: 'Baked uses the baked lighting and turns off the lights that were baked. Live ignores the baked lighting. Both also keeps those lights on.' },
+			{ key: 'bake', label: 'Baked lighting', kind: 'action', action: 'bakeLighting', button: 'Bake\u2026', optional: true, help: 'Calculates soft bounces and shadows from the lights marked Baked and keeps them in the world.' },
+			{ key: 'preview', label: '360\u00b0 preview', kind: 'asset', assetType: 'image', action: 'worldPreview', optional: true, help: 'An equirectangular picture. Leave empty to take it from the Preview Camera when saving.' }
+		],
+		create: () => ({ type: 'worldSettings', lighting: 'baked' })
+	},
+	{
+		type: 'meshRenderer',
+		label: 'Mesh Renderer',
+		group: 'Render',
+		description: 'Draw a built-in primitive shape or an already-imported model.',
+		glyph: '◇',
+		fields: [
+			{ key: 'meshRef', label: 'Mesh', kind: 'mesh', help: `A built-in shape (${BUILTIN_MESH_IDS.join(', ')}) or a model already imported into this project. Models cannot be loaded from a URL.` },
+			{ key: 'color', label: 'Color', kind: 'color', optional: true, default: '#8b7cf6' },
+			{ key: 'unlit', label: 'Self-lit', kind: 'bool', optional: true, default: false, help: 'Draw a primitive at its own color, independent of scene lighting.' }
+		],
+		create: () => ({ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'box' }, color: '#8b7cf6' })
+	},
+	{
+		type: 'material',
+		label: 'Material',
+		group: 'Render',
+		description: 'Textured PBR surface for the Mesh Renderer of a built-in shape: colour, normal and ambient-occlusion/roughness/metallic maps, each an image asset or a picture at any https address.',
+		glyph: '◍',
+		fields: [
+			{ key: 'albedo', label: 'Colour map', kind: 'asset', assetType: 'image', optional: true },
+			{ key: 'normal', label: 'Normal map', kind: 'asset', assetType: 'image', optional: true, help: 'OpenGL convention (green up).' },
+			{ key: 'arm', label: 'AO / roughness / metallic map', kind: 'asset', assetType: 'image', optional: true, help: 'Occupancy in red, roughness in green and metallic in blue.' },
+			{ key: 'roughness', label: 'Roughness', kind: 'number', min: 0, max: 1, step: 0.05, optional: true },
+			{ key: 'metallic', label: 'Metallic', kind: 'number', min: 0, max: 1, step: 0.05, optional: true },
+			{ key: 'mapping', label: 'Mapping', kind: 'enum', options: [{ value: 'mesh', label: 'Stretch over the mesh' }, { value: 'world', label: 'By real size' }], optional: true, default: 'mesh', help: 'By real size lays the maps out at the same scale on any object, however it is scaled.' },
+			{ key: 'tiling', label: 'Tiling', kind: 'number', min: 0.1, max: 50, step: 0.1, optional: true, default: 1, help: 'How many times the maps repeat across the mesh (stretch mapping).' },
+			{ key: 'size', label: 'Size of one repeat', kind: 'number', min: 0.01, max: 100, step: 0.05, unit: 'm', optional: true, default: 1, help: 'Real size one repeat of the maps covers (by-real-size mapping).' },
+			{ key: 'label', label: 'Name', kind: 'text', optional: true, default: '' }
+		],
+		create: () => ({ type: 'material' })
+	},
+	{
+		type: 'textDisplay',
+		label: 'Text Display',
+		group: 'Render',
+		description: 'Show a title and lines of text in the world.',
+		glyph: 'T',
+		fields: [
+			{ key: 'title', label: 'Title', kind: 'text', optional: true, default: '' },
+			{ key: 'lines', label: 'Lines', kind: 'lines' },
+			{ key: 'color', label: 'Color', kind: 'color', optional: true, default: '#ffffff' },
+			{ key: 'scale', label: 'Text size', kind: 'number', min: 0.25, max: 6, step: 0.25, optional: true, default: 1, help: 'Times the usual size of the text.' },
+			{ key: 'verticalAlign', label: 'Vertical alignment', kind: 'enum', options: [{ value: 'top', label: 'Top' }, { value: 'middle', label: 'Middle' }], optional: true, default: 'top' }
+		],
+		create: () => ({ type: 'textDisplay', title: 'New label', lines: ['Edit this text'] })
+	},
+	{
+		type: 'uiPanel',
+		label: 'UI Panel',
+		group: 'Render',
+		description: 'Render child UI nodes on a world-space panel.',
+		glyph: '▤',
+		fields: [
+			{ key: 'width', label: 'Design width', kind: 'number', min: 64, max: 4096, step: 64 },
+			{ key: 'height', label: 'Design height', kind: 'number', min: 64, max: 4096, step: 64 },
+			{ key: 'worldWidth', label: 'World width', kind: 'number', min: 0.1, max: 10, step: 0.1, optional: true, default: 1.2, unit: 'm' },
+			{ key: 'background', label: 'Background', kind: 'color', optional: true, default: '#111827' }
+		],
+		create: () => ({ type: 'uiPanel', width: 1024, height: 640, worldWidth: 1.2, background: '#111827' })
+	},
+	{
+		type: 'uiElement',
+		label: 'UI Element',
+		group: 'Render',
+		description: 'Render this node as a container, text, button, text input, image or video. Add a Code Block with onPress / onUIEvent for behavior.',
+		glyph: '▱',
+		fields: [
+			{ key: 'kind', label: 'Element type', kind: 'enum', options: [
+				{ value: 'container', label: 'Container' },
+				{ value: 'text', label: 'Text' },
+				{ value: 'button', label: 'Button' },
+				{ value: 'input', label: 'Text input' },
+				{ value: 'image', label: 'Image' },
+				{ value: 'video', label: 'Video' },
+				{ value: 'slider', label: 'Slider' }
+			] },
+			{ key: 'visible', label: 'Visible', kind: 'bool', optional: true, default: true },
+			{ key: 'width', label: 'Width', kind: 'number', min: 1, step: 1, optional: true, default: 240, unit: 'px' },
+			{ key: 'height', label: 'Height', kind: 'number', min: 1, step: 1, optional: true, default: 44, unit: 'px' },
+			{ key: 'flexDirection', label: 'Direction', kind: 'enum', options: [{ value: 'column', label: 'Column' }, { value: 'row', label: 'Row' }], optional: true, default: 'column' },
+			{ key: 'overlayBottom', label: 'Overlay at bottom', kind: 'bool', optional: true, default: false, help: 'Containers only. Places this control over its parent’s bottom edge.' },
+			{ key: 'gap', label: 'Gap', kind: 'number', min: 0, step: 1, optional: true, default: 8, unit: 'px' },
+			{ key: 'margin', label: 'Margin', kind: 'number', min: 0, step: 1, optional: true, default: 0, unit: 'px' },
+			{ key: 'padding', label: 'Padding', kind: 'number', min: 0, step: 1, optional: true, default: 8, unit: 'px' },
+			{ key: 'background', label: 'Background', kind: 'color', optional: true, default: '#1f2937' },
+			{ key: 'color', label: 'Text color', kind: 'color', optional: true, default: '#ffffff' },
+			{ key: 'text', label: 'Text', kind: 'text', optional: true, default: '' },
+			{ key: 'fontSize', label: 'Font size', kind: 'number', min: 8, max: 128, step: 1, optional: true, default: 24, unit: 'px' },
+			{ key: 'fontWeight', label: 'Font weight', kind: 'enum', options: [{ value: 'normal', label: 'Normal' }, { value: 'bold', label: 'Bold' }], optional: true, default: 'normal' },
+			{ key: 'textAlign', label: 'Text align', kind: 'enum', options: [{ value: 'left', label: 'Left' }, { value: 'center', label: 'Center' }, { value: 'right', label: 'Right' }], optional: true, default: 'left', help: 'Text and buttons.' },
+			{ key: 'cornerRadius', label: 'Corner radius', kind: 'number', min: 0, step: 1, optional: true, default: 0, unit: 'px', help: 'Containers and buttons.' },
+			{ key: 'borderColor', label: 'Border color', kind: 'color', optional: true, default: '#374151', help: 'Containers only. Needs a border width too.' },
+			{ key: 'borderWidth', label: 'Border width', kind: 'number', min: 0, step: 1, optional: true, default: 0, unit: 'px', help: 'Containers only.' },
+			{ key: 'overflow', label: 'Overflow', kind: 'enum', options: [{ value: 'visible', label: 'Visible' }, { value: 'scroll', label: 'Scroll' }], optional: true, default: 'visible', help: 'Containers only. Scroll needs a fixed height.' },
+			{ key: 'src', label: 'Source URL', kind: 'url', optional: true, help: 'Image or video URL.' },
+			{ key: 'placeholder', label: 'Placeholder', kind: 'text', optional: true, default: '' },
+			{ key: 'playing', label: 'Playing', kind: 'bool', optional: true, default: false },
+			{ key: 'loop', label: 'Loop', kind: 'bool', optional: true, default: false },
+			{ key: 'muted', label: 'Muted', kind: 'bool', optional: true, default: false },
+			{ key: 'volume', label: 'Volume', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 1 },
+			{ key: 'value', label: 'Slider value', kind: 'number', optional: true, default: 0 },
+			{ key: 'minValue', label: 'Slider minimum', kind: 'number', optional: true, default: 0 },
+			{ key: 'maxValue', label: 'Slider maximum', kind: 'number', optional: true, default: 100 },
+			{ key: 'step', label: 'Slider step', kind: 'number', min: 0, optional: true, default: 1 }
+		],
+		create: () => ({ type: 'uiElement', kind: 'container', flexDirection: 'column', visible: true, gap: 8, padding: 8 })
+	},
+	{
+		type: 'scoreboard',
+		label: 'Scoreboard',
+		group: 'Render',
+		description: 'A table of players and scores driven by a code block.',
+		glyph: '▤',
+		advanced: true,
+		fields: [
+			{ key: 'title', label: 'Title', kind: 'text', optional: true, default: '' },
+			{ key: 'status', label: 'Status line', kind: 'text', optional: true, default: '' },
+			{ key: 'columns', label: 'Columns', kind: 'lines' },
+			{ key: 'rows', label: 'Rows', kind: 'json', advanced: true }
+		],
+		create: () => ({ type: 'scoreboard', title: 'Scoreboard', columns: ['Score'], rows: [] })
+	},
+	{
+		type: 'mirror',
+		label: 'Mirror',
+		group: 'Render',
+		description: 'A reflective surface.',
+		glyph: '◈',
+		advanced: true,
+		fields: [{ key: 'resolution', label: 'Resolution', kind: 'number', min: 64, max: 2048, step: 64, optional: true, default: 512 }],
+		create: () => ({ type: 'mirror', resolution: 512 })
+	},
+	{
+		type: 'camera',
+		label: 'Camera',
+		group: 'Render',
+		description: 'Shows what is in front of this surface (along its +Z) live. Held in a hand, the trigger takes a photo or records a video.',
+		glyph: '◉',
+		advanced: true,
+		fields: [{ key: 'resolution', label: 'Starting quality (px)', kind: 'number', min: 64, max: 1280, step: 64, optional: true, default: 960 }],
+		create: () => ({ type: 'camera', resolution: 960 })
+	},
+	{
+		type: 'collider',
+		label: 'Collider',
+		group: 'Interaction',
+		description: 'Give the object a physical shape.',
+		glyph: '◎',
+		fields: [
+			{
+				key: 'shape',
+				label: 'Shape',
+				kind: 'enum',
+				options: [
+					{ value: 'box', label: 'Box' },
+					{ value: 'sphere', label: 'Sphere' },
+					{ value: 'mesh', label: 'Mesh' }
+				]
+			}
+		],
+		create: () => ({ type: 'collider', shape: 'box' })
+	},
+	{
+		type: 'grabbable',
+		label: 'Grabbable',
+		group: 'Interaction',
+		description: 'Let people pick this object up in XR.',
+		glyph: '✦',
+		fields: [
+			{ key: 'scalable', label: 'Can be scaled', kind: 'bool', help: 'Allow two-handed grabs to resize it.' },
+			{ key: 'autoGrip', label: 'Auto grip', kind: 'bool', default: true, help: 'The fingers close round the object’s shape, wherever it is taken from.' }
+		],
+		create: () => ({ type: 'grabbable', scalable: true })
+	},
+	{
+		type: 'equippable',
+		label: 'Equippable',
+		group: 'Interaction',
+		description: 'Can be equipped in a hand from the radial menu, and stays there after letting go. Needs Grabbable.',
+		glyph: '✋',
+		fields: [
+			{ key: 'right', label: 'Right hand', kind: 'pose', help: 'Position (m) and rotation (°) relative to the controller grip.' },
+			{ key: 'left', label: 'Left hand', kind: 'pose', help: 'Position (m) and rotation (°) relative to the controller grip.' },
+			{ key: 'autoGrip', label: 'Auto grip', kind: 'bool', optional: true, default: true, help: 'The fingers close around the object’s shape, stopping where they touch it. The pose above only has to put the object in the right place.' }
+		],
+		create: () => ({
+			type: 'equippable',
+			right: { position: [0, 0, 0.05], rotation: [0, 0, 0] },
+			left: { position: [0, 0, 0.05], rotation: [0, 0, 0] }
+		})
+	},
+	{
+		type: 'pressableButton',
+		label: 'Pressable Button',
+		group: 'Interaction',
+		description: 'A button that runs code when pushed.',
+		glyph: '▣',
+		fields: [
+			{ key: 'axis', label: 'Press direction', kind: 'vec3', step: 0.1 },
+			{ key: 'travel', label: 'Travel', kind: 'number', min: 0, step: 0.01, unit: 'm' },
+			{ key: 'radius', label: 'Touch radius', kind: 'number', min: 0, step: 0.01, unit: 'm' },
+			{ key: 'threshold', label: 'Trigger at', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 1, advanced: true }
+		],
+		create: () => ({ type: 'pressableButton', axis: [0, -1, 0], travel: 0.08, radius: 0.12 })
+	},
+	{
+		type: 'impactSound',
+		label: 'Impact Sound',
+		group: 'Media',
+		description: 'A short generated sound for hits and clicks.',
+		glyph: '◌',
+		fields: [
+			{ key: 'frequency', label: 'Pitch', kind: 'number', min: 0, max: 4000, step: 10, unit: 'Hz', optional: true, default: 220 },
+			{ key: 'pitchDrop', label: 'Pitch drop', kind: 'number', min: 0, max: 4000, step: 10, unit: 'Hz', optional: true, default: 60, advanced: true },
+			{ key: 'noiseMix', label: 'Noise', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 0.3 },
+			{ key: 'durationMs', label: 'Duration', kind: 'number', min: 10, max: 5000, step: 10, unit: 'ms', optional: true, default: 200 },
+			{ key: 'volume', label: 'Volume', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 1 }
+		],
+		create: () => ({ type: 'impactSound', frequency: 220, pitchDrop: 60, noiseMix: 0.3, durationMs: 200, volume: 1 })
+	},
+	{
+		type: 'recordDisc',
+		label: 'Record Disc',
+		group: 'Media',
+		description: 'Title, author and colours of a record disc. Editing them redraws the disc’s label, rim and vinyl.',
+		glyph: '◎',
+		fields: [
+			{ key: 'title', label: 'Title', kind: 'text', default: 'Untitled' },
+			{ key: 'author', label: 'Author', kind: 'text', default: 'Unknown' },
+			{ key: 'labelColor', label: 'Label colour', kind: 'color', default: '#6366f1', help: 'The centre label and the rim.' },
+			{ key: 'vinylColor', label: 'Vinyl colour', kind: 'color', optional: true, default: '#0b0b10' },
+			{ key: 'labelImage', label: 'Label image', kind: 'text', optional: true, default: '', help: 'An image URL for the centre label. Set it when the disc is made; editing it later only changes a disc that already has a label image.' }
+		],
+		create: () => ({ type: 'recordDisc', title: 'Untitled', author: 'Unknown', labelColor: '#6366f1' })
+	},
+	{
+		type: 'socket',
+		label: 'Socket',
+		group: 'Interaction',
+		description: 'A spot where matching objects snap in and stay, such as a record player platter.',
+		glyph: '⌷',
+		fields: [
+			{ key: 'accepts', label: 'Accepts tags', kind: 'lines', help: 'One tag per line. Leave empty to take any insertable object.' },
+			{ key: 'radius', label: 'Snap distance', kind: 'number', min: 0.02, max: 2, step: 0.01, unit: 'm' },
+			{ key: 'snap', label: 'Resting pose', kind: 'pose', help: 'Where the object sits, relative to this slot.' },
+			{ key: 'playMedia', label: 'Plays its audio', kind: 'bool', optional: true, default: true, help: 'Start the inserted object’s audio player, and pause it when removed.' }
+		],
+		create: () => ({ type: 'socket', accepts: ['disc'], radius: 0.2, snap: { position: [0, 0, 0], rotation: [0, 0, 0] }, playMedia: true })
+	},
+	{
+		type: 'insertable',
+		label: 'Insertable',
+		group: 'Interaction',
+		description: 'Lets a grabbable object be set into a matching socket.',
+		glyph: '⇩',
+		fields: [{ key: 'tag', label: 'Tag', kind: 'text', suggestions: ['disc'], help: 'Sockets that accept this tag will take the object.' }],
+		create: () => ({ type: 'insertable', tag: 'disc' })
+	},
+	{
+		type: 'dropZone',
+		label: 'Drop Zone',
+		group: 'Interaction',
+		description: 'A box that sets down what is let go inside it: the object turns upright and settles on the box’s floor, like something put on a table top. The slot’s position, rotation and scale are the box’s centre, direction and size.',
+		glyph: '▭',
+		fields: [
+			{ key: 'align', label: 'Landing', kind: 'enum', options: [
+				{ value: 'upright', label: 'Upright (own up points up)' },
+				{ value: 'nearest', label: 'Nearest face down' },
+				{ value: 'keep', label: 'Keep rotation' }
+			], optional: true, default: 'upright', help: 'How the object turns when it lands.' },
+			{ key: 'yawStep', label: 'Turn snap', kind: 'number', min: 0, max: 180, step: 5, unit: '°', optional: true, default: 0, help: 'Snap its turn around the vertical to steps of this many degrees, from the box’s forward. 0 leaves it free.' }
+		],
+		create: () => ({ type: 'dropZone' })
+	},
+	{
+		type: 'previewCamera',
+		label: 'Preview Camera',
+		group: 'Render',
+		description: 'Where the preview picture of this object or avatar is taken from, looking along this slot’s forward direction. In a world it sets where the 360° preview is taken from.',
+		glyph: '◫',
+		fields: [{ key: 'fov', label: 'Field of view', kind: 'number', min: 15, max: 110, step: 1, unit: '°', optional: true, default: 46, help: 'How wide the picture is. Leave unset for the default. Worlds always show everything.' }],
+		create: () => ({ type: 'previewCamera' })
+	},
+	{
+		type: 'avatar',
+		label: 'Avatar',
+		group: 'Interaction',
+		description: 'Makes this skinned model a player avatar. Its head and hands follow the player; anything attached to its bones goes with it.',
+		glyph: '☺',
+		fields: [
+			{ key: 'height', label: 'Eye height', kind: 'number', min: 0.3, max: 3, step: 0.01, unit: 'm', help: 'Standing eye height of the model. The body is scaled to the player’s real height.' },
+			{ key: 'bones', label: 'Bones', kind: 'boneMap', help: 'Which bone of the model is the head, the hands, the legs and each finger. Detected automatically; correct it here.' }
+		],
+		create: () => ({ type: 'avatar', height: 1.6, bones: {} })
+	},
+	{
+		type: 'boneAttach',
+		label: 'Bone Attach',
+		group: 'Interaction',
+		description: 'Keeps this slot on a bone of its parent’s skinned model, so it follows that bone when the model moves.',
+		glyph: '⚓',
+		fields: [{ key: 'bone', label: 'Bone', kind: 'bone', help: 'The bone of the parent’s model this slot follows.' }],
+		create: () => ({ type: 'boneAttach', bone: '' })
+	},
+	{
+		type: 'audioSource',
+		label: 'Audio Source',
+		group: 'Media',
+		description: 'Marks this slot as a spatial audio emitter.',
+		glyph: '◉',
+		advanced: true,
+		fields: [],
+		create: () => ({ type: 'audioSource' })
+	},
+	{
+		type: 'audioPlayer',
+		label: 'Audio Player',
+		group: 'Media',
+		description: 'Play an audio file from a URL or an imported asset.',
+		glyph: '◖',
+		fields: [
+			{ key: 'source', label: 'Audio', kind: 'asset', assetType: 'audio' },
+			{ key: 'autoplay', label: 'Autoplay', kind: 'bool', optional: true, default: false },
+			{ key: 'loop', label: 'Loop', kind: 'bool', optional: true, default: false },
+			{ key: 'volume', label: 'Volume', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 1 }
+		],
+		create: () => ({ type: 'audioPlayer', source: urlSource(''), loop: false, volume: 1 })
+	},
+	{
+		type: 'htmlView',
+		label: 'HTML View',
+		group: 'Media',
+		description: 'Draw a live web page (for example an embedded player) on a plane, using the WICG HTML-in-Canvas API. Needs a browser that exposes it (Chrome: chrome://flags/#canvas-draw-element).',
+		glyph: '▣',
+		fields: [
+			{ key: 'url', label: 'Page URL', kind: 'url', help: 'https only.' },
+			{ key: 'width', label: 'Page width', kind: 'number', min: 64, max: 4096, step: 16, unit: 'px', optional: true, default: 1280, help: 'Fixed when the view is created.' },
+			{ key: 'height', label: 'Page height', kind: 'number', min: 64, max: 4096, step: 16, unit: 'px', optional: true, default: 720, help: 'Fixed when the view is created.' },
+			{ key: 'interaction', label: 'Input', kind: 'enum', options: [
+				{ value: 'raycast', label: 'Forward laser/mouse' },
+				{ value: 'overlay', label: 'Native overlay' },
+				{ value: 'none', label: 'Display only' }
+			], optional: true, default: 'raycast' },
+			{ key: 'pixelRatio', label: 'Sharpness', kind: 'number', min: 1, max: 3, step: 0.25, optional: true, default: 1, advanced: true, help: 'Detail of the picture when the page has to be redrawn (an immersive session). Fixed when the view is created.' }
+		],
+		create: () => ({ type: 'htmlView', url: '', width: 1280, height: 720, interaction: 'raycast' })
+	},
+	{
+		type: 'codeBlock',
+		label: 'Code Block',
+		group: 'Logic',
+		description: 'Attach a JavaScript behaviour.',
+		glyph: '{}',
+		advanced: true,
+		fields: [{ key: 'code', label: 'Code', kind: 'code' }],
+		create: () => ({ type: 'codeBlock', code: DEFAULT_CODE })
+	},
+	{
+		type: 'scriptState',
+		label: 'Script State',
+		group: 'Logic',
+		description: 'Shared data that scripts can read and write.',
+		glyph: '≡',
+		advanced: true,
+		fields: [{ key: 'data', label: 'Data (JSON)', kind: 'json' }],
+		create: () => ({ type: 'scriptState', data: { enabled: true } })
+	},
+	{
+		type: 'atm',
+		label: 'ATM',
+		group: 'Interaction',
+		description: 'Pressing it opens the credits window: see your balance and buy credits. The window belongs to the game.',
+		glyph: '¤',
+		fields: [],
+		create: () => ({ type: 'atm' })
+	},
+	{
+		type: 'shop',
+		label: 'Shop',
+		group: 'Logic',
+		description: 'Products this world sells for credits. Code blocks ask to charge for one with ctx.pay.request({ sku }).',
+		glyph: '¤',
+		advanced: true,
+		fields: [{ key: 'products', label: 'Products (JSON)', kind: 'json', help: 'A list of { sku, name, price, repeatable? }. The price is in credits and is the only one that can be charged.' }],
+		create: () => ({ type: 'shop', products: [{ sku: 'example-item', name: 'Example item', price: 100 }] })
+	},
+	{
+		type: 'velocity',
+		label: 'Velocity',
+		group: 'World',
+		description: 'Keep the object moving at a steady speed.',
+		glyph: '↗',
+		fields: [
+			{ key: 'linear', label: 'Speed', kind: 'vec3', step: 0.1, help: 'Units per second.' },
+			{ key: 'drag', label: 'Drag', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 0.2 }
+		],
+		create: () => ({ type: 'velocity', linear: [0, 0, 0], drag: 0.2 })
+	},
+	{
+		type: 'particleEmitter',
+		label: 'Particle Emitter',
+		group: 'World',
+		description: 'A persistent cloud of soft particles. Stops emitting when its object is hidden.',
+		glyph: '✳',
+		fields: [
+			{ key: 'color', label: 'Color', kind: 'color' },
+			{ key: 'capacity', label: 'Capacity', kind: 'number', min: 1, max: 1000, step: 1, optional: true, default: 120 },
+			{ key: 'rate', label: 'Particles per second', kind: 'number', min: 0, max: 200, step: 1, optional: true, default: 12 },
+			{ key: 'radius', label: 'Radius', kind: 'number', min: 0, max: 30, step: 0.1, optional: true, default: 1 },
+			{ key: 'size', label: 'Size', kind: 'number', min: 0.01, max: 5, step: 0.01, optional: true, default: 0.1 },
+			{ key: 'lifetime', label: 'Lifetime', kind: 'number', min: 0.1, max: 30, step: 0.1, optional: true, default: 5, unit: 's' },
+			{ key: 'speed', label: 'Speed', kind: 'number', min: 0, max: 10, step: 0.01, optional: true, default: 0.12 },
+			{ key: 'opacity', label: 'Opacity', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 0.5 },
+			{ key: 'active', label: 'Active', kind: 'bool', optional: true, default: true }
+		],
+		create: () => ({ type: 'particleEmitter', color: '#d4b4ff', capacity: 120, rate: 12, radius: 1, size: 0.1, lifetime: 5, speed: 0.12, opacity: 0.5 })
+	},
+	{
+		type: 'particleBurst',
+		label: 'Particle Burst',
+		group: 'World',
+		description: 'A short burst of particles.',
+		glyph: '✳',
+		fields: [
+			{ key: 'color', label: 'Color', kind: 'color', optional: true, default: '#a78bfa' },
+			{ key: 'count', label: 'Count', kind: 'number', min: 1, max: 500, step: 1, optional: true, default: 24 },
+			{ key: 'durationMs', label: 'Duration', kind: 'number', min: 100, max: 10000, step: 100, unit: 'ms', optional: true, default: 900 }
+		],
+		create: () => ({ type: 'particleBurst', color: '#a78bfa', count: 24, durationMs: 900 })
+	},
+	{
+		type: 'skybox',
+		label: 'Skybox',
+		group: 'World',
+		description: 'A gradient sky with optional stars behind the whole scene.',
+		glyph: '☾',
+		fields: [
+			{ key: 'topColor', label: 'Top', kind: 'color', default: '#0b1030' },
+			{ key: 'horizonColor', label: 'Horizon', kind: 'color', default: '#7c3aed' },
+			{ key: 'bottomColor', label: 'Ground', kind: 'color', default: '#0f172a' },
+			{ key: 'stars', label: 'Stars', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 0.8 },
+			{ key: 'ambientIntensity', label: 'Ambient intensity', kind: 'number', min: 0, max: 3, step: 0.05, optional: true, default: 1 },
+			{ key: 'reflectionCapture', label: 'Live reflections', kind: 'bool', optional: true, default: true, help: 'Capture the world from this object while it runs. Use Generate reflection probe to save the capture as assets.' }
+		],
+		create: () => ({ type: 'skybox', topColor: '#0b1030', horizonColor: '#7c3aed', bottomColor: '#0f172a', stars: 0.8 })
+	},
+	{
+		type: 'appInfo',
+		label: 'App info',
+		group: 'World',
+		description: 'Name, description and icon this world uses when it is installed as its own app.',
+		glyph: '▣',
+		fields: [
+			{ key: 'name', label: 'App name', kind: 'text', optional: true, default: '' },
+			{ key: 'shortName', label: 'Short name', kind: 'text', optional: true, default: '' },
+			{ key: 'description', label: 'Description', kind: 'text', multiline: true, optional: true, default: '' },
+			{ key: 'icon', label: 'Icon', kind: 'asset', assetType: 'image', optional: true },
+			{ key: 'themeColor', label: 'Theme color', kind: 'color', optional: true, default: '#0b1030' },
+			{ key: 'backgroundColor', label: 'Background color', kind: 'color', optional: true, default: '#0b1030' }
+		],
+		create: () => ({ type: 'appInfo' })
+	},
+	{
+		type: 'stroke',
+		label: 'Stroke',
+		group: 'World',
+		description: 'A freehand line drawn by the paint brush.',
+		glyph: '〰',
+		advanced: true,
+		fields: [
+			{ key: 'color', label: 'Color', kind: 'color', default: '#ef4444' },
+			{ key: 'width', label: 'Width', kind: 'number', min: 0.002, max: 0.2, step: 0.002, unit: 'm', default: 0.018 }
+		],
+		create: () => ({ type: 'stroke', points: [], color: '#ef4444', width: 0.018 })
+	},
+	{
+		type: 'surfaceMask',
+		label: 'Surface Mask',
+		group: 'Render',
+		description: 'A translucent coating tinted over the surface — grime, frost, paint, snow — meant to be built up or eroded by a script (a spray tool, a snowball, a brush).',
+		glyph: '▨',
+		advanced: true,
+		fields: [
+			{ key: 'color', label: 'Tint', kind: 'color', optional: true, default: '#4b3621' },
+			{ key: 'opacity', label: 'Opacity', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 0.9 }
+		],
+		create: () => ({ type: 'surfaceMask', color: '#4b3621', opacity: 0.9, resolution: 32, mask: fullCoverageMask(32) })
+	},
+	{
+		type: 'expires',
+		label: 'Expires',
+		group: 'World',
+		description: 'Remove this object at a set time.',
+		glyph: '◷',
+		advanced: true,
+		fields: [{ key: 'expiresAt', label: 'Expires at', kind: 'number', step: 1000, help: 'Epoch milliseconds.' }],
+		create: () => ({ type: 'expires', expiresAt: Date.now() + 60_000 })
+	},
+	{
+		type: 'container',
+		label: 'Container',
+		group: 'World',
+		description: 'Mark this slot as a reusable group.',
+		glyph: '▱',
+		advanced: true,
+		fields: [],
+		create: () => ({ type: 'container' })
+	},
+	{
+		type: 'worldPortal',
+		label: 'World Portal',
+		group: 'World',
+		description: 'A doorway into another world.',
+		glyph: '◎',
+		advanced: true,
+		fields: [{ key: 'world', label: 'World package', kind: 'json', advanced: true }],
+		create: () => ({ type: 'worldPortal', world: undefined as never })
+	},
+	{
+		type: 'spawnPoint',
+		label: 'Spawn Point',
+		group: 'World',
+		description: 'Where players start, facing the way this object’s blue arrow (forward) points. Place it on the floor.',
+		glyph: '⚑',
+		fields: [],
+		create: () => ({ type: 'spawnPoint' })
+	},
+	{
+		type: 'worldLink',
+		label: 'World Link',
+		group: 'World',
+		description: 'Pressing it offers a menu to go to one of the built-in worlds, or to start a new empty one.',
+		glyph: '➜',
+		advanced: true,
+		fields: [
+			{ key: 'target', label: 'Destination', kind: 'json', advanced: true, help: '{ "kind": "builtin", "id": "beat-turntable" }, or { "kind": "new" } for a new empty world' },
+			{ key: 'label', label: 'Name in the menu', kind: 'text', optional: true, default: '' }
+		],
+		create: () => ({ type: 'worldLink', target: { kind: 'builtin', id: 'lobby' } })
+	}
+];
+
+const BY_TYPE = new Map<ComponentType, ComponentSchema>(COMPONENT_SCHEMAS.map((schema) => [schema.type, schema]));
+
+export const COMPONENT_GROUPS: ComponentGroup[] = ['Render', 'Interaction', 'Media', 'Logic', 'World'];
+
+export function componentSchema(type: ComponentType): ComponentSchema {
+	const schema = BY_TYPE.get(type);
+	if (!schema) throw new Error(`No Studio schema for component type "${type}".`);
+	return schema;
+}
+
+/** The components a person can add; Simple mode hides the technical ones and the ones that cannot be created blank. */
+export function addableComponents(advanced: boolean): ComponentSchema[] {
+	return COMPONENT_SCHEMAS.filter((schema) => schema.type !== 'worldPortal' && (advanced || !schema.advanced));
+}

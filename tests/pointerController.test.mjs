@@ -3,15 +3,14 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import ts from 'typescript';
 import { MeshBuilder, NullEngine, Observable, PointerEventTypes, PointerInfoPre, Ray, Scene, TransformNode, UniversalCamera, Vector3, WebXRControllerComponent } from '@babylonjs/core';
+import { resolveRelativeImports } from './helpers/resolveSpecifiers.mjs';
 
-const libUrl = new URL('../src/lib/', import.meta.url);
+const libUrl = new URL('../packages/engine/src/', import.meta.url);
 const source = await readFile(new URL('xr/interaction/pointerController.ts', libUrl), 'utf8');
 const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText
 	.replaceAll("'@babylonjs/core'", JSON.stringify(import.meta.resolve('@babylonjs/core')))
-	.replaceAll("'./handLock'", JSON.stringify(new URL('xr/interaction/handLock.ts', libUrl).href))
-	.replaceAll("'./pushPull'", JSON.stringify(new URL('xr/interaction/pushPull.ts', libUrl).href))
-	.replaceAll("'$lib/ecs/types'", JSON.stringify(new URL('ecs/types.ts', libUrl).href));
-const { setupPointerAndGrabControllers } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
+	;
+const { setupPointerAndGrabControllers } = await import(`data:text/javascript;base64,${Buffer.from(resolveRelativeImports(compiled, new URL('xr/interaction/pointerController.ts', libUrl))).toString('base64')}`);
 
 function fixture() {
 	const engine = new NullEngine();

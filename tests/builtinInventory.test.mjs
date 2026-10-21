@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { BUILTIN_ENTRIES, BUILTIN_FOLDERS, starterKit } from '../src/lib/content/starterKit/catalog.ts';
-import { registerContent } from '../src/lib/xr/content/registry.ts';
-import { collectAssetIds } from '../src/lib/assets/ref.ts';
-import { paintDisc } from '../src/lib/xr/templates/recordDisc.ts';
+import { registerContent } from '../packages/engine/src/xr/content/registry.ts';
+import { collectAssetIds } from '../packages/engine/src/assets/ref.ts';
+import { paintDisc } from '../src/lib/content/templates/recordDisc.ts';
 import { TOOLS } from '../scripts/workshop-tools.mjs';
-import { instantiate } from '../src/lib/ecs/serialize.ts';
+import { instantiate } from '../packages/engine/src/ecs/serialize.ts';
 
 test('every starter object sits in a folder, has a unique id and builds a well-formed tree', () => {
   assert.equal(new Set(BUILTIN_ENTRIES.map((entry) => entry.id)).size, BUILTIN_ENTRIES.length);
@@ -104,7 +104,7 @@ test('the furniture, lighting and decor are whole objects standing on the floor'
 
 test('the home-building tools sit in a Home Builder folder inside Tools', async () => {
   registerContent({ loadStarterKit: async () => starterKit });
-  const { builtinInventoryAdapter } = await import('../src/lib/inventory/adapters/builtin.ts');
+  const { builtinInventoryAdapter } = await import('../packages/engine/src/inventory/adapters/builtin.ts');
   const top = await builtinInventoryAdapter.listFolders({}, null);
   assert.ok(top.some((folder) => folder.id === 'tools'));
   assert.ok(!top.some((folder) => folder.id === 'home-builder'), 'a subfolder is not listed at the top');

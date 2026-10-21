@@ -1,7 +1,7 @@
 import { Color3, MeshBuilder, Quaternion, StandardMaterial, TransformNode, Vector3, type Mesh, type Scene } from '@babylonjs/core';
-import { WRIST_BEHIND_GRIP, fistPitch, gripToHandRoll, rotateVector } from '../xr/avatar/fingers';
-import { defaultHandModel, fingerJoints, withSwing, type HandModel } from '../xr/avatar/grasp';
-import { arcBetween, type V3 } from '../xr/avatar/ik';
+import { WRIST_BEHIND_GRIP, fistPitch, gripToHandRoll, rotateVector } from '@kithin/engine/xr/avatar/fingers';
+import { defaultHandModel, fingerJoints, withSwing, type HandModel } from '@kithin/engine/xr/avatar/grasp';
+import { arcBetween, type V3 } from '@kithin/engine/xr/avatar/ik';
 
 /**
  * A simulated hand for the Studio's "Preview in hand": the palm and five articulated fingers, placed exactly where an

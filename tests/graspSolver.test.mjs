@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { Worker } from 'node:worker_threads';
-import { GraspSolver } from '../src/lib/xr/avatar/graspSolver.ts';
-import { solveGraspPose } from '../src/lib/xr/avatar/graspPose.ts';
-import { defaultHandModel } from '../src/lib/xr/avatar/grasp.ts';
+import { GraspSolver } from '../packages/engine/src/xr/avatar/graspSolver.ts';
+import { solveGraspPose } from '../packages/engine/src/xr/avatar/graspPose.ts';
+import { defaultHandModel } from '../packages/engine/src/xr/avatar/grasp.ts';
 
 function input(x = 0, reach = 0.1) {
 	return { model: defaultHandModel('right'), obstacles: [{
@@ -97,7 +97,7 @@ test('worker failure preserves the grasp calculation and cache; disposal ignores
 });
 
 test('the actual worker entry point produces the same palm shift and fingers on a separate thread', { timeout: 10_000 }, async () => {
-	const url = new URL('../src/lib/xr/avatar/grasp.worker.ts', import.meta.url).href;
+	const url = new URL('../packages/engine/src/xr/avatar/grasp.worker.ts', import.meta.url).href;
 	// Adapt only the worker transport to Node; load the actual production entry point and solver unchanged.
 	const worker = new Worker(`
 		const { parentPort, threadId } = require('node:worker_threads');

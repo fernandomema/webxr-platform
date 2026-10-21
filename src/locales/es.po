@@ -1542,7 +1542,6 @@ msgid "Combine two rotations."
 msgstr ""
 
 #: src/lib/xr/PlayShell.svelte
-#: src/routes/w/[code]/+page.svelte
 msgid "Could not enter VR"
 msgstr ""
 
@@ -3886,9 +3885,8 @@ msgstr ""
 msgid "Reflection probe"
 msgstr ""
 
-#: src/routes/privacy/+page.svelte
-msgid "How Kithin handles account information, shared worlds, microphone audio, movement data and your privacy choices."
-msgstr "Cómo trata Kithin la información de tu cuenta, los mundos compartidos, el audio del micrófono, los datos de movimiento y tus opciones de privacidad."
+#~ msgid "How Kithin handles account information, shared worlds, microphone audio, movement data and your privacy choices."
+#~ msgstr "Cómo trata Kithin la información de tu cuenta, los mundos compartidos, el audio del micrófono, los datos de movimiento y tus opciones de privacidad."
 
 #: src/routes/privacy/+page.svelte
 msgid "Privacy Policy · Kithin"
@@ -4044,9 +4042,8 @@ msgstr "Kithin te permite crear y explorar mundos virtuales con otras personas d
 msgid "Contact"
 msgstr "Contacto"
 
-#: src/routes/privacy/+page.svelte
-msgid "<0>You can request deletion.</0> Contact <1/> about your account or personal information."
-msgstr "<0>Puedes solicitar la supresión.</0> Contacta con <1/> para consultas sobre tu cuenta o información personal."
+#~ msgid "<0>You can request deletion.</0> Contact <1/> about your account or personal information."
+#~ msgstr "<0>Puedes solicitar la supresión.</0> Contacta con <1/> para consultas sobre tu cuenta o información personal."
 
 #~ msgid "Kithin operates this service. For privacy questions, requests to access your information or requests to delete your account, email <0/>. Include the email address associated with your account so we can identify it. Do not send your password. We may need to verify your identity before acting on a request."
 #~ msgstr "Kithin opera este servicio. Para consultas de privacidad, solicitudes de acceso a tu información o solicitudes de eliminación de tu cuenta, escribe a <0/>. Incluye la dirección de correo electrónico asociada a tu cuenta para que podamos identificarla. No envíes tu contraseña. Es posible que necesitemos verificar tu identidad antes de atender una solicitud."
@@ -4062,9 +4059,8 @@ msgstr "Las actualizaciones aparecerán en esta página con una fecha revisada. 
 msgid "<0>Multiplayer information:</0> room and participant identifiers, display names, connection negotiation messages and network addresses, avatar positions, head and hand poses, controller input and world interactions needed to synchronise a shared session."
 msgstr "<0>Información multijugador:</0> identificadores de sala y participantes, nombres visibles, mensajes de negociación de conexiones y direcciones de red, posiciones de avatares, posiciones y orientaciones de la cabeza y las manos, entradas de los mandos e interacciones con el mundo necesarias para sincronizar una sesión compartida."
 
-#: src/routes/privacy/+page.svelte
-msgid "Where the GDPR applies, we process account information, saved content and the connection and movement data necessary to deliver the features you request to perform our service agreement with you. We rely on legitimate interests in protecting users and the service for proportionate security and abuse prevention, and on legal obligations when processing is required by law. Browser and headset permissions control technical access to your microphone and tracking features; they do not by themselves establish a legal basis for every use of that information. Where a use requires your consent, you may withdraw it at any time by contacting us, and you can stop microphone or tracking access through device or browser settings. Withdrawal does not affect the lawfulness of processing before it occurred."
-msgstr "Cuando se aplica el RGPD, tratamos la información de la cuenta, el contenido guardado y los datos de conexión y movimiento necesarios para proporcionar las funciones que solicitas para ejecutar nuestro contrato de servicio contigo. Nos basamos en el interés legítimo de proteger a los usuarios y al servicio para adoptar medidas proporcionadas de seguridad y prevención de abusos, y en obligaciones legales cuando la ley exige el tratamiento. Los permisos del navegador y del visor controlan el acceso técnico al micrófono y a las funciones de seguimiento; por sí solos no constituyen una base jurídica para todos los usos de esa información. Cuando un uso requiere tu consentimiento, puedes retirarlo en cualquier momento contactándonos, y puedes detener el acceso al micrófono o al seguimiento en los ajustes del dispositivo o del navegador. La retirada no afecta a la licitud del tratamiento realizado con anterioridad."
+#~ msgid "Where the GDPR applies, we process account information, saved content and the connection and movement data necessary to deliver the features you request to perform our service agreement with you. We rely on legitimate interests in protecting users and the service for proportionate security and abuse prevention, and on legal obligations when processing is required by law. Browser and headset permissions control technical access to your microphone and tracking features; they do not by themselves establish a legal basis for every use of that information. Where a use requires your consent, you may withdraw it at any time by contacting us, and you can stop microphone or tracking access through device or browser settings. Withdrawal does not affect the lawfulness of processing before it occurred."
+#~ msgstr "Cuando se aplica el RGPD, tratamos la información de la cuenta, el contenido guardado y los datos de conexión y movimiento necesarios para proporcionar las funciones que solicitas para ejecutar nuestro contrato de servicio contigo. Nos basamos en el interés legítimo de proteger a los usuarios y al servicio para adoptar medidas proporcionadas de seguridad y prevención de abusos, y en obligaciones legales cuando la ley exige el tratamiento. Los permisos del navegador y del visor controlan el acceso técnico al micrófono y a las funciones de seguimiento; por sí solos no constituyen una base jurídica para todos los usos de esa información. Cuando un uso requiere tu consentimiento, puedes retirarlo en cualquier momento contactándonos, y puedes detener el acceso al micrófono o al seguimiento en los ajustes del dispositivo o del navegador. La retirada no afecta a la licitud del tratamiento realizado con anterioridad."
 
 #: src/routes/privacy/+page.svelte
 msgid "Account details are required to create and authenticate an account. Without them, account features are unavailable. Microphone access and optional AI features are voluntary. Movement and connection information are necessary for the interactive multiplayer features you choose to use. Kithin does not use your personal information for automated decisions that produce legal or similarly significant effects."
@@ -4076,9 +4072,8 @@ msgstr "Los datos de la cuenta son necesarios para crear y autenticar una cuenta
 #~ msgid "You can request account and personal data deletion by email. Some information may need to be retained to meet legal obligations or resolve disputes. Shared files may remain referenced by other users' content. This does not remove your right to request erasure of personal information contained in those files; we assess such requests under applicable law. Copies independently held by other participants are outside Kithin's control. Clearing browser storage does not delete your cloud account."
 #~ msgstr "Puedes solicitar por correo electrónico la eliminación de tu cuenta y la supresión de tus datos personales. Puede ser necesario conservar cierta información para cumplir obligaciones legales o resolver disputas. Los archivos compartidos pueden seguir referenciados en el contenido de otros usuarios. Esto no elimina tu derecho a solicitar la supresión de la información personal contenida en esos archivos; evaluamos esas solicitudes conforme a la legislación aplicable. Las copias conservadas de forma independiente por otros participantes están fuera del control de Kithin. Borrar el almacenamiento del navegador no elimina tu cuenta en la nube."
 
-#: src/routes/privacy/+page.svelte
-msgid "Depending on applicable law, you may request access, correction, deletion, a portable copy of your information, restriction of processing or object to processing. Contact <0/> to exercise these rights. Where the GDPR applies, we respond without undue delay and within one month of receiving your request. If complexity or the number of requests requires an extension of up to two further months, we will explain the reason within the first month. Requests are normally free; applicable law allows a reasonable fee or refusal for manifestly unfounded or excessive requests. You can also complain to your local data protection authority, including the <1>Spanish Data Protection Agency (AEPD)</1>."
-msgstr "Según la legislación aplicable, puedes solicitar el acceso, la rectificación, la supresión, una copia portable de tu información, la limitación del tratamiento u oponerte al tratamiento. Contacta con <0/> para ejercer estos derechos. Cuando se aplica el RGPD, respondemos sin dilación indebida y en el plazo de un mes desde la recepción de tu solicitud. Si la complejidad o el número de solicitudes requiere una prórroga de hasta dos meses adicionales, explicaremos el motivo dentro del primer mes. Las solicitudes son normalmente gratuitas; la legislación aplicable permite cobrar un importe razonable o rechazarlas cuando sean manifiestamente infundadas o excesivas. También puedes presentar una reclamación ante tu autoridad local de protección de datos, incluida la <1>Agencia Española de Protección de Datos (AEPD)</1>."
+#~ msgid "Depending on applicable law, you may request access, correction, deletion, a portable copy of your information, restriction of processing or object to processing. Contact <0/> to exercise these rights. Where the GDPR applies, we respond without undue delay and within one month of receiving your request. If complexity or the number of requests requires an extension of up to two further months, we will explain the reason within the first month. Requests are normally free; applicable law allows a reasonable fee or refusal for manifestly unfounded or excessive requests. You can also complain to your local data protection authority, including the <1>Spanish Data Protection Agency (AEPD)</1>."
+#~ msgstr "Según la legislación aplicable, puedes solicitar el acceso, la rectificación, la supresión, una copia portable de tu información, la limitación del tratamiento u oponerte al tratamiento. Contacta con <0/> para ejercer estos derechos. Cuando se aplica el RGPD, respondemos sin dilación indebida y en el plazo de un mes desde la recepción de tu solicitud. Si la complejidad o el número de solicitudes requiere una prórroga de hasta dos meses adicionales, explicaremos el motivo dentro del primer mes. Las solicitudes son normalmente gratuitas; la legislación aplicable permite cobrar un importe razonable o rechazarlas cuando sean manifiestamente infundadas o excesivas. También puedes presentar una reclamación ante tu autoridad local de protección de datos, incluida la <1>Agencia Española de Protección de Datos (AEPD)</1>."
 
 #: src/routes/privacy/+page.svelte
 msgid "Fernando Merino Marquez"
@@ -4089,9 +4084,8 @@ msgstr "Fernando Merino Marquez"
 msgid "{0}, based in Reus, Spain, is the data controller responsible for Kithin. For privacy questions, requests to access your information or requests to delete your account, email <0/>. Include the email address associated with your account so we can identify it. Do not send your password. We may need to verify your identity before acting on a request."
 msgstr "{0}, con sede en Reus, España, es el responsable del tratamiento de datos de Kithin. Para consultas de privacidad, solicitudes de acceso a tu información o solicitudes de eliminación de tu cuenta, escribe a <0/>. Incluye la dirección de correo electrónico asociada a tu cuenta para que podamos identificarla. No envíes tu contraseña. Es posible que necesitemos verificar tu identidad antes de atender una solicitud."
 
-#: src/routes/privacy/+page.svelte
-msgid "The Quest package opens the same Kithin web service. The current Kithin implementation does not integrate Meta account identifiers, Meta in-app purchases or a separate third-party diagnostics SDK. Android application backups are disabled by the packaging process. Meta and the browser may independently process platform information under their own policies."
-msgstr "El paquete para Quest abre el mismo servicio web de Kithin. La implementación actual de Kithin no integra identificadores de cuentas de Meta, compras dentro de la aplicación de Meta ni un SDK independiente de diagnóstico de terceros. El proceso de empaquetado desactiva las copias de seguridad de la aplicación en Android. Meta y el navegador pueden tratar de forma independiente información de la plataforma conforme a sus propias políticas."
+#~ msgid "The Quest package opens the same Kithin web service. The current Kithin implementation does not integrate Meta account identifiers, Meta in-app purchases or a separate third-party diagnostics SDK. Android application backups are disabled by the packaging process. Meta and the browser may independently process platform information under their own policies."
+#~ msgstr "El paquete para Quest abre el mismo servicio web de Kithin. La implementación actual de Kithin no integra identificadores de cuentas de Meta, compras dentro de la aplicación de Meta ni un SDK independiente de diagnóstico de terceros. El proceso de empaquetado desactiva las copias de seguridad de la aplicación en Android. Meta y el navegador pueden tratar de forma independiente información de la plataforma conforme a sus propias políticas."
 
 #: src/routes/privacy/+page.svelte
 msgid "Connected participants receive the information needed to take part in the same world. WebRTC connections can expose network addresses to peers. Google STUN (stun.l.google.com) processes network information, including your IP address, to help devices connect. STUN discovers connection addresses; it does not carry your voice conversations or shared world content. Content you publish or share can be accessed by its intended audience, and recipients may keep copies."
@@ -4101,25 +4095,21 @@ msgstr "Los participantes conectados reciben la información necesaria para part
 msgid "Bytehosting provides the VPS infrastructure used to operate Kithin. Bytehosting states that its infrastructure is located in Frankfurt, Germany. Infrastructure providers process information needed to host the website, database and uploaded files. Google Fonts receives your IP address and browser request information when the website loads its fonts. Discord processes sign-in when you choose that option. Your browser and Meta Quest platform also process information under their own privacy policies."
 msgstr "Bytehosting proporciona la infraestructura VPS utilizada para operar Kithin. Bytehosting indica que su infraestructura se encuentra en Frankfurt, Alemania. Los proveedores de infraestructura tratan la información necesaria para alojar el sitio web, la base de datos y los archivos subidos. Google Fonts recibe tu dirección IP e información de las solicitudes del navegador cuando el sitio web carga sus fuentes. Discord gestiona el inicio de sesión cuando eliges esa opción. Tu navegador y la plataforma Meta Quest también tratan información conforme a sus propias políticas de privacidad."
 
-#: src/routes/privacy/+page.svelte
-msgid "Kithin currently has no advertising, third-party analytics, payment processing or third-party crash reporting integrations. We do not sell personal information or use microphone audio or movement data for targeted advertising. Information may be disclosed when required by law or necessary to protect the service and its users."
-msgstr "Actualmente Kithin no tiene integraciones de publicidad, analítica de terceros, procesamiento de pagos ni informes de fallos de terceros. No vendemos información personal ni utilizamos el audio del micrófono o los datos de movimiento para publicidad dirigida. La información puede divulgarse cuando lo exija la ley o sea necesario para proteger el servicio y a sus usuarios."
+#~ msgid "Kithin currently has no advertising, third-party analytics, payment processing or third-party crash reporting integrations. We do not sell personal information or use microphone audio or movement data for targeted advertising. Information may be disclosed when required by law or necessary to protect the service and its users."
+#~ msgstr "Actualmente Kithin no tiene integraciones de publicidad, analítica de terceros, procesamiento de pagos ni informes de fallos de terceros. No vendemos información personal ni utilizamos el audio del micrófono o los datos de movimiento para publicidad dirigida. La información puede divulgarse cuando lo exija la ley o sea necesario para proteger el servicio y a sus usuarios."
 
-#: src/routes/privacy/+page.svelte
-msgid "Account information and saved content are kept while your account remains open and are reviewed for deletion when you close it. Our retention limits are 30 days for routine access and security logs, seven days after expiry for authentication sessions and verification records, 30 days after a world session ends for its hosting history, and 12 months after resolution for support correspondence. Records needed for a specific security incident, legal obligation or legal claim may be retained for the necessary period, with access restricted. Live voice and movement streams are not archived by Kithin."
-msgstr "La información de la cuenta y el contenido guardado se conservan mientras tu cuenta permanece abierta y se revisan para su eliminación cuando la cierras. Nuestros límites de conservación son: 30 días para registros ordinarios de acceso y seguridad, siete días desde su caducidad para sesiones de autenticación y registros de verificación, 30 días desde el final de una sesión de mundo para su historial de alojamiento y 12 meses desde su resolución para comunicaciones de soporte. Los registros necesarios para un incidente de seguridad concreto, una obligación legal o una reclamación pueden conservarse durante el período necesario, con acceso restringido. Kithin no archiva los flujos de voz y movimiento en directo."
+#~ msgid "Account information and saved content are kept while your account remains open and are reviewed for deletion when you close it. Our retention limits are 30 days for routine access and security logs, seven days after expiry for authentication sessions and verification records, 30 days after a world session ends for its hosting history, and 12 months after resolution for support correspondence. Records needed for a specific security incident, legal obligation or legal claim may be retained for the necessary period, with access restricted. Live voice and movement streams are not archived by Kithin."
+#~ msgstr "La información de la cuenta y el contenido guardado se conservan mientras tu cuenta permanece abierta y se revisan para su eliminación cuando la cierras. Nuestros límites de conservación son: 30 días para registros ordinarios de acceso y seguridad, siete días desde su caducidad para sesiones de autenticación y registros de verificación, 30 días desde el final de una sesión de mundo para su historial de alojamiento y 12 meses desde su resolución para comunicaciones de soporte. Los registros necesarios para un incidente de seguridad concreto, una obligación legal o una reclamación pueden conservarse durante el período necesario, con acceso restringido. Kithin no archiva los flujos de voz y movimiento en directo."
 
-#: src/routes/privacy/+page.svelte
-msgid "To request account and personal data deletion, email support using the address associated with your account where possible. We verify your request using only the information reasonably needed, delete or anonymise applicable account records and content, and confirm the outcome. We aim to complete ordinary requests within one month of receipt; statutory exceptions and permitted extensions are explained in section 7. Some information may need to be retained to meet legal obligations or resolve disputes. Shared files may remain referenced by other users' content. This does not remove your right to request erasure of personal information contained in those files; we assess such requests under applicable law. Copies independently held by other participants are outside Kithin's control. Clearing browser storage does not delete your cloud account."
-msgstr "Para solicitar la eliminación de tu cuenta y la supresión de tus datos personales, escribe a soporte desde la dirección asociada a tu cuenta, cuando sea posible. Verificamos tu solicitud utilizando únicamente la información razonablemente necesaria, eliminamos o anonimizamos los registros y el contenido de la cuenta que corresponda y confirmamos el resultado. Nuestro objetivo es completar las solicitudes ordinarias en un mes desde su recepción; las excepciones legales y las prórrogas permitidas se explican en la sección 7. Puede ser necesario conservar cierta información para cumplir obligaciones legales o resolver disputas. Los archivos compartidos pueden seguir referenciados en el contenido de otros usuarios. Esto no elimina tu derecho a solicitar la supresión de la información personal contenida en esos archivos; evaluamos esas solicitudes conforme a la legislación aplicable. Las copias conservadas de forma independiente por otros participantes están fuera del control de Kithin. Borrar el almacenamiento del navegador no elimina tu cuenta en la nube."
+#~ msgid "To request account and personal data deletion, email support using the address associated with your account where possible. We verify your request using only the information reasonably needed, delete or anonymise applicable account records and content, and confirm the outcome. We aim to complete ordinary requests within one month of receipt; statutory exceptions and permitted extensions are explained in section 7. Some information may need to be retained to meet legal obligations or resolve disputes. Shared files may remain referenced by other users' content. This does not remove your right to request erasure of personal information contained in those files; we assess such requests under applicable law. Copies independently held by other participants are outside Kithin's control. Clearing browser storage does not delete your cloud account."
+#~ msgstr "Para solicitar la eliminación de tu cuenta y la supresión de tus datos personales, escribe a soporte desde la dirección asociada a tu cuenta, cuando sea posible. Verificamos tu solicitud utilizando únicamente la información razonablemente necesaria, eliminamos o anonimizamos los registros y el contenido de la cuenta que corresponda y confirmamos el resultado. Nuestro objetivo es completar las solicitudes ordinarias en un mes desde su recepción; las excepciones legales y las prórrogas permitidas se explican en la sección 7. Puede ser necesario conservar cierta información para cumplir obligaciones legales o resolver disputas. Los archivos compartidos pueden seguir referenciados en el contenido de otros usuarios. Esto no elimina tu derecho a solicitar la supresión de la información personal contenida en esos archivos; evaluamos esas solicitudes conforme a la legislación aplicable. Las copias conservadas de forma independiente por otros participantes están fuera del control de Kithin. Borrar el almacenamiento del navegador no elimina tu cuenta en la nube."
 
 #: src/routes/privacy/+page.svelte
 msgid "Where recovery backups are maintained, our retention limit is 30 days from creation. Deleted information may remain in an isolated backup until it expires and is not used for ordinary service operations. If a backup is restored, deletion requests must be reapplied before the restored data returns to ordinary use. These limits concern copies under Kithin's control; external providers apply their own disclosed retention rules."
 msgstr "Cuando se mantienen copias de seguridad para recuperación, nuestro límite de conservación es de 30 días desde su creación. La información eliminada puede permanecer en una copia de seguridad aislada hasta que esta caduque y no se utiliza para las operaciones ordinarias del servicio. Si se restaura una copia, las solicitudes de supresión deben volver a aplicarse antes de que los datos restaurados vuelvan al uso ordinario. Estos límites se refieren a las copias bajo el control de Kithin; los proveedores externos aplican sus propias reglas de conservación publicadas."
 
-#: src/routes/privacy/+page.svelte
-msgid "Bytehosting reports hosting infrastructure in Germany, within the European Economic Area (EEA). Google services, Discord, Meta, the AI provider you choose and participants in other countries may process information outside the EEA. The countries involved depend on the provider and the participants you connect to. For transfers for which Kithin is responsible, an applicable European Commission adequacy decision or appropriate safeguards, such as standard contractual clauses, are required unless a specific lawful exception applies. Contact us to request the arrangements and a copy of the safeguards applicable to a particular transfer. This policy does not mean that every external service processes information only in Europe."
-msgstr "Bytehosting indica que su infraestructura de alojamiento se encuentra en Alemania, dentro del Espacio Económico Europeo (EEE). Los servicios de Google, Discord, Meta, el proveedor de IA que eliges y los participantes de otros países pueden tratar información fuera del EEE. Los países involucrados dependen del proveedor y de los participantes con quienes te conectas. Para las transferencias de las que Kithin es responsable, se requiere una decisión de adecuación aplicable de la Comisión Europea o garantías adecuadas, como cláusulas contractuales tipo, salvo que se aplique una excepción legal específica. Contáctanos para solicitar los mecanismos y una copia de las garantías aplicables a una transferencia concreta. Esta política no significa que todos los servicios externos traten la información únicamente en Europa."
+#~ msgid "Bytehosting reports hosting infrastructure in Germany, within the European Economic Area (EEA). Google services, Discord, Meta, the AI provider you choose and participants in other countries may process information outside the EEA. The countries involved depend on the provider and the participants you connect to. For transfers for which Kithin is responsible, an applicable European Commission adequacy decision or appropriate safeguards, such as standard contractual clauses, are required unless a specific lawful exception applies. Contact us to request the arrangements and a copy of the safeguards applicable to a particular transfer. This policy does not mean that every external service processes information only in Europe."
+#~ msgstr "Bytehosting indica que su infraestructura de alojamiento se encuentra en Alemania, dentro del Espacio Económico Europeo (EEE). Los servicios de Google, Discord, Meta, el proveedor de IA que eliges y los participantes de otros países pueden tratar información fuera del EEE. Los países involucrados dependen del proveedor y de los participantes con quienes te conectas. Para las transferencias de las que Kithin es responsable, se requiere una decisión de adecuación aplicable de la Comisión Europea o garantías adecuadas, como cláusulas contractuales tipo, salvo que se aplique una excepción legal específica. Contáctanos para solicitar los mecanismos y una copia de las garantías aplicables a una transferencia concreta. Esta política no significa que todos los servicios externos traten la información únicamente en Europa."
 
 #: src/lib/studio/ScenePreview.svelte
 msgid "Object transform handles"
@@ -4547,9 +4537,8 @@ msgstr "Guardada en este navegador. Vacía el campo para eliminar la clave guard
 #~ msgid "If you use the optional Studio AI assistant, your prompts, conversation and scene information provided to the assistant are sent to the AI provider you select. For supported cloud providers, requests and the credential you supply pass through Kithin's server to that provider. Supported providers include OpenAI, Anthropic (Claude), OpenCode and OpenRouter. Custom and local endpoints connect directly from your browser. API keys you enter and provider preferences are saved in your browser's local storage. Clear the API key field for a provider to remove its saved key. Kithin does not save these pasted keys in its database. Provider retention and use are governed by that provider's terms and privacy policy. Do not include information you do not want to share with that provider."
 #~ msgstr ""
 
-#: src/routes/privacy/+page.svelte
-msgid "Last updated: October 3, 2026"
-msgstr "Última actualización: 3 de octubre de 2026"
+#~ msgid "Last updated: October 3, 2026"
+#~ msgstr "Última actualización: 3 de octubre de 2026"
 
 #: src/lib/studio/components/AiPanel.svelte
 msgid "FreeLLMAPI"
@@ -4892,9 +4881,8 @@ msgstr ""
 msgid "Export your data"
 msgstr ""
 
-#: src/routes/settings/account/+page.svelte
-msgid "Download a JSON file with your profile, worlds, inventory, published worlds, marketplace activity, model list and feedback. Passwords and access tokens are never included, and model files are listed by id rather than bundled."
-msgstr ""
+#~ msgid "Download a JSON file with your profile, worlds, inventory, published worlds, marketplace activity, model list and feedback. Passwords and access tokens are never included, and model files are listed by id rather than bundled."
+#~ msgstr ""
 
 #: src/routes/settings/account/+page.svelte
 msgid "Download my data"
@@ -4912,9 +4900,8 @@ msgstr ""
 msgid "Delete my account"
 msgstr ""
 
-#: src/routes/settings/account/+page.svelte
-msgid "This permanently deletes your account and everything you own: worlds, inventory, published worlds, marketplace listings, feedback and uploaded models. It can't be undone. Download your data first if you want a copy."
-msgstr ""
+#~ msgid "This permanently deletes your account and everything you own: worlds, inventory, published worlds, marketplace listings, feedback and uploaded models. It can't be undone. Download your data first if you want a copy."
+#~ msgstr ""
 
 #: src/routes/settings/account/+page.svelte
 msgid "Type <0/> to confirm <1/>"
@@ -5696,4 +5683,76 @@ msgstr ""
 
 #: src/routes/settings/credits/+page.svelte
 msgid "History"
+msgstr ""
+
+#: src/routes/settings/account/+page.svelte
+msgid "Download a JSON file with your profile, worlds, inventory, published worlds, marketplace activity, model list, feedback, and your credits (balance, purchases and the store accounts linked to you). Passwords and access tokens are never included, and model files are listed by id rather than bundled."
+msgstr ""
+
+#: src/routes/settings/account/+page.svelte
+msgid "This permanently deletes your account and everything you own: worlds, inventory, published worlds, marketplace listings, feedback, credits (any balance left is lost) and uploaded models. It can't be undone. Download your data first if you want a copy."
+msgstr ""
+
+#: src/routes/privacy/+page.svelte
+msgid "How Kithin collects and uses account information, purchases and credits, shared worlds, microphone audio, movement data and your privacy choices, including how to delete your data."
+msgstr ""
+
+#: src/routes/privacy/+page.svelte
+msgid "<0>Purchases collect an identifier.</0> If you buy credits in the Meta Quest app, Kithin collects your Meta user ID (an identifier specific to this app) and the purchase record, and stores them with your account. See section 2 for exactly what is collected and section 4 for what it is used for."
+msgstr ""
+
+#: src/routes/privacy/+page.svelte
+msgid "<0>You can delete your data yourself.</0> Sign in on kithin.app and open Settings, then Data & Account, to download your data or permanently delete your account and everything linked to it, including your credits and purchase records. You can also email <1/>."
+msgstr ""
+
+#: src/routes/privacy/+page.svelte
+msgid "<0>Purchases and credits:</0> Kithin collects and stores records of what you buy and spend. For your account these are your credit balance; every change to it (the amount, the resulting balance, whether it was a purchase of credits, a spend in a world or an adjustment, the date, and the payment provider and its reference for that payment); and what you bought in worlds (the world, the product code and how many times). When you buy credits with a card, the payment reference is the identifier of the Stripe checkout session. When you buy credits in the Meta Quest app, it is the purchase token returned by Meta."
+msgstr ""
+
+#: src/routes/privacy/+page.svelte
+msgid "<0>Meta user ID (Meta Quest purchases):</0> when you buy credits with Meta's in-app payments, your device gives Kithin your Meta user ID, which is an identifier specific to this app, together with the purchase token and the item purchased. Kithin collects it, stores it linked to your Kithin account, and sends it to Meta with the item code to verify and complete the purchase. It is not collected for any other purpose, and Kithin does not collect your Meta name, email address, friends list or profile."
+msgstr ""
+
+#: src/routes/privacy/+page.svelte
+msgid "<0>Payment details:</0> card numbers and other payment details you enter to pay by card are collected and processed by Stripe, not by Kithin. Kithin receives confirmation that a payment was completed, its amount, and the Stripe reference, and gives Stripe your email address and account identifier so the payment can be matched to your account. Meta processes payments made in the Quest app and Kithin does not receive your payment details."
+msgstr ""
+
+#: src/routes/privacy/+page.svelte
+msgid "The Quest package opens the same Kithin web service. In the Quest app, Kithin uses Meta's in-app purchases (the Digital Goods API) to sell credits, and for that it requests your Meta user ID, as described in sections 2 and 4. It does not use a separate third-party diagnostics SDK. Android application backups are disabled by the packaging process. Meta and the browser may independently process platform information under their own policies."
+msgstr ""
+
+#: src/routes/privacy/+page.svelte
+msgid "Purchase information is used to sell and deliver credits and what you buy with them: to add the credits you paid for to your balance, to take credits from it only when you approve a purchase in a world, to keep what you bought, to show you your balance and history, and to answer questions about a payment. The Meta user ID is used only to verify with Meta that a purchase was really made, to mark it as used so the same purchase cannot be credited twice, and to link that Meta account to your Kithin account so that nobody else can credit a purchase made with it. We do not use it for advertising, analytics or profiling, we do not combine it with data from other sources, and we do not share it with anyone other than Meta."
+msgstr ""
+
+#: src/routes/privacy/+page.svelte
+msgid "Where the GDPR applies, we process account information, saved content, purchase records and the connection and movement data necessary to deliver the features you request to perform our service agreement with you. We rely on legitimate interests in protecting users and the service for proportionate security and abuse prevention, including preventing fraudulent or repeated crediting of purchases, and on legal obligations when processing is required by law. Browser and headset permissions control technical access to your microphone and tracking features; they do not by themselves establish a legal basis for every use of that information. Where a use requires your consent, you may withdraw it at any time by contacting us, and you can stop microphone or tracking access through device or browser settings. Withdrawal does not affect the lawfulness of processing before it occurred."
+msgstr ""
+
+#: src/routes/privacy/+page.svelte
+msgid "Stripe processes card payments for credits bought on the website. It receives the payment details you enter, your email address and your Kithin account identifier, and tells Kithin when a payment is completed. Meta processes in-app purchases made in the Quest app, and Kithin sends Meta your Meta user ID and the item code to verify and complete each purchase. Each of them uses the information under its own terms and privacy policy."
+msgstr ""
+
+#: src/routes/privacy/+page.svelte
+msgid "Kithin currently has no advertising, third-party analytics or third-party crash reporting integrations. Payments are handled by Stripe and Meta as described above. We do not sell personal information or use microphone audio or movement data for targeted advertising. Information may be disclosed when required by law or necessary to protect the service and its users."
+msgstr ""
+
+#: src/routes/privacy/+page.svelte
+msgid "Account information and saved content are kept while your account remains open and are reviewed for deletion when you close it. Our retention limits are 30 days for routine access and security logs, seven days after expiry for authentication sessions and verification records, 30 days after a world session ends for its hosting history, and 12 months after resolution for support correspondence. Purchase records, your credit balance and the Meta user ID linked to your account are kept while your account remains open and are deleted with it. Stripe and Meta keep their own payment records under their own policies. Records needed for a specific security incident, legal obligation or legal claim may be retained for the necessary period, with access restricted. Live voice and movement streams are not archived by Kithin."
+msgstr ""
+
+#: src/routes/privacy/+page.svelte
+msgid "You can delete your data yourself: sign in on kithin.app, open Settings, then Data & Account, and choose Delete my account. This permanently deletes your account and the information linked to it, including your worlds, inventory, credit balance, purchase records and linked Meta user ID. Any credits left are lost and the deletion cannot be undone, so download your data first if you want a copy; the same page lets you download it, including your credits and purchases. To request account and personal data deletion by email instead, write to support using the address associated with your account where possible. We verify your request using only the information reasonably needed, delete or anonymise applicable account records and content, and confirm the outcome. We aim to complete ordinary requests within one month of receipt; statutory exceptions and permitted extensions are explained in section 7. Some information may need to be retained to meet legal obligations or resolve disputes. Shared files may remain referenced by other users' content. This does not remove your right to request erasure of personal information contained in those files; we assess such requests under applicable law. Copies independently held by other participants are outside Kithin's control. Clearing browser storage does not delete your cloud account."
+msgstr ""
+
+#: src/routes/privacy/+page.svelte
+msgid "Depending on applicable law, you may request access, correction, deletion, a portable copy of your information, restriction of processing or object to processing. You can download or delete your data yourself in Settings, then Data & Account, or contact <0/> to exercise these rights. Where the GDPR applies, we respond without undue delay and within one month of receiving your request. If complexity or the number of requests requires an extension of up to two further months, we will explain the reason within the first month. Requests are normally free; applicable law allows a reasonable fee or refusal for manifestly unfounded or excessive requests. You can also complain to your local data protection authority, including the <1>Spanish Data Protection Agency (AEPD)</1>."
+msgstr ""
+
+#: src/routes/privacy/+page.svelte
+msgid "Bytehosting reports hosting infrastructure in Germany, within the European Economic Area (EEA). Google services, Discord, Stripe, Meta, the AI provider you choose and participants in other countries may process information outside the EEA. The countries involved depend on the provider and the participants you connect to. For transfers for which Kithin is responsible, an applicable European Commission adequacy decision or appropriate safeguards, such as standard contractual clauses, are required unless a specific lawful exception applies. Contact us to request the arrangements and a copy of the safeguards applicable to a particular transfer. This policy does not mean that every external service processes information only in Europe."
+msgstr ""
+
+#: src/routes/privacy/+page.svelte
+msgid "Last updated: October 21, 2026"
 msgstr ""

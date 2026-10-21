@@ -3,33 +3,34 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import ts from 'typescript';
 import { AbstractMesh, MeshBuilder, NullEngine, Quaternion, Ray, Scene, TransformNode, UniversalCamera, Vector3, WebXRState } from '@babylonjs/core';
-import { createSlot } from '../src/lib/ecs/types.ts';
+import { resolveRelativeImports } from './helpers/resolveSpecifiers.mjs';
+import { createSlot } from '../packages/engine/src/ecs/types.ts';
 import { runtimeUrl, buildCodeBlockCtx } from './helpers/codeBlockRuntimeModule.mjs';
-import { LightVolumeManager } from '../src/lib/xr/lightVolumeManager.ts';
+import { LightVolumeManager } from '../packages/engine/src/xr/lightVolumeManager.ts';
 
 const coreUrl = import.meta.resolve('@babylonjs/core');
-const libUrl = new URL('../src/lib/', import.meta.url);
+const libUrl = new URL('../packages/engine/src/', import.meta.url);
 function compile(source) {
 	return ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText
 		.replaceAll("'@babylonjs/core'", JSON.stringify(coreUrl))
-		.replace(/'\$lib\/([^']+)'/g, (_, path) => JSON.stringify(new URL(`${path}.ts`, libUrl).href));
+		;
 }
-const moduleUrl = (code) => `data:text/javascript;base64,${Buffer.from(code).toString('base64')}`;
+const moduleUrl = (code, file) => `data:text/javascript;base64,${Buffer.from(file ? resolveRelativeImports(code, new URL(file, libUrl)) : code).toString('base64')}`;
 const codeBlockUrl = runtimeUrl;
 let graphCode = compile(await readFile(new URL('xr/sceneGraph.ts', libUrl), 'utf8'))
-	.replaceAll("'./slotRebuild'", JSON.stringify(new URL('xr/slotRebuild.ts', libUrl).href))
-	.replaceAll("'./playerPoses'", JSON.stringify(new URL('xr/playerPoses.ts', libUrl).href))
-	.replaceAll("'./lightVolumeRenderer'", JSON.stringify(new URL('xr/lightVolumeRenderer.ts', libUrl).href))
-	.replaceAll("'./lightVolumeManager'", JSON.stringify(new URL('xr/lightVolumeManager.ts', libUrl).href))
-	.replaceAll("'./performance'", JSON.stringify(new URL('xr/performance.ts', libUrl).href))
-	.replaceAll("'./codeBlockRuntime'", JSON.stringify(codeBlockUrl));
+	.replaceAll("'./slotRebuild.ts'", JSON.stringify(new URL('xr/slotRebuild.ts', libUrl).href))
+	.replaceAll("'./playerPoses.ts'", JSON.stringify(new URL('xr/playerPoses.ts', libUrl).href))
+	.replaceAll("'./lightVolumeRenderer.ts'", JSON.stringify(new URL('xr/lightVolumeRenderer.ts', libUrl).href))
+	.replaceAll("'./lightVolumeManager.ts'", JSON.stringify(new URL('xr/lightVolumeManager.ts', libUrl).href))
+	.replaceAll("'./performance.ts'", JSON.stringify(new URL('xr/performance.ts', libUrl).href))
+	.replaceAll("'./codeBlockRuntime.ts'", JSON.stringify(codeBlockUrl));
 // These tests exercise real scene nodes, picking, scripts and collisions without creating DOM/media surfaces.
 // Fail explicitly if a fixture accidentally asks for one of those browser-only renderers.
 graphCode = graphCode.replace(/import \{ (setup\w+) \} from '\.\/[^']+';/g,
 	(_, name) => `const ${name} = () => { throw new Error('Unexpected browser surface: ${name}'); };`);
-const { SceneGraph } = await import(moduleUrl(graphCode));
-const { setupPlayerBody } = await import(moduleUrl(compile(await readFile(new URL('xr/interaction/playerBody.ts', libUrl), 'utf8'))));
-const { GrabSystem } = await import(moduleUrl(compile(await readFile(new URL('xr/interaction/grabSystem.ts', libUrl), 'utf8'))));
+const { SceneGraph } = await import(moduleUrl(graphCode, 'xr/sceneGraph.ts'));
+const { setupPlayerBody } = await import(moduleUrl(compile(await readFile(new URL('xr/interaction/playerBody.ts', libUrl), 'utf8')), 'xr/interaction/playerBody.ts'));
+const { GrabSystem } = await import(moduleUrl(compile(await readFile(new URL('xr/interaction/grabSystem.ts', libUrl), 'utf8')), 'xr/interaction/grabSystem.ts'));
 
 const assetId = `sha256:${'1'.repeat(64)}`;
 
@@ -317,10 +318,10 @@ test('a script can give another slot a component, but not code or identity', () 
 
 test('the player holding a tool can take what sits in its socket, but not the tool or anyone else’s socket', async () => {
 	const equipmentCode = compile(await readFile(new URL('xr/interaction/equipmentSystem.ts', libUrl), 'utf8'))
-		.replaceAll("'./equipmentRegistry'", JSON.stringify(new URL('xr/interaction/equipmentRegistry.ts', libUrl).href))
-		.replace(/import \{[^}]*\} from '\.\/grabSystem';/, '')
+		.replaceAll("'./equipmentRegistry.ts'", JSON.stringify(new URL('xr/interaction/equipmentRegistry.ts', libUrl).href))
+		.replace(/import \{[^}]*\} from '\.\/grabSystem\.ts';/, '')
 		.replace(/import \{ eulerToQuat \} from "[^"]+";/, 'const eulerToQuat = () => [0, 0, 0, 1];');
-	const { EquipmentSystem } = await import(moduleUrl(equipmentCode));
+	const { EquipmentSystem } = await import(moduleUrl(equipmentCode, 'xr/interaction/equipmentSystem.ts'));
 	const f = fixture();
 	const graph = new SceneGraph(f.scene, {});
 	try {
@@ -342,10 +343,10 @@ test('the player holding a tool can take what sits in its socket, but not the to
 
 test('trigger and equip events reach a script with the id the player announced, and the name found by the connection id', async () => {
 	const equipmentCode = compile(await readFile(new URL('xr/interaction/equipmentSystem.ts', libUrl), 'utf8'))
-		.replaceAll("'./equipmentRegistry'", JSON.stringify(new URL('xr/interaction/equipmentRegistry.ts', libUrl).href))
-		.replace(/import \{[^}]*\} from '\.\/grabSystem';/, '')
+		.replaceAll("'./equipmentRegistry.ts'", JSON.stringify(new URL('xr/interaction/equipmentRegistry.ts', libUrl).href))
+		.replace(/import \{[^}]*\} from '\.\/grabSystem\.ts';/, '')
 		.replace(/import \{ eulerToQuat \} from "[^"]+";/, 'const eulerToQuat = () => [0, 0, 0, 1];');
-	const { EquipmentSystem } = await import(moduleUrl(equipmentCode));
+	const { EquipmentSystem } = await import(moduleUrl(equipmentCode, 'xr/interaction/equipmentSystem.ts'));
 	const f = fixture();
 	const graph = new SceneGraph(f.scene, {});
 	try {

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { CREDIT_LIMITS, CREDIT_PACKS, collectProducts, findPack, findPackByMetaSku, parseShopProducts } from '../src/lib/credits/catalog.ts';
+import { CREDIT_LIMITS, CREDIT_PACKS, collectProducts, findPack, findPackByMetaSku, parseShopProducts } from '../packages/engine/src/credits/catalog.ts';
 
 const slot = (id, components) => ({ id, parentId: null, name: id, position: [0, 0, 0], rotation: [0, 0, 0, 1], scale: [1, 1, 1], components });
 

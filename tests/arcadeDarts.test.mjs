@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeFrame } from '../src/lib/xr/templates/arcadeKit.ts';
-import { DARTS, buildDarts, dartId } from '../src/lib/xr/templates/arcadeDarts.ts';
+import { makeFrame } from '../src/lib/content/templates/arcadeKit.ts';
+import { DARTS, buildDarts, dartId } from '../src/lib/content/templates/arcadeDarts.ts';
 import { aim, runMachine } from './helpers/arcadeMachine.mjs';
 
 const frame = makeFrame(-7, 14.8, 0);

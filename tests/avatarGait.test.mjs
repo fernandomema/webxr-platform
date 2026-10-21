@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { stepFoot, newFoot, smoothVelocity, DEFAULT_GAIT } from '../src/lib/xr/avatar/gait.ts';
+import { stepFoot, newFoot, smoothVelocity, DEFAULT_GAIT } from '../packages/engine/src/xr/avatar/gait.ts';
 
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[2] - b[2]);
 

@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bake, specFor } from '../src/lib/lighting/bake.ts';
-import { compose, invert } from '../src/lib/lighting/matrix.ts';
-import { worldBounds } from '../src/lib/lighting/primitives.ts';
-import { sampleVolume } from '../src/lib/lighting/sample.ts';
-import { slotIndex } from '../src/lib/lighting/types.ts';
+import { bake, specFor } from '../packages/engine/src/lighting/bake.ts';
+import { compose, invert } from '../packages/engine/src/lighting/matrix.ts';
+import { worldBounds } from '../packages/engine/src/lighting/primitives.ts';
+import { sampleVolume } from '../packages/engine/src/lighting/sample.ts';
+import { slotIndex } from '../packages/engine/src/lighting/types.ts';
 
 const BLACK_SKY = { top: [0, 0, 0], horizon: [0, 0, 0], bottom: [0, 0, 0], intensity: 0 };
 const prim = (shape, position, scale, albedo = [0.5, 0.5, 0.5], rotation = [0, 0, 0, 1], extra = {}) => {

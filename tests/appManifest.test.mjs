@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { buildWorldManifest, describeWorldApp, findAppInfo, parseIconName, parseScreenshotName } from '../src/lib/worlds/appManifest.ts';
-import { collectAssetIds } from '../src/lib/assets/ref.ts';
+import { collectAssetIds } from '../packages/engine/src/assets/ref.ts';
 
 const ICON = `sha256:${'a'.repeat(64)}`;
 const scene = [

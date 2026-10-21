@@ -1,5 +1,5 @@
-import type { Slot, SlotTree, Vec3 } from '$lib/ecs/types';
-import { migrateSlotTree } from '$lib/assets/ref';
+import type { Slot, SlotTree, Vec3 } from '@kithin/engine/ecs/types';
+import { migrateSlotTree } from '@kithin/engine/assets/ref';
 
 export function serializeSlotTree(tree: SlotTree): string {
 	return JSON.stringify(tree, null, 2);

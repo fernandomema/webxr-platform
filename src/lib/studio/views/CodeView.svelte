@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { CodeBlockComponent } from '$lib/ecs/types';
+	import type { CodeBlockComponent } from '@kithin/engine/ecs/types';
 	import CodeEditor from '../CodeEditor.svelte';
 	import { lintCode } from '../lint/code';
 	import type { StudioDocument } from '../state/document.svelte';

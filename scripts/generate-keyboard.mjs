@@ -1,5 +1,5 @@
-// Builds src/lib/xr/templates/keyboard.json: the frame of the in-world keyboard, as slots. The keys themselves are not
-// in it: they are built from the chosen layout (src/lib/xr/keyboard/layouts) each time the keyboard appears, under the
+// Builds packages/engine/src/xr/keyboard/frame.json: the frame of the in-world keyboard, as slots. The keys themselves are not
+// in it: they are built from the chosen layout (packages/engine/src/xr/keyboard/layouts) each time the keyboard appears, under the
 // "Keys" slot. The keyboard system fits the named parts (Body, Preview, Handle, Close) to the size of the layout;
 // anything else added to the template is kept as it is. Run with `node scripts/generate-keyboard.mjs`.
 //
@@ -28,6 +28,6 @@ const slots = [
 	slot('keyboard-handle', 'keyboard', 'Handle', [0, 0.004, -0.13], ALONG_X, [0.018, 0.3, 0.018], [mesh('cylinder', '#334155')])
 ];
 
-const out = resolve(dirname(fileURLToPath(import.meta.url)), '../src/lib/xr/templates/keyboard.json');
+const out = resolve(dirname(fileURLToPath(import.meta.url)), '../packages/engine/src/xr/keyboard/frame.json');
 writeFileSync(out, JSON.stringify(slots, null, '\t') + '\n');
 console.log(`Wrote ${slots.length} slots to ${out}`);

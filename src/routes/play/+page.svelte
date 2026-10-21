@@ -1,5 +1,5 @@
 <script lang="ts">
-	import PlayShell from '$lib/xr/PlayShell.svelte';
+	import PlayShell from '@kithin/engine/xr/PlayShell.svelte';
 	import { PLATFORM_NAME } from '$lib/platform';
 	import { loadStartupWorld } from '$lib/play/startupWorld';
 	import { page } from '$app/state';

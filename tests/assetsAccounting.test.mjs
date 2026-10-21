@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { wouldExceedQuota, canReleaseOwnership, planAssetGc } from '../src/lib/assets/accounting.ts';
-import { validateManifest } from '../src/lib/assets/manifest.ts';
+import { wouldExceedQuota, canReleaseOwnership, planAssetGc } from '../packages/engine/src/assets/accounting.ts';
+import { validateManifest } from '../packages/engine/src/assets/manifest.ts';
 
 const id = (c) => 'sha256:' + c.repeat(64);
 const day = 86_400_000;

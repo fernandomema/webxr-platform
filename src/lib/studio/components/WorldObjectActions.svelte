@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { Slot } from '$lib/ecs/types';
-	import { normalizeSourceRef } from '$lib/assets/ref';
-	import type { InspectorDocument } from '../state/docOps';
-	import { subtreeIds, canRemoveSlot } from '../tree/ops';
+	import type { Slot } from '@kithin/engine/ecs/types';
+	import { normalizeSourceRef } from '@kithin/engine/assets/ref';
+	import type { InspectorDocument } from '@kithin/engine/document/docOps';
+	import { subtreeIds, canRemoveSlot } from '@kithin/engine/document/tree';
 	import Select, { type SelectOption } from '../ui/Select.svelte';
 	import Icon from '../ui/Icon.svelte';
 

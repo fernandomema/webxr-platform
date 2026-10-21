@@ -1,8 +1,8 @@
-import type { SlotTree } from '../../ecs/types.ts';
-import { bake, specFor } from '../../lighting/bake.ts';
-import { MAX_VOXELS, encodeAsync } from '../../lighting/format.ts';
-import { extractScene, sceneSignature } from '../../lighting/sceneExtract.ts';
-import type { V3 } from '../../lighting/types.ts';
+import type { SlotTree } from '@kithin/engine/ecs/types';
+import { bake, specFor } from '@kithin/engine/lighting/bake';
+import { MAX_VOXELS, encodeAsync } from '@kithin/engine/lighting/format';
+import { extractScene, sceneSignature } from '@kithin/engine/lighting/sceneExtract';
+import type { V3 } from '@kithin/engine/lighting/types';
 
 export type BakeQuality = 'draft' | 'normal' | 'high';
 

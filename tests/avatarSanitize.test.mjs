@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sanitizeAvatarTree, AvatarRejected, MAX_AVATAR_SLOTS } from '../src/lib/xr/avatar/sanitize.ts';
+import { sanitizeAvatarTree, AvatarRejected, MAX_AVATAR_SLOTS } from '../packages/engine/src/xr/avatar/sanitize.ts';
 
 const ASSET = `sha256:${'a'.repeat(64)}`;
 const root = (extra = []) => ({
@@ -44,7 +44,7 @@ test('bad numbers fall back to safe defaults', () => {
 	assert.equal(tree[0].components.find((c) => c.type === 'avatar').height, 3);
 });
 
-import { buildAvatarTree, eyeHeightOf } from '../src/lib/xr/avatar/build.ts';
+import { buildAvatarTree, eyeHeightOf } from '../packages/engine/src/xr/avatar/build.ts';
 
 test('buildAvatarTree makes a tree the host accepts, with sockets on recognised bones', () => {
 	const joints = ['Hips', 'Spine', 'Chest', 'Neck', 'Head', 'RightShoulder', 'LeftUpperLeg', 'LeftHand', 'RightHand'];

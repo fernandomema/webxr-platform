@@ -1,23 +1,19 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import '../src/lib/assets/kinds/index.ts';
-import { importAsset } from '../src/lib/assets/importAsset.ts';
-import { MemoryAssetStore } from '../src/lib/assets/store.ts';
-import { sniffAssetKind } from '../src/lib/assets/kinds/index.ts';
-import { validateManifest } from '../src/lib/assets/manifest.ts';
-import { collectAssetIds } from '../src/lib/assets/ref.ts';
+import '../packages/engine/src/assets/kinds/index.ts';
+import { importAsset } from '../packages/engine/src/assets/importAsset.ts';
+import { MemoryAssetStore } from '../packages/engine/src/assets/store.ts';
+import { sniffAssetKind } from '../packages/engine/src/assets/kinds/index.ts';
+import { validateManifest } from '../packages/engine/src/assets/manifest.ts';
+import { collectAssetIds } from '../packages/engine/src/assets/ref.ts';
 import { readFile } from 'node:fs/promises';
 import ts from 'typescript';
-import { createSlot } from '../src/lib/ecs/types.ts';
-import { encode } from '../src/lib/lighting/format.ts';
-import { nodeCodec } from '../src/lib/lighting/nodeCodec.ts';
-import { slotIndex, voxelCount } from '../src/lib/lighting/types.ts';
+import { createSlot } from '../packages/engine/src/ecs/types.ts';
+import { encode } from '../packages/engine/src/lighting/format.ts';
+import { nodeCodec } from '../packages/engine/src/lighting/nodeCodec.ts';
+import { slotIndex, voxelCount } from '../packages/engine/src/lighting/types.ts';
 
-// worlds/package.ts uses the app's `$lib` alias: load it with the alias pointed at the real files, as xrSceneGraph.test.mjs does.
-const libUrl = new URL('../src/lib/', import.meta.url);
-const packageCode = ts.transpileModule(await readFile(new URL('worlds/package.ts', libUrl), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText
-  .replace(/'\$lib\/([^']+)'/g, (_, path) => JSON.stringify(new URL(`${path}.ts`, libUrl).href));
-const { validateWorldScene } = await import(`data:text/javascript;base64,${Buffer.from(packageCode).toString('base64')}`);
+import { validateWorldScene } from '../packages/engine/src/worlds/package.ts';
 
 function volumeFile() {
   const spec = { min: [-1, 0, 2], voxel: 0.5, dims: [6, 4, 5] };

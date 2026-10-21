@@ -1,4 +1,4 @@
-import { toWorld } from '../../src/lib/xr/templates/arcadeKit.ts';
+import { toWorld } from '../../src/lib/content/templates/arcadeKit.ts';
 
 export const DT = 1 / 60;
 const find = (slot, type) => slot.components.find((c) => c.type === type);

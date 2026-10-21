@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { GRID, ITEMS, MARKUP, TRADER_STOCK, TUNING, UPGRADES, WEAPONS } from '../src/lib/xr/templates/deadDropData.ts';
-import { ID } from '../src/lib/xr/templates/deadDropKit.ts';
+import { GRID, ITEMS, MARKUP, TRADER_STOCK, TUNING, UPGRADES, WEAPONS } from '../src/lib/content/templates/deadDropData.ts';
+import { ID } from '../src/lib/content/templates/deadDropKit.ts';
 import { DT, runDeadDrop } from './helpers/deadDropGame.mjs';
 
 const buy = (id) => Math.ceil(ITEMS[id].value * MARKUP);
@@ -319,7 +319,7 @@ test('a screen shows whoever is nearest to it, before anyone touches it', async 
 });
 
 test('the gear wall shows what the stash of whoever stands before it holds: guns on pegs, cans of ammunition, medkits, vests and loot', async () => {
-  const { GEAR, gearId } = await import('../src/lib/xr/templates/deadDropGear.ts');
+  const { GEAR, gearId } = await import('../src/lib/content/templates/deadDropGear.ts');
   const game = bunker(['host']);
   game.handlers.onSpawn();
   game.people.get('host').head = [5, 1.6, -1];

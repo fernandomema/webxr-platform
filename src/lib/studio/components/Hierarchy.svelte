@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
-	import type { Slot } from '$lib/ecs/types';
-	import type { InspectorDocument } from '../state/docOps';
-	import { canRemoveSlot, flattenTree, subtreeIds } from '../tree/ops';
-	import { componentSchema } from '../schema/components';
+	import type { Slot } from '@kithin/engine/ecs/types';
+	import type { InspectorDocument } from '@kithin/engine/document/docOps';
+	import { canRemoveSlot, flattenTree, subtreeIds } from '@kithin/engine/document/tree';
+	import { componentSchema } from '@kithin/engine/document/components';
 	import Icon from '../ui/Icon.svelte';
 	import Tooltip from '../ui/Tooltip.svelte';
 

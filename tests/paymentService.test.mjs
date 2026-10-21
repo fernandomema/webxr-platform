@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { PaymentService } from '../src/lib/xr/payments/paymentService.ts';
-import { createMetaPayments } from '../src/lib/xr/payments/metaPayments.ts';
-import { createAtmController } from '../src/lib/xr/payments/atmController.ts';
+import { PaymentService } from '../packages/engine/src/xr/payments/paymentService.ts';
+import { createMetaPayments } from '../packages/engine/src/xr/payments/metaPayments.ts';
+import { createAtmController } from '../packages/engine/src/xr/payments/atmController.ts';
 
 /** A server that answers like the real one, recording what the client sent. */
 function fakeServer({ balance = 500, price = 200, owned = false, confirm = { status: 200, data: { ok: true } }, challengeStatus = 200 } = {}) {

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PeerLink } from '../src/lib/xr/net/peerConnection.ts';
+import { PeerLink } from '../packages/engine/src/xr/net/peerConnection.ts';
 
 class FakeDataChannel {
   readyState = 'open';

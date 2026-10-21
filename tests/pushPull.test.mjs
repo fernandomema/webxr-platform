@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pushedDistance, PUSH_RANGE } from '../src/lib/xr/interaction/pushPull.ts';
+import { pushedDistance, PUSH_RANGE } from '../packages/engine/src/xr/interaction/pushPull.ts';
 
 test('the stick pushes a laser-held object away (forward) and brings it closer (back)', () => {
 	assert.ok(pushedDistance(2, -1, 0.1) > 2, 'forward pushes it away');

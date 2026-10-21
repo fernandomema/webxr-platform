@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { EquipmentRegistry, isEquipHand } from '../src/lib/xr/interaction/equipmentRegistry.ts';
+import { EquipmentRegistry, isEquipHand } from '../packages/engine/src/xr/interaction/equipmentRegistry.ts';
 
 test('a hand holds one object and an object sits in one hand', () => {
   const registry = new EquipmentRegistry();

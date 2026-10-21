@@ -3,6 +3,9 @@
 	"private": true,
 	"version": "0.0.1",
 	"type": "module",
+	"workspaces": [
+		"packages/*"
+	],
 	"scripts": {
 		"dev": "vite dev",
 		"build": "prisma generate && vite build",
@@ -45,6 +48,7 @@
 		"@babylonjs/gui": "^9.28.0",
 		"@babylonjs/loaders": "^9.28.0",
 		"@jitl/quickjs-wasmfile-release-sync": "^0.32.0",
+		"@kithin/engine": "*",
 		"@prisma/adapter-pg": "^7.10.0",
 		"@prisma/client": "^7.10.0",
 		"@wuchale/svelte": "^0.21.4",

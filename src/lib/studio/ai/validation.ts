@@ -1,9 +1,9 @@
-import { BUILTIN_MESH_IDS, isAssetId, isBuiltinMeshId, normalizeMeshRef } from '../../assets/ref';
-import type { SlotTree } from '$lib/ecs/types';
-import { validateWorldScene } from '$lib/worlds/package';
-import { COMPONENT_SCHEMAS } from '../schema/components';
+import { BUILTIN_MESH_IDS, isAssetId, isBuiltinMeshId, normalizeMeshRef } from '@kithin/engine/assets/ref';
+import type { SlotTree } from '@kithin/engine/ecs/types';
+import { validateWorldScene } from '@kithin/engine/worlds/package';
+import { COMPONENT_SCHEMAS } from '@kithin/engine/document/components';
 import { lintCode } from '../lint/code';
-import { lintUiPanels } from '$lib/xr/uiLayout';
+import { lintUiPanels } from '@kithin/engine/xr/uiLayout';
 
 export interface SceneDiagnostic {
 	severity: 'error' | 'warning';

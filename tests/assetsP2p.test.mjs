@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { AssetPeer, PeerResolver } from '../src/lib/assets/p2p.ts';
-import { MemoryAssetStore } from '../src/lib/assets/store.ts';
-import { importGlb } from '../src/lib/assets/importGlb.ts';
-import { resolveAsset } from '../src/lib/assets/resolve.ts';
+import { AssetPeer, PeerResolver } from '../packages/engine/src/assets/p2p.ts';
+import { MemoryAssetStore } from '../packages/engine/src/assets/store.ts';
+import { importGlb } from '../packages/engine/src/assets/importGlb.ts';
+import { resolveAsset } from '../packages/engine/src/assets/resolve.ts';
 import { buildGlb } from './helpers/glb.mjs';
 
 /** Two peers joined by an ordered in-memory channel that hands frames over asynchronously. */

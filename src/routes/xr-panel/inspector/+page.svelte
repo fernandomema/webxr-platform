@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { RemoteDocument } from '$lib/xr/panels/remoteDocument.svelte';
+	import { RemoteDocument } from '@kithin/engine/xr/panels/remoteDocument.svelte';
 	import { toasts } from '$lib/studio/state/toasts.svelte';
 	import Hierarchy from '$lib/studio/components/Hierarchy.svelte';
 	import Inspector from '$lib/studio/components/Inspector.svelte';

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { generateLayout } from '../src/lib/xr/templates/deadDropGen.ts';
-import { DROPS, ENEMIES, GRID, ITEMS, POOLS, TUNING, WEAPONS } from '../src/lib/xr/templates/deadDropData.ts';
+import { generateLayout } from '../src/lib/content/templates/deadDropGen.ts';
+import { DROPS, ENEMIES, GRID, ITEMS, POOLS, TUNING, WEAPONS } from '../src/lib/content/templates/deadDropData.ts';
 import { DT, runDeadDrop } from './helpers/deadDropGame.mjs';
 
 const MID = [GRID.origin[0], 0, GRID.origin[2]];

@@ -3,9 +3,9 @@
 	import { resolve } from '$app/paths';
 	import { PLATFORM_NAME } from '$lib/platform';
 	import { worldAppPath } from '$lib/worlds/appManifest';
-	import { thumbnailUrl } from '$lib/assets/thumbnails';
-	import type { AssetId } from '$lib/assets/ref';
-	import { listRecentProjects, type RecentProject } from '$lib/inventory/recent';
+	import { thumbnailUrl } from '@kithin/engine/assets/thumbnails';
+	import type { AssetId } from '@kithin/engine/assets/ref';
+	import { listRecentProjects, type RecentProject } from '@kithin/engine/inventory/recent';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();

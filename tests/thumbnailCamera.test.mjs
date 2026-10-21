@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector.js';
-import { multiplyQuat, worldPose, localPose, findPreviewCamera, conjugateQuat, DEFAULT_PREVIEW_FOV_DEG } from '../src/lib/xr/thumbnail/cameraPose.ts';
-import { rotateVector } from '../src/lib/xr/avatar/ik.ts';
+import { multiplyQuat, worldPose, localPose, findPreviewCamera, conjugateQuat, DEFAULT_PREVIEW_FOV_DEG } from '../packages/engine/src/xr/thumbnail/cameraPose.ts';
+import { rotateVector } from '../packages/engine/src/xr/avatar/ik.ts';
 
 const near = (a, b, eps = 1e-6) => assert.ok(a.every((v, i) => Math.abs(v - b[i]) < eps), `${a} vs ${b}`);
 const yaw = (angle) => [0, Math.sin(angle / 2), 0, Math.cos(angle / 2)];
@@ -43,7 +43,7 @@ test('the preview camera is found wherever it sits, with its field of view clamp
 	assert.ok(Math.abs(findPreviewCamera([slot('c', null, [0, 0, 0], undefined, undefined, [{ type: 'previewCamera', fov: 500 }])]).fov - (110 * Math.PI) / 180) < 1e-9);
 });
 
-import { lookRotation } from '../src/lib/xr/thumbnail/cameraPose.ts';
+import { lookRotation } from '../packages/engine/src/xr/thumbnail/cameraPose.ts';
 
 test('a slot that looks somewhere has its forward axis pointing there, its head up, and stays upright', () => {
 	const dir = [-2, -1, 2.5];

@@ -1,10 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { buildDisc, readDisc, paintDisc } from '../src/lib/xr/templates/recordDisc.ts';
-import { reduceDocOp } from '../src/lib/studio/state/docOps.ts';
+import { buildDisc, readDisc, paintDisc } from '../src/lib/content/templates/recordDisc.ts';
+import { reduceDocOp } from '../packages/engine/src/document/docOps.ts';
+import { registerContent } from '../packages/engine/src/xr/content/registry.ts';
 
-const lobby = JSON.parse(readFileSync(new URL('../src/lib/xr/templates/lobby.json', import.meta.url), 'utf8'));
+registerContent({ repainters: { recordDisc: paintDisc } });
+
+const lobby = JSON.parse(readFileSync(new URL('../src/lib/content/templates/lobby.json', import.meta.url), 'utf8'));
 const params = { id: 'd', title: 'Night Drive', author: 'Someone', labelColor: '#7c3aed', source: { kind: 'url', url: '/audio/x.mp3' } };
 const find = (slot, type) => slot.components.find((c) => c.type === type);
 
@@ -86,7 +89,7 @@ test('a label picture keeps the title strip and follows labelImage when it is ed
 });
 
 test('a disc saved while playing comes out of storage silent', async () => {
-  const { atRest } = await import('../src/lib/ecs/serialize.ts');
+  const { atRest } = await import('../packages/engine/src/ecs/serialize.ts');
   const playing = buildDisc(params, { playing: true });
   assert.equal(find(playing[0], 'audioPlayer').playing, true);
   const spawned = atRest(playing);
@@ -96,7 +99,7 @@ test('a disc saved while playing comes out of storage silent', async () => {
 });
 
 test('a panel with a picture and text is only a surface; one with a button takes the pointer', async () => {
-  const { hasInteractiveControls } = await import('../src/lib/xr/uiPanelInteractivity.ts');
+  const { hasInteractiveControls } = await import('../packages/engine/src/xr/uiPanelInteractivity.ts');
   const slots = buildDisc({ ...params, labelImage: 'https://example.com/a.jpg' });
   assert.equal(hasInteractiveControls(slots), false);
   const button = { id: 'b', parentId: 'd', name: 'b', position: [0, 0, 0], rotation: [0, 0, 0, 1], scale: [1, 1, 1], components: [{ type: 'uiElement', kind: 'button' }] };

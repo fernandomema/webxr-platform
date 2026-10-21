@@ -1,7 +1,7 @@
-import type { Component, Slot, SlotTree } from '$lib/ecs/types';
-import { migrateSlotTree } from '../../assets/ref';
-import { COMPONENT_SCHEMAS, type FieldDef } from '../schema/components';
-import { addComponent, cloneTree, duplicateSlot, getSlot, insertSubtree, removeComponent, removeSlot, reparent, setComponentField, subtreeIds, updateSlot } from '../tree/ops';
+import type { Component, Slot, SlotTree } from '@kithin/engine/ecs/types';
+import { migrateSlotTree } from '@kithin/engine/assets/ref';
+import { COMPONENT_SCHEMAS, type FieldDef } from '@kithin/engine/document/components';
+import { addComponent, cloneTree, duplicateSlot, getSlot, insertSubtree, removeComponent, removeSlot, reparent, setComponentField, subtreeIds, updateSlot } from '@kithin/engine/document/tree';
 import { introducedErrors, validateAiScene, type SceneDiagnostic } from './validation';
 
 export interface ToolDefinition {

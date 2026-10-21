@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeDashboardLayout, toggleDashboardItem, moveDashboardItem, dashboardEditorOrder, DEFAULT_DASHBOARD_LAYOUT } from '../src/lib/xr/dashboardLayout.ts';
+import { normalizeDashboardLayout, toggleDashboardItem, moveDashboardItem, dashboardEditorOrder, DEFAULT_DASHBOARD_LAYOUT } from '../packages/engine/src/xr/dashboardLayout.ts';
 
 test('a missing or malformed saved layout falls back to the default', () => {
 	assert.deepEqual(normalizeDashboardLayout(undefined), [...DEFAULT_DASHBOARD_LAYOUT]);

@@ -2,7 +2,7 @@
 	import type { StudioProject } from '../state/project.svelte';
 	import { studioSession } from '../state/session.svelte';
 	import { toasts } from '../state/toasts.svelte';
-	import { isReadOnlyAdapter } from '$lib/inventory/registry';
+	import { isReadOnlyAdapter } from '@kithin/engine/inventory/registry';
 
 	interface Props { project: StudioProject }
 	let { project }: Props = $props();

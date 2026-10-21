@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { controllerCurls, jointChainCurl, FULL_BEND, handFrameFromKnuckles, quatFromBasis, parseCurls, easeCurls, gripToHandRoll } from '../src/lib/xr/avatar/fingers.ts';
-import { rotateVector } from '../src/lib/xr/avatar/ik.ts';
+import { controllerCurls, jointChainCurl, FULL_BEND, handFrameFromKnuckles, quatFromBasis, parseCurls, easeCurls, gripToHandRoll } from '../packages/engine/src/xr/avatar/fingers.ts';
+import { rotateVector } from '../packages/engine/src/xr/avatar/ik.ts';
 
 const near = (a, b, eps = 1e-4) => assert.ok(a.every((v, i) => Math.abs(v - b[i]) < eps), `${a} vs ${b}`);
 
@@ -72,7 +72,7 @@ test('easing moves towards the target without overshooting', () => {
 	assert.ok(next.every((v) => v > 0 && v < 1));
 });
 
-import { jointBends, parseBends, easeValues, BEND_COUNT } from '../src/lib/xr/avatar/fingers.ts';
+import { jointBends, parseBends, easeValues, BEND_COUNT } from '../packages/engine/src/xr/avatar/fingers.ts';
 
 test('joint bends give one angle per inner joint, each matching the turn at that joint', () => {
 	const straight = jointBends([[0, 0, 0], [0, 0, 1], [0, 0, 2], [0, 0, 3]]);
@@ -83,7 +83,7 @@ test('joint bends give one angle per inner joint, each matching the turn at that
 });
 
 test('a measured curl and the avatar’s full curl agree, so a fist is not exaggerated', async () => {
-	const { FULL_BEND, JOINT_BEND } = await import('../src/lib/xr/avatar/fingers.ts');
+	const { FULL_BEND, JOINT_BEND } = await import('../packages/engine/src/xr/avatar/fingers.ts');
 	for (const finger of ['index', 'middle', 'ring']) {
 		const sum = JOINT_BEND[finger].reduce((a, b) => a + b, 0);
 		assert.ok(Math.abs(sum - FULL_BEND.finger) < 0.3, `${finger} ${sum}`);
@@ -103,7 +103,7 @@ test('easeValues moves each value towards its target', () => {
 	assert.ok(next[0] > 0 && next[0] < 1 && next[1] < 1 && next[1] > 0);
 });
 
-import { parseThumbDirections, conjugate, fistPitch, WRIST_BEHIND_GRIP } from '../src/lib/xr/avatar/fingers.ts';
+import { parseThumbDirections, conjugate, fistPitch, WRIST_BEHIND_GRIP } from '../packages/engine/src/xr/avatar/fingers.ts';
 
 test('thumb directions from the network become three unit vectors, or nothing if they are unusable', () => {
 	const dirs = parseThumbDirections([0, 2, 0, 1, 0, 0, 0, 0, -3]);

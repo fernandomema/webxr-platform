@@ -25,6 +25,9 @@ export default defineConfig({
 				// Force runes mode for the project, except for libraries. Can be removed in svelte 6.
 				runes: ({ filename }) => filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
+			// The engine is a package of this repository (packages/engine). Pointing its name at the source keeps one copy of every file
+			// in the type checker and the bundler, whichever way a file reaches it; other projects use the package's exports instead.
+			alias: { '@kithin/engine': 'packages/engine/src' },
 			adapter: adapter()
 		})
 	]

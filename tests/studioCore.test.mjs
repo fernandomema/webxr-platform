@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import * as ops from '../src/lib/studio/tree/ops.ts';
-import { quatToEuler, eulerToQuat } from '../src/lib/math/euler.ts';
+import * as ops from '../packages/engine/src/document/tree.ts';
+import { quatToEuler, eulerToQuat } from '../packages/engine/src/math/euler.ts';
 import { History } from '../src/lib/studio/state/history.ts';
-import { COMPONENT_SCHEMAS, componentSchema, addableComponents } from '../src/lib/studio/schema/components.ts';
+import { COMPONENT_SCHEMAS, componentSchema, addableComponents } from '../packages/engine/src/document/components.ts';
 
 const ids = () => {
   let n = 0;

@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { generateLayout } from '../src/lib/xr/templates/deadDropGen.ts';
-import { GRID, POOLS, TUNING, WEAPONS } from '../src/lib/xr/templates/deadDropData.ts';
-import { GATE, ID } from '../src/lib/xr/templates/deadDropKit.ts';
-import { HIT_SHELL } from '../src/lib/xr/templates/deadDropActors.ts';
+import { generateLayout } from '../src/lib/content/templates/deadDropGen.ts';
+import { GRID, POOLS, TUNING, WEAPONS } from '../src/lib/content/templates/deadDropData.ts';
+import { GATE, ID } from '../src/lib/content/templates/deadDropKit.ts';
+import { HIT_SHELL } from '../src/lib/content/templates/deadDropActors.ts';
 import { DT, runDeadDrop } from './helpers/deadDropGame.mjs';
 
 const SEED = 4242;

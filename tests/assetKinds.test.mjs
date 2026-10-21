@@ -1,13 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import '../src/lib/assets/kinds/index.ts';
-import { assetKindForFileName, sniffAssetKind } from '../src/lib/assets/kinds/index.ts';
-import { validateManifest } from '../src/lib/assets/manifest.ts';
-import { importAsset } from '../src/lib/assets/importAsset.ts';
-import { resolveAsset } from '../src/lib/assets/resolve.ts';
-import { MemoryAssetStore } from '../src/lib/assets/store.ts';
-import { assetIdOf } from '../src/lib/assets/hash.ts';
-import { assetSource, collectAssetIds, migrateSlotTree, normalizeSourceRef, urlSource } from '../src/lib/assets/ref.ts';
+import '../packages/engine/src/assets/kinds/index.ts';
+import { assetKindForFileName, sniffAssetKind } from '../packages/engine/src/assets/kinds/index.ts';
+import { validateManifest } from '../packages/engine/src/assets/manifest.ts';
+import { importAsset } from '../packages/engine/src/assets/importAsset.ts';
+import { resolveAsset } from '../packages/engine/src/assets/resolve.ts';
+import { MemoryAssetStore } from '../packages/engine/src/assets/store.ts';
+import { assetIdOf } from '../packages/engine/src/assets/hash.ts';
+import { assetSource, collectAssetIds, migrateSlotTree, normalizeSourceRef, urlSource } from '../packages/engine/src/assets/ref.ts';
 import { buildGlb } from './helpers/glb.mjs';
 
 const slot = (components) => ({ id: 's', parentId: null, name: 's', position: [0, 0, 0], rotation: [0, 0, 0, 1], scale: [1, 1, 1], components });

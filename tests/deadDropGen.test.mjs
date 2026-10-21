@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { GEN_SOURCE, generateLayout } from '../src/lib/xr/templates/deadDropGen.ts';
-import { POOLS } from '../src/lib/xr/templates/deadDropData.ts';
+import { GEN_SOURCE, generateLayout } from '../src/lib/content/templates/deadDropGen.ts';
+import { POOLS } from '../src/lib/content/templates/deadDropData.ts';
 
 const SEEDS = Array.from({ length: 400 }, (_, i) => i * 7919 + 13);
 const N = 3;

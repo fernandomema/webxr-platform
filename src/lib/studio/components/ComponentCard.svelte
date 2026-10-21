@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { Component } from '$lib/ecs/types';
-	import { componentSchema } from '../schema/components';
+	import type { Component } from '@kithin/engine/ecs/types';
+	import { componentSchema } from '@kithin/engine/document/components';
 	import FieldEditor from './FieldEditor.svelte';
 	import Icon from '../ui/Icon.svelte';
 

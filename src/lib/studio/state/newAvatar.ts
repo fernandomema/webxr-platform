@@ -1,4 +1,4 @@
-import type { SlotTree } from '$lib/ecs/types';
+import type { SlotTree } from '@kithin/engine/ecs/types';
 
 const key = (draft: string) => `studio:new-avatar:${draft}`;
 

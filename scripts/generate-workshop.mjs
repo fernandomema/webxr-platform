@@ -1,4 +1,4 @@
-// Builds src/lib/xr/templates/workshop.json: the Workshop, a large hall for building in VR. This is its structure
+// Builds src/lib/content/templates/workshop.json: the Workshop, a large hall for building in VR. This is its structure
 // only (the building, the work bays with their benches, pegboards and shelves, the build floor and the showcase stage);
 // the tools that fill the bays are added separately. Run with `node scripts/generate-workshop.mjs`.
 import { writeFileSync } from 'node:fs';
@@ -288,6 +288,6 @@ function shade(hex, amount) {
 	return `#${[16, 8, 0].map((shift) => channel(shift).toString(16).padStart(2, '0')).join('')}`;
 }
 
-const out = resolve(dirname(fileURLToPath(import.meta.url)), '../src/lib/xr/templates/workshop.json');
+const out = resolve(dirname(fileURLToPath(import.meta.url)), '../src/lib/content/templates/workshop.json');
 writeFileSync(out, JSON.stringify(slots, null, '\t') + '\n');
 console.log(`Wrote ${slots.length} slots to ${out}`);

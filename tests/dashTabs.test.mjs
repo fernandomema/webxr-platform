@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { TabRegistry, tabBarLayout, DEFAULT_TAB_ORDER } from '../src/lib/xr/ui/dashTabs.ts';
+import { TabRegistry, tabBarLayout, DEFAULT_TAB_ORDER } from '../packages/engine/src/xr/ui/dashTabs.ts';
 
 const ids = (registry) => registry.list().map((tab) => tab.id);
 
@@ -57,7 +57,7 @@ test('tab buttons keep their full width while there is room, then narrow, then d
 });
 
 test('icons are drawn as SVG data URIs in the colour asked for, and unknown ones are not', async () => {
-	const { iconUri, hasIcon, registerIcon } = await import('../src/lib/xr/ui/icons.ts');
+	const { iconUri, hasIcon, registerIcon } = await import('../packages/engine/src/xr/ui/icons.ts');
 	assert.equal(hasIcon('house'), true);
 	const uri = iconUri('house', '#ff7a45', 32);
 	assert.match(uri, /^data:image\/svg\+xml/);

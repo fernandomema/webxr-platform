@@ -1,6 +1,6 @@
-import { buildBistro } from '../../src/lib/xr/templates/bistro.ts';
-import { ID, ITEM_REST, PLATE_REST } from '../../src/lib/xr/templates/bistroData.ts';
-import { compose, invert, multiply, transformPoint } from '../../src/lib/lighting/matrix.ts';
+import { buildBistro } from '../../src/lib/content/templates/bistro.ts';
+import { ID, ITEM_REST, PLATE_REST } from '../../src/lib/content/templates/bistroData.ts';
+import { compose, invert, multiply, transformPoint } from '../../packages/engine/src/lighting/matrix.ts';
 
 export const DT = 1 / 20;
 const find = (slot, type) => slot.components.find((c) => c.type === type);

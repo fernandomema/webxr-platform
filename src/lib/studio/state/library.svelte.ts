@@ -1,5 +1,5 @@
-import { getInventoryAdapter } from '$lib/inventory/registry';
-import type { InventoryAdapter, InventoryContext, InventoryFolder, InventoryItem } from '$lib/inventory/types';
+import { getInventoryAdapter } from '@kithin/engine/inventory/registry';
+import type { InventoryAdapter, InventoryContext, InventoryFolder, InventoryItem } from '@kithin/engine/inventory/types';
 
 /** Browses one inventory adapter: current folder, breadcrumb path, items and search. */
 export class Library {

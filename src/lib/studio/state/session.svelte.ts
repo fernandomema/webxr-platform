@@ -1,6 +1,6 @@
 import { authClient } from '$lib/auth-client';
-import { availableInventoryFolders } from '$lib/inventory/registry';
-import type { InventoryAdapter, InventoryContext } from '$lib/inventory/types';
+import { availableInventoryFolders } from '@kithin/engine/inventory/registry';
+import type { InventoryAdapter, InventoryContext } from '@kithin/engine/inventory/types';
 
 /** Who is using the Studio and which inventories they can save to. */
 class StudioSession {

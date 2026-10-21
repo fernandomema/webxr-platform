@@ -1,5 +1,5 @@
 <script lang="ts" module>
-	import type { Component } from '$lib/ecs/types';
+	import type { Component } from '@kithin/engine/ecs/types';
 	import type { IconName } from '../ui/Icon.svelte';
 	export interface ObjectPreset {
 		id: string;

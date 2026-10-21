@@ -9,7 +9,7 @@ import {
 	type LinesMesh,
 	type Scene
 } from '@babylonjs/core';
-import { boxLines, floorCross, type Polyline } from './dropZoneGeometry';
+import { boxLines, floorCross, type Polyline } from '@kithin/engine/xr/dropZoneGeometry';
 import { EDITOR_ONLY } from './previewCameraHelper';
 import { bindTransformSnapping, type SnapPrecision } from './transformSnapping';
 

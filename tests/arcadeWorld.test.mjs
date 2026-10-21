@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { isBuiltinMeshId } from '../src/lib/assets/ref.ts';
-import { ARCADE_FRAMES, buildArcade } from '../src/lib/xr/templates/arcade.ts';
-import { ROOM } from '../src/lib/xr/templates/arcadeRoom.ts';
-import { machineIds } from '../src/lib/xr/templates/arcadeKit.ts';
+import { isBuiltinMeshId } from '../packages/engine/src/assets/ref.ts';
+import { ARCADE_FRAMES, buildArcade } from '../src/lib/content/templates/arcade.ts';
+import { ROOM } from '../src/lib/content/templates/arcadeRoom.ts';
+import { machineIds } from '../src/lib/content/templates/arcadeKit.ts';
 import { runMachine } from './helpers/arcadeMachine.mjs';
 
 const tree = buildArcade();
@@ -90,7 +90,7 @@ test('all six machines run together in one world: pressing 1 PLAYER on each star
 });
 
 test('the Arcade is registered as a development world, with a description', async () => {
-	const source = await readFile(new URL('../src/lib/xr/templates/builtinWorlds.ts', import.meta.url), 'utf8');
+	const source = await readFile(new URL('../src/lib/content/templates/builtinWorlds.ts', import.meta.url), 'utf8');
 	assert.match(source, /id: 'arcade'/);
 	assert.match(/DEV_WORLD_IDS[^=]*=\s*\[([^\]]*)\]/.exec(source)[1], /'arcade'/);
 	assert.match(source, /scene: buildArcade\(\)/);

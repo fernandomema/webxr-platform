@@ -1,4 +1,4 @@
-import { CREDIT_LIMITS } from '../../credits/catalog.ts';
+import { CREDIT_LIMITS } from '@kithin/engine/credits/catalog';
 import { CreditError } from '../errors.ts';
 
 /**

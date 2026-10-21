@@ -1,5 +1,5 @@
 // Bakes the lighting of a built-in world into `static/worlds/<world>/lighting-<region>.lvol` and lists the files in
-// `src/lib/assets/bundledLighting.ts`. Run with: npm run bake -- <world> [region ...]
+// `src/lib/content/bundledLighting.ts`. Run with: npm run bake -- <world> [region ...]
 import { createHash } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -39,7 +39,7 @@ const dir = join(root, 'static/worlds', world.name);
 mkdirSync(dir, { recursive: true });
 
 // Keep what earlier runs listed for other worlds and regions.
-const registryPath = join(root, 'src/lib/assets/bundledLighting.ts');
+const registryPath = join(root, 'src/lib/content/bundledLighting.ts');
 const { BUNDLED_LIGHTING } = await import(`${src('assets/bundledLighting.ts')}?t=${Date.now()}`);
 const registry = { ...BUNDLED_LIGHTING };
 

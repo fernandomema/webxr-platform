@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { canonicalBoneName, detectHumanoidMap, missingRequiredBones, pruneHumanoidMap } from '../src/lib/xr/avatar/humanoid.ts';
+import { canonicalBoneName, detectHumanoidMap, missingRequiredBones, pruneHumanoidMap } from '../packages/engine/src/xr/avatar/humanoid.ts';
 
 test('canonicalBoneName strips rig prefixes and separators', () => {
 	assert.equal(canonicalBoneName('mixamorig:LeftForeArm'), 'leftforearm');
@@ -46,7 +46,7 @@ test('pruneHumanoidMap drops roles pointing at bones that do not exist', () => {
 	assert.deepEqual(pruneHumanoidMap({ head: 'Head', leftHand: 'Gone' }, ['Head']), { head: 'Head' });
 });
 
-import { avatarCapabilities } from '../src/lib/xr/avatar/humanoid.ts';
+import { avatarCapabilities } from '../packages/engine/src/xr/avatar/humanoid.ts';
 
 test('avatarCapabilities reports what a bone map can do', () => {
 	const full = detectHumanoidMap(['Hips', 'Head', 'LeftUpperArm', 'LeftForeArm', 'LeftHand', 'RightUpperArm', 'RightForeArm', 'RightHand', 'LeftUpLeg', 'LeftLeg', 'LeftFoot']);

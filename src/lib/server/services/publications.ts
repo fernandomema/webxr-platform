@@ -1,11 +1,11 @@
 import { prisma } from '../db';
 import { UnauthorizedError, ForbiddenError, NotFoundError } from '../errors';
-import { validateWorldScene } from '$lib/worlds/package';
-import { collectAssetIds, migrateSlotTree, type AssetId } from '$lib/assets/ref';
+import { validateWorldScene } from '@kithin/engine/worlds/package';
+import { collectAssetIds, migrateSlotTree, type AssetId } from '@kithin/engine/assets/ref';
 import { assertAssetsReady, assetSummaries, linkSceneAssets, resolveThumbnail, withThumbnail } from './assets';
-import type { AppInfoComponent, SlotTree } from '$lib/ecs/types';
+import type { AppInfoComponent, SlotTree } from '@kithin/engine/ecs/types';
 import { appInfoWithSettings } from '$lib/worlds/appManifest';
-import type { WorldPackage } from '$lib/worlds/types';
+import type { WorldPackage } from '@kithin/engine/worlds/types';
 import type { SessionUser } from './worlds';
 
 function validateInput(name: unknown, scene: unknown): { name: string; scene: SlotTree } {

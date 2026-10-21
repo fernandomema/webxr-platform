@@ -1,6 +1,6 @@
-import type { AssetId } from '$lib/assets/ref';
-import { parseGlb } from '$lib/assets/glb';
-import { getLocalAssetStore } from '$lib/assets/store';
+import type { AssetId } from '@kithin/engine/assets/ref';
+import { parseGlb } from '@kithin/engine/assets/glb';
+import { getLocalAssetStore } from '@kithin/engine/assets/store';
 
 /**
  * The bone names of the models on this device, for editors that let you pick a bone. Read from the manifest when it

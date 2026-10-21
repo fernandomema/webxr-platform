@@ -1,0 +1,71 @@
+<script lang="ts">
+	import { onMount, onDestroy } from 'svelte';
+	import type { MountedGame } from './engine';
+	import XRLaunchOverlay from './XRLaunchOverlay.svelte';
+	import DesktopHud from './interaction/desktop/DesktopHud.svelte';
+	import type { WorldPackage } from '../worlds/types';
+	import { t } from './i18n/svelte.svelte.ts';
+
+	interface Props {
+		/** Join this live room. */
+		roomCode?: string;
+		/** Finds the world to open on its own, if the app wants one (a published world played as an app, a level of its own…). */
+		loadWorld?: () => Promise<WorldPackage | undefined>;
+	}
+
+	let { roomCode, loadWorld }: Props = $props();
+
+	let canvas: HTMLCanvasElement;
+	let game: MountedGame | null = null;
+	let launchState = $state<'loading' | 'vr' | 'desktop' | 'playing'>('loading');
+	let launchError = $state('');
+
+	async function enterVR(): Promise<void> {
+		if (!game) return;
+		launchError = '';
+		try {
+			await game.enterVR();
+			launchState = 'playing';
+		} catch (error) {
+			launchState = 'vr';
+			launchError = error instanceof Error ? error.message : t('Could not enter VR');
+		}
+	}
+
+	/** Plays with mouse and keyboard: the click that chooses it is also what lets the game capture the mouse. */
+	function continueOnDesktop(): void {
+		launchState = 'playing';
+		game?.captureMouse();
+	}
+
+	/** Meta: inside an installed PWA, tapping the app icon counts as the user action a VR session needs. */
+	const launchedAsApp = () => (window as unknown as { getDigitalGoodsService?: unknown }).getDigitalGoodsService !== undefined;
+
+	onMount(async () => {
+		try {
+			const initialWorld = roomCode ? undefined : await loadWorld?.();
+			const { mountGame } = await import('./engine');
+			game = await mountGame(canvas, roomCode, {
+				initialWorld,
+				onXRStateChange: (state) => {
+					if (state === 'in-xr') launchState = 'playing';
+					else if (state === 'not-in-xr' && game?.xrSupported) launchState = 'vr';
+				}
+			});
+			launchState = game.xrSupported ? 'vr' : 'desktop';
+			if (game.xrSupported && launchedAsApp()) void enterVR();
+		} catch (err) {
+			// devConsoleRelay (see +layout.svelte) forwards this to the dev server terminal.
+			console.error('mountGame failed', err);
+			launchState = 'desktop';
+		}
+	});
+
+	onDestroy(() => {
+		game?.dispose();
+	});
+</script>
+
+<XRLaunchOverlay state={launchState} error={launchError} onEnterVR={enterVR} onContinueDesktop={continueOnDesktop} />
+<DesktopHud />
+<canvas bind:this={canvas} class="h-screen w-screen touch-none outline-none"></canvas>

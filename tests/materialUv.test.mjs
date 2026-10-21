@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MeshBuilder, NullEngine, Scene, VertexBuffer } from '@babylonjs/core';
-import { worldUvs } from '../src/lib/xr/materialUv.ts';
+import { worldUvs } from '../packages/engine/src/xr/materialUv.ts';
 
 function data(shape, build) {
 	const engine = new NullEngine();

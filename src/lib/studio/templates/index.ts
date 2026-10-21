@@ -1,6 +1,6 @@
-import type { SlotTree } from '$lib/ecs/types';
-import { createSlot } from '$lib/ecs/types';
-import { BLANK_WORLD_NAME, buildBlankWorld } from '$lib/xr/blankWorld';
+import type { SlotTree } from '@kithin/engine/ecs/types';
+import { createSlot } from '@kithin/engine/ecs/types';
+import { BLANK_WORLD_NAME, buildBlankWorld } from '@kithin/engine/xr/blankWorld';
 
 export interface StudioTemplate {
 	id: string;

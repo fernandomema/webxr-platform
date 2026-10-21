@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { layoutUiTree, lintUiPanels, PANEL_CONTENT_HEIGHT, PANEL_CONTENT_WIDTH, uiLayoutIssues, uiNodesOf } from '../src/lib/xr/uiLayout.ts';
+import { layoutUiTree, lintUiPanels, PANEL_CONTENT_HEIGHT, PANEL_CONTENT_WIDTH, uiLayoutIssues, uiNodesOf } from '../packages/engine/src/xr/uiLayout.ts';
 
 const panel = { width: 1000, height: 600 };
 const node = (id, parentId, component) => ({ id, parentId, component: { type: 'uiElement', ...component } });

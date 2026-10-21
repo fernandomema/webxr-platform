@@ -1,0 +1,328 @@
+import { Quaternion, Ray, Vector3, WebXRState, type AbstractMesh, type Scene, type UniversalCamera, type WebXRDefaultExperience } from '@babylonjs/core';
+import { findComponent, isGrabbable, type Slot } from '../../ecs/types.ts';
+import { isBuiltinMesh } from '../../assets/ref.ts';
+import type { SceneGraph } from '../sceneGraph.ts';
+import type { TeleportTarget } from '../playerPoses.ts';
+
+const GRAVITY = 9.8; // m/s²
+const TERMINAL_SPEED = 25; // m/s
+const STEP_UP = 0.4; // tallest ledge walked onto
+const BODY_RADIUS = 0.3;
+const JUMP_SPEED = 3.6; // m/s: about 0.65 m high
+const DESKTOP_EYE_HEIGHT = 1.6;
+const VOID_Y = -20; // below this the player is put back at the spawn point
+const CACHE_MS = 500;
+/** Head height that seated mode pretends the player has. */
+export const SEATED_HEAD_HEIGHT = 1.7;
+
+/** How far to raise a head that is really `realHeadHeight` above the floor so it sits at standing height. Never lowers. */
+export function seatedLift(realHeadHeight: number): number {
+	return Math.max(0, SEATED_HEAD_HEIGHT - realHeadHeight);
+}
+
+/** Round or flat surfaces you stand on (and can teleport to). */
+export const isFloorSlot = (slot: Slot): boolean =>
+	slot.components.some((c) => c.type === 'meshRenderer' && (isBuiltinMesh(c.meshRef, 'ground') || isBuiltinMesh(c.meshRef, 'disc')));
+
+/** Things you cannot walk through: a collider that is not a floor and not something you can pick up. */
+export const isSolidSlot = (slot: Slot): boolean =>
+	slot.components.some((c) => c.type === 'collider') && !isGrabbable(slot) && !isFloorSlot(slot) && Boolean(findComponent(slot, 'meshRenderer'));
+
+export interface PlayerBody {
+	/** Limits a horizontal step (XR smooth locomotion) so it slides along walls instead of passing through them. */
+	constrainMove(delta: Vector3): Vector3;
+	/**
+	 * Seated mode: lifts the player so their head is at `SEATED_HEAD_HEIGHT` above the floor whatever their real posture, as if they stood.
+	 * The lift is measured when the mode is turned on (or when the headset first reports a height), so leaning does not fight it.
+	 */
+	setSeated(seated: boolean): void;
+	/** Desktop: a jump, if standing on something. */
+	jump(): void;
+	/** Puts the player back at the world's start point (its `spawnPoint` slot, else the default), facing the way it points, with nothing left of a fall. For entering a world. */
+	respawn(): void;
+	/** Puts the feet at `target.position` and turns to `target.yaw` when given, with nothing left of a fall. For a script that moves the player (see `ctx.world.teleportPlayer`). */
+	teleport(target: TeleportTarget): void;
+	/** Gravity, standing on the floor, and putting the player back if they fall out of the world. Call every frame. */
+	update(dt: number): void;
+}
+
+/**
+ * Gives the player a body. On desktop this switches on Babylon's own camera
+ * collisions and gravity (meshes opt in from SceneGraph). In VR the head
+ * position drives the camera, so the same rules are applied by hand: a ray
+ * down finds the floor, rays along the step find walls.
+ */
+export function setupPlayerBody(
+	scene: Scene,
+	sceneGraph: SceneGraph,
+	xr: WebXRDefaultExperience | null,
+	desktopCamera: UniversalCamera,
+	spawn: { x: number; z: number }
+): PlayerBody {
+	scene.collisionsEnabled = true;
+	scene.gravity = new Vector3(0, -0.18, 0);
+	desktopCamera.checkCollisions = true;
+	// Walls are Babylon's (collisions); falling, standing and jumping are done below, with real acceleration, so a jump
+	// is the same height at any frame rate.
+	desktopCamera.applyGravity = false;
+	desktopCamera.ellipsoid = new Vector3(BODY_RADIUS, DESKTOP_EYE_HEIGHT / 2, BODY_RADIUS); // eye height is twice the half-height
+	const desktopStart = desktopCamera.position.clone();
+
+	/** The world's `spawnPoint` slot, as a floor position and the direction (yaw, radians) it faces; `null` when the world has none. */
+	function worldSpawn(): { x: number; y: number; z: number; yaw: number } | null {
+		for (const entry of sceneGraph.allSlots()) {
+			if (entry.system || !entry.slot.components.some((component) => component.type === 'spawnPoint')) continue;
+			entry.node.computeWorldMatrix(true);
+			const position = entry.node.absolutePosition;
+			const forward = entry.node.getDirection(Vector3.Forward());
+			return { x: position.x, y: position.y, z: position.z, yaw: Math.atan2(forward.x, forward.z) };
+		}
+		return null;
+	}
+
+	/** Parts of something you can pick up (a brush handle, a cue) travel with it and must never block the player. */
+	function insideGrabbable(slot: Slot): boolean {
+		let parentId = slot.parentId;
+		while (parentId) {
+			const parent = sceneGraph.getLive(parentId)?.slot;
+			if (!parent) return false;
+			if (isGrabbable(parent)) return true;
+			parentId = parent.parentId;
+		}
+		return false;
+	}
+
+	const hasDisposed = (meshes: Set<AbstractMesh>) => {
+		for (const mesh of meshes) if (mesh.isDisposed()) return true;
+		return false;
+	};
+	let floors = new Set<AbstractMesh>();
+	let solids = new Set<AbstractMesh>();
+	let refreshedAt = -Infinity;
+	function refreshSets(): void {
+		const now = performance.now();
+		// A world was swapped (or a floor rebuilt): the new floor must count at once, or the player falls through it before
+		// the next refresh and, by then more than a step below it, never finds it again.
+		if (now - refreshedAt < CACHE_MS && !hasDisposed(floors) && !hasDisposed(solids)) return;
+		refreshedAt = now;
+		floors = new Set();
+		solids = new Set();
+		for (const entry of sceneGraph.allSlots()) {
+			if (entry.system) continue;
+			// Model roots are transform containers: their proxy handles simple colliders, their geometry mesh colliders.
+			const mesh = (entry.node.metadata?.selectionMesh ?? entry.node) as AbstractMesh;
+			if (typeof mesh.getBoundingInfo !== 'function') continue;
+			const modelCollider = entry.slot.components.some((component) => component.type === 'collider' && component.shape === 'mesh');
+			const collisionMeshes = modelCollider ? entry.model?.instance?.root.getChildMeshes(false) ?? [] : [mesh];
+			for (const candidate of collisionMeshes) {
+				// Something switched off (a door that is open, a room that is not in use) is not there to walk into or stand on.
+				if (!candidate.isEnabled()) {
+					candidate.checkCollisions = false;
+					continue;
+				}
+				if (isFloorSlot(entry.slot)) floors.add(candidate);
+				else if (isSolidSlot(entry.slot) && !insideGrabbable(entry.slot)) solids.add(candidate);
+				// Desktop camera collisions use the same rule: floors and solids block, the rest is walked through.
+				candidate.checkCollisions = floors.has(candidate) || solids.has(candidate);
+			}
+		}
+	}
+
+	refreshSets();
+	// A wall or a door that appears, goes or is switched off must count at once, not up to half a second later.
+	sceneGraph.onChanged((ids) => {
+		if (ids === null || ids.some((id) => sceneGraph.getSubtree(id).some((entry) => entry.slot.components.some((component) => component.type === 'collider')))) refreshedAt = -Infinity;
+	});
+	const inXr = () => Boolean(xr && xr.baseExperience.state === WebXRState.IN_XR);
+	// How far the whole rig is raised for seated mode. `null` while turned on but not measured yet (no head height reported).
+	let seated = false;
+	let lift: number | null = 0;
+	/** The floor the body stands on, ignoring the seated lift, so gravity and steps behave the same as when standing. */
+	const feetY = () => {
+		const camera = xr!.baseExperience.camera;
+		return camera.position.y - camera.realWorldHeight - (lift ?? 0);
+	};
+	/** Measures the lift once a real head height is known, and raises the rig by it. */
+	function calibrateSeated(): void {
+		if (!seated || lift !== null) return;
+		const camera = xr!.baseExperience.camera;
+		if (!(camera.realWorldHeight > 0.3)) return;
+		lift = seatedLift(camera.realWorldHeight);
+		camera.position.y += lift;
+	}
+	let verticalSpeed = 0;
+
+	function floorHeightBelow(x: number, y: number, z: number, onDesktop = false): number | null {
+		// Walking, you also stand on what you cannot walk through (a platform, a stair); in VR only on floors.
+		const hit = scene.pickWithRay(new Ray(new Vector3(x, y, z), Vector3.Down(), 200), (mesh) => floors.has(mesh) || (onDesktop && solids.has(mesh)));
+		return hit?.hit && hit.pickedPoint ? hit.pickedPoint.y : null;
+	}
+
+	function updateXr(dt: number): void {
+		const camera = xr!.baseExperience.camera;
+		calibrateSeated();
+		const feet = feetY();
+		const ground = floorHeightBelow(camera.position.x, feet + STEP_UP, camera.position.z);
+		if (ground !== null && feet <= ground + 0.02) {
+			// On the floor (or a ledge low enough to step onto).
+			verticalSpeed = 0;
+			if (Math.abs(ground - feet) > 0.001) camera.position.y += ground - feet;
+		} else {
+			verticalSpeed = Math.max(verticalSpeed - GRAVITY * dt, -TERMINAL_SPEED);
+			let dy = verticalSpeed * dt;
+			if (ground !== null && feet + dy < ground) {
+				dy = ground - feet;
+				verticalSpeed = 0;
+			}
+			camera.position.y += dy;
+		}
+		if (feetY() < VOID_Y) {
+			verticalSpeed = 0;
+			const point = worldSpawn();
+			camera.position.x = point?.x ?? spawn.x;
+			camera.position.z = point?.z ?? spawn.z;
+			camera.position.y = (point?.y ?? 0) + camera.realWorldHeight + (lift ?? 0);
+		}
+	}
+
+	let grounded = false;
+	/** The head hit something above: a ceiling stops the rise. */
+	function headBlocked(dy: number): boolean {
+		const origin = desktopCamera.position;
+		const hit = scene.pickWithRay(new Ray(origin.clone(), Vector3.Up(), Math.max(0, dy) + 0.15), (mesh) => solids.has(mesh) || floors.has(mesh));
+		return Boolean(hit?.hit);
+	}
+
+	function updateDesktop(dt: number): void {
+		const camera = desktopCamera;
+		const step = Math.min(dt, 0.05); // a long frame (a tab in the background) must not fire the player through the floor
+		const feet = camera.position.y - DESKTOP_EYE_HEIGHT;
+		const ground = floorHeightBelow(camera.position.x, feet + STEP_UP, camera.position.z, true);
+		if (ground !== null && feet <= ground + 0.02 && verticalSpeed <= 0) {
+			grounded = true;
+			verticalSpeed = 0;
+			if (Math.abs(ground - feet) > 0.001) camera.position.y += ground - feet;
+		} else {
+			grounded = false;
+			verticalSpeed = Math.max(verticalSpeed - GRAVITY * step, -TERMINAL_SPEED);
+			let dy = verticalSpeed * step;
+			if (dy > 0 && headBlocked(dy)) {
+				verticalSpeed = 0;
+				dy = 0;
+			}
+			if (ground !== null && feet + dy < ground) {
+				dy = ground - feet;
+				verticalSpeed = 0;
+			}
+			camera.position.y += dy;
+		}
+		if (camera.position.y < VOID_Y) {
+			verticalSpeed = 0;
+			const point = worldSpawn();
+			if (point) camera.position.set(point.x, point.y + DESKTOP_EYE_HEIGHT, point.z);
+			else camera.position.copyFrom(desktopStart);
+		}
+	}
+
+	function respawn(): void {
+		verticalSpeed = 0;
+		const point = worldSpawn();
+		if (inXr()) {
+			const camera = xr!.baseExperience.camera;
+			camera.position.x = point?.x ?? spawn.x;
+			camera.position.z = point?.z ?? spawn.z;
+			// Down to the floor from where the head would be; the next frame settles it onto whatever floor is there.
+			camera.position.y = (point?.y ?? 0) + camera.realWorldHeight + (lift ?? 0);
+			if (point) {
+				// Turned the way the point faces, from wherever the head looks now (as a snap turn does).
+				const forward = camera.getForwardRay().direction;
+				const sign = scene.useRightHandedSystem ? -1 : 1;
+				Quaternion.FromEulerAngles(0, (point.yaw - Math.atan2(forward.x, forward.z)) * sign, 0).multiplyToRef(camera.rotationQuaternion, camera.rotationQuaternion);
+			}
+			return;
+		}
+		if (point) desktopCamera.position.set(point.x, point.y + DESKTOP_EYE_HEIGHT, point.z);
+		else desktopCamera.position.copyFrom(desktopStart);
+		desktopCamera.rotation.set(0, point?.yaw ?? 0, 0);
+		grounded = false;
+	}
+
+	function teleport({ position, yaw }: TeleportTarget): void {
+		verticalSpeed = 0;
+		refreshedAt = -Infinity; // the place arrived at may have just been switched on
+		if (inXr()) {
+			const camera = xr!.baseExperience.camera;
+			camera.position.x = position[0];
+			camera.position.z = position[2];
+			camera.position.y = position[1] + camera.realWorldHeight + (lift ?? 0);
+			if (yaw !== undefined) {
+				const forward = camera.getForwardRay().direction;
+				const sign = scene.useRightHandedSystem ? -1 : 1;
+				Quaternion.FromEulerAngles(0, (yaw - Math.atan2(forward.x, forward.z)) * sign, 0).multiplyToRef(camera.rotationQuaternion, camera.rotationQuaternion);
+			}
+			return;
+		}
+		desktopCamera.position.set(position[0], position[1] + DESKTOP_EYE_HEIGHT, position[2]);
+		if (yaw !== undefined) desktopCamera.rotation.y = yaw;
+		grounded = false;
+	}
+
+	return {
+		respawn,
+		teleport,
+		jump() {
+			if (inXr() || !grounded) return;
+			verticalSpeed = JUMP_SPEED;
+			grounded = false;
+		},
+		setSeated(enabled) {
+			if (enabled === seated) return;
+			seated = enabled;
+			if (!xr || !inXr()) {
+				lift = enabled ? null : 0; // measured later, when a headset is on
+				return;
+			}
+			if (enabled) {
+				lift = null;
+				calibrateSeated();
+			} else {
+				xr.baseExperience.camera.position.y -= lift ?? 0;
+				lift = 0;
+			}
+		},
+		constrainMove(delta) {
+			if (!inXr() || delta.lengthSquared() === 0) return delta;
+			refreshSets();
+			if (solids.size === 0) return delta;
+			const camera = xr!.baseExperience.camera;
+			const feet = feetY();
+			const length = delta.length();
+			const direction = delta.scale(1 / length);
+			let result = delta;
+			// Knee and chest height, so low ledges and tall obstacles both stop the player.
+			for (const height of [0.45, 1.2]) {
+				const origin = new Vector3(camera.position.x, feet + height, camera.position.z);
+				const hit = scene.pickWithRay(new Ray(origin, direction, BODY_RADIUS + length), (mesh) => solids.has(mesh));
+				if (!hit?.hit || !hit.distance) continue;
+				const normal = hit.getNormal(true);
+				if (!normal) continue;
+				normal.y = 0;
+				if (normal.lengthSquared() < 1e-6) continue;
+				normal.normalize();
+				// Remove the part of the step that goes into the wall; keep the part along it.
+				const into = Vector3.Dot(result, normal);
+				if (into < 0) result = result.subtract(normal.scale(into));
+			}
+			return result;
+		},
+		update(dt) {
+			refreshSets();
+			if (inXr()) updateXr(dt);
+			else {
+				// A new headset session starts from a fresh origin, so the lift has to be measured again.
+				if (seated) lift = null;
+				updateDesktop(dt);
+			}
+		}
+	};
+}

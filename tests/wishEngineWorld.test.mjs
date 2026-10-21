@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { buildWishEngine, WISH, WISH_ENGINE_SCRIPT } from '../src/lib/xr/templates/wishEngine.ts';
-import { isBuiltinMeshId } from '../src/lib/assets/ref.ts';
+import { buildWishEngine, WISH, WISH_ENGINE_SCRIPT } from '../src/lib/content/templates/wishEngine.ts';
+import { isBuiltinMeshId } from '../packages/engine/src/assets/ref.ts';
 
 const tree = buildWishEngine();
 const component = (slot, type) => slot?.components.find((item) => item.type === type);

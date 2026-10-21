@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { HEADER_BYTES, MAX_VOXELS, VolumeFormatError, decode, decodeTexels, encode, fromTexels, rangeFor, readHeader, toTexels } from '../src/lib/lighting/format.ts';
-import { nodeCodec } from '../src/lib/lighting/nodeCodec.ts';
-import { slotIndex, voxelCount } from '../src/lib/lighting/types.ts';
+import { HEADER_BYTES, MAX_VOXELS, VolumeFormatError, decode, decodeTexels, encode, fromTexels, rangeFor, readHeader, toTexels } from '../packages/engine/src/lighting/format.ts';
+import { nodeCodec } from '../packages/engine/src/lighting/nodeCodec.ts';
+import { slotIndex, voxelCount } from '../packages/engine/src/lighting/types.ts';
 
 const SIGNATURE = '0123456789abcdef0123456789abcdef';
 function volume(dims = [5, 4, 3], fn = (f, x, y, z, c) => (f + 1) * 0.1 + x * 0.05 + y * 0.02 + z * 0.01 + c * 0.03) {

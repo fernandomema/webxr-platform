@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { POLY_HAVEN_WORLD, buildPolyHeavenMaterials, loadPolyHavenLogic } from '../src/lib/xr/templates/polyHeavenMaterials.ts';
-import { MATERIAL_ORB_TAG, ORB_PREVIEW_SIZE, buildMaterialOrb } from '../src/lib/xr/templates/materialOrb.ts';
-import { isBuiltinMeshId } from '../src/lib/assets/ref.ts';
+import { POLY_HAVEN_WORLD, buildPolyHeavenMaterials, loadPolyHavenLogic } from '../src/lib/content/templates/polyHeavenMaterials.ts';
+import { MATERIAL_ORB_TAG, ORB_PREVIEW_SIZE, buildMaterialOrb } from '../src/lib/content/templates/materialOrb.ts';
+import { isBuiltinMeshId } from '../packages/engine/src/assets/ref.ts';
 
 const logic = loadPolyHavenLogic();
 const tree = buildPolyHeavenMaterials();
@@ -19,7 +19,7 @@ const FILES = {
 };
 
 test('the world is registered as a development world', async () => {
-	const source = await readFile(new URL('../src/lib/xr/templates/builtinWorlds.ts', import.meta.url), 'utf8');
+	const source = await readFile(new URL('../src/lib/content/templates/builtinWorlds.ts', import.meta.url), 'utf8');
 	assert.ok(/DEV_WORLD_IDS[^=]*=\s*\[([^\]]*)\]/.exec(source)[1].includes('polyheaven-materials'));
 	assert.match(source, /id: 'polyheaven-materials'/);
 	assert.match(source, /name: 'PolyHeaven materials'/);

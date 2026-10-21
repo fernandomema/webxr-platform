@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeFrame } from '../src/lib/xr/templates/arcadeKit.ts';
-import { WHACK, buildWhack, malletHeadId, malletId, moleId } from '../src/lib/xr/templates/arcadeWhack.ts';
+import { makeFrame } from '../src/lib/content/templates/arcadeKit.ts';
+import { WHACK, buildWhack, malletHeadId, malletId, moleId } from '../src/lib/content/templates/arcadeWhack.ts';
 import { DT, runMachine } from './helpers/arcadeMachine.mjs';
 
 const frame = makeFrame(-11, 7, -Math.PI / 2);

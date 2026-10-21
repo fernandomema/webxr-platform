@@ -2,9 +2,9 @@
 	import { invalidateAll } from '$app/navigation';
 	import { authClient } from '$lib/auth-client';
 	import ProfileAvatar from '$lib/auth/ProfileAvatar.svelte';
-	import { cloudAssets } from '$lib/assets/cloud';
-	import { importAsset } from '$lib/assets/importAsset';
-	import { getLocalAssetStore } from '$lib/assets/store';
+	import { cloudAssets } from '@kithin/engine/assets/cloud';
+	import { importAsset } from '@kithin/engine/assets/importAsset';
+	import { getLocalAssetStore } from '@kithin/engine/assets/store';
 	import { PLATFORM_NAME } from '$lib/platform';
 	import type { PageProps } from './$types';
 

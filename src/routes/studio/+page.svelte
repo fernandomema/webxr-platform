@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { adapterIcon, adapterLabel } from '$lib/studio/ui/adapters';
-	import { getInventoryAdapter } from '$lib/inventory/registry';
+	import { getInventoryAdapter } from '@kithin/engine/inventory/registry';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import type { InventoryItem } from '$lib/inventory/types';
+	import type { InventoryItem } from '@kithin/engine/inventory/types';
 	import { Library } from '$lib/studio/state/library.svelte';
 	import { studioSession } from '$lib/studio/state/session.svelte';
 	import { dialogs } from '$lib/studio/state/dialogs.svelte';
@@ -14,7 +14,7 @@
 	import ItemThumb from '$lib/studio/components/ItemThumb.svelte';
 	import { studioModels } from '$lib/studio/state/models.svelte';
 	import { handOverNewAvatar } from '$lib/studio/state/newAvatar';
-	import type { SlotTree } from '$lib/ecs/types';
+	import type { SlotTree } from '@kithin/engine/ecs/types';
 	import { PLATFORM_NAME } from '$lib/platform';
 
 	const library = new Library(studioSession.context);

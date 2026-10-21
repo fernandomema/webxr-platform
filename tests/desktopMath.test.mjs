@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PUSH_RANGE } from '../src/lib/xr/interaction/pushPull.ts';
+import { PUSH_RANGE } from '../packages/engine/src/xr/interaction/pushPull.ts';
 import {
 	MAX_PITCH,
 	fitPanel,
@@ -12,7 +12,7 @@ import {
 	wheelPushedDistance,
 	wheelScaledBy,
 	SCALE_RANGE
-} from '../src/lib/xr/interaction/desktop/desktopMath.ts';
+} from '../packages/engine/src/xr/interaction/desktop/desktopMath.ts';
 
 test('the mouse turns the view, and the pitch stops short of straight up or down', () => {
 	const turned = lookedAt({ yaw: 0, pitch: 0 }, 100, 0, 1, false);

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import ts from 'typescript';
-import { CREDIT_LIMITS, CREDIT_PACKS, SKU_PATTERN, collectProducts } from '../src/lib/credits/catalog.ts';
+import { CREDIT_LIMITS, CREDIT_PACKS, SKU_PATTERN, collectProducts } from '../packages/engine/src/credits/catalog.ts';
 import { newNonce, signChallenge, verifyChallenge } from '../src/lib/server/creditChallenge.ts';
 import { BadRequestError, CreditError, ForbiddenError, NotFoundError, TooManyRequestsError, UnauthorizedError } from '../src/lib/server/errors.ts';
 import { applyCredit, applySpend } from '../src/lib/server/services/creditLedger.ts';

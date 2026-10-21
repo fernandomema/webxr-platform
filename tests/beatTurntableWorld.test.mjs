@@ -1,13 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { BEAT_TURNTABLE, BEAT_TURNTABLE_SCRIPT, buildBeatTurntable } from '../src/lib/xr/templates/beatTurntable.ts';
-import { loadLevelLogic } from '../src/lib/xr/templates/beatTurntableLogic.ts';
-import { isBuiltinMeshId } from '../src/lib/assets/ref.ts';
-import { eulerToQuat } from '../src/lib/math/euler.ts';
-import { DECK, deckIds } from '../src/lib/xr/templates/beatTurntableDesk.ts';
-import { STAGE, stageIds } from '../src/lib/xr/templates/beatTurntableStage.ts';
-import { OPTION_BUTTONS } from '../src/lib/xr/templates/beatTurntableUi.ts';
+import { BEAT_TURNTABLE, BEAT_TURNTABLE_SCRIPT, buildBeatTurntable } from '../src/lib/content/templates/beatTurntable.ts';
+import { loadLevelLogic } from '../src/lib/content/templates/beatTurntableLogic.ts';
+import { isBuiltinMeshId } from '../packages/engine/src/assets/ref.ts';
+import { eulerToQuat } from '../packages/engine/src/math/euler.ts';
+import { DECK, deckIds } from '../src/lib/content/templates/beatTurntableDesk.ts';
+import { STAGE, stageIds } from '../src/lib/content/templates/beatTurntableStage.ts';
+import { OPTION_BUTTONS } from '../src/lib/content/templates/beatTurntableUi.ts';
 
 const logic = loadLevelLogic();
 const find = (slot, type) => slot.components.find((c) => c.type === type);
@@ -830,7 +830,7 @@ test('the rack sign faces the stand and reads the right way round', () => {
 
 test('Beat Turntable is a development world, not an official one', async () => {
 	const { readFile } = await import('node:fs/promises');
-	const source = await readFile(new URL('../src/lib/xr/templates/builtinWorlds.ts', import.meta.url), 'utf8');
+	const source = await readFile(new URL('../src/lib/content/templates/builtinWorlds.ts', import.meta.url), 'utf8');
 	const dev = /DEV_WORLD_IDS[^=]*=\s*\[([^\]]*)\]/.exec(source)[1];
 	assert.ok(dev.includes('beat-turntable'), `dev worlds are ${dev}`);
 	assert.ok(dev.includes('mirror-maze'), 'the others stay');

@@ -1,4 +1,4 @@
-import { findPackByMetaSku } from '../../credits/catalog.ts';
+import { findPackByMetaSku } from '@kithin/engine/credits/catalog';
 import type { PaymentProviderAdapter } from './types.ts';
 
 /**

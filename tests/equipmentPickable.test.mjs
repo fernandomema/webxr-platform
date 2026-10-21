@@ -3,14 +3,14 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import ts from 'typescript';
 import { MeshBuilder, NullEngine, Scene, TransformNode } from '@babylonjs/core';
+import { resolveRelativeImports } from './helpers/resolveSpecifiers.mjs';
 
 const coreUrl = import.meta.resolve('@babylonjs/core');
-const libUrl = new URL('../src/lib/', import.meta.url);
+const libUrl = new URL('../packages/engine/src/', import.meta.url);
 const compiled = ts.transpileModule(await readFile(new URL('xr/interaction/equipmentSystem.ts', libUrl), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText
 	.replaceAll("'@babylonjs/core'", JSON.stringify(coreUrl))
-	.replace(/'\$lib\/([^']+)'/g, (_, path) => JSON.stringify(new URL(`${path}.ts`, libUrl).href))
-	.replaceAll("'./equipmentRegistry'", JSON.stringify(new URL('xr/interaction/equipmentRegistry.ts', libUrl).href));
-const { EquipmentSystem } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
+	.replaceAll("'./equipmentRegistry.ts'", JSON.stringify(new URL('xr/interaction/equipmentRegistry.ts', libUrl).href));
+const { EquipmentSystem } = await import(`data:text/javascript;base64,${Buffer.from(resolveRelativeImports(compiled, new URL('xr/interaction/equipmentSystem.ts', libUrl))).toString('base64')}`);
 
 test('an equipped object cannot be picked, so the laser of the hand holding it reaches what is behind it; it can again once let go', () => {
 	const engine = new NullEngine();

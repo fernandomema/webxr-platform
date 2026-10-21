@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseTeleportTarget, rotateVector, viewPlayerPose, viewPose } from '../src/lib/xr/playerPoses.ts';
+import { parseTeleportTarget, rotateVector, viewPlayerPose, viewPose } from '../packages/engine/src/xr/playerPoses.ts';
 
 const near = (a, b, eps = 1e-9) => a.every((v, i) => Math.abs(v - b[i]) < eps);
 const yawQuat = (yaw) => [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)];

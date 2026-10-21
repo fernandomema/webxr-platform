@@ -1,4 +1,4 @@
-// Builds src/lib/xr/templates/popUpStore.json: the Pop Up Store, a bright little shop where players find toys and tools
+// Builds src/lib/content/templates/popUpStore.json: the Pop Up Store, a bright little shop where players find toys and tools
 // to take away. Every product sits on a display stand that puts a new one in its place when it is taken (see
 // store-products.mjs), so anyone can take anything, as many times as they like, and keep it with Menu > Save.
 // Run with `node scripts/generate-pop-up-store.mjs`.
@@ -296,7 +296,7 @@ plant('popup-plant-fr', 'popup-decor', RIGHT * 8.1, FRONT - 1.9);
 plant('popup-plant-bl', 'popup-decor', LEFT * 8.1, BACK + 0.9);
 plant('popup-plant-br', 'popup-decor', RIGHT * 8.1, BACK + 0.9);
 
-const out = resolve(dirname(fileURLToPath(import.meta.url)), '../src/lib/xr/templates/popUpStore.json');
+const out = resolve(dirname(fileURLToPath(import.meta.url)), '../src/lib/content/templates/popUpStore.json');
 writeFileSync(out, JSON.stringify(slots, null, '\t') + '\n');
 const stands = slots.filter((s) => s.name.startsWith('Display: ')).length;
 console.log(`Wrote ${slots.length} slots (${stands} display stands) to ${out}`);

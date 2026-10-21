@@ -1,12 +1,12 @@
 <script lang="ts">
-	import type { Component, Slot, SlotTree } from '$lib/ecs/types';
-	import { CloudResolver } from '$lib/assets/cloud';
-	import { thumbnailUrl } from '$lib/assets/thumbnails';
-	import { captureItemThumbnail } from '../../xr/thumbnail/capture';
-	import { localPose } from '../../xr/thumbnail/cameraPose';
-	import type { Q4, V3 } from '../../xr/avatar/ik';
+	import type { Component, Slot, SlotTree } from '@kithin/engine/ecs/types';
+	import { CloudResolver } from '@kithin/engine/assets/cloud';
+	import { thumbnailUrl } from '@kithin/engine/assets/thumbnails';
+	import { captureItemThumbnail } from '@kithin/engine/xr/thumbnail/capture';
+	import { localPose } from '@kithin/engine/xr/thumbnail/cameraPose';
+	import type { Q4, V3 } from '@kithin/engine/xr/avatar/ik';
 	import { CAPTURE_CAMERA_NAME } from '../lighting/bakeText';
-	import type { InspectorDocument } from '../state/docOps';
+	import type { InspectorDocument } from '@kithin/engine/document/docOps';
 	import { studioAssets } from '../state/models.svelte';
 	import { studioSession } from '../state/session.svelte';
 	import { toasts } from '../state/toasts.svelte';

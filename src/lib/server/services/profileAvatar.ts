@@ -1,5 +1,5 @@
-import { isAssetId } from '$lib/assets/ref';
-import type { AssetManifest } from '$lib/assets/manifest';
+import { isAssetId } from '@kithin/engine/assets/ref';
+import type { AssetManifest } from '@kithin/engine/assets/manifest';
 import { prisma } from '../db';
 import { BadRequestError, UnauthorizedError } from '../errors';
 import { releaseOwnership } from './assets';

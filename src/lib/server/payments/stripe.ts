@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { findPack } from '../../credits/catalog.ts';
+import { findPack } from '@kithin/engine/credits/catalog';
 import type { CreditGrant, PaymentProviderAdapter } from './types.ts';
 
 /** Stripe sends a time and a signature of `time.body`; five minutes of difference is the tolerance Stripe documents. */

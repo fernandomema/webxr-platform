@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { prisma } from '../db';
 import { UnauthorizedError, ForbiddenError, NotFoundError, BadRequestError } from '../errors';
-import { validateWorldScene } from '$lib/worlds/package';
-import { migrateSlotTree } from '$lib/assets/ref';
+import { validateWorldScene } from '@kithin/engine/worlds/package';
+import { migrateSlotTree } from '@kithin/engine/assets/ref';
 import { assertAssetsReady, assertInventoryQuota, linkSceneAssets, resolveThumbnail, withThumbnail } from './assets';
-import type { SlotTree } from '$lib/ecs/types';
+import type { SlotTree } from '@kithin/engine/ecs/types';
 import type { SessionUser } from './worlds';
 
 const sceneBytes = (scene: unknown) => Buffer.byteLength(JSON.stringify(scene));

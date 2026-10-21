@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Matrix, MeshBuilder, NullEngine, Quaternion, Ray, Scene, Vector3 } from '@babylonjs/core';
-import { compose, invert } from '../src/lib/lighting/matrix.ts';
-import { insideSolid, intersect, worldBounds } from '../src/lib/lighting/primitives.ts';
+import { compose, invert } from '../packages/engine/src/lighting/matrix.ts';
+import { insideSolid, intersect, worldBounds } from '../packages/engine/src/lighting/primitives.ts';
 
 /** A repeatable stream of numbers. */
 const rng = (seed) => () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };

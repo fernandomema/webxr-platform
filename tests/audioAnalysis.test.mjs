@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { analyzeAudio } from '../src/lib/audio/analysis.ts';
+import { analyzeAudio } from '../packages/engine/src/audio/analysis.ts';
 
 const RATE = 22050;
 

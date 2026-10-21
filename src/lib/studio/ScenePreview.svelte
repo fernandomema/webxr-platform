@@ -15,25 +15,25 @@
 		TransformNode,
 		Vector3
 	} from '@babylonjs/core';
-	import { SceneGraph } from '$lib/xr/sceneGraph';
-	import { initBrowserCodeBlockSandbox } from '$lib/xr/sandbox/browserInit';
-	import { bakeReflectionProbe, type ProbeFaces } from '$lib/xr/bakeReflectionProbe';
-	import { BlobAssetLibrary } from '$lib/xr/blobAssetLibrary';
-	import { ModelLibrary } from '$lib/xr/modelLibrary';
-	import { CloudResolver } from '$lib/assets/cloud';
-	import type { SlotTree } from '$lib/ecs/types';
-	import { cloneTree } from './tree/ops';
-	import { eulerToQuat } from '$lib/math/euler';
+	import { SceneGraph } from '@kithin/engine/xr/sceneGraph';
+	import { initBrowserCodeBlockSandbox } from '@kithin/engine/xr/sandbox/browserInit';
+	import { bakeReflectionProbe, type ProbeFaces } from '@kithin/engine/xr/bakeReflectionProbe';
+	import { BlobAssetLibrary } from '@kithin/engine/xr/blobAssetLibrary';
+	import { ModelLibrary } from '@kithin/engine/xr/modelLibrary';
+	import { CloudResolver } from '@kithin/engine/assets/cloud';
+	import type { SlotTree } from '@kithin/engine/ecs/types';
+	import { cloneTree } from '@kithin/engine/document/tree';
+	import { eulerToQuat } from '@kithin/engine/math/euler';
 	import { handPreview } from './state/handPreview.svelte';
-	import { DEFAULT_PREVIEW_FOV_DEG, lookRotation } from '../xr/thumbnail/cameraPose';
+	import { DEFAULT_PREVIEW_FOV_DEG, lookRotation } from '@kithin/engine/xr/thumbnail/cameraPose';
 	import { EDITOR_ONLY, PreviewCameraHelper, type GizmoMode } from './previewCameraHelper';
 	import { DropZoneHelper, type ZoneGizmoMode } from './dropZoneHelper';
 	import { SelectionTransformHelper, type TransformMode } from './selectionTransformHelper';
 	import { SNAP_PRECISIONS, type SnapPrecision } from './transformSnapping';
 	import { INSET_MARGIN, insetPixels } from './previewCameraGeometry';
 	import { createStudioHand, type StudioHand } from './studioHand';
-	import { defaultHandModel, holdingBends, solveGraspFull } from '../xr/avatar/grasp';
-	import { graspObstacles } from '../xr/avatar/graspShapes';
+	import { defaultHandModel, holdingBends, solveGraspFull } from '@kithin/engine/xr/avatar/grasp';
+	import { graspObstacles } from '@kithin/engine/xr/avatar/graspShapes';
 
 	interface ScenePreviewProps {
 		tree: SlotTree;

@@ -5,16 +5,16 @@
 	import type { StudioDocument } from '../state/document.svelte';
 	import { dialogs } from '../state/dialogs.svelte';
 	import { formatBytes, studioAssets, studioModels } from '../state/models.svelte';
-	import { assetMesh, assetSource } from '$lib/assets/ref';
-	import type { AssetListing } from '$lib/assets/store';
+	import { assetMesh, assetSource } from '@kithin/engine/assets/ref';
+	import type { AssetListing } from '@kithin/engine/assets/store';
 	type ModelListing = Extract<AssetListing, { type: 'model' }>;
 	type AudioListing = Extract<AssetListing, { type: 'audio' }>;
 	import Icon from '../ui/Icon.svelte';
 	import { adapterLabel } from '../ui/adapters';
 	import AvatarWizard from './AvatarWizard.svelte';
 	import ItemThumb from './ItemThumb.svelte';
-	import type { AssetId } from '$lib/assets/ref';
-	import type { SlotTree } from '$lib/ecs/types';
+	import type { AssetId } from '@kithin/engine/assets/ref';
+	import type { SlotTree } from '@kithin/engine/ecs/types';
 
 	interface Props {
 		doc: StudioDocument;

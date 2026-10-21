@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sniffAssetKind, getAssetKind, assetKindForFileName } from '../src/lib/assets/kinds/index.ts';
-import { validateManifest } from '../src/lib/assets/manifest.ts';
-import { MemoryAssetStore } from '../src/lib/assets/store.ts';
-import { importAsset } from '../src/lib/assets/importAsset.ts';
-import { AssetImportError } from '../src/lib/assets/kinds/types.ts';
+import { sniffAssetKind, getAssetKind, assetKindForFileName } from '../packages/engine/src/assets/kinds/index.ts';
+import { validateManifest } from '../packages/engine/src/assets/manifest.ts';
+import { MemoryAssetStore } from '../packages/engine/src/assets/store.ts';
+import { importAsset } from '../packages/engine/src/assets/importAsset.ts';
+import { AssetImportError } from '../packages/engine/src/assets/kinds/types.ts';
 
 const text = (s) => [...s].map((c) => c.charCodeAt(0));
 const be32 = (n) => [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255];

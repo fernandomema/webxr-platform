@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ARCHIVE_JUKEBOX, buildArchiveJukebox, loadArchiveLogic } from '../src/lib/xr/templates/archiveJukebox.ts';
+import { ARCHIVE_JUKEBOX, buildArchiveJukebox, loadArchiveLogic } from '../src/lib/content/templates/archiveJukebox.ts';
 import { readFile } from 'node:fs/promises';
-import { isBuiltinMeshId } from '../src/lib/assets/ref.ts';
+import { isBuiltinMeshId } from '../packages/engine/src/assets/ref.ts';
 
 const logic = loadArchiveLogic();
 const tree = buildArchiveJukebox();
@@ -10,7 +10,7 @@ const byId = new Map(tree.map((slot) => [slot.id, slot]));
 const find = (slot, type) => slot.components.find((c) => c.type === type);
 
 test('the jukebox is an official world', async () => {
-	const source = await readFile(new URL('../src/lib/xr/templates/builtinWorlds.ts', import.meta.url), 'utf8');
+	const source = await readFile(new URL('../src/lib/content/templates/builtinWorlds.ts', import.meta.url), 'utf8');
 	assert.ok(!/DEV_WORLD_IDS[^=]*=\s*\[([^\]]*)\]/.exec(source)[1].includes('archive-jukebox'));
 	assert.match(source, /id: 'archive-jukebox'/);
 });

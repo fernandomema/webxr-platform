@@ -1,4 +1,4 @@
-// Builds src/lib/xr/templates/pulse.json: Feedback Center, an indoor space where players speak up. Screens at the far end
+// Builds src/lib/content/templates/pulse.json: Feedback Center, an indoor space where players speak up. Screens at the far end
 // of the hall show the ideas and bugs players want worked on, each with an up and a down button to vote; a suggestion desk
 // and a mood wall let anyone add their own voice (see feedback-board.mjs). The screens use persistent feedback APIs.
 // Run with `node scripts/generate-pulse.mjs`.
@@ -266,5 +266,5 @@ box('pulse-podium-base', 'Podium Base', 'pulse-podium', [RIGHT * 4.3, STAGE_TOP 
 slot('pulse-podium-top', 'Podium Desk', 'pulse-podium', { position: [RIGHT * 4.3, STAGE_TOP + 1.05, -19.32], rotation: pitch(0.35), scale: [1.05, 0.08, 0.75], components: [mesh('box', COLORS.wood)] });
 sign('pulse-podium-sign', 'pulse-podium', [RIGHT * 4.3, STAGE_TOP + 0.55, -18.97], [0.7, 0.3], '+z', { title: 'Dev Updates', lines: ['Coming soon'] }, COLORS.glow, '#0b1224');
 
-writeFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../src/lib/xr/templates/pulse.json'), JSON.stringify(slots, null, '\t') + '\n');
+writeFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../src/lib/content/templates/pulse.json'), JSON.stringify(slots, null, '\t') + '\n');
 console.log(`pulse.json: ${slots.length} slots`);

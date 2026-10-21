@@ -1,4 +1,4 @@
-import { ASSET_LIMITS } from '$lib/assets/limits';
+import { ASSET_LIMITS } from '@kithin/engine/assets/limits';
 
 const API = 'https://api.polyhaven.com';
 const USER_AGENT = 'Kithin-WebXR/0.1';

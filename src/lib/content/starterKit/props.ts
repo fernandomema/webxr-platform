@@ -3,7 +3,7 @@
  * (the middle of its base, on the floor) and sized in metres like the real thing. Every one is a container root carrying
  * the grab, with its parts as children, so it is picked up and moved as one and edited part by part in the Studio.
  */
-import type { Component, Quat, Slot, SlotTree, Vec3 } from '../../ecs/types';
+import type { Component, Quat, Slot, SlotTree, Vec3 } from '@kithin/engine/ecs/types';
 
 type Shape = 'box' | 'sphere' | 'cylinder' | 'plane' | 'disc';
 

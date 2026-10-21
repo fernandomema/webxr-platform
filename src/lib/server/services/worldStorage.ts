@@ -4,7 +4,7 @@ import { takeRateToken } from '../rateLimit';
 import {
 	LEADERBOARD_LIMITS, LEADERBOARD_ORDERS, STORAGE_LIMITS, StorageOpError, applyOps, assertValidBoardName, assertValidScore, isWriteOp, parseStorageRequest,
 	type LeaderboardOrder, type StoredEntry
-} from '$lib/worldStorage/ops';
+} from '@kithin/engine/worldStorage/ops';
 import type { SessionUser } from './worlds';
 
 const MAX_ATTEMPTS = 5;

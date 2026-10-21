@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveAsset } from '../src/lib/assets/resolve.ts';
-import { normalizedExtents, normalizationTransform } from '../src/lib/assets/normalize.ts';
-import { MemoryAssetStore } from '../src/lib/assets/store.ts';
-import { importGlb } from '../src/lib/assets/importGlb.ts';
-import { assetIdOf } from '../src/lib/assets/hash.ts';
+import { resolveAsset } from '../packages/engine/src/assets/resolve.ts';
+import { normalizedExtents, normalizationTransform } from '../packages/engine/src/assets/normalize.ts';
+import { MemoryAssetStore } from '../packages/engine/src/assets/store.ts';
+import { importGlb } from '../packages/engine/src/assets/importGlb.ts';
+import { assetIdOf } from '../packages/engine/src/assets/hash.ts';
 import { buildGlb } from './helpers/glb.mjs';
 
 const source = (name, fn) => ({ name, resolve: fn });

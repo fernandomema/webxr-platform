@@ -6,14 +6,14 @@ import { TransformNode, NullEngine, Scene } from '@babylonjs/core';
 import { createCodeBlockHandlers } from './helpers/codeBlockRuntimeModule.mjs';
 import {
 	CARD_SAFE_WIDTH, GUIDE_CARDS, GUIDE_DONE, GUIDE_NEXT, GUIDE_TOPICS, SAFE_HEIGHT, SAFE_WIDTH, STEP_TEXT_SIZE, STEP_TEXT_WIDTH, buildLobbyHub
-} from '../src/lib/xr/templates/lobbyHub.ts';
-import { buildLobbyExtras } from '../src/lib/xr/templates/lobbyExtras.ts';
-import { localizedText } from '../src/lib/xr/uiLocale.ts';
-import { INPUT_HINT_NAMES, resolveInputHints } from '../src/lib/xr/inputHints.ts';
-import { layoutRichText, parseRichText } from '../src/lib/xr/richText.ts';
-import { lintUiPanels } from '../src/lib/xr/uiLayout.ts';
+} from '../src/lib/content/templates/lobbyHub.ts';
+import { buildLobbyExtras } from '../src/lib/content/templates/lobbyExtras.ts';
+import { localizedText } from '../packages/engine/src/xr/uiLocale.ts';
+import { INPUT_HINT_NAMES, resolveInputHints } from '../packages/engine/src/xr/inputHints.ts';
+import { layoutRichText, parseRichText } from '../packages/engine/src/xr/richText.ts';
+import { lintUiPanels } from '../packages/engine/src/xr/uiLayout.ts';
 
-const lobby = JSON.parse(await readFile(new URL('../src/lib/xr/templates/lobby.json', import.meta.url), 'utf8'));
+const lobby = JSON.parse(await readFile(new URL('../src/lib/content/templates/lobby.json', import.meta.url), 'utf8'));
 const hub = buildLobbyHub();
 const byId = new Map(hub.map((slot) => [slot.id, slot]));
 const find = (slot, type) => slot.components.find((component) => component.type === type);
@@ -240,7 +240,7 @@ test('presses that mean nothing change nothing', () => {
 });
 
 test('every card is a doorway: to a world that exists, or to a new one', async () => {
-	const worlds = await read('src/lib/xr/templates/builtinWorlds.ts');
+	const worlds = await read('src/lib/content/templates/builtinWorlds.ts');
 	assert.ok(GUIDE_CARDS.some((card) => card.link.kind === 'new'), 'one makes a new world');
 	for (const card of GUIDE_CARDS) {
 		const link = find(byId.get(`lobby-card-${card.id}-panel`), 'worldLink');
@@ -271,16 +271,16 @@ test('the board and the cards stand on the wall without touching each other or t
 });
 
 test('what the steps tell visitors is what the game shows today, down to the names on its buttons', async () => {
-	const dash = await read('src/lib/xr/ui/dashPanel.ts');
-	const worldsBrowser = await read('src/lib/xr/ui/worldsBrowser.ts');
-	const portalMenu = await read('src/lib/xr/ui/worldPortalMenu.ts');
-	const desktopHand = await read('src/lib/xr/interaction/desktop/desktopHand.ts');
-	const fps = await read('src/lib/xr/interaction/desktop/fpsController.ts');
-	const pointer = await read('src/lib/xr/interaction/pointerController.ts');
-	const engine = await read('src/lib/xr/engine.ts');
-	const builtin = await read('src/lib/inventory/adapters/builtin.ts');
+	const dash = await read('packages/engine/src/xr/ui/dashPanel.ts');
+	const worldsBrowser = await read('packages/engine/src/xr/ui/worldsBrowser.ts');
+	const portalMenu = await read('packages/engine/src/xr/ui/worldPortalMenu.ts');
+	const desktopHand = await read('packages/engine/src/xr/interaction/desktop/desktopHand.ts');
+	const fps = await read('packages/engine/src/xr/interaction/desktop/fpsController.ts');
+	const pointer = await read('packages/engine/src/xr/interaction/pointerController.ts');
+	const engine = await read('packages/engine/src/xr/engine.ts');
+	const builtin = await read('packages/engine/src/inventory/adapters/builtin.ts');
 	const wiki = await read('src/content/wiki/en/getting-started/quick-start.md');
-	const worlds = await read('src/lib/xr/templates/builtinWorlds.ts');
+	const worlds = await read('src/lib/content/templates/builtinWorlds.ts');
 	const hosting = await read('src/lib/server/services/worlds.ts');
 
 	// The Dash: its tabs and the buttons the steps name.

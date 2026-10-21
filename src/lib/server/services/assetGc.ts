@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/private';
-import { planAssetGc, type AssetRow } from '$lib/assets/accounting';
+import { planAssetGc, type AssetRow } from '@kithin/engine/assets/accounting';
 import { prisma } from '../db';
 import { assetKeyPrefix, assetStorageConfigured, deleteObject, listKeys } from '../assetStorage';
 

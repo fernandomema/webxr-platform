@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
-import { collectAssetIds } from '../src/lib/assets/ref.ts';
+import { collectAssetIds } from '../packages/engine/src/assets/ref.ts';
 
-const lobby = JSON.parse(readFileSync(new URL('../src/lib/xr/templates/lobby.json', import.meta.url), 'utf8'));
+const lobby = JSON.parse(readFileSync(new URL('../src/lib/content/templates/lobby.json', import.meta.url), 'utf8'));
 const find = (slot, type) => slot.components.find((c) => c.type === type);
 
 test('the lobby record player has a socket that takes discs', () => {

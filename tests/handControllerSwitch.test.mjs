@@ -5,7 +5,7 @@ import ts from 'typescript';
 import { Bone, Logger, Matrix, MeshBuilder, NullEngine, Observable, Scene, Skeleton, StandardMaterial, TransformNode, VertexBuffer, WebXRHand } from '@babylonjs/core';
 import { BindBonesParameters, PrepareDefinesForBones } from '@babylonjs/core/Materials/materialHelper.functions.js';
 
-const source = await readFile(new URL('../src/lib/xr/interaction/handControllerSwitch.ts', import.meta.url), 'utf8');
+const source = await readFile(new URL('../packages/engine/src/xr/interaction/handControllerSwitch.ts', import.meta.url), 'utf8');
 const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText
 	.replaceAll("'@babylonjs/core'", JSON.stringify(import.meta.resolve('@babylonjs/core')));
 const { setupHandControllerSwitch } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);

@@ -3,7 +3,7 @@ import { createHmac } from 'node:crypto';
 import test from 'node:test';
 import { createStripeProvider, grantFromStripeEvent, verifyStripeSignature } from '../src/lib/server/payments/stripe.ts';
 import { createMetaProvider } from '../src/lib/server/payments/meta.ts';
-import { CREDIT_PACKS } from '../src/lib/credits/catalog.ts';
+import { CREDIT_PACKS } from '../packages/engine/src/credits/catalog.ts';
 
 const SECRET = 'whsec_test';
 const sign = (body, t = Math.floor(Date.now() / 1000), secret = SECRET) => `t=${t},v1=${createHmac('sha256', secret).update(`${t}.${body}`).digest('hex')}`;

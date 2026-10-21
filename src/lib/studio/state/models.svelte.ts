@@ -1,8 +1,8 @@
-import { AssetImportError } from '$lib/assets/kinds';
-import { acceptedExtensions, assetKindForFileName } from '$lib/assets/kinds';
-import { importAssetFile } from '$lib/assets/importAsset';
-import type { AssetId } from '$lib/assets/ref';
-import { getLocalAssetStore, type AssetListing } from '$lib/assets/store';
+import { AssetImportError } from '@kithin/engine/assets/kinds/index';
+import { acceptedExtensions, assetKindForFileName } from '@kithin/engine/assets/kinds/index';
+import { importAssetFile } from '@kithin/engine/assets/importAsset';
+import type { AssetId } from '@kithin/engine/assets/ref';
+import { getLocalAssetStore, type AssetListing } from '@kithin/engine/assets/store';
 import { toasts } from './toasts.svelte';
 
 /** The assets imported on this device, as the Studio shows them. Works for every registered asset kind. */

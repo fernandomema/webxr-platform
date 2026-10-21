@@ -1,6 +1,6 @@
-import { buildDeadDrop } from '../../src/lib/xr/templates/deadDrop.ts';
-import { ID } from '../../src/lib/xr/templates/deadDropKit.ts';
-import { POOLS, TUNING } from '../../src/lib/xr/templates/deadDropData.ts';
+import { buildDeadDrop } from '../../src/lib/content/templates/deadDrop.ts';
+import { ID } from '../../src/lib/content/templates/deadDropKit.ts';
+import { POOLS, TUNING } from '../../src/lib/content/templates/deadDropData.ts';
 
 export const DT = 1 / 60;
 const find = (slot, type) => slot.components.find((c) => c.type === type);

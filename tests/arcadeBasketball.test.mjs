@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeFrame } from '../src/lib/xr/templates/arcadeKit.ts';
-import { BASKETBALL, ballId, buildBasketball } from '../src/lib/xr/templates/arcadeBasketball.ts';
+import { makeFrame } from '../src/lib/content/templates/arcadeKit.ts';
+import { BASKETBALL, ballId, buildBasketball } from '../src/lib/content/templates/arcadeBasketball.ts';
 import { DT, aim, runMachine } from './helpers/arcadeMachine.mjs';
 
 const frame = makeFrame(7, 14.8, 0);

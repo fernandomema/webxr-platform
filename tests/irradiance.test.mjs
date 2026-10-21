@@ -2,10 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { NullEngine, PBRMaterial, PointLight, Scene, ShaderMaterial, StandardMaterial, HemisphericLight, Vector3 } from '@babylonjs/core';
-import { INJECTION_POINTS, MAX_VOLUMES, PBR_BEFORE_COMPOSITION, STANDARD_BEFORE_FOG, UNIFORMS, atlasSize, customCode, definitions, packAtlas } from '../src/lib/xr/irradianceShader.ts';
-import { IrradianceVolumePlugin, registerIrradiancePlugin } from '../src/lib/xr/irradiancePlugin.ts';
-import { LightVolumeManager, tintOf } from '../src/lib/xr/lightVolumeManager.ts';
-import { setAmbientBase, setAmbientScale } from '../src/lib/xr/ambientControl.ts';
+import { INJECTION_POINTS, MAX_VOLUMES, PBR_BEFORE_COMPOSITION, STANDARD_BEFORE_FOG, UNIFORMS, atlasSize, customCode, definitions, packAtlas } from '../packages/engine/src/xr/irradianceShader.ts';
+import { IrradianceVolumePlugin, registerIrradiancePlugin } from '../packages/engine/src/xr/irradiancePlugin.ts';
+import { LightVolumeManager, tintOf } from '../packages/engine/src/xr/lightVolumeManager.ts';
+import { setAmbientBase, setAmbientScale } from '../packages/engine/src/xr/ambientControl.ts';
 
 const core = new URL('../node_modules/@babylonjs/core/Shaders/', import.meta.url);
 /** A shader of Babylon's with its `#include`s written out, so a marker and the names above it can be found. */

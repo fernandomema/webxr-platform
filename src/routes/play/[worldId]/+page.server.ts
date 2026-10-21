@@ -3,7 +3,7 @@ import { getPublishedWorldApp } from '$lib/server/services/publications';
 import { describeWorldApp, worldAppPath } from '$lib/worlds/appManifest';
 import { recordWorldVisit } from '$lib/server/services/homeFeed';
 import { toHttpError } from '$lib/server/apiError';
-import { getBuiltinWorld } from '$lib/xr/templates/builtinWorlds';
+import { getBuiltinWorld } from '$lib/content/templates/builtinWorlds';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	// A built-in world opens directly by its id (for development and testing); it is not an installable app.

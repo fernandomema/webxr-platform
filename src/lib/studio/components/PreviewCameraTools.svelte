@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
-	import type { Slot } from '$lib/ecs/types';
-	import { CloudResolver } from '$lib/assets/cloud';
-	import { quatToEuler, roundDisplay } from '$lib/math/euler';
-	import { isAvatarTree } from '../../xr/avatar/build';
-	import type { Q4, V3 } from '../../xr/avatar/ik';
-	import { localPose } from '../../xr/thumbnail/cameraPose';
-	import { renderObjectThumbnail, renderWorldPanorama } from '../../xr/thumbnail/renderThumbnail';
-	import type { InspectorDocument } from '../state/docOps';
+	import type { Slot } from '@kithin/engine/ecs/types';
+	import { CloudResolver } from '@kithin/engine/assets/cloud';
+	import { quatToEuler, roundDisplay } from '@kithin/engine/math/euler';
+	import { isAvatarTree } from '@kithin/engine/xr/avatar/build';
+	import type { Q4, V3 } from '@kithin/engine/xr/avatar/ik';
+	import { localPose } from '@kithin/engine/xr/thumbnail/cameraPose';
+	import { renderObjectThumbnail, renderWorldPanorama } from '@kithin/engine/xr/thumbnail/renderThumbnail';
+	import type { InspectorDocument } from '@kithin/engine/document/docOps';
 	import Tooltip from '../ui/Tooltip.svelte';
 	import { studioSession } from '../state/session.svelte';
 	import { toasts } from '../state/toasts.svelte';

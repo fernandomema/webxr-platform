@@ -1,7 +1,7 @@
-import type { WorldPackage } from '$lib/worlds/types';
-import type { SlotTree } from '$lib/ecs/types';
-import { findBuiltinWorld } from '$lib/xr/content/registry';
-import { platformFetch } from '$lib/xr/platform/config';
+import type { WorldPackage } from '@kithin/engine/worlds/types';
+import type { SlotTree } from '@kithin/engine/ecs/types';
+import { findBuiltinWorld } from '@kithin/engine/xr/content/registry';
+import { platformFetch } from '@kithin/engine/xr/platform/config';
 
 const packageOf = (name: string, scene: SlotTree): WorldPackage => ({ formatVersion: 1, name: (name.trim() || 'Untitled world').slice(0, 120), scene: structuredClone(scene), defaultVisibility: 'solo' });
 

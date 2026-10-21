@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { applyCredit, applySpend } from '../src/lib/server/services/creditLedger.ts';
 import { CreditError } from '../src/lib/server/errors.ts';
-import { CREDIT_LIMITS } from '../src/lib/credits/catalog.ts';
+import { CREDIT_LIMITS } from '../packages/engine/src/credits/catalog.ts';
 import { createFakeDb } from './helpers/ledgerFake.mjs';
 
 const buy = (db, userId, amount, key) => db.transaction((tx) => applyCredit(tx, { userId, amount, kind: 'purchase', provider: 'stripe', providerRef: key, idempotencyKey: key }));

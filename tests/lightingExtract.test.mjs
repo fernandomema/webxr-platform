@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createSlot } from '../src/lib/ecs/types.ts';
-import { bake, specFor } from '../src/lib/lighting/bake.ts';
-import { extractScene, fingerprint, parseColor, sceneSignature } from '../src/lib/lighting/sceneExtract.ts';
+import { createSlot } from '../packages/engine/src/ecs/types.ts';
+import { bake, specFor } from '../packages/engine/src/lighting/bake.ts';
+import { extractScene, fingerprint, parseColor, sceneSignature } from '../packages/engine/src/lighting/sceneExtract.ts';
 
 const mesh = (id, shape, extra = {}, components = []) => createSlot({ id, name: id, ...extra, components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: shape }, color: '#808080' }, ...components] });
 

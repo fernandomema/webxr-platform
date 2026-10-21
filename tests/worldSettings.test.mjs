@@ -3,16 +3,12 @@ import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 import ts from 'typescript';
 import { appInfoWithSettings, findWorldSettings } from '../src/lib/worlds/appManifest.ts';
-import { collectAssetIds } from '../src/lib/assets/ref.ts';
-import { decode } from '../src/lib/lighting/format.ts';
-import { nodeCodec } from '../src/lib/lighting/nodeCodec.ts';
+import { collectAssetIds } from '../packages/engine/src/assets/ref.ts';
+import { decode } from '../packages/engine/src/lighting/format.ts';
+import { nodeCodec } from '../packages/engine/src/lighting/nodeCodec.ts';
 import { runBake, BakeError } from '../src/lib/studio/lighting/bakeJob.ts';
 
-// worlds/package.ts uses the app's `$lib` alias: load it with the alias pointed at the real files, as lightmapAsset.test.mjs does.
-const libUrl = new URL('../src/lib/', import.meta.url);
-const packageCode = ts.transpileModule(await readFile(new URL('worlds/package.ts', libUrl), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText
-  .replace(/'\$lib\/([^']+)'/g, (_, path) => JSON.stringify(new URL(`${path}.ts`, libUrl).href));
-const { validateWorldScene } = await import(`data:text/javascript;base64,${Buffer.from(packageCode).toString('base64')}`);
+import { validateWorldScene } from '../packages/engine/src/worlds/package.ts';
 
 const slot = (id, components, extra = {}) => ({ id, name: id, parentId: null, position: [0, 0, 0], rotation: [0, 0, 0, 1], scale: [1, 1, 1], components, ...extra });
 const ASSET = `sha256:${'a'.repeat(64)}`;

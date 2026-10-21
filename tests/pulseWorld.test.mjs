@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { isBuiltinMeshId } from '../src/lib/assets/ref.ts';
+import { isBuiltinMeshId } from '../packages/engine/src/assets/ref.ts';
 
-const pulse = JSON.parse(readFileSync(new URL('../src/lib/xr/templates/pulse.json', import.meta.url), 'utf8'));
+const pulse = JSON.parse(readFileSync(new URL('../src/lib/content/templates/pulse.json', import.meta.url), 'utf8'));
 const find = (slot, type) => slot.components.find((c) => c.type === type);
 const meshId = (slot) => find(slot, 'meshRenderer')?.meshRef.id;
 const isFloor = (slot) => meshId(slot) === 'ground' || meshId(slot) === 'disc';

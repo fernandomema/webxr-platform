@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { requestScriptJson } from '../src/lib/xr/scriptNet.ts';
+import { requestScriptJson } from '../packages/engine/src/xr/scriptNet.ts';
 
 test('script networking supports local GET and JSON POST, omitting credentials on external requests', async (t) => {
 	const previous = globalThis.location;

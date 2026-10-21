@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { NullEngine, Scene, TransformNode } from '@babylonjs/core';
-import { setupParticleEmitter } from '../src/lib/xr/particleEmitter.ts';
-import { needsRebuild } from '../src/lib/xr/slotRebuild.ts';
-import { createSlot } from '../src/lib/ecs/types.ts';
+import { setupParticleEmitter } from '../packages/engine/src/xr/particleEmitter.ts';
+import { needsRebuild } from '../packages/engine/src/xr/slotRebuild.ts';
+import { createSlot } from '../packages/engine/src/ecs/types.ts';
 
 test('persistent particles follow their parent, stop when hidden, resume and dispose completely', () => {
 	const engine = new NullEngine();

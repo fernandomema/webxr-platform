@@ -5,11 +5,12 @@
  */
 import { PUBLIC_STUN_URLS } from '$env/static/public';
 import { PLATFORM_NAME } from '$lib/platform';
-import { configurePlatform } from '$lib/xr/platform/config';
-import { registerContent } from '$lib/xr/content/registry';
+import { configurePlatform } from '@kithin/engine/xr/platform/config';
+import { registerContent } from '@kithin/engine/xr/content/registry';
 import { BUNDLED_ASSETS } from '$lib/content/bundledAssets';
-import pulse from '$lib/xr/templates/pulse.json';
-import type { SlotTree } from '$lib/ecs/types';
+import pulse from '$lib/content/templates/pulse.json';
+import type { SlotTree } from '@kithin/engine/ecs/types';
+import { paintDisc } from '$lib/content/templates/recordDisc';
 
 configurePlatform({ stunUrls: PUBLIC_STUN_URLS, name: PLATFORM_NAME });
 
@@ -18,14 +19,16 @@ const feedbackCode = new Set((pulse as SlotTree).flatMap((slot) => slot.componen
 
 registerContent({
 	loadWorlds: async () => {
-		const { BUILTIN_WORLDS, DEV_WORLD_IDS } = await import('$lib/xr/templates/builtinWorlds');
+		const { BUILTIN_WORLDS, DEV_WORLD_IDS } = await import('$lib/content/templates/builtinWorlds');
 		return { worlds: BUILTIN_WORLDS, devWorldIds: DEV_WORLD_IDS };
 	},
 	loadHome: async () => {
-		const [{ default: lobby }, { buildLobbyExtras }] = await Promise.all([import('$lib/xr/templates/lobby.json'), import('$lib/xr/templates/lobbyExtras')]);
+		const [{ default: lobby }, { buildLobbyExtras }] = await Promise.all([import('$lib/content/templates/lobby.json'), import('$lib/content/templates/lobbyExtras')]);
 		return [...lobby, ...buildLobbyExtras()] as SlotTree;
 	},
 	loadStarterKit: async () => (await import('$lib/content/starterKit/catalog')).starterKit,
+	// A record disc's label, rim and grooves follow its title, author and colours.
+	repainters: { recordDisc: paintDisc },
 	bundledAssets: BUNDLED_ASSETS,
 	worldPreviewBase: '/assets/world-previews',
 	sameOriginPathsFor: (code) => (feedbackCode.has(code) ? ['/api/feedback'] : [])

@@ -1,5 +1,5 @@
 import type { PageServerLoad } from './$types';
-import { BUILTIN_WORLDS, DEV_WORLD_IDS } from '$lib/xr/templates/builtinWorlds';
+import { BUILTIN_WORLDS, DEV_WORLD_IDS } from '$lib/content/templates/builtinWorlds';
 import { listPublications } from '$lib/server/services/publications';
 
 export const load: PageServerLoad = async () => {

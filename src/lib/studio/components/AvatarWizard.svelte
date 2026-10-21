@@ -1,11 +1,11 @@
 <script lang="ts">
-	import type { SlotTree } from '$lib/ecs/types';
-	import type { AssetId } from '$lib/assets/ref';
-	import { getLocalAssetStore, type AssetListing } from '$lib/assets/store';
-	import { parseGlb } from '$lib/assets/glb';
+	import type { SlotTree } from '@kithin/engine/ecs/types';
+	import type { AssetId } from '@kithin/engine/assets/ref';
+	import { getLocalAssetStore, type AssetListing } from '@kithin/engine/assets/store';
+	import { parseGlb } from '@kithin/engine/assets/glb';
 	import { studioModels } from '../state/models.svelte';
-	import { buildAvatarTree, eyeHeightOf } from '../../xr/avatar/build';
-	import { BODY_BONES, REQUIRED_BONES, avatarCapabilities, detectHumanoidMap, type HumanoidBone, type HumanoidMap } from '../../xr/avatar/humanoid';
+	import { buildAvatarTree, eyeHeightOf } from '@kithin/engine/xr/avatar/build';
+	import { BODY_BONES, REQUIRED_BONES, avatarCapabilities, detectHumanoidMap, type HumanoidBone, type HumanoidMap } from '@kithin/engine/xr/avatar/humanoid';
 	import BoneMapEditor from './BoneMapEditor.svelte';
 
 	type ModelListing = Extract<AssetListing, { type: 'model' }>;

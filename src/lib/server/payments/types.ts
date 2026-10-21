@@ -1,4 +1,4 @@
-import type { CreditPack } from '../../credits/catalog.ts';
+import type { CreditPack } from '@kithin/engine/credits/catalog';
 
 /** Credits a payment provider has confirmed were paid for. The ledger applies it once per `idempotencyKey`. */
 export interface CreditGrant {

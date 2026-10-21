@@ -1,5 +1,5 @@
 <script lang="ts">
-	import PlayShell from '$lib/xr/PlayShell.svelte';
+	import PlayShell from '@kithin/engine/xr/PlayShell.svelte';
 	import { loadStartupWorld } from '$lib/play/startupWorld';
 	import type { PageProps } from './$types';
 

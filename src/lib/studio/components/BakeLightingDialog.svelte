@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
-	import type { Component, Slot, SlotTree } from '$lib/ecs/types';
+	import type { Component, Slot, SlotTree } from '@kithin/engine/ecs/types';
 	import { bakeWorld } from '../lighting/bakeWorld';
 	import { ABORT_ERROR, bakeStatsText, bakeSummary } from '../lighting/bakeText';
 	import type { BakeQuality, BakeStats } from '../lighting/bakeJob';
-	import type { InspectorDocument } from '../state/docOps';
+	import type { InspectorDocument } from '@kithin/engine/document/docOps';
 	import { studioAssets } from '../state/models.svelte';
 	import { toasts } from '../state/toasts.svelte';
 

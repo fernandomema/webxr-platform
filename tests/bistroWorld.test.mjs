@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { isBuiltinMeshId } from '../src/lib/assets/ref.ts';
-import { buildBistro } from '../src/lib/xr/templates/bistro.ts';
-import { DIVIDERS, HALL, ID, KINDS, LOBBY, LOOKS, MODELS, PARTS, PORCH, TUNING, UI, WORKERS } from '../src/lib/xr/templates/bistroData.ts';
+import { isBuiltinMeshId } from '../packages/engine/src/assets/ref.ts';
+import { buildBistro } from '../src/lib/content/templates/bistro.ts';
+import { DIVIDERS, HALL, ID, KINDS, LOBBY, LOOKS, MODELS, PARTS, PORCH, TUNING, UI, WORKERS } from '../src/lib/content/templates/bistroData.ts';
 
 const tree = buildBistro();
 const byId = new Map(tree.map((slot) => [slot.id, slot]));
@@ -195,7 +195,7 @@ test('every look uses the five shapes an ingredient has, at a size a hand can fi
 });
 
 test('the world is listed with the other worlds, and its lighting can be baked', async () => {
-	const worlds = await readFile(new URL('../src/lib/xr/templates/builtinWorlds.ts', import.meta.url), 'utf8');
+	const worlds = await readFile(new URL('../src/lib/content/templates/builtinWorlds.ts', import.meta.url), 'utf8');
 	assert.match(worlds, /id: 'bistro-rush',\s+name: 'Bistro Rush'/);
 	assert.match(worlds, /DEV_WORLD_IDS[^\n]*'bistro-rush'/);
 	const bake = await readFile(new URL('../scripts/bake-world.mjs', import.meta.url), 'utf8');

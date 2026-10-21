@@ -1,18 +1,18 @@
-import type { SlotTree } from '$lib/ecs/types';
-import { getInventoryAdapter, isReadOnlyAdapter } from '$lib/inventory/registry';
-import type { InventoryContext, InventoryItem, InventoryKind } from '$lib/inventory/types';
-import { validateWorldScene } from '$lib/worlds/package';
+import type { SlotTree } from '@kithin/engine/ecs/types';
+import { getInventoryAdapter, isReadOnlyAdapter } from '@kithin/engine/inventory/registry';
+import type { InventoryContext, InventoryItem, InventoryKind } from '@kithin/engine/inventory/types';
+import { validateWorldScene } from '@kithin/engine/worlds/package';
 import { findWorldSettings } from '$lib/worlds/appManifest';
-import { ensureCloudAssets, type CloudSyncProgress } from '$lib/assets/cloudSync';
-import { getLocalAssetStore } from '$lib/assets/store';
+import { ensureCloudAssets, type CloudSyncProgress } from '@kithin/engine/assets/cloudSync';
+import { getLocalAssetStore } from '@kithin/engine/assets/store';
 import { getTemplate } from '../templates';
-import { cloneTree } from '../tree/ops';
+import { cloneTree } from '@kithin/engine/document/tree';
 import { deleteDraft, loadDraft, saveDraft, type Draft } from './autosave';
 import { StudioDocument } from './document.svelte';
-import { captureItemThumbnail } from '../../xr/thumbnail/capture';
-import { CloudResolver } from '$lib/assets/cloud';
-import type { AssetId } from '$lib/assets/ref';
-import { isAvatarTree } from '../../xr/avatar/build';
+import { captureItemThumbnail } from '@kithin/engine/xr/thumbnail/capture';
+import { CloudResolver } from '@kithin/engine/assets/cloud';
+import type { AssetId } from '@kithin/engine/assets/ref';
+import { isAvatarTree } from '@kithin/engine/xr/avatar/build';
 import { takeNewAvatar } from './newAvatar';
 
 export interface SaveTarget {

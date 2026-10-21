@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { layoutProblems, placeKeys, keyLabel, keyVariants } from '../src/lib/xr/keyboard/layout.ts';
-import { initialEditorState, pressKey, pickCandidate, shownText, switchLayout } from '../src/lib/xr/keyboard/editor.ts';
-import { registerComposer, EMPTY_COMPOSITION } from '../src/lib/xr/keyboard/composer.ts';
+import { layoutProblems, placeKeys, keyLabel, keyVariants } from '../packages/engine/src/xr/keyboard/layout.ts';
+import { initialEditorState, pressKey, pickCandidate, shownText, switchLayout } from '../packages/engine/src/xr/keyboard/editor.ts';
+import { registerComposer, EMPTY_COMPOSITION } from '../packages/engine/src/xr/keyboard/composer.ts';
 
-const load = (id) => JSON.parse(readFileSync(new URL(`../src/lib/xr/keyboard/layouts/${id}.json`, import.meta.url), 'utf8'));
+const load = (id) => JSON.parse(readFileSync(new URL(`../packages/engine/src/xr/keyboard/layouts/${id}.json`, import.meta.url), 'utf8'));
 const es = load('es');
 const en = load('en');
 const find = (layout, page, predicate) => layout.pages[page].flat().find(predicate);
@@ -114,7 +114,7 @@ test('a composing input method (like pinyin) plugs in without changing the keybo
 	assert.equal(switchLayout(state, toy, es).text, 'm', 'switching layout keeps what was being composed');
 });
 
-import { parseKeyboardPresence } from '../src/lib/xr/keyboard/presence.ts';
+import { parseKeyboardPresence } from '../packages/engine/src/xr/keyboard/presence.ts';
 
 test('another player\'s keyboard is read off presence only when it is a sane pose and size', () => {
 	const good = parseKeyboardPresence({ position: [1, 1.1, -0.4], rotation: [0, 0, 0, 2], width: 0.6, depth: 0.35 });
@@ -128,7 +128,7 @@ test('another player\'s keyboard is read off presence only when it is a sane pos
 });
 
 test('the keyboard frame template has every part the keyboard fits, and a close key', () => {
-	const frame = JSON.parse(readFileSync(new URL('../src/lib/xr/templates/keyboard.json', import.meta.url), 'utf8'));
+	const frame = JSON.parse(readFileSync(new URL('../packages/engine/src/xr/keyboard/frame.json', import.meta.url), 'utf8'));
 	const byName = (name) => frame.find((slot) => slot.name === name);
 	const root = frame.find((slot) => slot.parentId === null);
 	assert.ok(root.components.some((c) => c.type === 'grabbable'), 'it can be picked up and moved');

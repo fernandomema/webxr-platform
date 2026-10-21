@@ -3,9 +3,9 @@ import test from 'node:test';
 import { Quaternion, Vector3 } from '@babylonjs/core';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { INPUT_HINT_NAMES, INPUT_ICON_NAMES, iconsAsWords, inputHint, inputIconUrl, resolveInputHints } from '../src/lib/xr/inputHints.ts';
-import { plainUiText, uiText } from '../src/lib/xr/uiLocale.ts';
-import { yawFacing } from '../src/lib/xr/ui/panelFacing.ts';
+import { INPUT_HINT_NAMES, INPUT_ICON_NAMES, iconsAsWords, inputHint, inputIconUrl, resolveInputHints } from '../packages/engine/src/xr/inputHints.ts';
+import { plainUiText, uiText } from '../packages/engine/src/xr/uiLocale.ts';
+import { yawFacing } from '../packages/engine/src/xr/ui/panelFacing.ts';
 
 test('a text shows the controls of the device in hand, as pictures, in the language of the reader', () => {
 	const text = 'Press {dash} → Worlds. To pick it up, {grab}.';
