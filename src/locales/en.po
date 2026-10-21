@@ -198,6 +198,7 @@ msgstr "Assets"
 msgid "Scene"
 msgstr "Scene"
 
+#: src/routes/device/+page.svelte
 #: src/routes/xr-panel/inspector/+page.svelte
 #: src/routes/xr-panel/inspector/+page.svelte
 msgid "Code"
@@ -4162,7 +4163,9 @@ msgstr "Worlds · {0}"
 #. 0: PLATFORM_NAME
 #. 0: PLATFORM_NAME
 #. 0: PLATFORM_NAME
+#. 0: PLATFORM_NAME
 #: src/lib/auth/AuthShell.svelte
+#: src/routes/device/+page.svelte
 #: src/routes/settings/+layout.svelte
 #: src/routes/worlds/+page.svelte
 msgid "{0} home"
@@ -4386,6 +4389,7 @@ msgid "No model chosen"
 msgstr "No model chosen"
 
 #: src/lib/studio/components/AiPanel.svelte
+#: src/routes/device/+page.svelte
 msgid "Checking…"
 msgstr "Checking…"
 
@@ -4466,6 +4470,7 @@ msgid "Settings stay on this device. Scene data you ask the AI to inspect is sen
 msgstr "Settings stay on this device. Scene data you ask the AI to inspect is sent to the selected provider."
 
 #: src/lib/studio/components/AiPanel.svelte
+#: src/routes/device/+page.svelte
 msgid "Done"
 msgstr "Done"
 
@@ -5756,3 +5761,58 @@ msgstr "Bytehosting reports hosting infrastructure in Germany, within the Europe
 #: src/routes/privacy/+page.svelte
 msgid "Last updated: October 21, 2026"
 msgstr "Last updated: October 21, 2026"
+
+#: src/routes/device/+page.svelte
+msgid "That code is not valid, or it has expired. Check it on the screen of the game."
+msgstr "That code is not valid, or it has expired. Check it on the screen of the game."
+
+#: src/routes/device/+page.svelte
+msgid "Something went wrong. Try again."
+msgstr "Something went wrong. Try again."
+
+#. 0: PLATFORM_NAME
+#: src/routes/device/+page.svelte
+msgid "Connect a game · {0}"
+msgstr "Connect a game · {0}"
+
+#: src/routes/device/+page.svelte
+msgid "Continue"
+msgstr "Continue"
+
+#: src/routes/device/+page.svelte
+msgid "Connect a game"
+msgstr "Connect a game"
+
+#. 0: data.userName
+#: src/routes/device/+page.svelte
+msgid "Type the code the game shows to sign it in as {0}."
+msgstr "Type the code the game shows to sign it in as {0}."
+
+#: src/routes/device/+page.svelte
+msgid "Allow"
+msgstr "Allow"
+
+#: src/routes/device/+page.svelte
+msgid "Deny"
+msgstr "Deny"
+
+#: src/routes/device/+page.svelte
+msgid "Allow this game?"
+msgstr "Allow this game?"
+
+#. 0: data.userName
+#: src/routes/device/+page.svelte
+msgid "The game with the code <0/> will be able to play, host and save as {0}. Only continue if you started this from a game you trust."
+msgstr "The game with the code <0/> will be able to play, host and save as {0}. Only continue if you started this from a game you trust."
+
+#: src/routes/device/+page.svelte
+msgid "You can go back to the game: it is signed in."
+msgstr "You can go back to the game: it is signed in."
+
+#: src/routes/device/+page.svelte
+msgid "Denied"
+msgstr "Denied"
+
+#: src/routes/device/+page.svelte
+msgid "The game was not signed in."
+msgstr "The game was not signed in."

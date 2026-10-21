@@ -8,6 +8,12 @@ Ver `/home/fernando/.claude/plans/crea-un-nuevo-proyecto-precious-breeze.md` par
 
 SvelteKit 2 + adapter-node · Tailwind v4 · better-auth (email/contraseña + Discord) · Prisma 7 + Postgres (`prisma dev` local) · Babylon.js (motor WebXR) · wuchale (i18n, en/es) · WebSocket de señalización propio (sin dependencias externas, un único handler TS reutilizado en dev y producción).
 
+## El motor como paquete
+
+El motor vive en `packages/engine` (`@kithin/engine`): el sitio lo usa igual que lo usaría cualquier otro juego. Lo que es del sitio (mundos integrados, kit inicial, iluminación horneada, qué servicios hay) está en `src/lib/content` y se le cuenta al motor en `src/lib/engineSetup.ts`. `examples/standalone-game` es un juego de archivos estáticos que usa el motor con sus propios mundos y los servicios de Kithin (cuentas, créditos, multijugador); ver `packages/engine/README.md`.
+
+Para que un juego en otro sitio pueda usar la API, añade su origen a `ENGINE_ALLOWED_ORIGINS` y ejecuta `npx prisma db push` (tabla `deviceCode`, para entrar con un código en `/device`).
+
 ## Desarrollo
 
 ```sh

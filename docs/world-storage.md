@@ -39,4 +39,4 @@ async onPlayerReady(player) {
 
 Storage is **trusted-client**: the server enforces limits (16 KB per value, 100 keys per scope, 120 writes per minute, bounded sets, score range, 10k entries per board) but cannot tell whether a script computed a value honestly. Do not use it for competitive rankings that need anti-cheat.
 
-Code blocks run in a QuickJS sandbox (`src/lib/xr/sandbox/`): a world's script cannot reach the page, `fetch`, cookies or the player's session, only the `ctx` API. `ctx.net` is limited to external HTTPS (no cookies) and the `/api/feedback` route.
+Code blocks run in a QuickJS sandbox (`packages/engine/src/xr/sandbox/`): a world's script cannot reach the page, `fetch`, cookies or the player's session, only the `ctx` API. `ctx.net` is limited to external HTTPS (no cookies) and the `/api/feedback` route.

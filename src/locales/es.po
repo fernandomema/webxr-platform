@@ -198,6 +198,7 @@ msgstr ""
 msgid "Scene"
 msgstr ""
 
+#: src/routes/device/+page.svelte
 #: src/routes/xr-panel/inspector/+page.svelte
 #: src/routes/xr-panel/inspector/+page.svelte
 msgid "Code"
@@ -4162,7 +4163,9 @@ msgstr ""
 #. 0: PLATFORM_NAME
 #. 0: PLATFORM_NAME
 #. 0: PLATFORM_NAME
+#. 0: PLATFORM_NAME
 #: src/lib/auth/AuthShell.svelte
+#: src/routes/device/+page.svelte
 #: src/routes/settings/+layout.svelte
 #: src/routes/worlds/+page.svelte
 msgid "{0} home"
@@ -4386,6 +4389,7 @@ msgid "No model chosen"
 msgstr ""
 
 #: src/lib/studio/components/AiPanel.svelte
+#: src/routes/device/+page.svelte
 msgid "Checking…"
 msgstr ""
 
@@ -4466,6 +4470,7 @@ msgid "Settings stay on this device. Scene data you ask the AI to inspect is sen
 msgstr ""
 
 #: src/lib/studio/components/AiPanel.svelte
+#: src/routes/device/+page.svelte
 msgid "Done"
 msgstr ""
 
@@ -5756,3 +5761,58 @@ msgstr ""
 #: src/routes/privacy/+page.svelte
 msgid "Last updated: October 21, 2026"
 msgstr ""
+
+#: src/routes/device/+page.svelte
+msgid "That code is not valid, or it has expired. Check it on the screen of the game."
+msgstr "Ese código no es válido o ha caducado. Compruébalo en la pantalla del juego."
+
+#: src/routes/device/+page.svelte
+msgid "Something went wrong. Try again."
+msgstr "Algo ha ido mal. Inténtalo de nuevo."
+
+#. 0: PLATFORM_NAME
+#: src/routes/device/+page.svelte
+msgid "Connect a game · {0}"
+msgstr "Conectar un juego · {0}"
+
+#: src/routes/device/+page.svelte
+msgid "Continue"
+msgstr "Continuar"
+
+#: src/routes/device/+page.svelte
+msgid "Connect a game"
+msgstr "Conectar un juego"
+
+#. 0: data.userName
+#: src/routes/device/+page.svelte
+msgid "Type the code the game shows to sign it in as {0}."
+msgstr "Escribe el código que muestra el juego para iniciar sesión en él como {0}."
+
+#: src/routes/device/+page.svelte
+msgid "Allow"
+msgstr "Permitir"
+
+#: src/routes/device/+page.svelte
+msgid "Deny"
+msgstr "Denegar"
+
+#: src/routes/device/+page.svelte
+msgid "Allow this game?"
+msgstr "¿Permitir este juego?"
+
+#. 0: data.userName
+#: src/routes/device/+page.svelte
+msgid "The game with the code <0/> will be able to play, host and save as {0}. Only continue if you started this from a game you trust."
+msgstr "El juego con el código <0/> podrá jugar, alojar partidas y guardar como {0}. Continúa solo si lo has iniciado desde un juego de confianza."
+
+#: src/routes/device/+page.svelte
+msgid "You can go back to the game: it is signed in."
+msgstr "Ya puedes volver al juego: ha iniciado sesión."
+
+#: src/routes/device/+page.svelte
+msgid "Denied"
+msgstr "Denegado"
+
+#: src/routes/device/+page.svelte
+msgid "The game was not signed in."
+msgstr "No se ha iniciado sesión en el juego."

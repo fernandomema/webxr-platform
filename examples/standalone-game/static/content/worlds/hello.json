@@ -1,0 +1,151 @@
+{
+	"formatVersion": 1,
+	"name": "Hello",
+	"description": "A first room: pick things up.",
+	"defaultVisibility": "solo",
+	"scene": [
+		{
+			"id": "floor",
+			"parentId": null,
+			"name": "Floor",
+			"position": [
+				0,
+				0,
+				0
+			],
+			"rotation": [
+				0,
+				0,
+				0,
+				1
+			],
+			"scale": [
+				1,
+				1,
+				1
+			],
+			"components": [
+				{
+					"type": "meshRenderer",
+					"meshRef": {
+						"kind": "builtin",
+						"id": "ground"
+					},
+					"color": "#334155"
+				},
+				{
+					"type": "collider",
+					"shape": "box"
+				}
+			]
+		},
+		{
+			"id": "crate",
+			"parentId": null,
+			"name": "Crate",
+			"position": [
+				0,
+				0.6,
+				-1.5
+			],
+			"rotation": [
+				0,
+				0,
+				0,
+				1
+			],
+			"scale": [
+				0.4,
+				0.4,
+				0.4
+			],
+			"components": [
+				{
+					"type": "meshRenderer",
+					"meshRef": {
+						"kind": "builtin",
+						"id": "box"
+					},
+					"color": "#f59e0b"
+				},
+				{
+					"type": "collider",
+					"shape": "box"
+				},
+				{
+					"type": "grabbable",
+					"scalable": true
+				}
+			]
+		},
+		{
+			"id": "ball",
+			"parentId": null,
+			"name": "Ball",
+			"position": [
+				0.7,
+				0.6,
+				-1.5
+			],
+			"rotation": [
+				0,
+				0,
+				0,
+				1
+			],
+			"scale": [
+				0.3,
+				0.3,
+				0.3
+			],
+			"components": [
+				{
+					"type": "meshRenderer",
+					"meshRef": {
+						"kind": "builtin",
+						"id": "sphere"
+					},
+					"color": "#38bdf8"
+				},
+				{
+					"type": "collider",
+					"shape": "sphere"
+				},
+				{
+					"type": "grabbable",
+					"scalable": true
+				}
+			]
+		},
+		{
+			"id": "sky",
+			"parentId": null,
+			"name": "Sky",
+			"position": [
+				0,
+				0,
+				0
+			],
+			"rotation": [
+				0,
+				0,
+				0,
+				1
+			],
+			"scale": [
+				1,
+				1,
+				1
+			],
+			"components": [
+				{
+					"type": "skybox",
+					"topColor": "#0b1030",
+					"horizonColor": "#7c3aed",
+					"bottomColor": "#0f172a",
+					"stars": 0.6
+				}
+			]
+		}
+	]
+}

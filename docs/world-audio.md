@@ -18,4 +18,4 @@ const track = await ctx.audio.playTrack(source, { volume: 0.8 });
 - `analyze` decodes the whole track and caches the result per source (the last four), so a second call is instant. It resolves after a moment for a long track.
 - `playTrack` is not positioned in the world. It runs on the peer that calls it: gate it behind `ctx.world.isHost()` when only one player should hear it. Use `track.time()` to sync gameplay, never a timer started when the call returned.
 
-The analysis itself is `src/lib/audio/analysis.ts` (pure, tested in `tests/audioAnalysis.test.mjs`); the engine side is `src/lib/xr/scriptAudio.ts`.
+The analysis itself is `packages/engine/src/audio/analysis.ts` (pure, tested in `tests/audioAnalysis.test.mjs`); the engine side is `packages/engine/src/xr/scriptAudio.ts`.

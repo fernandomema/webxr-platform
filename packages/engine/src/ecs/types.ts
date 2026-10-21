@@ -575,7 +575,7 @@ export interface KeyboardKeyComponent {
 }
 
 /**
- * The title, author and colours of a record disc (see `$lib/xr/templates/recordDisc`). The disc's look (label text,
+ * The title, author and colours of a record disc (the site draws the disc from them, see its record disc generator). The disc's look (label text,
  * label and rim colour, vinyl and groove tones) is derived from these fields whenever they are edited, in the Studio
  * and in the in-game inspector alike, so nobody has to touch the parts of the disc by hand.
  */

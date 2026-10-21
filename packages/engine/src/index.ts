@@ -7,6 +7,7 @@
 export { configurePlatform, getPlatformConfig, platformFetch, platformUrl, assetUrl, useStoredToken, type PlatformConfig } from './xr/platform/config.ts';
 export { platformAuth } from './xr/platform/auth.ts';
 export { registerContent, type EngineContent, type BuiltinWorld, type StarterKit } from './xr/content/registry.ts';
+export { loadBundle, type BundleManifest, type LoadedBundle } from './xr/content/bundle.ts';
 export { configureFeatures, getFeatures, type EngineFeatures } from './xr/features.ts';
 export { setEngineLocale, engineLocale, registerTranslations, translate } from './xr/i18n/locale.ts';
 export type { MountedGame, MountGameOptions } from './xr/engine.ts';

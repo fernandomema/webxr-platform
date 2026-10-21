@@ -4,7 +4,8 @@
 	"version": "0.0.1",
 	"type": "module",
 	"workspaces": [
-		"packages/*"
+		"packages/*",
+		"examples/*"
 	],
 	"scripts": {
 		"predev": "node packages/engine/bin/copy-static.mjs static",

@@ -120,17 +120,17 @@ La estructura actual permite construir el mundo como una plantilla y ofrecerlo d
 
 ### Capacidades existentes que se pueden reutilizar
 
-- `src/lib/xr/templates/builtinWorlds.ts`: registro de mundos y plantillas.
-- `src/lib/ecs/types.ts`: `grabbable`, `insertable`, `socket`, `codeBlock`, `scriptState`, `pointLight`, `skybox`, `audioPlayer`, `particleBurst` y `impactSound`.
-- `src/lib/xr/interaction/socketSystem.ts`: encaje de la moneda y de los fragmentos, resuelto por el host.
-- `src/lib/xr/codeBlockRuntime.ts`: lectura de componentes, acciones, actualizaciones de estado y control de objetos.
-- `src/lib/xr/templates/beatTurntable.ts`: ejemplo de lógica de mundo que consulta la ocupación de un encaje.
-- `src/lib/xr/scriptAudio.ts` y `docs/world-audio.md`: reproducción y reloj de audio local.
-- `src/lib/xr/particleEffects.ts`: ráfagas puntuales. Su implementación actual no proporciona el humo continuo descrito en este plan.
+- `src/lib/content/templates/builtinWorlds.ts`: registro de mundos y plantillas.
+- `packages/engine/src/ecs/types.ts`: `grabbable`, `insertable`, `socket`, `codeBlock`, `scriptState`, `pointLight`, `skybox`, `audioPlayer`, `particleBurst` y `impactSound`.
+- `packages/engine/src/xr/interaction/socketSystem.ts`: encaje de la moneda y de los fragmentos, resuelto por el host.
+- `packages/engine/src/xr/codeBlockRuntime.ts`: lectura de componentes, acciones, actualizaciones de estado y control de objetos.
+- `src/lib/content/templates/beatTurntable.ts`: ejemplo de lógica de mundo que consulta la ocupación de un encaje.
+- `packages/engine/src/xr/scriptAudio.ts` y `docs/world-audio.md`: reproducción y reloj de audio local.
+- `packages/engine/src/xr/particleEffects.ts`: ráfagas puntuales. Su implementación actual no proporciona el humo continuo descrito en este plan.
 
 ### Trabajo nuevo previsto
 
-- Constructor del mundo en `src/lib/xr/templates/wishEngine.ts`, con módulos de escenografía, interacciones y secuencias si el tamaño lo aconseja.
+- Constructor del mundo en `src/lib/content/templates/wishEngine.ts`, con módulos de escenografía, interacciones y secuencias si el tamaño lo aconseja.
 - Controlador de capítulos y secuencias audiovisuales que pueda reconstruir el momento actual del recorrido.
 - Animación y materiales del genio, cintas, órbitas y arquitectura.
 - Efectos persistentes con límites de calidad, reutilizables por otros mundos cuando necesiten soporte del motor.

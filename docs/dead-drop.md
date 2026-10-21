@@ -78,9 +78,9 @@ The squad arrives through a blast door in the south wall. The **gear wall** besi
 
 ## Lighting
 
-Dead Drop is lit by **baked lighting** (see `src/lib/lighting/`), not by the flat ambient light: the bunker is one irradiance volume and each of the nine rooms of the raid has its own, baked with every doorway shut (the doorways and the cover are switched on and off at run time and are not in the bake). The lamps are `baked: true`, so they do not run live while the baked light is in use, and the sky's ambient is turned off. The director dims each room by its kind (barracks and storage darker, the vault red), leaves two rooms almost black, and pulses everything red in the lockdown, by setting `intensity` and `tint` of the `lightVolume` of each room.
+Dead Drop is lit by **baked lighting** (see `packages/engine/src/lighting/`), not by the flat ambient light: the bunker is one irradiance volume and each of the nine rooms of the raid has its own, baked with every doorway shut (the doorways and the cover are switched on and off at run time and are not in the bake). The lamps are `baked: true`, so they do not run live while the baked light is in use, and the sky's ambient is turned off. The director dims each room by its kind (barracks and storage darker, the vault red), leaves two rooms almost black, and pulses everything red in the lockdown, by setting `intensity` and `tint` of the `lightVolume` of each room.
 
-- Bake again after changing walls, lamps, colours or a room's position: `npm run bake -- dead-drop` (or `npm run bake -- dead-drop hub room-11` for some regions). It writes `static/worlds/dead-drop/lighting-*.lvol` and `src/lib/assets/bundledLighting.ts`. `tests/deadDropLighting.test.mjs` fails when the files are older than the world.
+- Bake again after changing walls, lamps, colours or a room's position: `npm run bake -- dead-drop` (or `npm run bake -- dead-drop hub room-11` for some regions). It writes `static/worlds/dead-drop/lighting-*.lvol` and `src/lib/content/bundledLighting.ts`. `tests/deadDropLighting.test.mjs` fails when the files are older than the world.
 - `?lightdebug=off` shows the world without the baked light, `?lightdebug=only` shows the light alone.
 - Not done: the flashlight on the guns, and baking inside the Studio.
 

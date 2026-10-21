@@ -6,8 +6,8 @@ The design goal is one rule: **a code block can never take a player's credits wi
 
 ## Why a script cannot spend credits on its own
 
-1. **Scripts run in a sandbox** (`src/lib/xr/sandbox/`, QuickJS compiled to WebAssembly). A script sees the standard language and `ctx`, nothing else: no `window`, `document`, `fetch`, cookies or storage. It cannot call our API with the player's session.
-2. **`ctx.net` is closed to our own site** except `/api/feedback` (`src/lib/xr/scriptNet.ts`), and external requests carry no cookies.
+1. **Scripts run in a sandbox** (`packages/engine/src/xr/sandbox/`, QuickJS compiled to WebAssembly). A script sees the standard language and `ctx`, nothing else: no `window`, `document`, `fetch`, cookies or storage. It cannot call our API with the player's session.
+2. **`ctx.net` is closed to our own site** except `/api/feedback` (`packages/engine/src/xr/scriptNet.ts`), and external requests carry no cookies.
 3. **The money lives only on the server.** The balance changes through the ledger (`services/creditLedger.ts`): conditional updates (`balance >= amount`), one `creditTransaction` per change with a unique idempotency key, per-day spending limits. The client never says how much to charge.
 4. **Prices come from the published world.** A script names a product (`ctx.pay.request({ sku })`); the server reads the price from the world's published revision (`shop` component).
 5. **The player approves in a window the world does not control.** `ui/purchasePrompt.ts` is not a slot (no script can see, move, hide or click it), is drawn in front of everything, follows the head, and shows the server's name, price and balance. The Pay button arms after a moment. Only a click on it sends the signed confirmation.
