@@ -5,7 +5,7 @@ import { assetUrl } from '../platform/config.ts';
 import { buildAvatarTree } from './build.ts';
 import type { HumanoidMap } from './humanoid.ts';
 
-/** "Subject 7" by Cherryvania, CC BY 4.0 (see static/avatars/CREDITS.md). */
+/** "Subject 7" by Cherryvania, CC BY 4.0 (see static/avatars/CREDITS.md of the package). */
 const BASE_AVATAR_URL = '/avatars/subject-7.glb';
 
 /** Its bones carry a numeric suffix and Blender-style names, which the detector does not guess, so they are listed here. */

@@ -26,11 +26,11 @@ test('a place that cannot draw pictures gets their names in words', () => {
 });
 
 test('every picture a hint can draw is a file, and every file of the pack that is used is credited', async () => {
-	for (const name of INPUT_ICON_NAMES) assert.ok(existsSync(new URL(`../static${inputIconUrl(name)}`, import.meta.url)), `${name}.png exists`);
+	for (const name of INPUT_ICON_NAMES) assert.ok(existsSync(new URL(`../packages/engine/static${inputIconUrl(name)}`, import.meta.url)), `${name}.png exists`);
 	const used = new Set();
 	for (const name of INPUT_HINT_NAMES) for (const device of ['desktop', 'xr']) for (const locale of ['en', 'es']) for (const [, icon] of inputHint(name, device, locale).matchAll(/\[\[([a-z0-9_]+)\]\]/g)) used.add(icon);
 	for (const icon of used) assert.ok(INPUT_ICON_NAMES.includes(icon), `${icon} is a known picture`);
-	assert.match(await readFile(new URL('../static/assets/inputs/LICENSE.txt', import.meta.url), 'utf8'), /Creative Commons Zero/);
+	assert.match(await readFile(new URL('../packages/engine/static/assets/inputs/LICENSE.txt', import.meta.url), 'utf8'), /Creative Commons Zero/);
 });
 
 test('what is not a known control is left alone', () => {

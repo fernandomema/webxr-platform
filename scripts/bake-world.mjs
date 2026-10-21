@@ -7,17 +7,18 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src = (path) => pathToFileURL(join(root, 'src/lib', path)).href;
+const engine = (path) => pathToFileURL(join(root, 'packages/engine/src', path)).href;
 
 // Each world: how to build its scene, and which volumes it is baked into.
 const WORLDS = {
 	'dead-drop': async () => {
-		const { buildDeadDrop } = await import(src('xr/templates/deadDrop.ts'));
-		const { LIGHT_REGIONS, LIGHTING_WORLD } = await import(src('xr/templates/deadDropLighting.ts'));
+		const { buildDeadDrop } = await import(src('content/templates/deadDrop.ts'));
+		const { LIGHT_REGIONS, LIGHTING_WORLD } = await import(src('content/templates/deadDropLighting.ts'));
 		return { name: LIGHTING_WORLD, tree: buildDeadDrop(), regions: LIGHT_REGIONS, skyIntensity: 0, albedoScale: 0.4 };
 	},
 	'bistro-rush': async () => {
-		const { buildBistro } = await import(src('xr/templates/bistro.ts'));
-		const { BAKE, LIGHT_REGIONS, LIGHTING_WORLD } = await import(src('xr/templates/bistroLighting.ts'));
+		const { buildBistro } = await import(src('content/templates/bistro.ts'));
+		const { BAKE, LIGHT_REGIONS, LIGHTING_WORLD } = await import(src('content/templates/bistroLighting.ts'));
 		return { name: LIGHTING_WORLD, tree: buildBistro(), regions: LIGHT_REGIONS, ...BAKE };
 	}
 };
@@ -28,10 +29,10 @@ if (!worldId || !WORLDS[worldId]) {
 	process.exit(1);
 }
 
-const { extractScene, sceneSignature } = await import(src('lighting/sceneExtract.ts'));
-const { bake, specFor } = await import(src('lighting/bake.ts'));
-const { encode } = await import(src('lighting/format.ts'));
-const { nodeCodec } = await import(src('lighting/nodeCodec.ts'));
+const { extractScene, sceneSignature } = await import(engine('lighting/sceneExtract.ts'));
+const { bake, specFor } = await import(engine('lighting/bake.ts'));
+const { encode } = await import(engine('lighting/format.ts'));
+const { nodeCodec } = await import(engine('lighting/nodeCodec.ts'));
 
 const world = await WORLDS[worldId]();
 const regions = only.length ? world.regions.filter((r) => only.includes(r.id)) : world.regions;
@@ -40,7 +41,7 @@ mkdirSync(dir, { recursive: true });
 
 // Keep what earlier runs listed for other worlds and regions.
 const registryPath = join(root, 'src/lib/content/bundledLighting.ts');
-const { BUNDLED_LIGHTING } = await import(`${src('assets/bundledLighting.ts')}?t=${Date.now()}`);
+const { BUNDLED_LIGHTING } = await import(`${src('content/bundledLighting.ts')}?t=${Date.now()}`);
 const registry = { ...BUNDLED_LIGHTING };
 
 for (const region of regions) {

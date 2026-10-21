@@ -1,7 +1,7 @@
 /**
  * Names of the controls, for texts that tell someone what to press. A text written `Press {dash} → Worlds` shows the key that opens the
  * menu on a computer and the button of the controller in a headset: the same words, with the control of the device in hand.
- * Controls are pictures (`[[name]]`, see richText.ts), drawn from the Kenney Input Prompts pack (static/assets/inputs, CC0), with a
+ * Controls are pictures (`[[name]]`, see richText.ts), drawn from the Kenney Input Prompts pack (packages/engine/static/assets/inputs, CC0), with a
  * word to say in places that cannot draw them. An unknown `{name}` is left as it is.
  */
 import { assetUrl } from './platform/config.ts';
@@ -32,7 +32,7 @@ const ICON_WORDS: Record<string, string> = {
 	mouse_left: 'left click', mouse_move: 'mouse', quest_button_menu: 'menu button', quest_trigger_right: 'trigger', quest_grip_right: 'grip', quest_stick_l: 'left stick', quest_stick_r: 'right stick'
 };
 
-/** The names of every picture a hint can draw: each is a file in static/assets/inputs. */
+/** The names of every picture a hint can draw: each is a file in static/assets/inputs of the package. */
 export const INPUT_ICON_NAMES: readonly string[] = Object.keys(ICON_WORDS);
 export const inputIconUrl = (name: string): string => assetUrl(`/assets/inputs/${name}.png`);
 
