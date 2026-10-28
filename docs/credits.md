@@ -59,7 +59,7 @@ Buying follows Meta's guide for WebXR PWAs ([ps-iap](https://developers.meta.com
 
 The server (`payments/meta.ts`) calls Meta's `verify_entitlement`, then `consume_entitlement` (Meta refunds an unconsumed consumable after three days), and only then credits the pack once per purchase token. The first verified purchase links the Meta account to the player (`paymentIdentity`), after which receipts naming that Meta account are refused for anyone else.
 
-Required in the Developer Center: three **consumable** add-ons with the SKUs `credits_500`, `credits_1200` and `credits_3000`, a Data Use Checkup that includes the User ID grant (`getLoggedInUserId`), and `META_APP_ID` / `META_APP_SECRET` on the server. Test users can pay before the checkup is approved.
+Required in the Developer Center: four **consumable** add-ons with the SKUs `credits_100`, `credits_500`, `credits_1200` and `credits_3000`, a Data Use Checkup that includes the User ID grant (`getLoggedInUserId`), and `META_APP_ID` / `META_APP_SECRET` on the server. Test users can pay before the checkup is approved.
 
 Residual risk: the Meta user id in a receipt comes from the player's device. Consuming makes a purchase creditable once, and the account link stops a second player from using an id that is already linked, but until a Meta account is linked the first receipt that names it is trusted. Meta's web documentation does not offer a way to check the id against the purchase token.
 

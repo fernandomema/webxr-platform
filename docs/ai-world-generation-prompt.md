@@ -166,11 +166,14 @@ Required fields are marked **(req)**. Everything else is optional; omit a field 
 **`skybox`**: gradient sky behind everything. **One per world**, on a root slot with no mesh.
 - `topColor` **(req)**, `horizonColor` **(req)**, `bottomColor` **(req)**: hex.
 - `stars`: 0–1. `ambientIntensity`: 0–3 (default 1). `reflectionCapture`: boolean, live reflections on shiny surfaces. `toneMapping`: `"aces"`.
+- Colour grading of the whole picture: `exposure` 0.2–3, `contrast` 0.5–2 and `saturation` 0–2 (all 1 by default), and `bloom` 0–1, a glow around bright things that only a desktop screen gets (a headset draws without it). A script can change them live with `setComponentField`.
 
 **`textDisplay`**: a sign. Needs a `meshRenderer` with a **`plane`** on the same slot; the plane's scale is the sign's size in metres.
 - `lines` **(req)**: array of strings (white text).
 - `title`: string (larger, yellow).
-- `color`: **background** colour of the sign.
+- `color` or `background`: **background** colour of the sign, any colour with transparency (`"#00000000"` draws only the text; `background` wins over `color`).
+- `titleColor` (default yellow), `lineColor` (default white), `lineColors` (one colour per line, `lineColors[i]` for `lines[i]`) and `lineSizes` (a size per line, times the line size).
+- `billboard`: `"y"` turns the sign to face each player's eyes about the vertical (floating numbers, name tags), `"full"` any way. Default `"none"`: it stays as placed.
 - `scale`: text size multiplier 0.25–6 (default 1). `verticalAlign`: `"top"` | `"middle"`.
 - Long lines wrap automatically. A 1.6 × 1.2 m sign fits a title and ~5 short lines at scale 1.
 
@@ -251,6 +254,22 @@ Required fields are marked **(req)**. Everything else is optional; omit a field 
 **`expires`**: `expiresAt` **(req)**: epoch milliseconds; the slot is deleted after that. Only for slots spawned by scripts.
 
 **`stroke`**: a tube through points. `points` **(req)** flat `[x, y, z, x, y, z, ...]` in world space, `color` **(req)**, `width` **(req)** metres. Used by drawing tools.
+
+**`playerMovement`**: how players jump and fall here, for platformers. One per world, on any slot. All fields optional.
+- `jumpSpeed`: take-off speed in m/s (default 3.6, about 0.65 m high; 6 reaches about 1.8 m).
+- `gravity`: m/s² (default 9.8).
+- `vrJump`: `true` makes the A button of the right controller jump in a headset (on a desktop Space always jumps).
+- `wallJump`: `true` lets a jump in the air next to a wall jump again, so a wall can be climbed by jumping against it.
+- In a headset players only stand on `ground` and `disc` meshes: to make a platform, put a solid box (it blocks the sides) and a thin `ground` plane on its top (walkable). With a `characterController` (below) a `collider` with `standable: true` is both: solid on the sides and a floor on its top, flat or sloped.
+
+**`characterController`**: how players' bodies move, for any kind of game (a platformer, a 2.5D fighter, a walking sim). Replaces `playerMovement` (use one of them per world, on any slot). The body is a capsule that stands on flat ground and slopes, walks up low steps, slides along walls, falls and jumps, the same on a desktop and in a headset. Every field is optional and has a value that is a person walking:
+- `walkSpeed`, `runSpeed`: m/s (about 2 and 3.5). `jumpSpeed`: m/s (3.6). `gravity`: m/s² (9.8). `terminalSpeed`: the fastest fall, m/s (25). `vrJump`: the A button jumps in a headset.
+- `coyoteTime` / `jumpBuffer`: seconds a jump still works after leaving the ground / one asked for before landing is kept. `airJumps`: jumps in the air before touching ground (0). `airControl`: how much steering is kept in the air, 0–1 (1).
+- `wallJump`: a jump next to a wall jumps again off it (so a wall is climbed by jumping against it): up by `wallJumpUp` times the jump speed (1) and away at `wallJumpOut` m/s (0). `wallSlideSpeed`: holding against a wall slows a fall to this (0: off).
+- `stepHeight`: the tallest step walked onto, m (0.4). `slopeLimit`: the steepest slope stood on, degrees (50); steeper ones are walls (and slid down when `slideSteepSlopes` is true). `radius`, `height`: the capsule (0.3, 1.8). `impulseDrag`: how fast a push from `setPlayerVelocity` fades (5).
+- `laneAxis` (`"x"` or `"z"`), `laneCenter`, `laneWidth`: keeps the player in a lane, for a 2.5D game: across that axis, within `laneWidth` m of the centre.
+
+**`fragment`**: a piece of the world kept as a file (a map, a room, a prefab) that is built under this slot while the slot is on and taken down when it is off. `source` **(req)**: `{ "kind": "asset", "assetId": "sha256:..." }` of a `fragment` asset (`.kfrag`: `{ "format": "kithin-fragment", "version": 1, "slots": [...] }`, slots written as in a world, the ones with `parentId: null` hanging from this slot). A fragment may hold scenery only (`meshRenderer`, `material`, `collider`, lights, `textDisplay`, `surfaceMask`, `mirror`, `particleEmitter`, `stroke`, `expires`), does not count in the 2000-slot limit, is not saved or synced (every device builds it from the file) and can be loaded by any number of slots. Its slots' ids are `"<this slot's id>::<id in the file>"`. Not for AI-generated worlds (needs a file): made by tools (`serializeFragment`) and loaded by `ctx.world.loadFragment`.
 
 **`container`**: no fields. Marks a slot as a group. Use it on unscaled parent slots.
 
@@ -388,11 +407,32 @@ ctx.world
   .removeComponent(slotId, type, broadcast = true) -> boolean                   take a component off (not codeBlock)
   .setWorldPose(slotId, { position?, rotation?, scale? }, broadcast = true) -> boolean  refused while held; scale is local
   .setParent(slotId, parentId | null, broadcast = true) -> boolean             keeps its world pose; refused while held
-  .setSlotEnabled(slotId, enabled) -> boolean                                   show/hide for everyone
+  .setSlotEnabled(slotId, enabled, broadcast = true) -> boolean                 show/hide for everyone
+  .flush()                                                                      send what was written with `broadcast: false` to guests, as one difference (only what changed): write quietly as often as needed, flush a few times a second
+  .loadFragment(assetId, { id?, name?, parentId?, position?, rotation?, scale?, disabled? }) -> id   builds a scene fragment asset in the world for everyone, under a new slot; host only
+  .unloadFragment(slotId)                                                       removes that slot and what it built
+  .setPlayerVelocity(playerId, [x,y,z], { add? })                               sets a player's body speed, or adds to it (a push; |v| <= 200 m/s); needs a `characterController`; host only
   .findNear([x,y,z], radius) -> slots                                           proximity query (world space)
   .raycast(origin, direction, maxDistance, { ignore: [ids] }?) -> { slotId, point, normal, u, v } | null
   .overlap(from, to, radius, { ignore: [ids] }?) -> slotIds                    what a capsule touches, nearest first
   .getPlayer(grabberId) -> { id, name }
+  .equipPlayer(playerId, slotId, 'left' | 'right') -> boolean   puts an `equippable` slot in a hand of the player at the device running the world (host/solo only; works for guests too, who mirror it on their own hands; a desktop player has the right hand only)
+  .unequipPlayer(playerId, 'left' | 'right') -> boolean          takes it off again (it stays where the hand was: move it with setWorldPose)
+
+ctx.physics                             questions to the solids of the world (every `collider` slot, as the shape it is drawn as): synchronous, safe, no slot is touched
+  .raycast(origin, direction, maxDistance, { ignore: [ids] }?) -> { slotId, t, point, normal } | null     first solid a ray meets (`t` in metres along a unit direction)
+  .sphereCast(origin, radius, direction, maxDistance, { ignore }?) -> { slotId, t, point, normal } | null  moves a sphere along a line; `t` is how far it got
+  .overlapSphere(center, radius, { ignore }?) -> [{ slotId, normal, depth, point }]                         solids a sphere is inside or touching, deepest first (at most 32); `normal` is the way out
+  .closest(point, maxDistance?, { ignore }?) -> { slotId, normal, depth, point, distance } | null          the nearest solid
+  `ignore` lists slots to pass through, with everything under them. Bad arguments answer as nothing found.
+
+ctx.haptics
+  .pulse(playerId, { hand: 'left' | 'right' | 'both', intensity: 0..1, durationMs })    makes a controller buzz (host only; nothing happens on a desktop)
+
+ctx.time                                the clock of this script
+  .delta()  .unscaledDelta()  .now()    the time of the last tick (scaled / real) and seconds run
+  .setScale(n)  .getScale()             slow motion: `tick` is given the real time times n from the next frame on (0 stops it, up to 10)
+  .fixed(step, maxSteps = 8) -> n       steps of `step` seconds due now: `for (let i = ctx.time.fixed(0.02); i > 0; i--) simulate(0.02)` behaves the same at any frame rate
 
 ctx.grab     .isHeld() -> boolean     .heldBy() -> grabberId[]     .isSlotHeld(id) -> boolean (any slot)
 ctx.equip    .isEquipped() -> boolean .holder() -> { playerId, hand } | null
@@ -403,14 +443,19 @@ ctx.math
 
 ctx.audio
   .play({ frequency, pitchDrop, noiseMix, durationMs, volume })    synthesized hit/beep at this slot (no file)
-  .playTrack(source, { volume, loop, offset }) -> Promise<{ time(), duration, playing, ended, pause(), resume(), stop(), setVolume(v) }>
-        not spatial, plays only on the calling device; source = { kind: 'url', url }
+  .playTrack(source, { volume, loop, offset, rate }) -> Promise<{ time(), duration, playing, ended, pause(), resume(), stop(), setVolume(v) }>
+        not spatial, plays only on the calling device; source = { kind: 'url', url } or { kind: 'asset', assetId } (`rate` 1 = as recorded; changes the pitch)
+  .playAt(source, [x,y,z], { volume, loop, offset, rate, refDistance, maxDistance, rolloff }) -> Promise<track + setPosition([x,y,z])>
+        heard from that point (3D, louder the nearer): as loud as it gets within `refDistance` m (1), silent beyond `maxDistance` (60)
   .analyze(source) -> Promise<{ duration, bpm, bpmConfidence, onsets: [{ t, strength, band }], energy: { hop, low, mid, high } }>
 
 ctx.particles.burst({ color, count, durationMs })          at this slot's position
 
+Scripts can also be written as TypeScript modules (`defineScript((ctx) => handlers)` from `@kithin/engine/script`), type-checked and bundled into the code block when the world is built: see `packages/game/README.md`.
+
 ctx.ui
   .getInputText(inputSlotId)            text typed in an input element
+  .openDash(tab, { invite? })           opens the game's menu on this device at a tab ('session', 'home', 'worlds', 'inventory', 'settings', 'account'); `invite: true` shows the choices of who can join (hosts the session) in the Session tab
   .getMedia(videoSlotId)                playback state of a video element
 
 ctx.net
@@ -545,7 +590,7 @@ return { onPress() { if (ctx.world.isHost()) addPoint(); } };
 
 The import is rejected if any of these fail:
 
-1. The root is a **non-empty JSON array** of at most **2000** slots; the serialized JSON is under **1,500,000** characters.
+1. The root is a **non-empty JSON array** of at most **2000** slots (scene fragments, loaded by a `fragment` slot, have a budget of their own); the serialized JSON is under **1,500,000** characters.
 2. Every slot has exactly: `id` (unique non-empty string, not `dash-panel`/`inspector-panel`), `parentId` (`null` or an existing id), `name` (string), `position` (3 finite numbers), `rotation` (4 finite numbers), `scale` (3 finite numbers), `components` (array). Optional `disabled`.
 3. No parent cycles.
 4. Every component has a known `type` (section 6) and all its required fields with the right JSON types: numbers are numbers (not `"2"`), booleans are `true`/`false`, enums are one of the listed strings, colours are `"#rrggbb"`.
