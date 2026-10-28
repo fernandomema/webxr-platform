@@ -1,4 +1,5 @@
 import { audioKind } from './audio.ts';
+import { fragmentKind } from './fragment.ts';
 import { imageKind } from './image.ts';
 import { lightmapKind } from './lightmap.ts';
 import { modelKind } from './model.ts';
@@ -10,6 +11,7 @@ registerAssetKind(modelKind);
 registerAssetKind(audioKind);
 registerAssetKind(imageKind);
 registerAssetKind(lightmapKind);
+registerAssetKind(fragmentKind);
 
 export * from './registry.ts';
 export * from './types.ts';

@@ -1,5 +1,5 @@
 import { setAmbientBase, resetAmbient } from './ambientControl.ts';
-import { Color3, CubeTexture, Effect, HemisphericLight, ImageProcessingConfiguration, Mesh, MeshBuilder, ReflectionProbe, RenderTargetTexture, ShaderMaterial, type AbstractMesh, type Scene, type TransformNode } from '@babylonjs/core';
+import { Color3, ColorCurves, CubeTexture, DefaultRenderingPipeline, Effect, HemisphericLight, ImageProcessingConfiguration, Mesh, MeshBuilder, ReflectionProbe, RenderTargetTexture, ShaderMaterial, type AbstractMesh, type Scene, type TransformNode } from '@babylonjs/core';
 import type { Slot, SkyboxComponent } from '../ecs/types.ts';
 import { POLYGON_QUEST_PROBE } from '../assets/builtin.ts';
 import type { SourceRef } from '../assets/ref.ts';
@@ -160,7 +160,42 @@ export function setupSkybox(scene: Scene, node: TransformNode, initial: SkyboxCo
 	mesh.applyFog = false;
 	mesh.alwaysSelectAsActiveMesh = true;
 
+	// Grading of the picture, and the glow a desktop screen gets. Both are read again on every sync, so a script can change them.
+	const grading = {
+		exposure: imageProcessing.exposure,
+		contrast: imageProcessing.contrast,
+		curves: imageProcessing.colorCurvesEnabled
+	};
+	let pipeline: DefaultRenderingPipeline | null = null;
+	function applyGrading(component: SkyboxComponent): void {
+		imageProcessing.exposure = Math.max(0.1, component.exposure ?? 1);
+		imageProcessing.contrast = Math.max(0.1, component.contrast ?? 1);
+		const saturation = component.saturation ?? 1;
+		if (saturation !== 1) {
+			imageProcessing.colorCurvesEnabled = true;
+			imageProcessing.colorCurves = imageProcessing.colorCurves ?? new ColorCurves();
+			imageProcessing.colorCurves.globalSaturation = (saturation - 1) * 100;
+		} else imageProcessing.colorCurvesEnabled = grading.curves;
+		const bloom = Math.max(0, Math.min(1, component.bloom ?? 0));
+		if (bloom > 0 && !pipeline) {
+			// Attached to the screen's camera: a headset's camera has none, so it draws without.
+			const cameras = scene.cameras.filter((camera) => camera.getClassName() !== 'WebXRCamera');
+			if (cameras.length > 0) {
+				pipeline = new DefaultRenderingPipeline('skybox-glow', true, scene, cameras);
+				pipeline.fxaaEnabled = true;
+			}
+		}
+		if (pipeline) {
+			pipeline.bloomEnabled = bloom > 0;
+			pipeline.bloomWeight = 0.15 + bloom * 0.6;
+			pipeline.bloomThreshold = 0.75;
+			pipeline.bloomKernel = 48;
+			pipeline.bloomScale = 0.5;
+		}
+	}
+
 	function apply(component: SkyboxComponent): void {
+		applyGrading(component);
 		material.setColor3('topColor', Color3.FromHexString(component.topColor || '#0b1030'));
 		material.setColor3('horizonColor', Color3.FromHexString(component.horizonColor || '#7c3aed'));
 		material.setColor3('bottomColor', Color3.FromHexString(component.bottomColor || '#0f172a'));
@@ -181,6 +216,10 @@ export function setupSkybox(scene: Scene, node: TransformNode, initial: SkyboxCo
 			if (probe) { scene.environmentTexture = previousEnvironment; probe.dispose(); }
 			imageProcessing.toneMappingEnabled = previousToneMapping;
 			imageProcessing.toneMappingType = previousToneMappingType;
+			imageProcessing.exposure = grading.exposure;
+			imageProcessing.contrast = grading.contrast;
+			imageProcessing.colorCurvesEnabled = grading.curves;
+			pipeline?.dispose();
 		},
 		sync(slot) {
 			const component = slot.components.find((candidate): candidate is SkyboxComponent => candidate.type === 'skybox');

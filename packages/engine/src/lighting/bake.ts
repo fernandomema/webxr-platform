@@ -25,15 +25,15 @@ function random(seed: number): () => number {
 	return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
 }
 
-/** `count` directions spread evenly over the sphere, turned by a fixed random rotation so they do not line up with the axes. */
-function sphereDirections(count: number): V3[] {
+/** `count` directions spread evenly over the sphere, turned by a rotation drawn from `next` so they do not line up with the axes. */
+function sphereDirections(count: number, next: () => number): V3[] {
 	const dirs: V3[] = [];
 	const golden = Math.PI * (3 - Math.sqrt(5));
-	const next = random(20240607);
 	const [ax, ay, az] = [next() * Math.PI * 2, next() * Math.PI * 2, next() * Math.PI * 2];
 	const [sx, cx, sy, cy, sz, cz] = [Math.sin(ax), Math.cos(ax), Math.sin(ay), Math.cos(ay), Math.sin(az), Math.cos(az)];
+	const roll = next() * Math.PI * 2;
 	for (let i = 0; i < count; i++) {
-		const y = 1 - (2 * (i + 0.5)) / count, r = Math.sqrt(1 - y * y), phi = golden * i;
+		const y = 1 - (2 * (i + 0.5)) / count, r = Math.sqrt(1 - y * y), phi = golden * i + roll;
 		let v: V3 = [Math.cos(phi) * r, y, Math.sin(phi) * r];
 		v = [v[0], v[1] * cx - v[2] * sx, v[1] * sx + v[2] * cx];
 		v = [v[0] * cy + v[2] * sy, v[1], -v[0] * sy + v[2] * cy];
@@ -42,6 +42,9 @@ function sphereDirections(count: number): V3[] {
 	}
 	return dirs;
 }
+
+/** How many differently turned sets of directions the voxels share out: neighbours do not gather along the same rays, so what is missed becomes grain instead of blotches. */
+const DIRECTION_SETS = 24;
 
 function skyRadiance(scene: BakeScene, w: V3): V3 {
 	const { top, horizon, bottom, intensity } = scene.sky;
@@ -80,14 +83,32 @@ function directAt(scene: BakeScene, accel: Accel, p: V3, n: V3, out: V3): V3 {
 	return out;
 }
 
+/** Everything a bake works out once and every slab of it then reads: the surfaces that matter, which voxels are solid, the directions gathered. */
+export interface BakePlan {
+	scene: BakeScene;
+	spec: VolumeSpec;
+	passes: number;
+	blur: number;
+	samples: number;
+	maxDistance: number;
+	accel: Accel;
+	solid: Uint8Array;
+	sets: V3[][];
+	/** The numbers of floats a volume of this grid holds. */
+	floats: number;
+}
+
+/** The settings of a bake that decide its result, as text: part of what a baked file depends on. */
+export function bakeSettingsKey(options: BakeOptions = {}): string {
+	return `samples=${options.samples ?? 48};passes=${Math.max(1, options.passes ?? 2)};maxDistance=${options.maxDistance ?? 24};blur=${options.blur ?? 1}`;
+}
+
 /**
- * Bakes the light of a scene into a volume of ambient cubes. At each free voxel it adds what the lights give directly (with
- * shadows) to what comes from every direction: a ray that leaves the scene brings the sky, one that meets a surface brings what
- * that surface sends back, which is its colour times the light on it (and, from the second round on, times the light the volume
- * already holds there, which is how bounces build up). A voxel inside a wall takes its neighbours' values, so that sampling
- * next to a wall does not pull in black.
+ * Works out what a bake needs before any voxel is computed. Each voxel of a pass depends only on the scene and on the previous
+ * pass, never on another voxel of its own pass, so the rows of a pass can be computed in any order, or on several threads, and the
+ * volume is the same (see `parallel.ts`).
  */
-export function bake(scene: BakeScene, spec: VolumeSpec, options: BakeOptions = {}): BakedVolume {
+export function planBake(scene: BakeScene, spec: VolumeSpec, options: BakeOptions = {}): BakePlan {
 	const samples = options.samples ?? 48, passes = Math.max(1, options.passes ?? 2), maxDistance = options.maxDistance ?? 24, blur = options.blur ?? 1;
 	const [nx, ny, nz] = spec.dims;
 	const total = voxelCount(spec);
@@ -109,72 +130,106 @@ export function bake(scene: BakeScene, spec: VolumeSpec, options: BakeOptions = 
 		}
 	}
 
-	const dirs = sphereDirections(samples);
-	let previous: BakedVolume | null = null;
+	const seed = random(20240607);
+	const sets = Array.from({ length: DIRECTION_SETS }, () => sphereDirections(samples, seed));
+	return { scene, spec, passes, blur, samples, maxDistance, accel, solid, sets, floats: total * 6 * 3 };
+}
+
+/**
+ * One pass over the rows `zFrom` to `zTo` (exclusive) of the volume: writes their voxels into `out`, reading the previous pass's
+ * values from `previous` (null for the first pass). `out` and `previous` hold `plan.floats` numbers each.
+ */
+export function bakeRows(plan: BakePlan, previous: Float32Array | null, out: Float32Array, zFrom: number, zTo: number, onRow?: (z: number) => void): void {
+	const { scene, spec, accel, solid, sets, samples, maxDistance } = plan;
+	const [nx, ny] = spec.dims;
+	const at = (x: number, y: number, z: number) => (z * ny + y) * nx + x;
+	const before: BakedVolume | null = previous ? { spec, data: previous } : null;
 	const weight = 4 / samples;
 	const scratch: V3 = [0, 0, 0], shaded: V3 = [0, 0, 0];
-
-	for (let pass = 0; pass < passes; pass++) {
-		const volume: BakedVolume = { spec, data: new Float32Array(total * 6 * 3) };
-		const cube = new Float64Array(18);
-		for (let z = 0; z < nz; z++) {
-			for (let y = 0; y < ny; y++) {
-				for (let x = 0; x < nx; x++) {
-					if (solid[at(x, y, z)]) continue;
-					cube.fill(0);
-					const c: V3 = [spec.min[0] + (x + 0.5) * spec.voxel, spec.min[1] + (y + 0.5) * spec.voxel, spec.min[2] + (z + 0.5) * spec.voxel];
-					// The lights themselves: a light seen from the voxel lights each face by the cosine of its angle to it.
-					for (const light of scene.lights) {
-						const dx = light.position[0] - c[0], dy = light.position[1] - c[1], dz = light.position[2] - c[2];
-						const dist = Math.hypot(dx, dy, dz);
-						if (dist >= light.range || dist < 1e-6) continue;
-						const l: V3 = [dx / dist, dy / dist, dz / dist];
-						const k = reach(light, dist, l);
-						if (k <= 0 || accel.occluded(c, l, dist)) continue;
-						for (let f = 0; f < 6; f++) {
-							const cos = l[0] * FACE_DIRECTIONS[f][0] + l[1] * FACE_DIRECTIONS[f][1] + l[2] * FACE_DIRECTIONS[f][2];
-							if (cos <= 0) continue;
-							for (let ch = 0; ch < 3; ch++) cube[f * 3 + ch] += light.color[ch] * k * cos;
-						}
-					}
-					// Everything else: what comes from every direction.
-					for (const w of dirs) {
-						let radiance: V3;
-						const hit = accel.closest(c, w, maxDistance);
-						if (!hit) radiance = skyRadiance(scene, w);
-						else {
-							const p = hit.primitive;
-							const point: V3 = [c[0] + w[0] * hit.t, c[1] + w[1] * hit.t, c[2] + w[2] * hit.t];
-							directAt(scene, accel, point, hit.normal, shaded);
-							let lr = shaded[0], lg = shaded[1], lb = shaded[2];
-							if (previous) {
-								const probe: V3 = [point[0] + hit.normal[0] * spec.voxel * 0.75, point[1] + hit.normal[1] * spec.voxel * 0.75, point[2] + hit.normal[2] * spec.voxel * 0.75];
-								if (insideVolume(previous, probe)) { sampleVolume(previous, probe, hit.normal, scratch); lr += scratch[0]; lg += scratch[1]; lb += scratch[2]; }
-							}
-							radiance = [p.albedo[0] * lr + (p.emissive ? p.emissive[0] : 0), p.albedo[1] * lg + (p.emissive ? p.emissive[1] : 0), p.albedo[2] * lb + (p.emissive ? p.emissive[2] : 0)];
-						}
-						for (let f = 0; f < 6; f++) {
-							const cos = w[0] * FACE_DIRECTIONS[f][0] + w[1] * FACE_DIRECTIONS[f][1] + w[2] * FACE_DIRECTIONS[f][2];
-							if (cos <= 0) continue;
-							const k = cos * weight;
-							cube[f * 3] += radiance[0] * k; cube[f * 3 + 1] += radiance[1] * k; cube[f * 3 + 2] += radiance[2] * k;
-						}
-					}
+	const cube = new Float64Array(18);
+	for (let z = zFrom; z < zTo; z++) {
+		for (let y = 0; y < ny; y++) {
+			for (let x = 0; x < nx; x++) {
+				if (solid[at(x, y, z)]) continue;
+				cube.fill(0);
+				const c: V3 = [spec.min[0] + (x + 0.5) * spec.voxel, spec.min[1] + (y + 0.5) * spec.voxel, spec.min[2] + (z + 0.5) * spec.voxel];
+				// The lights themselves: a light seen from the voxel lights each face by the cosine of its angle to it.
+				for (const light of scene.lights) {
+					const dx = light.position[0] - c[0], dy = light.position[1] - c[1], dz = light.position[2] - c[2];
+					const dist = Math.hypot(dx, dy, dz);
+					if (dist >= light.range || dist < 1e-6) continue;
+					const l: V3 = [dx / dist, dy / dist, dz / dist];
+					const k = reach(light, dist, l);
+					if (k <= 0 || accel.occluded(c, l, dist)) continue;
 					for (let f = 0; f < 6; f++) {
-						const i = slotIndex(spec, f, x, y, z);
-						volume.data[i] = cube[f * 3]; volume.data[i + 1] = cube[f * 3 + 1]; volume.data[i + 2] = cube[f * 3 + 2];
+						const cos = l[0] * FACE_DIRECTIONS[f][0] + l[1] * FACE_DIRECTIONS[f][1] + l[2] * FACE_DIRECTIONS[f][2];
+						if (cos <= 0) continue;
+						for (let ch = 0; ch < 3; ch++) cube[f * 3 + ch] += light.color[ch] * k * cos;
 					}
 				}
+				// Everything else: what comes from every direction.
+				const dirs = sets[((Math.imul(x, 73856093) ^ Math.imul(y, 19349663) ^ Math.imul(z, 83492791)) >>> 0) % DIRECTION_SETS];
+				for (const w of dirs) {
+					let radiance: V3;
+					const hit = accel.closest(c, w, maxDistance);
+					if (!hit) radiance = skyRadiance(scene, w);
+					else {
+						const p = hit.primitive;
+						const point: V3 = [c[0] + w[0] * hit.t, c[1] + w[1] * hit.t, c[2] + w[2] * hit.t];
+						directAt(scene, accel, point, hit.normal, shaded);
+						let lr = shaded[0], lg = shaded[1], lb = shaded[2];
+						if (before) {
+							const probe: V3 = [point[0] + hit.normal[0] * spec.voxel * 0.75, point[1] + hit.normal[1] * spec.voxel * 0.75, point[2] + hit.normal[2] * spec.voxel * 0.75];
+							if (insideVolume(before, probe)) { sampleVolume(before, probe, hit.normal, scratch); lr += scratch[0]; lg += scratch[1]; lb += scratch[2]; }
+						}
+						radiance = [p.albedo[0] * lr + (p.emissive ? p.emissive[0] : 0), p.albedo[1] * lg + (p.emissive ? p.emissive[1] : 0), p.albedo[2] * lb + (p.emissive ? p.emissive[2] : 0)];
+					}
+					for (let f = 0; f < 6; f++) {
+						const cos = w[0] * FACE_DIRECTIONS[f][0] + w[1] * FACE_DIRECTIONS[f][1] + w[2] * FACE_DIRECTIONS[f][2];
+						if (cos <= 0) continue;
+						const k = cos * weight;
+						cube[f * 3] += radiance[0] * k; cube[f * 3 + 1] += radiance[1] * k; cube[f * 3 + 2] += radiance[2] * k;
+					}
+				}
+				for (let f = 0; f < 6; f++) {
+					const i = slotIndex(spec, f, x, y, z);
+					out[i] = cube[f * 3]; out[i + 1] = cube[f * 3 + 1]; out[i + 2] = cube[f * 3 + 2];
+				}
 			}
-			options.progress?.((pass + (z + 1) / nz) / passes);
 		}
-		previous = volume;
+		onRow?.(z);
 	}
+}
 
-	const result = previous as BakedVolume;
-	fillSolid(result, solid);
-	for (let round = 0; round < blur; round++) smooth(result, solid);
-	return result;
+/** Fills the voxels inside solids and smooths the rest, which is what a volume is once its last pass is in `data`. */
+export function finishBake(plan: BakePlan, data: Float32Array): BakedVolume {
+	const volume: BakedVolume = { spec: plan.spec, data };
+	fillSolid(volume, plan.solid);
+	for (let round = 0; round < plan.blur; round++) smooth(volume, plan.solid);
+	return volume;
+}
+
+/**
+ * Bakes the light of a scene into a volume of ambient cubes. At each free voxel it adds what the lights give directly (with
+ * shadows) to what comes from every direction: a ray that leaves the scene brings the sky, one that meets a surface brings what
+ * that surface sends back, which is its colour times the light on it (and, from the second round on, times the light the volume
+ * already holds there, which is how bounces build up). A voxel inside a wall takes its neighbours' values, so that sampling
+ * next to a wall does not pull in black.
+ */
+export function bake(scene: BakeScene, spec: VolumeSpec, options: BakeOptions = {}): BakedVolume {
+	return bakeDetailed(scene, spec, options).volume;
+}
+
+/** `bake`, with the plan it worked from, which the quality checks (`qa.ts`) read. */
+export function bakeDetailed(scene: BakeScene, spec: VolumeSpec, options: BakeOptions = {}): { volume: BakedVolume; plan: BakePlan } {
+	const plan = planBake(scene, spec, options);
+	let previous: Float32Array | null = null;
+	for (let pass = 0; pass < plan.passes; pass++) {
+		const out: Float32Array = new Float32Array(plan.floats);
+		bakeRows(plan, previous, out, 0, spec.dims[2], (z) => options.progress?.((pass + (z + 1) / spec.dims[2]) / plan.passes));
+		previous = out;
+	}
+	return { volume: finishBake(plan, previous as Float32Array), plan };
 }
 
 const NEIGHBOURS: ReadonlyArray<readonly [number, number, number]> = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];

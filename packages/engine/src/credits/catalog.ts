@@ -80,6 +80,7 @@ export interface CreditPack {
 }
 
 export const CREDIT_PACKS: readonly CreditPack[] = [
+	{ id: 'credits-100', credits: 100, priceCents: 199, currency: 'usd', metaSku: 'credits_100' },
 	{ id: 'credits-500', credits: 500, priceCents: 499, currency: 'usd', metaSku: 'credits_500' },
 	{ id: 'credits-1200', credits: 1200, priceCents: 999, currency: 'usd', metaSku: 'credits_1200' },
 	{ id: 'credits-3000', credits: 3000, priceCents: 1999, currency: 'usd', metaSku: 'credits_3000' }

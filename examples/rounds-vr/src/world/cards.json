@@ -1,0 +1,1754 @@
+[
+ {
+  "name": "ABYSSAL COUNTDOWN",
+  "text": "Stand still to summon dark powers",
+  "rarity": "rare",
+  "lines": [],
+  "block": {
+   "cooldown": 0.0
+  },
+  "stats": {}
+ },
+ {
+  "name": "AMMO REG",
+  "text": "",
+  "rarity": "common",
+  "lines": [
+   {
+    "stat": "AMMO REG",
+    "amount": "+50%",
+    "positive": true
+   }
+  ],
+  "gun": {
+   "ammoReg": 0.5
+  },
+  "stats": {}
+ },
+ {
+  "name": "BARRAGE",
+  "text": "Fire many bullets at the same time",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "Bullets",
+    "amount": "+4",
+    "positive": true
+   },
+   {
+    "stat": "Ammo",
+    "amount": "+5",
+    "positive": true
+   },
+   {
+    "stat": "DMG",
+    "amount": "-70%",
+    "positive": false
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "damage": 0.3,
+   "reloadTimeAdd": 0.25,
+   "ammo": 5,
+   "numberOfProjectiles": 4,
+   "spread": 0.13
+  },
+  "stats": {}
+ },
+ {
+  "name": "BASH",
+  "text": "",
+  "rarity": "common",
+  "lines": [
+   {
+    "stat": "Bullet stun",
+    "amount": "+A little bit of",
+    "positive": true
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "reloadTimeAdd": 0.25,
+   "objectsToSpawnCount": 1
+  }
+ },
+ {
+  "name": "BIG BULLET",
+  "text": "Bigger bullets",
+  "rarity": "common",
+  "lines": [
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "reloadTimeAdd": 0.25,
+   "size": 0.5,
+   "objectsToSpawnCount": 1
+  },
+  "stats": {}
+ },
+ {
+  "name": "BLACK HOLE",
+  "text": "Blocking creates a field that pulls targets into it",
+  "rarity": "rare",
+  "lines": [
+   {
+    "stat": "Block cooldown",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {},
+  "block": {
+   "cooldown": 0.0,
+   "cdAdd": 0.25
+  },
+  "stats": {}
+ },
+ {
+  "name": "BOMBS AWAY",
+  "text": "Spawn a bunch of small bombs around you when you block",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "HP",
+    "amount": "+30%",
+    "positive": true
+   },
+   {
+    "stat": "Block cooldown",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {},
+  "block": {
+   "cooldown": 0.0,
+   "cdAdd": 0.25
+  },
+  "stats": {
+   "health": 1.3
+  }
+ },
+ {
+  "name": "BOUNCY",
+  "text": "",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "Bullet bounces",
+    "amount": "+2",
+    "positive": true
+   },
+   {
+    "stat": "DMG",
+    "amount": "+25%",
+    "positive": true
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "damage": 1.25,
+   "reloadTimeAdd": 0.25,
+   "overheatMultiplier": 0.2,
+   "reflects": 2,
+   "objectsToSpawnCount": 1
+  },
+  "stats": {}
+ },
+ {
+  "name": "BRAWLER",
+  "text": "+200% HP 3s after dealing DMG",
+  "rarity": "uncommon",
+  "lines": [],
+  "stats": {}
+ },
+ {
+  "name": "BUCKSHOT",
+  "text": "Adds a shotgun vibe to your attack",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "Bullets",
+    "amount": "+4 ",
+    "positive": true
+   },
+   {
+    "stat": "AMMO",
+    "amount": "+5",
+    "positive": true
+   },
+   {
+    "stat": "DMG",
+    "amount": "-60%",
+    "positive": false
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "damage": 0.4,
+   "reloadTimeAdd": 0.25,
+   "knockback": 2.5,
+   "projectileSpeed": 3.5,
+   "gravity": 0.0,
+   "ammo": 5,
+   "numberOfProjectiles": 4,
+   "drag": 10.0,
+   "spread": 0.5,
+   "destroyBulletAfter": 0.2
+  },
+  "stats": {}
+ },
+ {
+  "name": "BURST",
+  "text": "Multiple bullets are fired in a sequence",
+  "rarity": "common",
+  "lines": [
+   {
+    "stat": "Bullets",
+    "amount": "+2",
+    "positive": true
+   },
+   {
+    "stat": "AMMO",
+    "amount": "+3",
+    "positive": true
+   },
+   {
+    "stat": "DMG",
+    "amount": "-60%",
+    "positive": false
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "damage": 0.6,
+   "reloadTimeAdd": 0.25,
+   "ammo": 3,
+   "bursts": 3,
+   "timeBetweenBullets": 0.025,
+   "spread": 0.04
+  },
+  "stats": {}
+ },
+ {
+  "name": "CAREFUL PLANNING",
+  "text": "",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "DMG",
+    "amount": "+100%",
+    "positive": true
+   },
+   {
+    "stat": "ATKSPD",
+    "amount": "-150%",
+    "positive": false
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.5s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "damage": 2.0,
+   "reloadTimeAdd": 0.5,
+   "attackSpeed": 2.5
+  },
+  "stats": {}
+ },
+ {
+  "name": "CHASE",
+  "text": "+60% movement when moving towards the opponent",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "Health",
+    "amount": "+30%",
+    "positive": true
+   }
+  ],
+  "stats": {}
+ },
+ {
+  "name": "CHILLING PRESENCE",
+  "text": "Slightly slow nearby enemies",
+  "rarity": "rare",
+  "lines": [
+   {
+    "stat": "HP",
+    "amount": "+25%",
+    "positive": true
+   }
+  ],
+  "gun": {},
+  "stats": {
+   "health": 1.25
+  }
+ },
+ {
+  "name": "COLD BULLETS",
+  "text": "",
+  "rarity": "common",
+  "lines": [
+   {
+    "stat": "Bullet slow",
+    "amount": "+70%",
+    "positive": true
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "reloadTimeAdd": 0.25,
+   "slow": 0.7,
+   "objectsToSpawnCount": 1
+  },
+  "stats": {}
+ },
+ {
+  "name": "COMBINE",
+  "text": "",
+  "rarity": "common",
+  "lines": [
+   {
+    "stat": "DMG",
+    "amount": "+100%",
+    "positive": true
+   },
+   {
+    "stat": "AMMO",
+    "amount": "-2",
+    "positive": false
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.5s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "damage": 2.0,
+   "reloadTimeAdd": 0.5,
+   "ammo": -2
+  }
+ },
+ {
+  "name": "DAZZLE",
+  "text": "Bullets stun the oponent multiple times",
+  "rarity": "common",
+  "lines": [
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "reloadTimeAdd": 0.25,
+   "objectsToSpawnCount": 1
+  },
+  "stats": {}
+ },
+ {
+  "name": "DECAY",
+  "text": "Damage done to you is dealt over 4 seconds",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "HP",
+    "amount": "+50%",
+    "positive": true
+   }
+  ],
+  "gun": {},
+  "stats": {
+   "health": 1.5,
+   "secondsToTakeDamageOver": 4.0
+  }
+ },
+ {
+  "name": "DEFENDER",
+  "text": "",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "Block cooldown",
+    "amount": "-30%",
+    "positive": true
+   },
+   {
+    "stat": "HP",
+    "amount": "+30%",
+    "positive": true
+   }
+  ],
+  "gun": {},
+  "block": {
+   "cooldown": 0.0,
+   "cdMultiplier": 0.7
+  },
+  "stats": {
+   "health": 1.3
+  }
+ },
+ {
+  "name": "Demonic pact",
+  "text": "Shooting costs 10HP\nRemoves shooting cooldown",
+  "rarity": "rare",
+  "lines": [
+   {
+    "stat": "Bullets",
+    "amount": "+9",
+    "positive": true
+   },
+   {
+    "stat": "Splash DMG",
+    "amount": "+2",
+    "positive": true
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "reloadTimeAdd": 0.25,
+   "attackSpeed": 0.025,
+   "ammo": 9,
+   "dontAllowAutoFire": 1,
+   "objectsToSpawnCount": 1
+  },
+  "stats": {}
+ },
+ {
+  "name": "DIVINE COUNTDOWN",
+  "text": "ehhhh",
+  "rarity": "uncommon",
+  "lines": [],
+  "block": {
+   "cooldown": 0.0
+  },
+  "stats": {}
+ },
+ {
+  "name": "DRILL AMMO",
+  "text": "",
+  "rarity": "rare",
+  "lines": [
+   {
+    "stat": "Bullets drill through walls",
+    "amount": "+7m",
+    "positive": true
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "reloadTimeAdd": 0.25,
+   "objectsToSpawnCount": 1
+  }
+ },
+ {
+  "name": "ECHO",
+  "text": "Blocking triggers another, delayed block",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "HP",
+    "amount": "+30%",
+    "positive": true
+   },
+   {
+    "stat": "Block cooldown",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {},
+  "block": {
+   "cooldown": 0.0,
+   "additionalBlocks": 1
+  },
+  "stats": {
+   "health": 1.3
+  }
+ },
+ {
+  "name": "EMP",
+  "text": "Blocking spawns a ring of slowing projectiles",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "HP",
+    "amount": "+30%",
+    "positive": true
+   },
+   {
+    "stat": "Block cooldown",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "block": {
+   "cooldown": 0.0,
+   "cdAdd": 0.25
+  },
+  "stats": {
+   "health": 1.3
+  }
+ },
+ {
+  "name": "EMPOWER",
+  "text": "Blocking increases the damage and speed of your next shot.\nThe shot also triggers any on block abilities where it lands.",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "Block cooldown",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {},
+  "block": {
+   "cooldown": 0.0,
+   "cdAdd": 0.25
+  },
+  "stats": {}
+ },
+ {
+  "name": "ENSNARE",
+  "text": "Bullets spawn ensnare their target when landing close to a player",
+  "rarity": "rare",
+  "lines": [],
+  "gun": {
+   "objectsToSpawnCount": 1
+  },
+  "stats": {}
+ },
+ {
+  "name": "EXPLOSIVE BULLET",
+  "text": "Bullet explodes on impact",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "ATKSPD",
+    "amount": "-100%",
+    "positive": false
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "reloadTimeAdd": 0.25,
+   "attackSpeed": 2.0,
+   "objectsToSpawnCount": 1
+  },
+  "stats": {}
+ },
+ {
+  "name": "Fast forward",
+  "text": "Bullets keep the default trajectory",
+  "rarity": "common",
+  "lines": [
+   {
+    "stat": "Projectile speed",
+    "amount": "+100%",
+    "positive": true
+   },
+   {
+    "stat": "Reload speed",
+    "amount": "+30%",
+    "positive": true
+   }
+  ],
+  "gun": {
+   "reloadTime": 0.7,
+   "projectielSimulatonSpeed": 2.0
+  },
+  "stats": {}
+ },
+ {
+  "name": "FASTBALL",
+  "text": "",
+  "rarity": "common",
+  "lines": [
+   {
+    "stat": "Bullet speed ",
+    "amount": "+250%",
+    "positive": true
+   },
+   {
+    "stat": "ATKSPD",
+    "amount": "-50%",
+    "positive": false
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "reloadTimeAdd": 0.25,
+   "attackSpeed": 1.5,
+   "projectileSpeed": 3.5,
+   "objectsToSpawnCount": 1
+  },
+  "stats": {}
+ },
+ {
+  "name": "FRENZY",
+  "text": "",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "ATKSPD",
+    "amount": "+400%",
+    "positive": true
+   },
+   {
+    "stat": "AMMO",
+    "amount": "+6",
+    "positive": true
+   },
+   {
+    "stat": "DMG",
+    "amount": "-60%",
+    "positive": false
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "damage": 0.4,
+   "reloadTimeAdd": 0.25,
+   "attackSpeed": 0.25,
+   "ammo": 6
+  },
+  "stats": {}
+ },
+ {
+  "name": "FROST SLAM",
+  "text": "Slows enemies around you when you block",
+  "rarity": "common",
+  "lines": [
+   {
+    "stat": "HP",
+    "amount": "+30%",
+    "positive": true
+   },
+   {
+    "stat": "Block cooldown",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {},
+  "block": {
+   "cooldown": 0.0,
+   "cdAdd": 0.25
+  },
+  "stats": {
+   "health": 1.3
+  }
+ },
+ {
+  "name": "GLASS CANNON",
+  "text": "",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "DMG",
+    "amount": "+100%",
+    "positive": true
+   },
+   {
+    "stat": "HP",
+    "amount": "-100%",
+    "positive": false
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "damage": 2.0,
+   "reloadTimeAdd": 0.25
+  },
+  "stats": {
+   "health": 0.5
+  }
+ },
+ {
+  "name": "GROW",
+  "text": "Bullets gets more damage over time when travelling",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "reloadTimeAdd": 0.25,
+   "objectsToSpawnCount": 1
+  },
+  "stats": {}
+ },
+ {
+  "name": "Healing field",
+  "text": "Blocking creates a healing field",
+  "rarity": "common",
+  "lines": [
+   {
+    "stat": "HP",
+    "amount": "+30%",
+    "positive": true
+   },
+   {
+    "stat": "Block cooldown",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {},
+  "block": {
+   "cooldown": 0.0,
+   "cdAdd": 0.25
+  },
+  "stats": {
+   "health": 1.3
+  }
+ },
+ {
+  "name": "HOMING",
+  "text": "Bullets home towards visible targets",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "DMG",
+    "amount": "-25%",
+    "positive": false
+   },
+   {
+    "stat": "ATKSPD",
+    "amount": "-50%",
+    "positive": false
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "damage": 0.75,
+   "attackSpeed": 1.5,
+   "projectileSpeed": 0.7,
+   "gravity": 0.5,
+   "objectsToSpawnCount": 1
+  },
+  "stats": {}
+ },
+ {
+  "name": "HUGE",
+  "text": "",
+  "rarity": "common",
+  "lines": [
+   {
+    "stat": "HP",
+    "amount": "+80%",
+    "positive": true
+   }
+  ],
+  "gun": {},
+  "stats": {
+   "health": 1.8
+  }
+ },
+ {
+  "name": "Implode",
+  "text": "Blocking pulls enemies towards you",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "HP",
+    "amount": "+50%",
+    "positive": true
+   },
+   {
+    "stat": "Block cooldown",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {},
+  "block": {
+   "cooldown": 0.0,
+   "cdAdd": 0.25
+  },
+  "stats": {
+   "health": 1.5
+  }
+ },
+ {
+  "name": "LEECH",
+  "text": "",
+  "rarity": "common",
+  "lines": [
+   {
+    "stat": "Life steal",
+    "amount": "+75%",
+    "positive": true
+   },
+   {
+    "stat": "HP",
+    "amount": "+30%",
+    "positive": true
+   }
+  ],
+  "gun": {},
+  "stats": {
+   "health": 1.3,
+   "lifeSteal": 0.75
+  }
+ },
+ {
+  "name": "LIFESTEALER",
+  "text": "Steal HP from your opponent when near",
+  "rarity": "rare",
+  "lines": [
+   {
+    "stat": "HP",
+    "amount": "+25%",
+    "positive": true
+   }
+  ],
+  "stats": {
+   "health": 1.25
+  }
+ },
+ {
+  "name": "MAYHEM",
+  "text": "",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "Bullet bounces",
+    "amount": "+5",
+    "positive": true
+   },
+   {
+    "stat": "DMG",
+    "amount": "-15%",
+    "positive": false
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.5s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "damage": 0.85,
+   "reloadTimeAdd": 0.5,
+   "overheatMultiplier": 0.5,
+   "reflects": 5,
+   "objectsToSpawnCount": 1
+  },
+  "stats": {}
+ },
+ {
+  "name": "MORE AMMO",
+  "text": "",
+  "rarity": "common",
+  "lines": [
+   {
+    "stat": "AMMO",
+    "amount": "+6",
+    "positive": true
+   }
+  ],
+  "gun": {
+   "ammo": 6
+  }
+ },
+ {
+  "name": "MULTISHOT",
+  "text": "",
+  "rarity": "common",
+  "lines": [
+   {
+    "stat": "Bullets",
+    "amount": "+6",
+    "positive": true
+   },
+   {
+    "stat": "Ammo",
+    "amount": "+9",
+    "positive": true
+   },
+   {
+    "stat": "ATKSPD",
+    "amount": "-30%",
+    "positive": false
+   },
+   {
+    "stat": "DMG",
+    "amount": "-70%",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "damage": 0.3,
+   "attackSpeed": 1.3,
+   "ammo": 9,
+   "numberOfProjectiles": 6,
+   "spread": 0.16
+  },
+  "stats": {}
+ },
+ {
+  "name": "OVERCHARGE",
+  "text": "",
+  "rarity": "common",
+  "lines": [
+   {
+    "stat": "Projectile speed",
+    "amount": "+100%",
+    "positive": true
+   },
+   {
+    "stat": "Recoil",
+    "amount": "250%",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "recoilMuiltiplier": 3.5,
+   "projectileSpeed": 2.0
+  },
+  "stats": {}
+ },
+ {
+  "name": "OVERPOWER",
+  "text": "Deal 15% of your max HP to enemies around you when you block",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "HP",
+    "amount": "+30%",
+    "positive": true
+   },
+   {
+    "stat": "Block cooldown",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {},
+  "block": {
+   "cooldown": 0.0,
+   "cdAdd": 0.25
+  },
+  "stats": {
+   "health": 1.3
+  }
+ },
+ {
+  "name": "PARASITE",
+  "text": "Bullets deal damage over 5 seconds",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "Life steal",
+    "amount": "+50%",
+    "positive": true
+   },
+   {
+    "stat": "HP",
+    "amount": "+25%",
+    "positive": true
+   },
+   {
+    "stat": "DMG",
+    "amount": "+25%",
+    "positive": true
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "damage": 1.25,
+   "reloadTimeAdd": 0.25,
+   "objectsToSpawnCount": 1
+  },
+  "stats": {
+   "health": 1.25,
+   "lifeSteal": 0.5
+  }
+ },
+ {
+  "name": "PHOENIX",
+  "text": "Respawn once on death",
+  "rarity": "rare",
+  "lines": [
+   {
+    "stat": "HP",
+    "amount": "-35%",
+    "positive": false
+   }
+  ],
+  "gun": {},
+  "stats": {
+   "health": 0.65,
+   "respawns": 1
+  }
+ },
+ {
+  "name": "POISON",
+  "text": "Bullets deal damage over 3 seconds",
+  "rarity": "common",
+  "lines": [
+   {
+    "stat": "DMG",
+    "amount": "+70%",
+    "positive": true
+   },
+   {
+    "stat": "Reload speed",
+    "amount": "+30%",
+    "positive": true
+   },
+   {
+    "stat": "Bullet",
+    "amount": "-1",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "damage": 1.7,
+   "reloadTime": 0.7,
+   "ammo": -1,
+   "objectsToSpawnCount": 1
+  },
+  "stats": {}
+ },
+ {
+  "name": "PRISTINE PERSEVERENCE",
+  "text": "+400% HP when above 90% HP",
+  "rarity": "rare",
+  "lines": [],
+  "stats": {}
+ },
+ {
+  "name": "QUICK RELOAD",
+  "text": "",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "Reload time",
+    "amount": "-70%",
+    "positive": true
+   }
+  ],
+  "gun": {
+   "reloadTime": 0.3
+  },
+  "stats": {}
+ },
+ {
+  "name": "QUICK SHOT",
+  "text": "",
+  "rarity": "common",
+  "lines": [
+   {
+    "stat": "Bullet speed",
+    "amount": "+150%",
+    "positive": true
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "reloadTimeAdd": 0.25,
+   "projectileSpeed": 2.5,
+   "objectsToSpawnCount": 1
+  },
+  "stats": {}
+ },
+ {
+  "name": "RADAR SHOT",
+  "text": "Blocking scans the area for enemies. You automatically shoot any enemy found.",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "HP",
+    "amount": "+30%",
+    "positive": true
+   },
+   {
+    "stat": "Block cooldown",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "block": {
+   "cooldown": 0.0,
+   "cdAdd": 0.25
+  },
+  "stats": {
+   "health": 1.3
+  }
+ },
+ {
+  "name": "RADIANCE",
+  "text": "Spawn damaging sun waves when reloading.\nThe rate increases during the reload sequence.",
+  "rarity": "rare",
+  "lines": [
+   {
+    "stat": "HP",
+    "amount": "+30%",
+    "positive": true
+   }
+  ],
+  "gun": {},
+  "stats": {
+   "health": 1.3
+  }
+ },
+ {
+  "name": "Refresh",
+  "text": "You get block back when deal damage",
+  "rarity": "rare",
+  "lines": [],
+  "stats": {}
+ },
+ {
+  "name": "REMNANT",
+  "text": "Blocking spawns a static remnant that explodes if an opponent gets close",
+  "rarity": "common",
+  "lines": [],
+  "gun": {},
+  "stats": {}
+ },
+ {
+  "name": "REMOTE",
+  "text": "Steer bullet with right stick / mouse",
+  "rarity": "rare",
+  "lines": [
+   {
+    "stat": "Bullet speed",
+    "amount": "-40%",
+    "positive": false
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "reloadTimeAdd": 0.25,
+   "projectileSpeed": 0.6,
+   "objectsToSpawnCount": 1
+  },
+  "stats": {}
+ },
+ {
+  "name": "RICCOCHET",
+  "text": "Bullets lose half of their speed when they bounce",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "Bullet bounces",
+    "amount": "+2",
+    "positive": true
+   },
+   {
+    "stat": "ATKSPD",
+    "amount": "+25%",
+    "positive": true
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "reloadTimeAdd": 0.25,
+   "attackSpeed": 0.75,
+   "overheatMultiplier": 0.15,
+   "reflects": 2,
+   "speedMOnBounce": 0.5,
+   "objectsToSpawnCount": 1
+  },
+  "stats": {}
+ },
+ {
+  "name": "SAW",
+  "text": "Blocking spawns a saw around you for a short while",
+  "rarity": "rare",
+  "lines": [
+   {
+    "stat": "HP",
+    "amount": "+30%",
+    "positive": true
+   },
+   {
+    "stat": "Block cooldown",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {},
+  "block": {
+   "cooldown": 0.0,
+   "cdAdd": 0.25
+  },
+  "stats": {
+   "health": 1.3
+  }
+ },
+ {
+  "name": "SCAVENGER",
+  "text": "Dealing damage reloads your weapon",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "Reload time",
+    "amount": "+0.5s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "reloadTimeAdd": 0.5
+  },
+  "stats": {}
+ },
+ {
+  "name": "SHIELD CHARGE",
+  "text": "Blocking launches you forward and gives you a second automatic block upon ending the charge",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "Block cooldown",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {},
+  "block": {
+   "cooldown": 0.0,
+   "cdAdd": 0.25
+  },
+  "stats": {}
+ },
+ {
+  "name": "SHIELDS UP",
+  "text": "Firing your last bullet triggers a block.\nDisabled continuous reloading.",
+  "rarity": "rare",
+  "lines": [
+   {
+    "stat": "Reload time",
+    "amount": "+0.5s",
+    "positive": false
+   },
+   {
+    "stat": "Block cooldown",
+    "amount": "+0.5",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "reloadTimeAdd": 0.5
+  },
+  "block": {
+   "cooldown": 0.0,
+   "cdAdd": 0.5
+  },
+  "stats": {
+   "automaticReload": 0
+  }
+ },
+ {
+  "name": "Shockwave",
+  "text": "Blocking pushes enemies away",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "HP",
+    "amount": "+50%",
+    "positive": true
+   },
+   {
+    "stat": "Block cooldown",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {},
+  "block": {
+   "cooldown": 0.0,
+   "cdAdd": 0.25
+  },
+  "stats": {
+   "health": 1.5
+  }
+ },
+ {
+  "name": "SILENCE",
+  "text": "Blocking silences enemies nearby",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "HP",
+    "amount": "+25%",
+    "positive": true
+   },
+   {
+    "stat": "Block cooldown",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {},
+  "block": {
+   "cooldown": 0.0,
+   "cdAdd": 0.25
+  },
+  "stats": {
+   "health": 1.25
+  }
+ },
+ {
+  "name": "SNEAKY",
+  "text": "Bullets avoid the ground",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "reloadTimeAdd": 0.25,
+   "objectsToSpawnCount": 1
+  },
+  "stats": {}
+ },
+ {
+  "name": "SPRAY",
+  "text": "",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "ATKSPD",
+    "amount": "+1000%",
+    "positive": true
+   },
+   {
+    "stat": "AMMO",
+    "amount": "+12",
+    "positive": true
+   },
+   {
+    "stat": "DMG",
+    "amount": "-75%",
+    "positive": false
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "damage": 0.25,
+   "reloadTimeAdd": 0.25,
+   "recoilMuiltiplier": 0.25,
+   "attackSpeed": 0.0909,
+   "ammo": 12,
+   "spread": 0.1
+  },
+  "stats": {}
+ },
+ {
+  "name": "STATIC FIELD",
+  "text": "Blocking creates a field that slows and deals damage",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "Block cooldown",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {},
+  "block": {
+   "cooldown": 0.0,
+   "cdAdd": 0.25
+  },
+  "stats": {}
+ },
+ {
+  "name": "STEADY SHOT",
+  "text": "",
+  "rarity": "common",
+  "lines": [
+   {
+    "stat": "HP",
+    "amount": "+40%",
+    "positive": true
+   },
+   {
+    "stat": "Bullet speed",
+    "amount": "+100%",
+    "positive": true
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "reloadTimeAdd": 0.25,
+   "projectileSpeed": 2.0
+  },
+  "stats": {
+   "health": 1.4
+  }
+ },
+ {
+  "name": "STRENGTH",
+  "text": "",
+  "rarity": "common",
+  "lines": [
+   {
+    "stat": "DMG",
+    "amount": "+70%",
+    "positive": true
+   }
+  ],
+  "gun": {
+   "damage": 1.7
+  },
+  "stats": {}
+ },
+ {
+  "name": "SUPERNOVA",
+  "text": "Spawns a field that pulls enemies in and stuns after a while",
+  "rarity": "rare",
+  "lines": [
+   {
+    "stat": "HP",
+    "amount": "+50%",
+    "positive": true
+   },
+   {
+    "stat": "Block cooldown",
+    "amount": "+0.5s",
+    "positive": false
+   }
+  ],
+  "gun": {},
+  "block": {
+   "cooldown": 0.0,
+   "cdAdd": 0.5
+  },
+  "stats": {
+   "health": 1.5
+  }
+ },
+ {
+  "name": "TACTICAL RELOAD",
+  "text": "Blocking reloads your weapon\n",
+  "rarity": "rare",
+  "lines": [
+   {
+    "stat": "Block cooldown",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "block": {
+   "cooldown": 0.0,
+   "cdAdd": 0.25
+  },
+  "stats": {}
+ },
+ {
+  "name": "TANK",
+  "text": "",
+  "rarity": "common",
+  "lines": [
+   {
+    "stat": "HP",
+    "amount": "+100%",
+    "positive": true
+   },
+   {
+    "stat": "ATKSPD",
+    "amount": "-25%",
+    "positive": false
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.5s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "reloadTimeAdd": 0.5,
+   "attackSpeed": 1.25
+  },
+  "stats": {
+   "health": 2.0
+  }
+ },
+ {
+  "name": "Target BOUNCE",
+  "text": "Bullets aim for visible targets when bouncing",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "Bullet bounce",
+    "amount": "+1",
+    "positive": true
+   },
+   {
+    "stat": "DMG",
+    "amount": "-20%",
+    "positive": false
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "damage": 0.8,
+   "reloadTimeAdd": 0.25,
+   "overheatMultiplier": 0.1,
+   "reflects": 1,
+   "objectsToSpawnCount": 2
+  },
+  "stats": {}
+ },
+ {
+  "name": "TASTE OF BLOOD",
+  "text": "+50% movement speed 3s after dealing DMG",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "Life steal",
+    "amount": "+30%",
+    "positive": true
+   }
+  ],
+  "stats": {
+   "lifeSteal": 0.3
+  }
+ },
+ {
+  "name": "TELEPORT",
+  "text": "Blocking teleports you forward",
+  "rarity": "rare",
+  "lines": [
+   {
+    "stat": "Block cooldown",
+    "amount": "-30%",
+    "positive": true
+   }
+  ],
+  "gun": {},
+  "block": {
+   "cooldown": 0.0,
+   "cdMultiplier": 0.7
+  },
+  "stats": {}
+ },
+ {
+  "name": "THRUSTER",
+  "text": "Bullets have thrusters that push targets",
+  "rarity": "uncommon",
+  "lines": [
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "reloadTimeAdd": 0.25,
+   "objectsToSpawnCount": 1
+  },
+  "stats": {}
+ },
+ {
+  "name": "TIMED DETONATION",
+  "text": "Bullets spawn bombs that explode after half a second",
+  "rarity": "common",
+  "lines": [
+   {
+    "stat": "DMG",
+    "amount": "-15%",
+    "positive": false
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.25s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "damage": 0.85,
+   "reloadTimeAdd": 0.25,
+   "objectsToSpawnCount": 1
+  },
+  "stats": {}
+ },
+ {
+  "name": "TOXIC CLOUD",
+  "text": "Bullets spawn a poison cloud on impact. \nClouds deal damage and slow.",
+  "rarity": "rare",
+  "lines": [
+   {
+    "stat": "Attack Speed",
+    "amount": "-20%",
+    "positive": false
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.5s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "damage": 0.75,
+   "reloadTimeAdd": 0.5,
+   "attackSpeed": 1.2,
+   "overheatMultiplier": 1.0,
+   "objectsToSpawnCount": 1
+  },
+  "stats": {}
+ },
+ {
+  "name": "TRICKSTER",
+  "text": "Bullets deal 80% more DMG per bounce",
+  "rarity": "rare",
+  "lines": [
+   {
+    "stat": "Bullet bounces",
+    "amount": "+2",
+    "positive": true
+   },
+   {
+    "stat": "DMG",
+    "amount": "-20%",
+    "positive": false
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.5s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "damage": 0.8,
+   "reloadTimeAdd": 0.5,
+   "overheatMultiplier": 0.1,
+   "reflects": 2,
+   "dmgMOnBounce": 1.8,
+   "objectsToSpawnCount": 2
+  },
+  "stats": {}
+ },
+ {
+  "name": "WIND UP",
+  "text": "",
+  "rarity": "common",
+  "lines": [
+   {
+    "stat": "Bullet speed",
+    "amount": "+100%",
+    "positive": true
+   },
+   {
+    "stat": "DMG",
+    "amount": "+60%",
+    "positive": true
+   },
+   {
+    "stat": "ATKSPD",
+    "amount": "-100%",
+    "positive": false
+   },
+   {
+    "stat": "Reload time",
+    "amount": "+0.5s",
+    "positive": false
+   }
+  ],
+  "gun": {
+   "damage": 1.6,
+   "reloadTimeAdd": 0.5,
+   "attackSpeed": 2.0,
+   "projectileSpeed": 2.0
+  },
+  "stats": {}
+ }
+]

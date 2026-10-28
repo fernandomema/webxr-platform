@@ -80,6 +80,12 @@ function validateAssetRefs(scene: SlotTree): void {
 				if (c.tint !== undefined && !(typeof c.tint === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(c.tint))) throw new Error('Invalid lighting tint');
 				continue;
 			}
+			if (component?.type === 'fragment') {
+				// A fragment is an asset, never an address: its hash says which content it is.
+				const c = component as unknown as { source?: { kind?: unknown; assetId?: unknown } };
+				if (!c.source || c.source.kind !== 'asset' || !isAssetId(c.source.assetId)) throw new Error('Invalid fragment source');
+				continue;
+			}
 			if (component?.type === 'worldSettings') {
 				const c = component as unknown as { description?: unknown; lighting?: unknown; preview?: { kind?: unknown; assetId?: unknown } };
 				if (c.description !== undefined && (typeof c.description !== 'string' || c.description.length > MAX_WORLD_DESCRIPTION)) throw new Error('Invalid world description');

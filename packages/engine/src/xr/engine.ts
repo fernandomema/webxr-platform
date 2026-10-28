@@ -13,6 +13,7 @@ import {
 	WebXRMotionControllerManager,
 	PointerEventTypes,
 	type AbstractMesh,
+	type TransformNode,
 	type WebXRDefaultExperience
 } from '@babylonjs/core';
 import { initBrowserCodeBlockSandbox } from './sandbox/browserInit.ts';
@@ -41,9 +42,12 @@ import { EquipmentSystem } from './interaction/equipmentSystem.ts';
 import { PressableButtonSystem } from './interaction/pressableButtonSystem.ts';
 import { setupPointerAndGrabControllers, type PointerControllerNetworkHooks } from './interaction/pointerController.ts';
 import { setupPanelToggle } from './interaction/panelToggle.ts';
+import { placeInFrontOfCamera } from './interaction/panelPlacement.ts';
 import { setupRotationController } from './interaction/rotationController.ts';
 import { setupMovementController } from './interaction/movementController.ts';
 import { setupPlayerBody } from './interaction/playerBody.ts';
+import { SceneColliders } from './sceneColliders.ts';
+import { createScriptPhysics, type ScriptPhysics } from './scriptPhysics.ts';
 import { viewPlayerPose } from './playerPoses.ts';
 import { registerIrradiancePlugin } from './irradiancePlugin.ts';
 import { cameraHeadPose } from './avatar/headPose.ts';
@@ -165,6 +169,12 @@ export async function mountGame(
 	const models = new ModelLibrary(scene, { store: getLocalAssetStore(), getResolvers: () => assetResolvers });
 	const mediaAssets = new BlobAssetLibrary({ store: getLocalAssetStore(), getResolvers: () => assetResolvers });
 	const scriptAudio = createScriptAudio(mediaAssets);
+	// Sounds placed in the world (`ctx.audio.playAt`) are heard from where the player's head is, facing where it faces.
+	scene.onBeforeRenderObservable.add(() => {
+		const eye = getActiveCamera();
+		const forward = eye.getDirection(Vector3.Forward()), up = eye.getDirection(Vector3.Up());
+		scriptAudio.setListener(eye.globalPosition.asArray() as [number, number, number], forward.asArray() as [number, number, number], up.asArray() as [number, number, number]);
+	});
 	// Previews of what is saved are drawn as a second scene on this engine (a second WebGL context would be costly on a headset).
 	configureThumbnails({ engine, getResolvers: () => assetResolvers });
 	configureThumbnailSources(() => assetResolvers);
@@ -192,7 +202,27 @@ export async function mountGame(
 	let viewerCamera: () => { globalPosition: Vector3 } = () => desktopCamera;
 	// Which device's controls the texts of the world name (`{dash}`, `{use}`…). It follows the headset session, and the panels are redrawn when it changes.
 	let inputDevice: InputDevice = 'desktop';
+	// `ctx.physics` is answered from the scene's colliders, which exist once the scene graph does.
+	let scriptPhysics: ScriptPhysics | null = null;
+	const physicsProxy: ScriptPhysics = {
+		raycast: (...args) => scriptPhysics?.raycast(...args) ?? null,
+		sphereCast: (...args) => scriptPhysics?.sphereCast(...args) ?? null,
+		overlapSphere: (...args) => scriptPhysics?.overlapSphere(...args) ?? [],
+		closest: (...args) => scriptPhysics?.closest(...args) ?? null
+	};
 	const sceneGraph = new SceneGraph(scene, {
+		physics: physicsProxy,
+		setPlayerVelocity: (playerId, velocity, add) => {
+			if (playerId === localPlayerId) {
+				if (add) playerBody.addImpulse(velocity); else playerBody.setVelocity(velocity);
+				return true;
+			}
+			return hostAuthority?.impulseGuest(playerId, velocity, add) ?? false;
+		},
+		hapticPulse: (playerId, hand, intensity, durationMs) => {
+			if (playerId === localPlayerId) return pulseControllers(hand, intensity, durationMs);
+			return hostAuthority?.hapticGuest(playerId, hand, intensity, durationMs) ?? false;
+		},
 		getUiContext: () => ({ locale: engineLocale(), device: inputDevice }),
 		sameOriginPathsFor: (code) => getContent().sameOriginPathsFor?.(code) ?? [],
 		storage: worldStorage,
@@ -264,8 +294,14 @@ export async function mountGame(
 				hostAuthority?.broadcastSnapshot();
 			}
 		},
-		onSlotMutated: () => {
-			if (gameState.role !== 'guest') hostAuthority?.broadcastSnapshot();
+		// A script changed a slot: what guests lack is told as a difference (components that changed, a slot switched off), not as the whole
+		// world; a pose goes with the state stream; what changes the shape of the hierarchy needs everyone to be told it all.
+		onSlotMutated: (slotId, change) => {
+			if (gameState.role === 'guest') return;
+			if (change === 'structure') hostAuthority?.broadcastSnapshot();
+			else if (change === 'flush') hostAuthority?.broadcastSlotsChanged(sceneGraph.takeQuietChanges());
+			else if (change === 'pose') hostAuthority?.broadcastSlotsChanged(sceneGraph.takeQuietChanges());
+			else hostAuthority?.broadcastSlotsChanged([slotId, ...sceneGraph.takeQuietChanges()]);
 		},
 		// codeBlock's world.getPlayer(grabberId) — resolves a GrabSystem grabberId
 		// ("left"/"right" for this session's own hands, "<guestId>:hand" for a
@@ -300,8 +336,43 @@ export async function mountGame(
 				return true;
 			}
 			return hostAuthority?.teleportGuest(playerId, target) ?? false;
-		}
+		},
+		// A script puts something in the hand of a player, or takes it off. The host decides equipment: its own hands are here, a
+		// guest's are told by a message (and mirror it on their own hands).
+		equipPlayer: (playerId, slotId, hand): boolean => {
+			if (gameState.role === 'guest') return false;
+			if (playerId !== localPlayerId) return hostAuthority?.equipGuest(playerId, slotId, hand) ?? false;
+			const handNode = localHandNode(hand);
+			return Boolean(handNode) && equipment.equip(localPlayerId, hand, handNode!, slotId, { replace: true });
+		},
+		unequipPlayer: (playerId, hand): boolean => {
+			if (gameState.role === 'guest') return false;
+			return playerId === localPlayerId ? equipment.unequip(localPlayerId, hand) : (hostAuthority?.unequipGuest(playerId, hand) ?? false);
+		},
+		// A script opens the menu of the game at a tab (the invitation, say) on this device.
+		openDash: (tab, options): void => openDashAt(tab, options)
 	});
+	/** The node a hand's equipment hangs from on this device: a controller's grip in a headset, the mouse's hand on a desktop (the right one only). */
+	function localHandNode(hand: 'left' | 'right'): TransformNode | undefined {
+		const inXr = xr?.baseExperience.state === WebXRState.IN_XR;
+		const controller = inXr ? xr!.input.controllers.find((candidate) => candidate.inputSource.handedness === hand) : undefined;
+		return controller ? (controller.grip ?? controller.pointer) : !inXr && hand === 'right' ? desktopHand?.handNode : undefined;
+	}
+	/** Opens the dash at a tab: in front of the player in a headset, docked on a desktop. */
+	function openDashAt(tab: string, options?: { invite?: boolean }): void {
+		// On the next frame, once the click or the trigger that asked has been dealt with: a menu that opens in the middle of the
+		// event of a press can be closed by that same event.
+		scene.onBeforeRenderObservable.addOnce(() => {
+			try {
+				dash.showTab(tab);
+				if (options?.invite) dash.openInvite();
+				if (xr?.baseExperience.state === WebXRState.IN_XR) placeInFrontOfCamera(dash.root, getActiveCamera(), 1, -0.15);
+				dash.root.setEnabled(true);
+			} catch (error) {
+				console.error('[engine] could not open the menu', error);
+			}
+		});
+	}
 	// A world asked for on its own only needs a temporary floor during input setup. Avoid starting lobby media that would be disposed mid-load.
 	sceneGraph.load(options.initialWorld || !homeScene ? buildBlankWorld() : homeScene);
 
@@ -355,9 +426,28 @@ export async function mountGame(
 
 	loadSettings();
 	AbstractEngine.audioEngine?.setGlobalVolume(xrSettings.masterVolume);
+	const sceneColliders = new SceneColliders(sceneGraph);
+	scriptPhysics = createScriptPhysics(sceneColliders, (id) => sceneGraph.getLive(id)?.slot.parentId ?? null);
+	/** Buzzes the controllers of this device's player (`ctx.haptics.pulse`). Returns whether there was one to buzz. */
+	function pulseControllers(hand: 'left' | 'right' | 'both', intensity: number, durationMs: number): boolean {
+		let buzzed = false;
+		for (const controller of xr?.input.controllers ?? []) {
+			const side = controller.inputSource.handedness;
+			if (hand !== 'both' && side !== hand) continue;
+			const motion = controller.motionController;
+			if (motion) {
+				void motion.pulse(intensity, durationMs);
+				buzzed = true;
+			}
+		}
+		return buzzed;
+	}
 	const grabSystem = new GrabSystem(scene, sceneGraph);
 	// Bodies for every player: the host (or a solo player) owns the avatar slots, everyone poses them from presence.
+	// Where the floor is under a head, from the player's body (set once it exists): an avatar's feet stand on it however high the player has climbed.
+	let floorProbe: ((x: number, y: number, z: number) => number | null) | null = null;
 	const avatarSystem = new AvatarSystem(scene, sceneGraph, {
+		getFloorY: (x, y, z) => floorProbe?.(x, y, z) ?? null,
 		getLocalPlayerId: () => localPlayerId,
 		getCamera: () => getActiveCamera(),
 		getXr: () => xr,
@@ -384,7 +474,7 @@ export async function mountGame(
 	new DropZoneSystem(sceneGraph, grabSystem, () => gameState.role !== 'guest');
 	// Objects held in a hand until unequipped. Registered right after GrabSystem so a
 	// guest hand's proxy follows presence before equipped scripts read their pose.
-	const equipment = new EquipmentSystem(
+	const equipment: EquipmentSystem = new EquipmentSystem(
 		scene,
 		sceneGraph,
 		grabSystem,
@@ -399,7 +489,8 @@ export async function mountGame(
 	// uses as each hand/controller's interaction point — reused here so a
 	// pressable button reacts identically to hand-tracking and controllers.
 	let locomotion: ReturnType<typeof setupLocomotion> | null = null;
-	const playerBody = setupPlayerBody(scene, sceneGraph, xr, desktopCamera, { x: desktopCamera.position.x, z: desktopCamera.position.z });
+	const playerBody = setupPlayerBody(scene, sceneGraph, xr, desktopCamera, { x: desktopCamera.position.x, z: desktopCamera.position.z }, sceneColliders);
+	floorProbe = (x, y, z) => playerBody.floorAt(x, y, z);
 	playerBody.setSeated(xrSettings.seatedMode);
 	// The starting world is already up: stand at its spawn point.
 	playerBody.respawn();
@@ -417,7 +508,7 @@ export async function mountGame(
 		locomotion = setupLocomotion(xr, floorMesh ? [floorMesh] : []);
 		refreshTeleportFloors = () => {
 			locomotion?.updateFloorMeshes(sceneGraph.allSlots()
-				.filter((entry) => !entry.system && entry.slot.components.some((component) => component.type === 'meshRenderer' && (isBuiltinMesh(component.meshRef, 'ground') || isBuiltinMesh(component.meshRef, 'disc'))))
+				.filter((entry) => (!entry.system || entry.fragment) && entry.slot.components.some((component) => component.type === 'meshRenderer' && (isBuiltinMesh(component.meshRef, 'ground') || isBuiltinMesh(component.meshRef, 'disc'))))
 				.map((entry) => entry.node as AbstractMesh));
 		};
 		setupRotationController(scene, xr);
@@ -688,6 +779,12 @@ export async function mountGame(
 			handlePlayerApi: (publicationId, call) => worldStorage.handleRelayed(publicationId, call)
 		});
 		guestSync.setTeleportHandler((target) => playerBody.teleport(target));
+		guestSync.setBodyHandlers({ impulse: (velocity, add) => (add ? playerBody.addImpulse(velocity) : playerBody.setVelocity(velocity)), haptic: (hand, intensity, durationMs) => void pulseControllers(hand, intensity, durationMs) });
+		// The host put something in this player's hand: the same on the hands of this device (the host already did it on its side).
+		guestSync.setEquipHandler((slotId, hand) => {
+			const handNode = localHandNode(hand);
+			if (handNode) equipment.equip(localPlayerId, hand, handNode, slotId, { replace: true });
+		});
 		guestSync.setPaymentHandler(async (publicationId, sku, op) => op === 'buy'
 			? paymentService.buy(publicationId, sku, gameState.roomCode)
 			: { owns: await paymentService.owns(publicationId, sku) });
@@ -889,6 +986,8 @@ export async function mountGame(
 		}
 	});
 	hudActions.closePanel = () => desktopPanels.close();
+	// A handle on the live scene for the browser's console while developing (stripped from a production build).
+	if (import.meta.env?.DEV) (globalThis as { __kithin?: unknown }).__kithin = { scene, sceneGraph, dash, desktopCamera, desktopPanels };
 	const openPanel = (root: { setEnabled(enabled: boolean): void }) => root.setEnabled(true);
 	const desktopHand = setupDesktopHand({
 		scene,

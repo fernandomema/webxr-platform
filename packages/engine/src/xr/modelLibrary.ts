@@ -3,7 +3,7 @@ import '@babylonjs/loaders/glTF';
 import { LoadAssetContainerAsync, TransformNode, Vector3, type AssetContainer, type Scene } from '@babylonjs/core';
 import type { Vec3 } from '../ecs/types.ts';
 import { configureDraco } from './draco.ts';
-import { normalizationTransform, normalizedExtents } from '../assets/normalize.ts';
+import { extentsOf, normalizationTransform, normalizedExtents } from '../assets/normalize.ts';
 import type { AssetId } from '../assets/ref.ts';
 import { resolveAsset, type AssetResolver } from '../assets/resolve.ts';
 import { assetStoreChanges, getLocalAssetStore, type AssetStore } from '../assets/store.ts';
@@ -22,8 +22,10 @@ export type ModelState = 'pending' | 'loading' | 'ready' | 'missing' | 'error';
 export interface ModelInstance {
 	/** Normalised: largest side 1, centred on the origin, like a built-in shape. */
 	root: TransformNode;
-	/** Extents of the normalised model. */
+	/** Extents of the normalised model (of the model as authored when it was not normalised). */
 	extents: Vec3;
+	/** Where the middle of the model is, in its root's coordinates: the origin when normalised, the middle of its bounds when not. */
+	center: Vec3;
 	/** Bone name (as written in the file) to the transform node that drives it. Empty for models without a skin. */
 	boneNodes: Map<string, TransformNode>;
 	dispose(): void;
@@ -81,6 +83,13 @@ export class ModelLease {
 	/** The normalised extents, known as soon as the manifest is (before the model is decoded). */
 	get extents(): Vec3 {
 		return normalizedExtents(this.entry.bounds);
+	}
+
+	/** The size and the middle of the model as authored, known as soon as the manifest is. */
+	get native(): { extents: Vec3; center: Vec3 } {
+		const b = this.entry.bounds;
+		if (!b) return { extents: [1, 1, 1], center: [0, 0, 0] };
+		return { extents: extentsOf(b).map((v) => Math.max(v, 0.001)) as Vec3, center: [(b.min[0] + b.max[0]) / 2, (b.min[1] + b.max[1]) / 2, (b.min[2] + b.max[2]) / 2] };
 	}
 
 	notify(): void {
@@ -290,6 +299,7 @@ export class ModelLibrary {
 		return {
 			root,
 			extents: normalize ? normalizedExtents(bounds) : (max.subtract(min).asArray() as Vec3),
+			center: normalize ? [0, 0, 0] : ([(min.x + max.x) / 2, (min.y + max.y) / 2, (min.z + max.z) / 2] as Vec3),
 			boneNodes,
 			dispose: () => {
 				created.dispose();

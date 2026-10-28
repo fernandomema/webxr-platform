@@ -6,6 +6,7 @@ import { AbstractMesh, MeshBuilder, NullEngine, Quaternion, Ray, Scene, Transfor
 import { resolveRelativeImports } from './helpers/resolveSpecifiers.mjs';
 import { createSlot } from '../packages/engine/src/ecs/types.ts';
 import { runtimeUrl, buildCodeBlockCtx } from './helpers/codeBlockRuntimeModule.mjs';
+import { SceneColliders } from '../packages/engine/src/xr/sceneColliders.ts';
 import { LightVolumeManager } from '../packages/engine/src/xr/lightVolumeManager.ts';
 
 const coreUrl = import.meta.resolve('@babylonjs/core');
@@ -22,11 +23,12 @@ let graphCode = compile(await readFile(new URL('xr/sceneGraph.ts', libUrl), 'utf
 	.replaceAll("'./playerPoses.ts'", JSON.stringify(new URL('xr/playerPoses.ts', libUrl).href))
 	.replaceAll("'./lightVolumeRenderer.ts'", JSON.stringify(new URL('xr/lightVolumeRenderer.ts', libUrl).href))
 	.replaceAll("'./lightVolumeManager.ts'", JSON.stringify(new URL('xr/lightVolumeManager.ts', libUrl).href))
+	.replaceAll("'./fragmentRuntime.ts'", JSON.stringify(new URL('xr/fragmentRuntime.ts', libUrl).href))
 	.replaceAll("'./performance.ts'", JSON.stringify(new URL('xr/performance.ts', libUrl).href))
 	.replaceAll("'./codeBlockRuntime.ts'", JSON.stringify(codeBlockUrl));
 // These tests exercise real scene nodes, picking, scripts and collisions without creating DOM/media surfaces.
 // Fail explicitly if a fixture accidentally asks for one of those browser-only renderers.
-graphCode = graphCode.replace(/import \{ (setup\w+) \} from '\.\/[^']+';/g,
+graphCode = graphCode.replace(/import \{ (setup(?!Fragment)\w+) \} from '\.\/[^']+';/g,
 	(_, name) => `const ${name} = () => { throw new Error('Unexpected browser surface: ${name}'); };`);
 const { SceneGraph } = await import(moduleUrl(graphCode, 'xr/sceneGraph.ts'));
 const { setupPlayerBody } = await import(moduleUrl(compile(await readFile(new URL('xr/interaction/playerBody.ts', libUrl), 'utf8')), 'xr/interaction/playerBody.ts'));
@@ -471,6 +473,50 @@ test('scripts can list the players, read where each one is, and move them — on
 	} finally { graph.dispose(); f.dispose(); }
 });
 
+test('scripts can put something in a player\'s hand and take it off — only on the host, and only for a hand that exists', () => {
+	const f = fixture();
+	const calls = [];
+	let host = true;
+	const graph = new SceneGraph(f.scene, {
+		isHost: () => host,
+		equipPlayer: (id, slotId, hand) => { calls.push(['equip', id, slotId, hand]); return id !== 'nobody'; },
+		unequipPlayer: (id, hand) => { calls.push(['unequip', id, hand]); return true; }
+	});
+	try {
+		const ctx = scriptCtx(graph);
+		assert.equal(ctx.world.equipPlayer('p1', 'gun', 'right'), true);
+		assert.equal(ctx.world.equipPlayer('nobody', 'gun', 'left'), false, 'a player who is not here');
+		assert.equal(ctx.world.unequipPlayer('p1', 'right'), true);
+		assert.deepEqual(calls, [['equip', 'p1', 'gun', 'right'], ['equip', 'nobody', 'gun', 'left'], ['unequip', 'p1', 'right']]);
+		calls.length = 0;
+		assert.equal(ctx.world.equipPlayer('p1', 'gun', 'head'), false, 'only hands');
+		assert.equal(ctx.world.unequipPlayer('p1', 'tail'), false);
+		assert.deepEqual(calls, []);
+		host = false;
+		assert.equal(ctx.world.equipPlayer('p1', 'gun', 'right'), false, 'a guest cannot hand things out');
+		assert.equal(ctx.world.unequipPlayer('p1', 'right'), false);
+		assert.deepEqual(calls, []);
+	} finally { graph.dispose(); f.dispose(); }
+});
+
+test('a script can open the menu of the game at a tab, and ask for the invitation, on the device that runs it', () => {
+	const f = fixture();
+	const opened = [];
+	const graph = new SceneGraph(f.scene, { openDash: (tab, options) => opened.push([tab, options]) });
+	try {
+		const ctx = scriptCtx(graph);
+		ctx.ui.openDash('session', { invite: true });
+		ctx.ui.openDash('home');
+		ctx.ui.openDash('settings', { invite: 'yes' });
+		ctx.ui.openDash(42);
+		assert.deepEqual(opened, [['session', { invite: true }], ['home', undefined], ['settings', undefined]]);
+	} finally { graph.dispose(); f.dispose(); }
+	const bare = new SceneGraph(f.scene, {});
+	try {
+		assert.doesNotThrow(() => scriptCtx(bare).ui.openDash('session'), 'a game without a menu ignores it');
+	} finally { bare.dispose(); }
+});
+
 test('without those hooks a script sees an empty world of players and cannot move anyone', () => {
 	const f = fixture();
 	const graph = new SceneGraph(f.scene, {});
@@ -479,6 +525,7 @@ test('without those hooks a script sees an empty world of players and cannot mov
 		assert.deepEqual(ctx.world.getPlayers(), []);
 		assert.equal(ctx.world.getPlayerPose('x'), null);
 		assert.equal(ctx.world.teleportPlayer('x', { position: [0, 0, 0] }), false);
+		assert.equal(ctx.world.equipPlayer('x', 'gun', 'right'), false);
 	} finally { graph.dispose(); f.dispose(); }
 });
 
@@ -610,4 +657,93 @@ test('a lightVolume slot loads nothing it cannot find, and goes away cleanly: no
 		assert.equal(manager.active, false);
 		assert.doesNotThrow(() => graph.removeSlot('gi'));
 	} finally { LightVolumeManager.peek(f.scene)?.dispose(); graph.dispose(); f.dispose(); }
+});
+
+test('a delta changes only what it names on a guest; a slot the guest lacks is reported; quiet writes are held for the next broadcast', () => {
+	const engine = new NullEngine();
+	const scene = new Scene(engine);
+	const mutated = [];
+	const host = new SceneGraph(scene, { isHost: () => true, onSlotMutated: (id, change) => mutated.push([id, change]) });
+	const guest = new SceneGraph(scene, { isHost: () => false });
+	try {
+		const label = () => createSlot({ id: 'label', name: 'label', components: [{ type: 'container' }, { type: 'scriptState', data: { n: 1 } }, { type: 'codeBlock', code: 'return { onSpawn() {} };' }] });
+		host.load([label()]);
+		guest.load([label()]);
+		const ctx = buildCodeBlockCtx('label', host.getLive('label').node, host.buildCodeBlockHost(), () => {}, { disposed: false, tracks: new Set() });
+		ctx.world.setComponentField('label', 'scriptState', 'data', { n: 2 }, false);
+		assert.deepEqual(mutated, [], 'a quiet write is not announced');
+		ctx.world.setComponentField('label', 'scriptState', 'data', { n: 3 });
+		assert.deepEqual(mutated, [['label', 'fields']]);
+		assert.deepEqual(host.takeQuietChanges(), ['label'], 'and the slot written quietly is remembered');
+		assert.deepEqual(host.takeQuietChanges(), []);
+		const unknown = guest.applyDeltas([{ id: 'label', set: [{ type: 'scriptState', data: { n: 3 } }] }, { id: 'missing', set: [] }]);
+		assert.deepEqual(unknown, ['missing']);
+		assert.equal(guest.getLive('label').slot.components.find((c) => c.type === 'scriptState').data.n, 3);
+		assert.ok(guest.getLive('label').slot.components.some((c) => c.type === 'codeBlock'), 'the rest of the slot is as it was');
+	} finally { host.dispose(); guest.dispose(); scene.dispose(); engine.dispose(); }
+});
+
+test('a fragment is built under its slot while the slot is on, kept out of the saved scene, and taken down when it is off', async () => {
+	const { serializeFragment } = await import('../packages/engine/src/assets/fragment.ts');
+	const box = (id, parentId, position) => createSlot({ id, parentId, name: id, position, components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'box' } }, { type: 'collider', shape: 'box' }] });
+	const bytes = serializeFragment([createSlot({ id: 'room', name: 'room' }), box('wall', 'room', [2, 0, 0]), box('floor', null, [0, -1, 0])], 'test room');
+	const realFetch = globalThis.fetch;
+	globalThis.fetch = async () => ({ arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) });
+	const leases = { acquired: 0, released: 0 };
+	const mediaAssets = { acquire: () => { leases.acquired++; return { state: 'ready', url: 'blob:fragment', release: () => { leases.released++; }, notify() {} }; } };
+	const engine = new NullEngine();
+	const scene = new Scene(engine);
+	const graph = new SceneGraph(scene, { mediaAssets });
+	const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+	try {
+		const owner = createSlot({ id: 'map', name: 'map', position: [10, 0, 0], components: [{ type: 'fragment', source: { kind: 'asset', assetId } }] });
+		graph.load([owner]);
+		graph.tick(0.016);
+		await settle();
+		graph.tick(0.016);
+		const wall = graph.getLive('map::wall');
+		assert.ok(wall, 'the content is built under the owner, with ids of its own');
+		assert.equal(graph.getLive('map::floor').slot.parentId, 'map', 'its roots hang from the owner');
+		wall.node.computeWorldMatrix(true);
+		assert.deepEqual(wall.node.getAbsolutePosition().asArray().map((n) => Math.round(n * 1000) / 1000), [12, 0, 0], 'and are placed relative to it');
+		assert.deepEqual(graph.serialize().map((slot) => slot.id), ['map'], 'only the owner is part of the saved scene');
+		assert.deepEqual(graph.slotIds(), ['map']);
+		assert.equal(graph.buildCodeBlockHost().allSlots().length, 1, 'and of what scripts list');
+		const colliders = new SceneColliders(graph);
+		assert.ok(colliders.sync().has('map::wall'), 'its colliders are solid for bodies and scripts');
+		graph.setSlotEnabled('map', false);
+		graph.tick(0.016);
+		assert.equal(colliders.sync().has('map::wall'), false, 'until it is taken down');
+		assert.equal(graph.getLive('map::wall'), undefined, 'switched off, the content is taken down');
+		assert.equal(leases.released, 1, 'and the asset is let go of');
+		graph.setSlotEnabled('map', true);
+		graph.tick(0.016);
+		await settle();
+		graph.tick(0.016);
+		assert.ok(graph.getLive('map::wall'), 'switched on again, it is built again');
+		assert.equal(leases.acquired, 2);
+		graph.removeSlot('map');
+		assert.equal(graph.getLive('map::wall'), undefined, 'removing the owner removes the content');
+		assert.equal(graph.allSlots().length, 0);
+	} finally { globalThis.fetch = realFetch; graph.dispose(); scene.dispose(); engine.dispose(); }
+});
+
+test('a script loads a fragment by asset id; anything else is refused', () => {
+	const engine = new NullEngine();
+	const scene = new Scene(engine);
+	const spawned = [], deleted = [];
+	const graph = new SceneGraph(scene, { isHost: () => true, onSpawnRequest: (slot) => spawned.push(slot), onDeleteRequest: (id) => deleted.push(id) });
+	try {
+		graph.load([createSlot({ id: 'dir', name: 'dir', components: [{ type: 'container' }, { type: 'codeBlock', code: 'return {};' }] })]);
+		const ctx = buildCodeBlockCtx('dir', graph.getLive('dir').node, graph.buildCodeBlockHost(), () => {}, { disposed: false, tracks: new Set() });
+		const id = ctx.world.loadFragment(assetId, { id: 'map-3', position: [1, 2, 3], scale: [2, 2, 2], disabled: true });
+		assert.equal(id, 'map-3');
+		assert.deepEqual(spawned[0].components, [{ type: 'fragment', source: { kind: 'asset', assetId } }]);
+		assert.deepEqual(spawned[0].position, [1, 2, 3]);
+		assert.equal(spawned[0].disabled, true);
+		assert.equal(ctx.world.loadFragment('https://example.com/x.json'), null);
+		assert.equal(spawned.length, 1);
+		ctx.world.unloadFragment('map-3');
+		assert.deepEqual(deleted, ['map-3']);
+	} finally { graph.dispose(); scene.dispose(); engine.dispose(); }
 });

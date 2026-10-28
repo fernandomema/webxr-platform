@@ -44,6 +44,8 @@ export class GuestSync {
 	private assetPeer: AssetPeer | null = null;
 	private paymentHandler: ((publicationId: string, sku: string, op: 'buy' | 'owns') => Promise<PayResult | { owns: boolean }>) | null = null;
 	private teleportHandler: ((target: TeleportTarget) => void) | null = null;
+	private bodyHandlers: { impulse: (velocity: [number, number, number], add: boolean) => void; haptic: (hand: 'left' | 'right' | 'both', intensity: number, durationMs: number) => void } | null = null;
+	private equipHandler: ((slotId: string, hand: 'left' | 'right') => void) | null = null;
 	readonly hostProxy: TransformNode;
 	/** Stand-ins of the other players' keyboards while they type. */
 	private keyboards: RemoteKeyboards;
@@ -150,6 +152,16 @@ export class GuestSync {
 		this.avatars = hooks;
 	}
 
+	/** What to do when the host puts something in this player's hand (see `ctx.world.equipPlayer`): the same on the guest's own hands. */
+	setEquipHandler(handler: (slotId: string, hand: 'left' | 'right') => void): void {
+		this.equipHandler = handler;
+	}
+
+	/** What to do when the host pushes this player (see `ctx.world.setPlayerVelocity`) or buzzes a controller (`ctx.haptics.pulse`). */
+	setBodyHandlers(handlers: { impulse: (velocity: [number, number, number], add: boolean) => void; haptic: (hand: 'left' | 'right' | 'both', intensity: number, durationMs: number) => void }): void {
+		this.bodyHandlers = handlers;
+	}
+
 	/** What to do when the host moves this player (see `ctx.world.teleportPlayer`). */
 	setTeleportHandler(handler: (target: TeleportTarget) => void): void {
 		this.teleportHandler = handler;
@@ -231,6 +243,14 @@ export class GuestSync {
 				if (msg.publicationId !== undefined) this.storageHooks?.onPublication(typeof msg.publicationId === 'string' ? msg.publicationId : null);
 				this.link?.send({ kind: 'snapshot-ack', revision: msg.revision });
 				break;
+			case 'scene-delta': {
+				if (msg.revision < this.snapshotRevision || !Array.isArray(msg.slots)) break;
+				const unknown = this.sceneGraph.applyDeltas(msg.slots, this.locallyGrabbed);
+				// A slot the host changed that this guest does not have: ask for the whole world again.
+				if (unknown.length > 0) this.link?.send({ kind: 'resync-request', haveRevision: this.snapshotRevision });
+				this.onSceneChanged?.();
+				break;
+			}
 			case 'transform-correction':
 				if (msg.revision >= this.snapshotRevision) {
 					this.sceneGraph.applyTransforms(msg.transforms, this.locallyGrabbed);
@@ -245,9 +265,25 @@ export class GuestSync {
 				if (slot && !this.sceneGraph.getLive(slot.id)) this.sceneGraph.addSlot(slot);
 				break;
 			}
+			case 'equip':
+				if (msg.hand === 'left' || msg.hand === 'right') this.equipHandler?.(msg.slotId, msg.hand);
+				break;
+			case 'unequip':
+				if (msg.hand === 'left' || msg.hand === 'right') this.equipment.unequip(this.localPlayer.playerId, msg.hand);
+				break;
 			case 'teleport': {
 				const target = parseTeleportTarget(msg);
 				if (target) this.teleportHandler?.(target);
+				break;
+			}
+			case 'impulse': {
+				const v = msg.velocity;
+				if (Array.isArray(v) && v.length === 3 && v.every((n) => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= 200)) this.bodyHandlers?.impulse(v as [number, number, number], msg.add === true);
+				break;
+			}
+			case 'haptic': {
+				const hand = msg.hand === 'left' || msg.hand === 'right' ? msg.hand : 'both';
+				if (Number.isFinite(msg.intensity) && Number.isFinite(msg.durationMs)) this.bodyHandlers?.haptic(hand, Math.min(1, Math.max(0, msg.intensity)), Math.min(2000, Math.max(1, msg.durationMs)));
 				break;
 			}
 			case 'player-api-request': {

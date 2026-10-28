@@ -114,3 +114,14 @@ test('a scene read from slots bakes to the same light as one built by hand: a la
   assert.ok(floorUnderLamp > 0.1, `under the lamp: ${floorUnderLamp}`);
   assert.ok(outside < floorUnderLamp * 0.05, `outside the wall: ${outside}`);
 });
+
+test('a model is the box the caller says it fills, not the whole slot; without it, the whole slot', () => {
+  const assetId = `sha256:${'2'.repeat(64)}`;
+  const tree = [createSlot({ id: 'plant', name: 'plant', position: [0, 1, 0], scale: [2, 2, 2], components: [{ type: 'meshRenderer', meshRef: { kind: 'asset', assetId } }] })];
+  const whole = extractScene(tree).primitives[0];
+  const close = (a, b) => Math.abs(a - b) < 0.01;
+  assert.ok(close(whole.min[0], -1) && close(whole.max[0], 1) && close(whole.min[1], 0) && close(whole.max[1], 2), `${whole.min} ${whole.max}`);
+  // The model fills half the width of its slot and the lower half of its height, centred on the slot's x.
+  const box = extractScene(tree, { modelBox: (id) => (id === assetId ? { min: [-0.25, -0.5, -0.25], max: [0.25, 0, 0.25] } : null) }).primitives[0];
+  assert.ok(close(box.min[0], -0.5) && close(box.max[0], 0.5) && close(box.min[1], 0) && close(box.max[1], 1), `${box.min} ${box.max}`);
+});

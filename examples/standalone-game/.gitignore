@@ -1,8 +1,3 @@
 /.svelte-kit
 /build
-# Copied in from the engine package (see the predev and prebuild scripts), and listed from the content folder.
-/static/draco
-/static/xr-input-profiles
-/static/avatars
-/static/assets
-/static/content/bundle.json
+/tsconfig.json

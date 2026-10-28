@@ -20,6 +20,7 @@ import { AssetPeer } from '../../assets/p2p.ts';
 import { announceAssetSourcesChanged, getLocalAssetStore } from '../../assets/store.ts';
 import { cameraHeadPose } from '../avatar/headPose.ts';
 import { createThrottle } from './throttle.ts';
+import { DeltaTracker } from './sceneDelta.ts';
 import type { PlayerSummary, TeleportTarget } from '../playerPoses.ts';
 import type { PayResult } from '../payments/types.ts';
 
@@ -27,6 +28,7 @@ const PRESENCE_INTERVAL_MS = 50;
 const STATE_INTERVAL_MS = 50;
 /** Full snapshots go out at most this often: a script that spawns or switches things several times a frame costs one, not one each. */
 const SNAPSHOT_MIN_INTERVAL_MS = 100;
+const DELTA_MIN_INTERVAL_MS = 50;
 
 interface GuestEntry {
 	link: PeerLink;
@@ -53,6 +55,10 @@ export class HostAuthority {
 	private stateTimer: ReturnType<typeof setInterval>;
 	private correctionTimer: ReturnType<typeof setInterval>;
 	private snapshotThrottle = createThrottle(() => this.sendSnapshotToAll(), SNAPSHOT_MIN_INTERVAL_MS);
+	/** What the guests have of each slot, and the slots that changed since they were last told. */
+	private deltas = new DeltaTracker();
+	private changedSlots = new Set<string>();
+	private deltaThrottle = createThrottle(() => this.sendDeltas(), DELTA_MIN_INTERVAL_MS);
 	private dirtyTransforms = new Map<string, SlotTransform>();
 	private revision = 0;
 	private lastTransforms = new Map<string, string>();
@@ -171,6 +177,49 @@ export class HostAuthority {
 		if (!entry) return false;
 		entry.link.send({ kind: 'teleport', position: target.position, ...(target.yaw === undefined ? {} : { yaw: target.yaw }) });
 		return true;
+	}
+
+	/** Asks a guest's browser to push its player (set or add to its body's speed). Returns whether that guest is connected. */
+	impulseGuest(playerId: string, velocity: [number, number, number], add: boolean): boolean {
+		const entry = this.guestByPlayerId(playerId);
+		if (!entry) return false;
+		entry.link.send({ kind: 'impulse', velocity, add });
+		return true;
+	}
+
+	/** Asks a guest's browser to buzz its controller(s). Returns whether that guest is connected. */
+	hapticGuest(playerId: string, hand: 'left' | 'right' | 'both', intensity: number, durationMs: number): boolean {
+		const entry = this.guestByPlayerId(playerId);
+		if (!entry) return false;
+		entry.link.send({ kind: 'haptic', hand, intensity, durationMs });
+		return true;
+	}
+
+	/**
+	 * Puts an equippable in a hand of a guest, as if the guest had asked (a script did). The host decides equipment, and the guest's
+	 * browser is told so that its own hands, which its trigger and radial menu read, agree. Returns whether it was equipped.
+	 */
+	equipGuest(playerId: string, slotId: string, hand: 'left' | 'right'): boolean {
+		const found = [...this.guests.entries()].find(([, entry]) => entry.player.playerId === playerId);
+		if (!found) return false;
+		const [guestId, entry] = found;
+		if (!this.equipment.equip(guestId, hand, this.getHandProxy(guestId, hand), slotId, { replace: true })) return false;
+		entry.link.send({ kind: 'equip', slotId, hand });
+		this.broadcastSnapshot();
+		return true;
+	}
+
+	/** Takes what a guest has equipped in a hand off it, and tells the guest. */
+	unequipGuest(playerId: string, hand: 'left' | 'right'): boolean {
+		const found = [...this.guests.entries()].find(([, entry]) => entry.player.playerId === playerId);
+		if (!found) return false;
+		const [guestId, entry] = found;
+		const done = this.equipment.unequip(guestId, hand);
+		if (done) {
+			entry.link.send({ kind: 'unequip', hand });
+			this.broadcastSnapshot();
+		}
+		return done;
 	}
 
 	/** Connected guests whose asset channel is open: places to ask for a model only they have. */
@@ -503,14 +552,44 @@ export class HostAuthority {
 	private sendSnapshotToGuest(guestId: string): void {
 		const entry = this.guests.get(guestId);
 		if (!entry) return;
+		const tree = this.sceneGraph.serialize();
+		// The first guest to come is the first to hold the world: what later changes is told as a difference from this.
+		if (this.guests.size <= 1) this.deltas.reset(tree);
 		entry.link.send({
 			kind: 'scene-snapshot',
 			revision: this.revision,
-			tree: this.sceneGraph.serialize(),
+			tree,
 			players: this.getPlayers(),
 			equipped: this.equipment.registry.list(),
 			publicationId: this.storageHooks?.getPublicationId() ?? null
 		});
+	}
+
+	/**
+	 * Tells every guest what changed in some slots (a script wrote a field, switched a slot off): only the components that differ, soon,
+	 * with calls that come close together sent as one. The slots whose changes were written quietly meanwhile go with them.
+	 */
+	broadcastSlotsChanged(ids: readonly string[]): void {
+		if (this.guests.size === 0) return;
+		for (const id of ids) this.changedSlots.add(id);
+		this.deltaThrottle();
+	}
+
+	private sendDeltas(): void {
+		if (this.changedSlots.size === 0 || this.guests.size === 0) { this.changedSlots.clear(); return; }
+		const slots = [];
+		for (const id of this.changedSlots) {
+			const live = this.sceneGraph.getLive(id);
+			if (!live || live.system) continue;
+			// A slot the guests have never been told of needs the whole world (it was added without a snapshot).
+			if (!this.deltas.has(id)) { this.changedSlots.clear(); this.snapshotThrottle(); return; }
+			const delta = this.deltas.diff(live.slot);
+			if (delta) slots.push(delta);
+		}
+		this.changedSlots.clear();
+		if (slots.length === 0) return;
+		const message: WorldSyncMessage = { kind: 'scene-delta', revision: this.revision, slots };
+		for (const { link } of this.guests.values()) link.send(message);
 	}
 
 	/** Tells every guest the whole world, soon: calls that come close together are sent as one. */
@@ -528,6 +607,8 @@ export class HostAuthority {
 
 	private sendSnapshotToAll(): void {
 		const tree = this.sceneGraph.serialize();
+		this.deltas.reset(tree);
+		this.changedSlots.clear();
 		this.lastTransforms.clear();
 		this.dirtyTransforms.clear();
 		for (const { id, position, rotation, scale } of tree) this.lastTransforms.set(id, JSON.stringify({ id, position, rotation, scale }));
@@ -542,6 +623,7 @@ export class HostAuthority {
 		clearInterval(this.stateTimer);
 		clearInterval(this.correctionTimer);
 		this.snapshotThrottle.cancel();
+		this.deltaThrottle.cancel();
 		for (const guestId of [...this.guests.keys()]) this.removeGuest(guestId);
 		this.keyboards.dispose();
 		this.signaling.close();

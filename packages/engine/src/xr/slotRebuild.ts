@@ -34,6 +34,7 @@ const CONSTRUCTED: Partial<Record<Component['type'], Construction>> = {
 	pointLight: { rebuildKeys: ['baked'] },
 	spotLight: { rebuildKeys: ['baked'] },
 	lightVolume: { rebuildKeys: ['data'] },
+	fragment: { rebuildKeys: ['source'] },
 	worldSettings: { rebuildKeys: [] },
 	stroke: { rebuildKeys: [] },
 	impactSound: { liveKeys: [] },

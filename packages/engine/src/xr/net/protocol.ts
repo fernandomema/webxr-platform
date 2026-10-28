@@ -3,6 +3,7 @@ import type { KeyboardPresence } from '../keyboard/presence.ts';
 import type { PlayerApiCall, PlayerApiResult } from '../../worldStorage/ops.ts';
 import type { HandPose, TransformPose } from '../avatar/defaultAvatar.ts';
 import type { PayResult } from '../payments/types.ts';
+import type { SlotDelta } from './sceneDelta.ts';
 
 export type SlotTransform = Pick<Slot, 'id' | 'position' | 'rotation' | 'scale'>;
 
@@ -13,7 +14,7 @@ export type EquippedEntry = { slotId: string; playerId: string; hand: 'left' | '
  * The version of the messages two engines exchange. A game built on one release of the engine can host or join sessions with
  * another as long as this number is the same; it goes up whenever a message changes in a way an older engine cannot read.
  */
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 3;
 
 export type PlayerInfo = {
 	playerId: string;
@@ -26,6 +27,8 @@ export type WorldSyncMessage =
 	/** `publicationId` is the published world the host runs, so a guest's own storage calls target it (the server re-checks it against the room). */
 	| { kind: 'scene-snapshot'; revision: number; tree: SlotTree; players: PlayerInfo[]; equipped?: EquippedEntry[]; publicationId?: string | null }
 	| { kind: 'transform-correction'; revision: number; transforms: SlotTransform[] }
+	/** What changed in some slots since the guests last heard (see `SlotDelta`): sent instead of a whole snapshot when a script rewrites a field. */
+	| { kind: 'scene-delta'; revision: number; slots: SlotDelta[] }
 	/** `protocol` is the sender's `PROTOCOL_VERSION`; a hello without one comes from an engine that predates the field (version 1). */
 	| { kind: 'player-hello'; player: PlayerInfo; protocol?: number }
 	/** The host refuses a guest it cannot talk to. */
@@ -57,7 +60,15 @@ export type WorldSyncMessage =
 	/** Host to guest: put the player's feet at `position` (world space), turned to `yaw` radians when given. */
 	/** Host to guest: a slot that expires by itself, added without a whole snapshot. */
 	| { kind: 'spawn-ephemeral'; slot: Slot }
-	| { kind: 'teleport'; position: [number, number, number]; yaw?: number };
+	| { kind: 'teleport'; position: [number, number, number]; yaw?: number }
+	/** Host to guest: set (or, with `add`, add to) the speed of the guest's body: a knockback, a launch. */
+	| { kind: 'impulse'; velocity: [number, number, number]; add: boolean }
+	/** Host to guest: make the guest's controller(s) buzz. */
+	| { kind: 'haptic'; hand: 'left' | 'right' | 'both'; intensity: number; durationMs: number }
+	/** Host to guest: the host put this equippable in the guest's `hand` (a script asked); the guest mirrors it on its own hands. */
+	| { kind: 'equip'; slotId: string; hand: 'left' | 'right' }
+	/** Host to guest: the host took what the guest had equipped in `hand` off it. */
+	| { kind: 'unequip'; hand: 'left' | 'right' };
 
 /** High-frequency state messages sent on the unordered/unreliable channel. */
 export type WorldStateMessage =

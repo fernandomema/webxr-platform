@@ -1,0 +1,28 @@
+{
+	"name": "rounds-vr",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"description": "ROUNDS in 3D and VR: a duel shooter on @kithin/engine, with a card picked after every round.",
+	"scripts": {
+		"world": "node --experimental-transform-types src/world/build.ts",
+		"dev": "kithin-game dev --port 5175",
+		"build": "kithin-game build",
+		"preview": "kithin-game preview --port 5175",
+		"check": "kithin-game check",
+		"lint": "kithin-game lint",
+		"bake": "node --experimental-transform-types src/world/bake.ts"
+	},
+	"dependencies": {
+		"@kithin/game": "*"
+	},
+	"kithin": {
+		"world": {
+			"script": "world",
+			"watch": [
+				"src/world",
+				"src/script"
+			]
+		}
+	}
+}

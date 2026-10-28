@@ -1,0 +1,8 @@
+/.svelte-kit
+/build
+/tsconfig.json
+# Built from src/world/ by `npm run world`.
+/static/content/worlds/rounds.json
+/.bake
+# Written by `npm run world` from src/world/fragments.ts.
+/static/content/maps/

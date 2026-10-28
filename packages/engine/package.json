@@ -10,6 +10,8 @@
 		"./xr/i18n/svelte.svelte": "./src/xr/i18n/svelte.svelte.ts",
 		"./xr/panels/remoteDocument.svelte": "./src/xr/panels/remoteDocument.svelte.ts",
 		"./xr/interaction/desktop/desktopHud.svelte": "./src/xr/interaction/desktop/desktopHud.svelte.ts",
+		"./package.json": "./package.json",
+		"./bin/*.mjs": "./bin/*.mjs",
 		"./*.svelte": "./src/*.svelte",
 		"./*.json": "./src/*.json",
 		"./*": "./src/*.ts"

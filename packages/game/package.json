@@ -1,0 +1,40 @@
+{
+	"name": "@kithin/game",
+	"version": "0.1.0",
+	"description": "Everything a game on @kithin/engine needs besides its own files: the page, the routes, the build and dev tooling. A game keeps only static/ and src/game.ts.",
+	"type": "module",
+	"license": "UNLICENSED",
+	"private": true,
+	"exports": {
+		".": "./src/index.ts",
+		"./script-bundle": "./scriptBundle.mjs",
+		"./*": "./src/*.ts"
+	},
+	"files": [
+		"app",
+		"bin",
+		"src",
+		"engineStatic.mjs",
+		"devTools.mjs",
+		"scriptBundle.mjs",
+		"vite.config.mjs"
+	],
+	"bin": {
+		"kithin-game": "./bin/kithin-game.mjs"
+	},
+	"peerDependencies": {
+		"@babylonjs/core": "^9.28.0",
+		"@babylonjs/gui": "^9.28.0",
+		"@babylonjs/loaders": "^9.28.0",
+		"svelte": "^5.56.1"
+	},
+	"dependencies": {
+		"@kithin/engine": "*",
+		"@sveltejs/adapter-static": "^3.0.10",
+		"@sveltejs/kit": "^2.63.0",
+		"@sveltejs/vite-plugin-svelte": "^7.1.2",
+		"svelte-check": "^4.6.0",
+		"typescript": "^6.0.3",
+		"vite": "^8.0.16"
+	}
+}

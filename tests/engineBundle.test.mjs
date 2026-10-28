@@ -32,6 +32,7 @@ test('the bundle tool lists the worlds and finds every other file by the hash of
 	assert.deepEqual(manifest.worlds.map((world) => [world.id, world.name, world.url]), [['level-1', 'Level 1', 'worlds/level-1.json'], ['level-2', 'Level 2', 'worlds/level-2.json']]);
 	assert.equal(manifest.home, 'level-1');
 	assert.equal(Object.keys(manifest.assets).length, 1, 'worlds are not assets, and the bundle does not list itself');
+	assert.deepEqual(manifest.names, { 'models/rock.glb': sha(Buffer.from('glTF fake model')) }, 'files can be named by their path');
 	execFileSync('node', [cli, folder]); // again: the first bundle.json is not taken for an asset
 	assert.equal(Object.keys(JSON.parse(readFileSync(join(folder, 'bundle.json'), 'utf8')).assets).length, 1);
 });
@@ -55,6 +56,8 @@ test('a bundle makes its files findable by hash and its worlds the built-in worl
 	assert.deepEqual(devWorldIds, []);
 	assert.deepEqual(await getContent().loadHome(), [{ id: 'floor' }]);
 	assert.equal((await bundle.world('level-2')).name, 'Level 2');
+	assert.equal(bundle.assetId('models/rock.glb'), sha(Buffer.from('glTF fake model')));
+	assert.equal(bundle.assetId('models/none.glb'), undefined);
 	await assert.rejects(bundle.world('nope'), /no world/);
 
 	const realFetch = globalThis.fetch;

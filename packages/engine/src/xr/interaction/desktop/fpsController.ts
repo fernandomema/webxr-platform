@@ -11,6 +11,8 @@ import { desktopHud } from './desktopHud.svelte.ts';
  */
 const WALK_SPEED = 0.065;
 const RUN_SPEED = 0.115;
+/** Babylon's camera speed that walks at 1 m/s: a world can ask for its own speeds (`playerMovement.walkSpeed`). */
+const PER_MPS = WALK_SPEED / 2;
 /** A single mouse move bigger than this is a glitch of the browser taking or giving back the pointer, not a hand. */
 const MAX_LOOK_STEP = 250;
 
@@ -36,7 +38,10 @@ export interface FpsController {
  */
 export function setupFpsController(scene: Scene, canvas: HTMLCanvasElement, camera: UniversalCamera, body: PlayerBody, options: { isXr(): boolean }): FpsController {
 	camera.inputs.removeByType('FreeCameraMouseInput');
-	camera.speed = WALK_SPEED;
+	const walkSpeed = () => { const mps = body.speeds().walk; return mps === undefined ? WALK_SPEED : mps * PER_MPS; };
+	const runSpeed = () => { const mps = body.speeds().run; return mps === undefined ? RUN_SPEED : mps * PER_MPS; };
+	camera.speed = walkSpeed();
+	let running = false;
 	let enabled = true;
 	let attached = true;
 	let locked = false;
@@ -86,7 +91,10 @@ export function setupFpsController(scene: Scene, canvas: HTMLCanvasElement, came
 		setEnabled(value) {
 			enabled = value;
 			setAttached(value);
-			if (!value) camera.speed = WALK_SPEED;
+			if (!value) {
+				running = false;
+				camera.speed = walkSpeed();
+			}
 		},
 		applySettings,
 		dispose() {
@@ -96,6 +104,7 @@ export function setupFpsController(scene: Scene, canvas: HTMLCanvasElement, came
 			window.removeEventListener('blur', onBlur);
 			canvas.removeEventListener('contextmenu', onContextMenu);
 			scene.onKeyboardObservable.remove(keyObserver);
+			scene.onBeforeRenderObservable.remove(speedObserver);
 			if (document.pointerLockElement === canvas) document.exitPointerLock();
 		}
 	};
@@ -124,7 +133,8 @@ export function setupFpsController(scene: Scene, canvas: HTMLCanvasElement, came
 	}
 
 	function onBlur(): void {
-		camera.speed = WALK_SPEED;
+		running = false;
+		camera.speed = walkSpeed();
 	}
 
 	const onContextMenu = (event: Event) => event.preventDefault();
@@ -132,10 +142,16 @@ export function setupFpsController(scene: Scene, canvas: HTMLCanvasElement, came
 	const keyObserver = scene.onKeyboardObservable.add((info) => {
 		const event = info.event;
 		if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') {
-			camera.speed = info.type === KeyboardEventTypes.KEYDOWN && enabled ? RUN_SPEED : WALK_SPEED;
+			running = info.type === KeyboardEventTypes.KEYDOWN && enabled;
+			camera.speed = running ? runSpeed() : walkSpeed();
 		} else if (event.code === 'Space' && info.type === KeyboardEventTypes.KEYDOWN && enabled && !event.repeat) {
 			body.jump();
 		}
+	});
+
+	// A world's own speeds arrive after the controller is made, and can change: follow them.
+	const speedObserver = scene.onBeforeRenderObservable.add(() => {
+		if (enabled) camera.speed = running ? runSpeed() : walkSpeed();
 	});
 
 	document.addEventListener('pointerlockchange', onLockChanged);

@@ -1,14 +1,20 @@
 import { Quaternion, Ray, Vector3, WebXRState, type AbstractMesh, type Scene, type UniversalCamera, type WebXRDefaultExperience } from '@babylonjs/core';
-import { findComponent, isGrabbable, type Slot } from '../../ecs/types.ts';
+import { findComponent, isGrabbable, type CharacterControllerComponent, type PlayerMovementComponent, type Slot } from '../../ecs/types.ts';
 import { isBuiltinMesh } from '../../assets/ref.ts';
 import type { SceneGraph } from '../sceneGraph.ts';
 import type { TeleportTarget } from '../playerPoses.ts';
+import { SceneColliders } from '../sceneColliders.ts';
+import { CharacterRig, characterConfigOf } from './characterRig.ts';
 
 const GRAVITY = 9.8; // m/s²
 const TERMINAL_SPEED = 25; // m/s
 const STEP_UP = 0.4; // tallest ledge walked onto
 const BODY_RADIUS = 0.3;
 const JUMP_SPEED = 3.6; // m/s: about 0.65 m high
+/** How far from the body a wall still counts as touching, for a jump against it. */
+const WALL_REACH = 0.25;
+/** Directions (radians about the vertical) looked along for a wall. */
+const WALL_DIRECTIONS = [0, 1, 2, 3, 4, 5, 6, 7].map((n) => (n * Math.PI) / 4);
 const DESKTOP_EYE_HEIGHT = 1.6;
 const VOID_Y = -20; // below this the player is put back at the spawn point
 const CACHE_MS = 500;
@@ -20,13 +26,16 @@ export function seatedLift(realHeadHeight: number): number {
 	return Math.max(0, SEATED_HEAD_HEIGHT - realHeadHeight);
 }
 
-/** Round or flat surfaces you stand on (and can teleport to). */
-export const isFloorSlot = (slot: Slot): boolean =>
-	slot.components.some((c) => c.type === 'meshRenderer' && (isBuiltinMesh(c.meshRef, 'ground') || isBuiltinMesh(c.meshRef, 'disc')));
+/** A solid that can also be stood on (`collider.standable`). */
+const isStandableSlot = (slot: Slot): boolean => slot.components.some((c) => c.type === 'collider' && c.standable === true);
 
-/** Things you cannot walk through: a collider that is not a floor and not something you can pick up. */
+/** Round or flat surfaces you stand on (and can teleport to), and solids marked standable. */
+export const isFloorSlot = (slot: Slot): boolean =>
+	slot.components.some((c) => c.type === 'meshRenderer' && (isBuiltinMesh(c.meshRef, 'ground') || isBuiltinMesh(c.meshRef, 'disc'))) || isStandableSlot(slot);
+
+/** Things you cannot walk through: a collider that is not a floor and not something you can pick up; a standable one blocks the sides too. */
 export const isSolidSlot = (slot: Slot): boolean =>
-	slot.components.some((c) => c.type === 'collider') && !isGrabbable(slot) && !isFloorSlot(slot) && Boolean(findComponent(slot, 'meshRenderer'));
+	slot.components.some((c) => c.type === 'collider') && !isGrabbable(slot) && (!isFloorSlot(slot) || isStandableSlot(slot)) && Boolean(findComponent(slot, 'meshRenderer'));
 
 export interface PlayerBody {
 	/** Limits a horizontal step (XR smooth locomotion) so it slides along walls instead of passing through them. */
@@ -36,8 +45,21 @@ export interface PlayerBody {
 	 * The lift is measured when the mode is turned on (or when the headset first reports a height), so leaning does not fight it.
 	 */
 	setSeated(seated: boolean): void;
-	/** Desktop: a jump, if standing on something. */
+	/**
+	 * A jump, if standing on something. In a headset only where the world turns it on (`playerMovement.vrJump`). In the air, next to a
+	 * wall, it jumps again where the world allows it (`playerMovement.wallJump`), so a wall can be climbed.
+	 */
 	jump(): void;
+	/** How fast this world lets the player walk and run, in m/s; undefined where it does not say (the engine's own speeds apply). */
+	speeds(): { walk?: number; run?: number };
+	/** Pushes the body (m/s added to its speed; the horizontal part fades). Only where the world has a `characterController`; elsewhere the vertical part still applies. */
+	addImpulse(velocity: [number, number, number]): void;
+	/** Sets the body's speed outright (what a push cancelled, a launch). Same limits as `addImpulse`. */
+	setVelocity(velocity: [number, number, number]): void;
+	/** The height of the first floor or solid below a point (for a body's feet, for an avatar's), or null when there is none. */
+	floorAt(x: number, y: number, z: number): number | null;
+	/** The solids of the scene as a collision world, kept up to date (for `ctx.physics`). */
+	readonly colliders: SceneColliders;
 	/** Puts the player back at the world's start point (its `spawnPoint` slot, else the default), facing the way it points, with nothing left of a fall. For entering a world. */
 	respawn(): void;
 	/** Puts the feet at `target.position` and turns to `target.yaw` when given, with nothing left of a fall. For a script that moves the player (see `ctx.world.teleportPlayer`). */
@@ -57,7 +79,8 @@ export function setupPlayerBody(
 	sceneGraph: SceneGraph,
 	xr: WebXRDefaultExperience | null,
 	desktopCamera: UniversalCamera,
-	spawn: { x: number; z: number }
+	spawn: { x: number; z: number },
+	colliders: SceneColliders = new SceneColliders(sceneGraph)
 ): PlayerBody {
 	scene.collisionsEnabled = true;
 	scene.gravity = new Vector3(0, -0.18, 0);
@@ -98,6 +121,16 @@ export function setupPlayerBody(
 	};
 	let floors = new Set<AbstractMesh>();
 	let solids = new Set<AbstractMesh>();
+	// How this world lets the body move (its `playerMovement` component), read with the floors and the solids.
+	let gravity = GRAVITY;
+	let jumpSpeed = JUMP_SPEED;
+	let vrJump = false;
+	let wallJump = false;
+	let controllerComponent: CharacterControllerComponent | undefined;
+	let rig: CharacterRig | null = null;
+	let terminalSpeed = TERMINAL_SPEED;
+	let walkSpeed: number | undefined;
+	let runSpeed: number | undefined;
 	let refreshedAt = -Infinity;
 	function refreshSets(): void {
 		const now = performance.now();
@@ -107,8 +140,13 @@ export function setupPlayerBody(
 		refreshedAt = now;
 		floors = new Set();
 		solids = new Set();
+		let movement: PlayerMovementComponent | undefined;
+		let controller: CharacterControllerComponent | undefined;
 		for (const entry of sceneGraph.allSlots()) {
-			if (entry.system) continue;
+			// What a fragment built is scenery that counts: a floor or a wall like any other (only the engine's own panels do not).
+			if (entry.system && !entry.fragment) continue;
+			movement ??= findComponent(entry.slot, 'playerMovement');
+			controller ??= findComponent(entry.slot, 'characterController');
 			// Model roots are transform containers: their proxy handles simple colliders, their geometry mesh colliders.
 			const mesh = (entry.node.metadata?.selectionMesh ?? entry.node) as AbstractMesh;
 			if (typeof mesh.getBoundingInfo !== 'function') continue;
@@ -121,10 +159,34 @@ export function setupPlayerBody(
 					continue;
 				}
 				if (isFloorSlot(entry.slot)) floors.add(candidate);
-				else if (isSolidSlot(entry.slot) && !insideGrabbable(entry.slot)) solids.add(candidate);
+				if (isSolidSlot(entry.slot) && !insideGrabbable(entry.slot)) solids.add(candidate);
 				// Desktop camera collisions use the same rule: floors and solids block, the rest is walked through.
 				candidate.checkCollisions = floors.has(candidate) || solids.has(candidate);
 			}
+		}
+		const finite = (value: number | undefined, fallback: number, min: number) => (typeof value === 'number' && Number.isFinite(value) ? Math.max(min, value) : fallback);
+		gravity = finite(movement?.gravity, GRAVITY, 0.1);
+		jumpSpeed = finite(movement?.jumpSpeed, JUMP_SPEED, 0);
+		vrJump = movement?.vrJump === true;
+		wallJump = movement?.wallJump === true;
+		terminalSpeed = finite(movement?.terminalSpeed, TERMINAL_SPEED, 1);
+		// A world with a character controller is moved by it; `playerMovement` still says the speeds and the jump where there is no controller.
+		const speedsFrom = controller ?? movement;
+		walkSpeed = typeof speedsFrom?.walkSpeed === 'number' ? finite(speedsFrom.walkSpeed, 2, 0.1) : undefined;
+		runSpeed = typeof speedsFrom?.runSpeed === 'number' ? finite(speedsFrom.runSpeed, 3.5, 0.1) : undefined;
+		controllerComponent = controller;
+		if (controller) {
+			vrJump = controller.vrJump === true;
+			const config = characterConfigOf(controller);
+			if (rig) rig.configure(config);
+			else {
+				rig = new CharacterRig({ inXr: () => inXr(), camera: () => (inXr() ? xr!.baseExperience.camera : desktopCamera), feetBelowCamera: () => (inXr() ? xr!.baseExperience.camera.realWorldHeight + (lift ?? 0) : DESKTOP_EYE_HEIGHT) }, colliders, config);
+			}
+			// The body collides with the scene by itself: the camera's own collisions would fight it.
+			desktopCamera.checkCollisions = false;
+		} else if (rig) {
+			rig = null;
+			desktopCamera.checkCollisions = true;
 		}
 	}
 
@@ -151,6 +213,7 @@ export function setupPlayerBody(
 		camera.position.y += lift;
 	}
 	let verticalSpeed = 0;
+	let grounded = false;
 
 	function floorHeightBelow(x: number, y: number, z: number, onDesktop = false): number | null {
 		// Walking, you also stand on what you cannot walk through (a platform, a stair); in VR only on floors.
@@ -163,12 +226,14 @@ export function setupPlayerBody(
 		calibrateSeated();
 		const feet = feetY();
 		const ground = floorHeightBelow(camera.position.x, feet + STEP_UP, camera.position.z);
-		if (ground !== null && feet <= ground + 0.02) {
+		if (ground !== null && feet <= ground + 0.02 && verticalSpeed <= 0) {
 			// On the floor (or a ledge low enough to step onto).
+			grounded = true;
 			verticalSpeed = 0;
 			if (Math.abs(ground - feet) > 0.001) camera.position.y += ground - feet;
 		} else {
-			verticalSpeed = Math.max(verticalSpeed - GRAVITY * dt, -TERMINAL_SPEED);
+			grounded = false;
+			verticalSpeed = Math.max(verticalSpeed - gravity * dt, -terminalSpeed);
 			let dy = verticalSpeed * dt;
 			if (ground !== null && feet + dy < ground) {
 				dy = ground - feet;
@@ -185,7 +250,6 @@ export function setupPlayerBody(
 		}
 	}
 
-	let grounded = false;
 	/** The head hit something above: a ceiling stops the rise. */
 	function headBlocked(dy: number): boolean {
 		const origin = desktopCamera.position;
@@ -204,7 +268,7 @@ export function setupPlayerBody(
 			if (Math.abs(ground - feet) > 0.001) camera.position.y += ground - feet;
 		} else {
 			grounded = false;
-			verticalSpeed = Math.max(verticalSpeed - GRAVITY * step, -TERMINAL_SPEED);
+			verticalSpeed = Math.max(verticalSpeed - gravity * step, -terminalSpeed);
 			let dy = verticalSpeed * step;
 			if (dy > 0 && headBlocked(dy)) {
 				verticalSpeed = 0;
@@ -224,8 +288,23 @@ export function setupPlayerBody(
 		}
 	}
 
+	/** Whether a wall is within reach of the body, at about the height of its middle. */
+	function touchingWall(): boolean {
+		refreshSets();
+		if (solids.size === 0) return false;
+		const headset = inXr();
+		const camera = headset ? xr!.baseExperience.camera : desktopCamera;
+		const feet = headset ? feetY() : camera.position.y - DESKTOP_EYE_HEIGHT;
+		const origin = new Vector3(camera.position.x, feet + 1, camera.position.z);
+		return WALL_DIRECTIONS.some((angle) => {
+			const direction = new Vector3(Math.sin(angle), 0, Math.cos(angle));
+			return Boolean(scene.pickWithRay(new Ray(origin, direction, BODY_RADIUS + WALL_REACH), (mesh) => solids.has(mesh))?.hit);
+		});
+	}
+
 	function respawn(): void {
 		verticalSpeed = 0;
+		rig?.reset();
 		const point = worldSpawn();
 		if (inXr()) {
 			const camera = xr!.baseExperience.camera;
@@ -249,6 +328,7 @@ export function setupPlayerBody(
 
 	function teleport({ position, yaw }: TeleportTarget): void {
 		verticalSpeed = 0;
+		rig?.reset();
 		refreshedAt = -Infinity; // the place arrived at may have just been switched on
 		if (inXr()) {
 			const camera = xr!.baseExperience.camera;
@@ -270,10 +350,39 @@ export function setupPlayerBody(
 	return {
 		respawn,
 		teleport,
+		speeds() {
+			refreshSets();
+			return { walk: walkSpeed, run: runSpeed };
+		},
+		addImpulse(velocity) {
+			refreshSets();
+			if (rig) rig.addImpulse(velocity);
+			else verticalSpeed += velocity[1];
+		},
+		setVelocity(velocity) {
+			refreshSets();
+			if (rig) rig.setVelocity(velocity);
+			else verticalSpeed = velocity[1];
+		},
+		floorAt(x, y, z) {
+			refreshSets();
+			if (rig) return rig.floorBelow(x, y, z);
+			return floorHeightBelow(x, y, z, true);
+		},
+		colliders,
 		jump() {
-			if (inXr() || !grounded) return;
-			verticalSpeed = JUMP_SPEED;
-			grounded = false;
+			const headset = inXr();
+			if (headset && !vrJump) return;
+			if (rig) {
+				rig.jump();
+				return;
+			}
+			if (grounded) {
+				verticalSpeed = jumpSpeed;
+				grounded = false;
+			} else if (wallJump && touchingWall()) {
+				verticalSpeed = jumpSpeed;
+			}
 		},
 		setSeated(enabled) {
 			if (enabled === seated) return;
@@ -293,6 +402,11 @@ export function setupPlayerBody(
 		constrainMove(delta) {
 			if (!inXr() || delta.lengthSquared() === 0) return delta;
 			refreshSets();
+			if (rig) {
+				// The body takes the step and the camera follows it in `update`.
+				rig.push(delta);
+				return new Vector3(0, 0, 0);
+			}
 			if (solids.size === 0) return delta;
 			const camera = xr!.baseExperience.camera;
 			const feet = feetY();
@@ -317,6 +431,14 @@ export function setupPlayerBody(
 		},
 		update(dt) {
 			refreshSets();
+			if (rig) {
+				// A fall out of the world: back to the start.
+				const feet = rig.body.position[1];
+				if (feet < VOID_Y) respawn();
+				rig.update(dt);
+				grounded = rig.body.grounded;
+				return;
+			}
 			if (inXr()) updateXr(dt);
 			else {
 				// A new headset session starts from a fresh origin, so the lift has to be measured again.

@@ -106,6 +106,15 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		create: () => ({ type: 'lightVolume', data: { kind: 'url', url: '' } })
 	},
 	{
+		type: 'fragment',
+		label: 'Scene fragment',
+		group: 'World',
+		description: 'A piece of the world kept as an asset (a map, a room): built under this slot while it is enabled, taken down when it is not. Does not count in the slot limit.',
+		glyph: '▦',
+		fields: [{ key: 'source', label: 'Fragment', kind: 'asset', assetType: 'fragment' }],
+		create: () => ({ type: 'fragment', source: { kind: 'url', url: '' } })
+	},
+	{
 		type: 'worldSettings',
 		label: 'World settings',
 		group: 'World',
@@ -124,6 +133,58 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		create: () => ({ type: 'worldSettings', lighting: 'baked' })
 	},
 	{
+		type: 'playerMovement',
+		label: 'Player movement',
+		group: 'World',
+		description: 'How players jump and fall here: for platformers. Use one per world.',
+		glyph: '\u21e7',
+		advanced: true,
+		fields: [
+			{ key: 'jumpSpeed', label: 'Jump speed', kind: 'number', min: 1, max: 40, step: 0.1, unit: 'm/s', optional: true, default: 3.6, help: '3.6 is about 0.65 m high; 6 about 1.8 m.' },
+			{ key: 'gravity', label: 'Gravity', kind: 'number', min: 1, max: 200, step: 0.1, unit: 'm/s\u00b2', optional: true, default: 9.8 },
+			{ key: 'terminalSpeed', label: 'Fastest fall', kind: 'number', min: 5, max: 100, step: 1, unit: 'm/s', optional: true, default: 25 },
+			{ key: 'walkSpeed', label: 'Walking speed', kind: 'number', min: 0.5, max: 30, step: 0.1, unit: 'm/s', optional: true, default: 2, help: 'Left stick in a headset, WASD on a desktop.' },
+			{ key: 'runSpeed', label: 'Running speed', kind: 'number', min: 0.5, max: 30, step: 0.1, unit: 'm/s', optional: true, default: 3.5, help: 'Both sticks forward in a headset, Shift on a desktop.' },
+			{ key: 'vrJump', label: 'Jump in a headset', kind: 'bool', optional: true, default: false, help: 'The A button of the right controller jumps. On a desktop Space always does.' },
+			{ key: 'wallJump', label: 'Wall jump', kind: 'bool', optional: true, default: false, help: 'Jumping in the air next to a wall jumps again, which climbs it.' }
+		],
+		create: () => ({ type: 'playerMovement', jumpSpeed: 6, vrJump: true, wallJump: true })
+	},
+	{
+		type: 'characterController',
+		label: 'Character controller',
+		group: 'World',
+		description: 'How the player\u2019s body moves here: walking, slopes, steps, jumps (in the air, off walls), a lane for 2.5D, and pushes. Use one per world.',
+		glyph: '\u21e7',
+		advanced: true,
+		fields: [
+			{ key: 'walkSpeed', label: 'Walking speed', kind: 'number', min: 0.5, max: 30, step: 0.1, unit: 'm/s', optional: true, default: 2, help: 'Left stick in a headset, WASD on a desktop.' },
+			{ key: 'runSpeed', label: 'Running speed', kind: 'number', min: 0.5, max: 30, step: 0.1, unit: 'm/s', optional: true, default: 3.5, help: 'Both sticks forward in a headset, Shift on a desktop.' },
+			{ key: 'jumpSpeed', label: 'Jump speed', kind: 'number', min: 0, max: 40, step: 0.1, unit: 'm/s', optional: true, default: 3.6, help: '3.6 is about 0.65 m high; 6 about 1.8 m.' },
+			{ key: 'gravity', label: 'Gravity', kind: 'number', min: 1, max: 200, step: 0.1, unit: 'm/s\u00b2', optional: true, default: 9.8 },
+			{ key: 'terminalSpeed', label: 'Fastest fall', kind: 'number', min: 5, max: 100, step: 1, unit: 'm/s', optional: true, default: 25 },
+			{ key: 'coyoteTime', label: 'Coyote time', kind: 'number', min: 0, max: 0.5, step: 0.01, unit: 's', optional: true, default: 0, help: 'A jump still works this long after leaving the ground.' },
+			{ key: 'jumpBuffer', label: 'Jump buffer', kind: 'number', min: 0, max: 0.5, step: 0.01, unit: 's', optional: true, default: 0, help: 'A jump asked for this long before landing is not lost.' },
+			{ key: 'airJumps', label: 'Air jumps', kind: 'number', min: 0, max: 5, step: 1, optional: true, default: 0 },
+			{ key: 'wallJump', label: 'Wall jump', kind: 'bool', optional: true, default: false, help: 'Jumping next to a wall jumps again off it, which climbs it.' },
+			{ key: 'wallJumpUp', label: 'Wall jump up', kind: 'number', min: 0, max: 3, step: 0.05, optional: true, default: 1, help: 'The up part of a wall jump, times the jump speed.' },
+			{ key: 'wallJumpOut', label: 'Wall jump out', kind: 'number', min: 0, max: 30, step: 0.1, unit: 'm/s', optional: true, default: 0, help: 'How hard a wall jump pushes away from the wall.' },
+			{ key: 'wallSlideSpeed', label: 'Wall slide', kind: 'number', min: 0, max: 20, step: 0.1, unit: 'm/s', optional: true, default: 0, help: 'Holding against a wall slows a fall to this. 0 leaves it alone.' },
+			{ key: 'airControl', label: 'Air control', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 1 },
+			{ key: 'stepHeight', label: 'Step height', kind: 'number', min: 0, max: 1, step: 0.05, unit: 'm', optional: true, default: 0.4 },
+			{ key: 'slopeLimit', label: 'Slope limit', kind: 'number', min: 0, max: 89, step: 1, unit: '\u00b0', optional: true, default: 50 },
+			{ key: 'slideSteepSlopes', label: 'Slide down steep slopes', kind: 'bool', optional: true, default: false },
+			{ key: 'radius', label: 'Body radius', kind: 'number', min: 0.1, max: 1, step: 0.05, unit: 'm', optional: true, default: 0.3 },
+			{ key: 'height', label: 'Body height', kind: 'number', min: 0.5, max: 3, step: 0.05, unit: 'm', optional: true, default: 1.8 },
+			{ key: 'impulseDrag', label: 'Push fade', kind: 'number', min: 0, max: 30, step: 0.5, unit: '1/s', optional: true, default: 5 },
+			{ key: 'vrJump', label: 'Jump in a headset', kind: 'bool', optional: true, default: false, help: 'The A button of the right controller jumps. On a desktop Space always does.' },
+			{ key: 'laneAxis', label: 'Lane axis', kind: 'enum', options: [{ value: 'x', label: 'x' }, { value: 'z', label: 'z' }], optional: true, help: 'Keeps the player in a lane across this axis (2.5D).' },
+			{ key: 'laneCenter', label: 'Lane centre', kind: 'number', min: -1000, max: 1000, step: 0.1, unit: 'm', optional: true, default: 0 },
+			{ key: 'laneWidth', label: 'Lane width', kind: 'number', min: 0.5, max: 100, step: 0.1, unit: 'm', optional: true, default: 3 }
+		],
+		create: () => ({ type: 'characterController', jumpSpeed: 5, vrJump: true, wallJump: true, coyoteTime: 0.1, jumpBuffer: 0.1 })
+	},
+	{
 		type: 'meshRenderer',
 		label: 'Mesh Renderer',
 		group: 'Render',
@@ -132,7 +193,8 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		fields: [
 			{ key: 'meshRef', label: 'Mesh', kind: 'mesh', help: `A built-in shape (${BUILTIN_MESH_IDS.join(', ')}) or a model already imported into this project. Models cannot be loaded from a URL.` },
 			{ key: 'color', label: 'Color', kind: 'color', optional: true, default: '#8b7cf6' },
-			{ key: 'unlit', label: 'Self-lit', kind: 'bool', optional: true, default: false, help: 'Draw a primitive at its own color, independent of scene lighting.' }
+			{ key: 'unlit', label: 'Self-lit', kind: 'bool', optional: true, default: false, help: 'Draw a primitive at its own color, independent of scene lighting.' },
+			{ key: 'modelScale', label: 'Model size', kind: 'enum', options: [{ value: 'fit', label: 'Fit: largest side 1, centred' }, { value: 'native', label: 'Native: as authored' }], optional: true, default: 'fit', help: 'Fit lets the slot\u2019s scale size the model like a primitive. Native keeps the file\u2019s own metres and origin: a scale of 1 is its real size.' }
 		],
 		create: () => ({ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'box' }, color: '#8b7cf6' })
 	},
@@ -164,7 +226,10 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		fields: [
 			{ key: 'title', label: 'Title', kind: 'text', optional: true, default: '' },
 			{ key: 'lines', label: 'Lines', kind: 'lines' },
-			{ key: 'color', label: 'Color', kind: 'color', optional: true, default: '#ffffff' },
+			{ key: 'color', label: 'Background', kind: 'color', optional: true, default: '#0f172a', help: 'Any colour, with transparency: #00000000 draws only the text.' },
+			{ key: 'titleColor', label: 'Title colour', kind: 'color', optional: true, default: '#facc15' },
+			{ key: 'lineColor', label: 'Text colour', kind: 'color', optional: true, default: '#ffffff' },
+			{ key: 'billboard', label: 'Face the player', kind: 'enum', options: [{ value: 'none', label: 'No' }, { value: 'y', label: 'Around the vertical' }, { value: 'full', label: 'Always' }], optional: true, default: 'none' },
 			{ key: 'scale', label: 'Text size', kind: 'number', min: 0.25, max: 6, step: 0.25, optional: true, default: 1, help: 'Times the usual size of the text.' },
 			{ key: 'verticalAlign', label: 'Vertical alignment', kind: 'enum', options: [{ value: 'top', label: 'Top' }, { value: 'middle', label: 'Middle' }], optional: true, default: 'top' }
 		],
@@ -282,7 +347,8 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 					{ value: 'sphere', label: 'Sphere' },
 					{ value: 'mesh', label: 'Mesh' }
 				]
-			}
+			},
+			{ key: 'standable', label: 'Stand on it', kind: 'bool', optional: true, default: false, help: 'Players can stand on its upper surface, flat or sloped, as on a floor, and it still blocks the sides. For platforms and ledges.' }
 		],
 		create: () => ({ type: 'collider', shape: 'box' })
 	},
@@ -566,7 +632,11 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 			{ key: 'bottomColor', label: 'Ground', kind: 'color', default: '#0f172a' },
 			{ key: 'stars', label: 'Stars', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 0.8 },
 			{ key: 'ambientIntensity', label: 'Ambient intensity', kind: 'number', min: 0, max: 3, step: 0.05, optional: true, default: 1 },
-			{ key: 'reflectionCapture', label: 'Live reflections', kind: 'bool', optional: true, default: true, help: 'Capture the world from this object while it runs. Use Generate reflection probe to save the capture as assets.' }
+			{ key: 'reflectionCapture', label: 'Live reflections', kind: 'bool', optional: true, default: true, help: 'Capture the world from this object while it runs. Use Generate reflection probe to save the capture as assets.' },
+			{ key: 'exposure', label: 'Exposure', kind: 'number', min: 0.2, max: 3, step: 0.05, optional: true, default: 1, advanced: true },
+			{ key: 'contrast', label: 'Contrast', kind: 'number', min: 0.5, max: 2, step: 0.05, optional: true, default: 1, advanced: true },
+			{ key: 'saturation', label: 'Saturation', kind: 'number', min: 0, max: 2, step: 0.05, optional: true, default: 1, advanced: true },
+			{ key: 'bloom', label: 'Bloom', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 0, advanced: true, help: 'A glow around bright things. Only a desktop screen shows it.' }
 		],
 		create: () => ({ type: 'skybox', topColor: '#0b1030', horizonColor: '#7c3aed', bottomColor: '#0f172a', stars: 0.8 })
 	},

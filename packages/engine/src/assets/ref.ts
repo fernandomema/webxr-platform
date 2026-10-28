@@ -143,6 +143,10 @@ const ASSET_REFERENCES: Record<string, (component: LooseComponent) => AssetId[]>
 		const ref = component.data as SourceRef | undefined;
 		return ref?.kind === 'asset' && isAssetId(ref.assetId) ? [ref.assetId] : [];
 	},
+	fragment: (component) => {
+		const ref = component.source as SourceRef | undefined;
+		return ref?.kind === 'asset' && isAssetId(ref.assetId) ? [ref.assetId] : [];
+	},
 	worldSettings: (component) => {
 		const preview = component.preview as SourceRef | undefined;
 		return preview?.kind === 'asset' && isAssetId(preview.assetId) ? [preview.assetId] : [];

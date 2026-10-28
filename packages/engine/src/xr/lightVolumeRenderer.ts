@@ -7,6 +7,8 @@ import type { Scene } from '@babylonjs/core';
 export interface LightVolumeBinding {
 	dispose(): void;
 	sync(component: LightVolumeComponent): void;
+	/** Whether the slot that holds it is on: a volume of a switched-off slot (a map that is not in play) lights nothing. */
+	setActive(active: boolean): void;
 }
 
 /**
@@ -19,6 +21,7 @@ export function setupLightVolume(scene: Scene, id: string, initial: LightVolumeC
 	let current = initial;
 	let disposed = false;
 	let loaded = false;
+	let active = true;
 	let loading = false;
 	let lease: BlobLease | null = null;
 
@@ -29,7 +32,7 @@ export function setupLightVolume(scene: Scene, id: string, initial: LightVolumeC
 			const response = await fetch(url);
 			const { header, texels } = await decodeTexelsAsync(new Uint8Array(await response.arrayBuffer()));
 			if (disposed) return;
-			manager.add(id, { min: header.spec.min, voxel: header.spec.voxel, dims: header.spec.dims, range: header.range }, texels, tintOf(current.tint), current.intensity ?? 1, current.enabled !== false);
+			manager.add(id, { min: header.spec.min, voxel: header.spec.voxel, dims: header.spec.dims, range: header.range }, texels, tintOf(current.tint), current.intensity ?? 1, current.enabled !== false && active);
 			loaded = true;
 		} catch (error) {
 			console.warn('[lighting] the baked lighting could not be read', error);
@@ -52,7 +55,12 @@ export function setupLightVolume(scene: Scene, id: string, initial: LightVolumeC
 		},
 		sync(component) {
 			current = component;
-			if (loaded) manager.update(id, tintOf(component.tint), component.intensity ?? 1, component.enabled !== false);
+			if (loaded) manager.update(id, tintOf(component.tint), component.intensity ?? 1, component.enabled !== false && active);
+		},
+		setActive(next) {
+			if (next === active) return;
+			active = next;
+			if (loaded) manager.update(id, tintOf(current.tint), current.intensity ?? 1, current.enabled !== false && active);
 		}
 	};
 }

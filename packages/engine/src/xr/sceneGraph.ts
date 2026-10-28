@@ -20,6 +20,7 @@ import type { Component, MediaControlAction, Slot, SlotTree, UIEvent, Vec3, Quat
 import { findComponent, isGrabbable } from '../ecs/types.ts';
 import { isBuiltinMesh, normalizeMeshRef, type AssetId, type MeshRef } from '../assets/ref.ts';
 import { needsRebuild } from './slotRebuild.ts';
+import { applyDelta, type SlotDelta } from './net/sceneDelta.ts';
 import { batchMaterialUpdates, batchMeshDisposal } from './performance.ts';
 import type { BlobAssetLibrary } from './blobAssetLibrary.ts';
 import type { ModelInstance, ModelLease, ModelLibrary, ModelState } from './modelLibrary.ts';
@@ -33,6 +34,8 @@ import { setupStroke } from './strokeRenderer.ts';
 import { setupMaterialSurfaces, type MaterialSurfaces } from './materialSurface.ts';
 import { setupSkybox } from './skyboxRenderer.ts';
 import { setupLightVolume } from './lightVolumeRenderer.ts';
+import { setupFragment } from './fragmentRuntime.ts';
+import { FRAGMENT_LIMITS } from '../assets/fragment.ts';
 import { LightVolumeManager } from './lightVolumeManager.ts';
 import { setupParticleEmitter } from './particleEmitter.ts';
 import { setupWorldGlobe } from './worldGlobe.ts';
@@ -44,6 +47,7 @@ import { setupUIPanel, type UIMediaState, type UIPanelBinding } from './uiPanelS
 import type { WorldStorageService } from './worldStorageService.ts';
 import { parseTeleportTarget, type PlayerPoseView, type PlayerSummary, type TeleportTarget } from './playerPoses.ts';
 import type { ScriptPayments } from './payments/types.ts';
+import type { ScriptPhysics } from './scriptPhysics.ts';
 import type { UiContext } from './uiLocale.ts';
 import { createCodeBlockHandlers, type CodeBlockHost, type RadialItemDef, type CodeBlockLogEntry, type HandEvent, type TriggerEvent, type RaycastHit } from './codeBlockRuntime.ts';
 
@@ -69,6 +73,8 @@ interface LiveSlot {
 	node: TransformNode;
 	/** System nodes (e.g. the Dash/Inspector panels) are grabbable like any Slot but excluded from serialize(). */
 	system?: boolean;
+	/** Set on the slots a `fragment` built: the id of the slot that loaded them. They are scenery that every peer builds for itself, so they are neither saved nor synced. */
+	fragment?: string;
 	/** Present for a `meshRenderer` that points at a model asset: the TransformNode holds a pickable proxy, a placeholder, and (once loaded) the model. */
 	model?: {
 		assetId: AssetId;
@@ -114,7 +120,7 @@ export interface SceneGraphOptions {
 	onSpawnRequest?: (slot: Slot, options?: { ephemeral?: boolean }) => void;
 	onDeleteRequest?: (slotId: string) => void;
 	/** codeBlock's `world.setComponentField` on ANOTHER slot — host/solo only, broadcasts the mutation. */
-	onSlotMutated?: (slotId: string) => void;
+	onSlotMutated?: (slotId: string, change?: 'fields' | 'pose' | 'structure' | 'flush') => void;
 	/** codeBlock's `world.isHost()`. */
 	isHost?: () => boolean;
 	/** codeBlock's `world.getPlayer(grabberId)` — resolves a GrabSystem grabberId to a stable player id + display name. */
@@ -125,6 +131,18 @@ export interface SceneGraphOptions {
 	getPlayerPose?: (playerId: string) => PlayerPoseView | null;
 	/** codeBlock's `world.teleportPlayer(id, target)` — already checked; returns whether the player was found and moved. */
 	teleportPlayer?: (playerId: string, target: TeleportTarget) => boolean;
+	/** codeBlock's `ctx.physics`: questions about the solids of the world. */
+	physics?: ScriptPhysics;
+	/** codeBlock's `world.setPlayerVelocity`: sets or adds to a player's body speed; returns whether the player was found. */
+	setPlayerVelocity?: (playerId: string, velocity: [number, number, number], add: boolean) => boolean;
+	/** codeBlock's `haptics.pulse`: makes a player's controller(s) buzz; returns whether the player was found. */
+	hapticPulse?: (playerId: string, hand: 'left' | 'right' | 'both', intensity: number, durationMs: number) => boolean;
+	/** codeBlock's `ui.openDash(tab, options)` — opens the game's menu on this device. */
+	openDash?: (tab: string, options?: { invite?: boolean }) => void;
+	/** codeBlock's `world.equipPlayer(id, slotId, hand)` — returns whether the object was put in the hand. */
+	equipPlayer?: (playerId: string, slotId: string, hand: 'left' | 'right') => boolean;
+	/** codeBlock's `world.unequipPlayer(id, hand)`. */
+	unequipPlayer?: (playerId: string, hand: 'left' | 'right') => boolean;
 	/** The id a script knows a player by, given the id the equipment system uses (a guest's connection id): hand events and `ctx.equip.holder` report it. */
 	scriptPlayerId?: (equipmentKey: string) => string;
 	/** The language the player reads and the device they hold, so a UI element's text reads for them (see `UIElementComponent.translations` and inputHints.ts). */
@@ -261,6 +279,49 @@ export class SceneGraph {
 		this.syncUIPanels();
 		if (!options?.system) this.notifyChanged([slot.id]);
 		return node;
+	}
+
+	/** Builds the slots of a fragment under `ownerId`. They are scenery: not saved, not synced, not edited. False when that would pass the budget. */
+	loadFragmentSlots(ownerId: string, slots: Slot[]): boolean {
+		const used = [...this.live.values()].reduce((n, e) => n + (e.fragment ? 1 : 0), 0);
+		if (used + slots.length > FRAGMENT_LIMITS.maxLiveSlots) {
+			console.warn(`[sceneGraph] fragment ${ownerId} not loaded: ${used + slots.length} fragment slots would pass the limit of ${FRAGMENT_LIMITS.maxLiveSlots}`);
+			return false;
+		}
+		this.unloadFragmentSlots(ownerId);
+		batchMaterialUpdates(this.scene, () => {
+			for (const slot of slots) {
+				this.spawnNode(slot);
+				const entry = this.live.get(slot.id);
+				if (entry) { entry.system = true; entry.fragment = ownerId; }
+			}
+			for (const slot of slots) {
+				const parent = this.parentNodeFor(slot);
+				const self = this.live.get(slot.id)?.node;
+				if (parent && self) self.parent = parent;
+			}
+		});
+		this.invalidateIndexes();
+		this.notifyChanged(slots.map((slot) => slot.id));
+		return true;
+	}
+
+	/** Takes down what `loadFragmentSlots` built for `ownerId`. */
+	unloadFragmentSlots(ownerId: string): void {
+		const ids = [...this.live.entries()].filter(([, entry]) => entry.fragment === ownerId).map(([id]) => id);
+		if (ids.length === 0) return;
+		batchMeshDisposal(this.scene, () => {
+			for (const id of ids) {
+				const entry = this.live.get(id);
+				if (!entry) continue;
+				this.disposeRuntime(entry);
+				entry.node.dispose();
+				this.live.delete(id);
+			}
+		});
+		this.invalidateIndexes();
+		this.syncUIPanels();
+		this.notifyChanged(ids);
 	}
 
 	removeSlot(slotId: string): void {
@@ -637,6 +698,31 @@ export class SceneGraph {
 		if (entry.node.isEnabled(false) === !!slot.disabled) entry.node.setEnabled(!slot.disabled);
 	}
 
+	/**
+	 * Applies what the host says changed in some slots (see `SlotDelta`): each slot is edited the way an inspector edit is, so what must be
+	 * rebuilt is. Returns the ids of slots this scene does not have, which means it has missed something and needs the whole world again.
+	 */
+	applyDeltas(deltas: readonly SlotDelta[], ignoreSlotIds: Set<string> = new Set()): string[] {
+		const unknown: string[] = [];
+		for (const delta of deltas) {
+			if (ignoreSlotIds.has(delta.id)) continue;
+			const entry = this.live.get(delta.id);
+			if (!entry) { unknown.push(delta.id); continue; }
+			if (entry.system) continue;
+			this.applySlotEdit(delta.id, applyDelta(entry.slot, delta));
+		}
+		return unknown;
+	}
+
+	private quietChanges = new Set<string>();
+
+	/** The slots a script wrote to without asking for a broadcast since the last time this was called: they go to the guests with the next one. */
+	takeQuietChanges(): string[] {
+		const ids = [...this.quietChanges];
+		this.quietChanges.clear();
+		return ids;
+	}
+
 	/** Applies frequent pose updates without re-sending component payloads such as world packages. */
 	applyTransforms(transforms: Array<Pick<Slot, 'id' | 'position' | 'rotation' | 'scale'>>, ignoreSlotIds: Set<string> = new Set()): void {
 		for (const transform of transforms) {
@@ -659,6 +745,19 @@ export class SceneGraph {
 			parentId = this.live.get(parentId)?.slot.parentId ?? null;
 		}
 		return false;
+	}
+
+	/** Gives a slot a runtime, keeping those it already has: a slot with a sky and world settings, or a light volume and a fragment, has both. */
+	private addRuntime(entry: LiveSlot, next: NonNullable<LiveSlot['runtime']>): void {
+		const previous = entry.runtime;
+		if (!previous) { entry.runtime = next; return; }
+		entry.runtime = {
+			...previous,
+			...next,
+			dispose: () => { try { previous.dispose(); } finally { next.dispose(); } },
+			sync: previous.sync || next.sync ? (slot) => { previous.sync?.(slot); next.sync?.(slot); } : undefined,
+			tick: previous.tick || next.tick ? (dt) => { previous.tick?.(dt); next.tick?.(dt); } : undefined
+		};
 	}
 
 	private spawnNode(slot: Slot): TransformNode {
@@ -689,26 +788,26 @@ export class SceneGraph {
 		// Surfaces that draw onto the mesh itself do not apply to a model.
 		if (mesh && !modelAssetId) {
 			const mirror = findComponent(slot, 'mirror');
-			if (mirror) entry.runtime = { dispose: setupMirrorSurface(this.scene, node as AbstractMesh, mirror.resolution) };
+			if (mirror) this.addRuntime(entry, { dispose: setupMirrorSurface(this.scene, node as AbstractMesh, mirror.resolution) });
 			const camera = findComponent(slot, 'camera');
-			if (camera) entry.runtime = setupCameraSurface(this.scene, node as AbstractMesh, camera);
+			if (camera) this.addRuntime(entry, setupCameraSurface(this.scene, node as AbstractMesh, camera));
 			const audio = findComponent(slot, 'audioPlayer');
 			if (audio) entry.runtime = this.createMediaRuntime(slot, node as AbstractMesh, setupAudioPlayerSurface);
 			const htmlView = findComponent(slot, 'htmlView');
 			if (htmlView) {
 				const binding = setupHtmlView(this.scene, node as AbstractMesh, htmlView);
-				entry.runtime = binding;
+				this.addRuntime(entry, binding);
 				entry.htmlFrame = binding.frame;
 			}
 			const textDisplay = findComponent(slot, 'textDisplay');
-			if (textDisplay) entry.runtime = setupTextDisplay(this.scene, node as AbstractMesh, textDisplay);
+			if (textDisplay) this.addRuntime(entry, setupTextDisplay(this.scene, node as AbstractMesh, textDisplay));
 			const scoreboard = findComponent(slot, 'scoreboard');
-			if (scoreboard) entry.runtime = setupScoreboard(this.scene, node as AbstractMesh, scoreboard);
+			if (scoreboard) this.addRuntime(entry, setupScoreboard(this.scene, node as AbstractMesh, scoreboard));
 			const surfaceMask = findComponent(slot, 'surfaceMask');
-			if (surfaceMask) entry.runtime = setupSurfaceMask(this.scene, node as AbstractMesh, surfaceMask, ref);
+			if (surfaceMask) this.addRuntime(entry, setupSurfaceMask(this.scene, node as AbstractMesh, surfaceMask, ref));
 			// A world orb whose world has a 360° preview shows it inside a glass globe.
 			const preview = findComponent(slot, 'worldPortal')?.world.preview;
-			if (preview && this.options.mediaAssets) entry.runtime = setupWorldGlobe(this.scene, node as AbstractMesh, preview, this.options.mediaAssets);
+			if (preview && this.options.mediaAssets) this.addRuntime(entry, setupWorldGlobe(this.scene, node as AbstractMesh, preview, this.options.mediaAssets));
 		}
 		if (uiPanel && node instanceof Mesh) {
 			const binding = setupUIPanel(
@@ -739,10 +838,10 @@ export class SceneGraph {
 				particleBurst.count,
 				particleBurst.durationMs
 			);
-			entry.runtime = { dispose };
+			this.addRuntime(entry, { dispose });
 		}
 		const particleEmitter = findComponent(slot, 'particleEmitter');
-		if (particleEmitter) entry.runtime = setupParticleEmitter(this.scene, node, particleEmitter);
+		if (particleEmitter) this.addRuntime(entry, setupParticleEmitter(this.scene, node, particleEmitter));
 		const pointLight = findComponent(slot, 'pointLight');
 		if (pointLight) {
 			const light = new PointLight(`${slot.id}-light`, Vector3.Zero(), this.scene);
@@ -755,7 +854,7 @@ export class SceneGraph {
 			apply(pointLight);
 			// A baked light is in the world's baked lighting: it is drawn live only while that is not in use.
 			const forget = pointLight.baked ? LightVolumeManager.for(this.scene).registerBakedLight(light) : null;
-			entry.runtime = { dispose: () => { forget?.(); light.dispose(); }, sync: (currentSlot) => { const next = findComponent(currentSlot, 'pointLight'); if (next) apply(next); } };
+			this.addRuntime(entry, { dispose: () => { forget?.(); light.dispose(); }, sync: (currentSlot) => { const next = findComponent(currentSlot, 'pointLight'); if (next) apply(next); } });
 		}
 		const spotLight = findComponent(slot, 'spotLight');
 		if (spotLight) {
@@ -770,25 +869,34 @@ export class SceneGraph {
 			};
 			apply(spotLight);
 			const forget = spotLight.baked ? LightVolumeManager.for(this.scene).registerBakedLight(light) : null;
-			entry.runtime = { dispose: () => { forget?.(); light.dispose(); }, sync: (currentSlot) => { const next = findComponent(currentSlot, 'spotLight'); if (next) apply(next); } };
+			this.addRuntime(entry, { dispose: () => { forget?.(); light.dispose(); }, sync: (currentSlot) => { const next = findComponent(currentSlot, 'spotLight'); if (next) apply(next); } });
 		}
 		const lightVolume = findComponent(slot, 'lightVolume');
 		if (lightVolume) {
 			const binding = setupLightVolume(this.scene, slot.id, lightVolume, this.options.mediaAssets);
-			entry.runtime = { dispose: () => binding.dispose(), sync: (currentSlot) => { const next = findComponent(currentSlot, 'lightVolume'); if (next) binding.sync(next); } };
+			this.addRuntime(entry, { dispose: () => binding.dispose(), sync: (currentSlot) => { const next = findComponent(currentSlot, 'lightVolume'); if (next) binding.sync(next); }, tick: () => binding.setActive(node.isEnabled(false)) });
+		}
+		const fragment = findComponent(slot, 'fragment');
+		if (fragment) {
+			const binding = setupFragment(slot.id, fragment, this.options.mediaAssets, {
+				load: (ownerId, slots) => this.loadFragmentSlots(ownerId, slots),
+				unload: (ownerId) => this.unloadFragmentSlots(ownerId),
+				isEnabled: () => node.isEnabled(false)
+			});
+			this.addRuntime(entry, { dispose: () => binding.dispose(), sync: (currentSlot) => { const next = findComponent(currentSlot, 'fragment'); if (next) binding.sync(next); }, tick: () => binding.tick() });
 		}
 		const worldSettings = findComponent(slot, 'worldSettings');
 		if (worldSettings) {
 			const manager = LightVolumeManager.for(this.scene);
 			manager.setPolicy(worldSettings.lighting ?? 'baked');
-			entry.runtime = { dispose: () => manager.setPolicy('baked'), sync: (currentSlot) => { const next = findComponent(currentSlot, 'worldSettings'); manager.setPolicy(next?.lighting ?? 'baked'); } };
+			this.addRuntime(entry, { dispose: () => manager.setPolicy('baked'), sync: (currentSlot) => { const next = findComponent(currentSlot, 'worldSettings'); manager.setPolicy(next?.lighting ?? 'baked'); } });
 		}
 		const skybox = findComponent(slot, 'skybox');
-		if (skybox) entry.runtime = setupSkybox(this.scene, node, skybox, this.options.mediaAssets);
+		if (skybox) this.addRuntime(entry, setupSkybox(this.scene, node, skybox, this.options.mediaAssets));
 		const stroke = findComponent(slot, 'stroke');
-		if (stroke) entry.runtime = setupStroke(this.scene, node, stroke);
+		if (stroke) this.addRuntime(entry, setupStroke(this.scene, node, stroke));
 		const impactSound = findComponent(slot, 'impactSound');
-		if (impactSound) entry.runtime = { dispose: setupImpactSound(this.scene, node, impactSound) };
+		if (impactSound) this.addRuntime(entry, { dispose: setupImpactSound(this.scene, node, impactSound) });
 		return node;
 	}
 
@@ -821,7 +929,7 @@ export class SceneGraph {
 			getSlot: (slotId) => this.live.get(slotId)?.slot,
 			getNode: (slotId) => this.live.get(slotId)?.node,
 			getChildren: (parentId) => this.getChildren(parentId).map((entry) => entry.slot),
-			allSlots: () => this.allSlots().map((entry) => entry.slot),
+			allSlots: () => this.allSlots().filter((entry) => !entry.fragment).map((entry) => entry.slot),
 			getGrabbers: (slotId) => this.grabQuery?.getGrabbersForSlot(slotId) ?? [],
 			isHost: () => this.options.isHost?.() ?? true,
 			requestSpawn: (slot, options) => this.options.onSpawnRequest?.(slot, options),
@@ -829,7 +937,8 @@ export class SceneGraph {
 			setComponent: (slotId, component, broadcast = true) => {
 				if (!(this.options.isHost?.() ?? true)) return false;
 				const changed = this.setComponent(slotId, component);
-				if (changed && broadcast) this.options.onSlotMutated?.(slotId);
+				if (changed && !broadcast) this.quietChanges.add(slotId);
+				if (changed && broadcast) this.options.onSlotMutated?.(slotId, 'fields');
 				return changed;
 			},
 			setComponentField: (slotId, componentType, field, value, broadcast = true) => {
@@ -837,14 +946,17 @@ export class SceneGraph {
 				// unauthoritative copy, silently reverted by the next broadcast —
 				// so it's a documented no-op rather than a confusing flash-then-revert.
 				if (!(this.options.isHost?.() ?? true)) return;
-				if (this.setComponentField(slotId, componentType, field, value) && broadcast) {
-					this.options.onSlotMutated?.(slotId);
+				const changed = this.setComponentField(slotId, componentType, field, value);
+				if (changed && !broadcast) this.quietChanges.add(slotId);
+				if (changed && broadcast) {
+					this.options.onSlotMutated?.(slotId, 'fields');
 				}
 			},
 			removeComponent: (slotId, componentType, broadcast = true) => {
 				if (!(this.options.isHost?.() ?? true)) return false;
 				const changed = this.removeComponent(slotId, componentType);
-				if (changed && broadcast) this.options.onSlotMutated?.(slotId);
+				if (changed && !broadcast) this.quietChanges.add(slotId);
+				if (changed && broadcast) this.options.onSlotMutated?.(slotId, 'fields');
 				return changed;
 			},
 			reparent: (slotId, parentId, broadcast = true) => {
@@ -853,14 +965,14 @@ export class SceneGraph {
 				if (!entry || findComponent(entry.slot, 'avatar')) return false;
 				if (entry.slot.parentId === parentId) return true;
 				const changed = this.reparentSlot(slotId, parentId);
-				if (changed && broadcast) this.options.onSlotMutated?.(slotId);
+				if (changed && broadcast) this.options.onSlotMutated?.(slotId, 'structure');
 				return changed;
 			},
 			commitTransform: (slotId, broadcast = true) => {
 				const entry = this.live.get(slotId);
 				if (!entry || entry.system || !(this.options.isHost?.() ?? true)) return;
 				this.syncSlotTransform(entry);
-				if (broadcast) this.options.onSlotMutated?.(slotId);
+				if (broadcast) this.options.onSlotMutated?.(slotId, 'pose');
 			},
 			findNear: (worldPos, radius) => this.findSlotsNear(worldPos, radius),
 			raycast: (origin, direction, maxDistance, ignore) => this.raycastScene(origin, direction, maxDistance, ignore),
@@ -873,10 +985,17 @@ export class SceneGraph {
 				const checked = parseTeleportTarget(target);
 				return checked ? (this.options.teleportPlayer?.(playerId, checked) ?? false) : false;
 			},
+			physics: this.options.physics,
+			setPlayerVelocity: (playerId, velocity, add) => (this.options.isHost?.() ?? true) && (this.options.setPlayerVelocity?.(playerId, velocity, add) ?? false),
+			hapticPulse: (playerId, hand, intensity, durationMs) => (this.options.isHost?.() ?? true) && (this.options.hapticPulse?.(playerId, hand, intensity, durationMs) ?? false),
+			equipPlayer: (playerId, slotId, hand) => (this.options.isHost?.() ?? true) && (this.options.equipPlayer?.(playerId, slotId, hand) ?? false),
+			unequipPlayer: (playerId, hand) => (this.options.isHost?.() ?? true) && (this.options.unequipPlayer?.(playerId, hand) ?? false),
+			flush: () => { if (this.options.isHost?.() ?? true) this.options.onSlotMutated?.('', 'flush'); },
 			setSlotEnabled: (slotId, enabled, broadcast = true) => {
 				if (!(this.options.isHost?.() ?? true)) return false;
 				const changed = this.setSlotEnabled(slotId, enabled);
-				if (changed && broadcast) this.options.onSlotMutated?.(slotId);
+				if (changed && !broadcast) this.quietChanges.add(slotId);
+				if (changed && broadcast) this.options.onSlotMutated?.(slotId, 'fields');
 				return changed;
 			},
 			storage: this.options.storage,
@@ -889,6 +1008,7 @@ export class SceneGraph {
 			},
 			getUIMedia: (slotId) => this.getUIMedia(slotId),
 			getUIInputText: (slotId) => this.getUIInputText(slotId),
+			openDash: (tab, options) => this.options.openDash?.(tab, options),
 			importPolyHavenModel: (id, name) => {
 				if (!(this.options.isHost?.() ?? true) || !this.options.onImportPolyHavenModel) throw new Error('Model importing is unavailable here.');
 				return this.options.onImportPolyHavenModel(id, name);
@@ -1020,6 +1140,8 @@ export class SceneGraph {
 		// These cached component lists are invalidated whenever the graph changes. Large authored worlds contain hundreds
 		// of static decorative slots, so do not scan all of them several times on every headset frame.
 		for (const entry of this.slotsWith('codeBlock')) entry.runtime?.tick?.(dt);
+		// What follows whether its slot is on (a map's fragment and baked light) is looked at every frame; a slot with a script is ticked above.
+		for (const type of ['fragment', 'lightVolume'] as const) for (const entry of this.slotsWith(type)) if (!entry.slot.components.some((c) => c.type === 'codeBlock')) entry.runtime?.tick?.(dt);
 		this.flushUISync();
 		this.updateModelPriorities(dt);
 
@@ -1264,13 +1386,19 @@ export class SceneGraph {
 		const model = entry?.model;
 		if (!entry || !model) return;
 		const state = model.lease.state;
-		const extents = model.instance?.extents ?? model.lease.extents;
+		// Native models keep the file's metres and origin: their boxes are the size and place of the model, not unit boxes at the slot.
+		const native = findComponent(entry.slot, 'meshRenderer')?.modelScale === 'native' || Boolean(findComponent(entry.slot, 'avatar'));
+		const authored = model.lease.native ?? { extents: model.lease.extents, center: [0, 0, 0] as Vec3 };
+		const extents = model.instance?.extents ?? (native ? authored.extents : model.lease.extents);
+		const centre = model.instance?.center ?? (native ? authored.center : [0, 0, 0]);
 		model.proxy.scaling.set(...extents);
 		model.placeholder.scaling.set(...extents);
+		model.proxy.position.set(...centre);
+		model.placeholder.position.set(...centre);
 
 		if (state === 'ready' && !model.instance) {
 			// Avatars keep real-world metres so bones, height and attached items line up with the player.
-			const instance = model.lease.instantiate(`${slotId}-model`, { normalize: !findComponent(entry.slot, 'avatar') });
+			const instance = model.lease.instantiate(`${slotId}-model`, { normalize: !native });
 			if (instance) {
 				instance.root.parent = entry.node;
 				for (const mesh of instance.root.getChildMeshes(false)) {
@@ -1280,6 +1408,9 @@ export class SceneGraph {
 				model.instance = instance;
 				model.placeholder.setEnabled(false);
 				model.proxy.scaling.set(...instance.extents);
+				const centre = instance.center ?? [0, 0, 0];
+				model.proxy.position.set(...centre);
+				model.placeholder.position.set(...centre);
 				if (findComponent(entry.slot, 'avatar')) model.proxy.isPickable = false;
 				this.bindBoneChildren(slotId);
 			} else {

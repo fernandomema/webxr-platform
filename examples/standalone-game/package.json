@@ -5,26 +5,12 @@
 	"type": "module",
 	"description": "A game built on @kithin/engine: static files only, its own worlds, Kithin's accounts, friends and multiplayer.",
 	"scripts": {
-		"predev": "kithin-engine-static static && kithin-engine-bundle static/content",
-		"dev": "vite dev",
-		"prebuild": "kithin-engine-static static && kithin-engine-bundle static/content",
-		"build": "vite build",
-		"preview": "vite preview",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
+		"dev": "kithin-game dev --port 5174",
+		"build": "kithin-game build",
+		"preview": "kithin-game preview --port 5174",
+		"check": "kithin-game check"
 	},
 	"dependencies": {
-		"@kithin/engine": "*"
-	},
-	"devDependencies": {
-		"@babylonjs/core": "^9.28.0",
-		"@babylonjs/gui": "^9.28.0",
-		"@babylonjs/loaders": "^9.28.0",
-		"@sveltejs/adapter-static": "^3.0.10",
-		"@sveltejs/kit": "^2.63.0",
-		"@sveltejs/vite-plugin-svelte": "^7.1.2",
-		"svelte": "^5.56.1",
-		"svelte-check": "^4.6.0",
-		"typescript": "^6.0.3",
-		"vite": "^8.0.16"
+		"@kithin/game": "*"
 	}
 }

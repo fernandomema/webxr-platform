@@ -4,5 +4,5 @@ export const ASSET_LIMITS = {
 	maxTriangles: 300_000,
 	maxImages: 24,
 	/** Distinct assets (of any type) a single world may reference. */
-	maxAssetsPerWorld: 64
+	maxAssetsPerWorld: 128
 } as const;

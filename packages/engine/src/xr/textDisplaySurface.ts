@@ -1,6 +1,18 @@
-import type { AbstractMesh, Scene } from '@babylonjs/core';
+import { TransformNode, type AbstractMesh, type Scene } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Control, Rectangle, StackPanel, TextBlock } from '@babylonjs/gui';
 import { findComponent, type Slot, type TextDisplayComponent } from '../ecs/types.ts';
+
+/** What a text display draws, without drawing it: the background, and each row's text, colour and size (times `unit`, the pixels of the standard size). */
+export function textDisplayRows(component: TextDisplayComponent, unit = 1): { background: string; rows: { text: string; color: string; size: number }[] } {
+	const k = unit * (component.scale ?? 1);
+	const rows: { text: string; color: string; size: number }[] = [];
+	if (component.title) rows.push({ text: component.title, color: component.titleColor ?? '#facc15', size: 40 * k });
+	component.lines.forEach((line, n) => {
+		const size = component.lineSizes?.[n];
+		rows.push({ text: line, color: component.lineColors?.[n] ?? component.lineColor ?? 'white', size: 30 * k * (typeof size === 'number' && size > 0 ? size : 1) });
+	});
+	return { background: component.background ?? component.color ?? '#0f172a', rows };
+}
 
 export interface TextDisplayBinding {
 	dispose(): void;
@@ -76,10 +88,11 @@ export function setupTextDisplay(scene: Scene, mesh: AbstractMesh, initial: Text
 	function render(component: TextDisplayComponent): void {
 		current = component;
 		const k = fit(component);
-		background.background = component.color ?? '#0f172a';
+		const drawn = textDisplayRows(component, k / (component.scale ?? 1));
+		background.background = drawn.background;
 		for (const child of [...stack.children]) stack.removeControl(child);
-		if (component.title) stack.addControl(textRow(component.title, '#facc15', 40 * k));
-		for (const line of component.lines) stack.addControl(textRow(line, 'white', 30 * k));
+		for (const row of drawn.rows) stack.addControl(textRow(row.text, row.color, row.size));
+		mesh.billboardMode = component.billboard === 'full' ? TransformNode.BILLBOARDMODE_ALL : component.billboard === 'y' ? TransformNode.BILLBOARDMODE_Y : TransformNode.BILLBOARDMODE_NONE;
 	}
 
 	render(initial);

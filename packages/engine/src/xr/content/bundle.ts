@@ -11,6 +11,8 @@ export interface BundleManifest {
 	formatVersion: 1;
 	/** Content hash of a file → its address, relative to the manifest. */
 	assets: Record<AssetId, string>;
+	/** A file's address relative to the content folder → its content hash, so that a file can be named instead of carrying its hash. */
+	names?: Record<string, AssetId>;
 	worlds: Array<{ id: string; name: string; description?: string; url: string; development?: boolean }>;
 	/** The world to stand in when none is asked for. */
 	home?: string;
@@ -20,6 +22,8 @@ export interface LoadedBundle {
 	manifest: BundleManifest;
 	/** The world package with this id (the file name without `.json`). */
 	world(id: string): Promise<WorldPackage>;
+	/** The asset id of a file of the content folder by its path (`'models/rock.glb'`), or undefined when the bundle has none. */
+	assetId(path: string): AssetId | undefined;
 }
 
 function isManifest(value: unknown): value is BundleManifest {
@@ -63,5 +67,5 @@ export async function loadBundle(manifestUrl: string, fetchFn: typeof fetch = fe
 		},
 		...(manifest.home ? { loadHome: async () => (await world(manifest.home!)).scene } : {})
 	});
-	return { manifest, world };
+	return { manifest, world, assetId: (path) => manifest.names?.[path] };
 }

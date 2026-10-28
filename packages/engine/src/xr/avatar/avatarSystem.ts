@@ -35,8 +35,8 @@ export interface AvatarSystemOptions {
 	getLocalPlayerId(): string;
 	getCamera(): Camera;
 	getXr(): WebXRDefaultExperience | null;
-	/** Ground height under a world x/z. Defaults to 0. */
-	getFloorY?(x: number, z: number): number;
+	/** Ground height under a head at world x, y, z (the first floor or solid below it). Defaults to 0 where there is none. */
+	getFloorY?(x: number, y: number, z: number): number | null;
 	/** What each of a player's hands has equipped, so an object with Auto grip can be wrapped by the fingers. */
 	getHeldSlots?(playerId: string): { left?: HeldItem | null; right?: HeldItem | null };
 }
@@ -472,7 +472,7 @@ export class AvatarSystem {
 		const { root } = rig;
 		const headPosition = Vector3.FromArray(pose.head.position);
 		const headRotation = toQuat(pose.head.rotation);
-		const floorY = this.options.getFloorY?.(headPosition.x, headPosition.z) ?? 0;
+		const floorY = this.options.getFloorY?.(headPosition.x, headPosition.y, headPosition.z) ?? 0;
 
 		rig.standing = updateStandingHeight(rig.standing, headPosition.y - floorY, dt);
 		const eye = avatar.height > 0 ? avatar.height : rig.restEyeHeight;

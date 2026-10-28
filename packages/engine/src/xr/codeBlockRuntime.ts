@@ -7,6 +7,8 @@ import type { UIMediaState } from './uiPanelSurface.ts';
 import type { AudioTrackHandle, ScriptAudio } from './scriptAudio.ts';
 import type { PlayerPoseView, PlayerSummary, TeleportTarget } from './playerPoses.ts';
 import type { PayResult, ScriptPayments } from './payments/types.ts';
+import type { ScriptPhysics } from './scriptPhysics.ts';
+import { isAssetId } from '../assets/ref.ts';
 
 /** What SceneGraph exposes to a codeBlock's compiled handlers — narrow, read-mostly, no Babylon types leak into `ctx`. */
 export interface CodeBlockHost {
@@ -47,12 +49,26 @@ export interface CodeBlockHost {
 	getPlayerPose(playerId: string): PlayerPoseView | null;
 	/** Moves a player to a floor position and optionally turns them. Host/solo only; returns whether the player was found and the target was usable. */
 	teleportPlayer(playerId: string, target: TeleportTarget): boolean;
+	/** Puts an equippable slot in a hand of a player (replacing what that hand held). Host/solo only, and for the player at this device: returns whether it was done. */
+	equipPlayer(playerId: string, slotId: string, hand: 'left' | 'right'): boolean;
+	/** Takes whatever a player holds equipped in a hand off it. Same limits as `equipPlayer`. */
+	unequipPlayer(playerId: string, hand: 'left' | 'right'): boolean;
 	/** Which player/hand has this slot — or one of its ancestors — equipped, if any. */
 	getEquipHolder(slotId: string): { playerId: string; hand: 'left' | 'right' } | null;
 	/** Playback state, on this peer, of the `video` uiElement `slotId`. */
 	getUIMedia(slotId: string): UIMediaState | undefined;
 	/** Current text, on this peer, of the `input` uiElement `slotId`. */
 	getUIInputText(slotId: string): string | undefined;
+	/** Opens the game's menu (the dash) at a tab on this device; `invite` shows the choices of who can join first. Absent where there is no menu. */
+	openDash?(tab: string, options?: { invite?: boolean }): void;
+	/** Questions about the solids of the world (rays, sweeps, overlaps). Absent where the engine keeps no collision world. */
+	physics?: ScriptPhysics;
+	/** Sets a player's body speed, or adds to it (a push). Host/solo only; returns whether the player was found. Absent where bodies are not driven by the engine. */
+	setPlayerVelocity?(playerId: string, velocity: Vec3, add: boolean): boolean;
+	/** Makes a controller of a player buzz. Host/solo only; returns whether the player was found. */
+	hapticPulse?(playerId: string, hand: 'left' | 'right' | 'both', intensity: number, durationMs: number): boolean;
+	/** Sends guests what scripts wrote with `broadcast: false` since the last send, as a difference. Host/solo only. */
+	flush?(): void;
 	/** Switches a slot and everything below it on or off for every player. Host/solo only (`false` on a guest). */
 	setSlotEnabled(slotId: string, enabled: boolean, broadcast?: boolean): boolean;
 	/** Persistent storage and leaderboards. Absent where the engine provides none; scripts then see them as unavailable. */
@@ -154,7 +170,20 @@ export interface CodeBlockRuntime extends CodeBlockHandlers {
 interface ScriptScope {
 	disposed: boolean;
 	tracks: Set<AudioTrackHandle>;
+	/** The clock this script sees: its `tick` gets `delta`, which is the frame's time times `scale`. */
+	time?: ScriptClock;
 }
+
+/** The clock of one script (`ctx.time`): a scale for slow motion, and an accumulator for steps of a fixed length. */
+interface ScriptClock {
+	scale: number;
+	delta: number;
+	rawDelta: number;
+	elapsed: number;
+	accumulator: number;
+}
+
+const newClock = (): ScriptClock => ({ scale: 1, delta: 0, rawDelta: 0, elapsed: 0, accumulator: 0 });
 
 const MAX_LOG_ENTRIES = 30;
 
@@ -335,6 +364,36 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 				};
 				host.requestSpawn(spawned, options);
 			},
+			/**
+			 * Builds a scene fragment (a `fragment` asset: a map, a room) in the world for everyone, under a new slot placed by `options`, and
+			 * returns that slot's id (null when `assetId` is not an asset). Every peer builds the content itself from the asset, so only the
+			 * small slot travels. The content is scenery and does not count in the world's slot limit. Switch the slot off with
+			 * `setSlotEnabled` to take the content down and keep the slot, or `unloadFragment` to remove both.
+			 */
+			loadFragment: (assetId: string, options?: { id?: string; name?: string; parentId?: string | null; position?: Vec3; rotation?: Quat; scale?: Vec3; disabled?: boolean }): string | null => {
+				if (!isAssetId(assetId)) return null;
+				const o = options ?? {};
+				const vec = (v: unknown, n: number, fallback: number[]) => (Array.isArray(v) && v.length === n && v.every((x) => typeof x === 'number' && Number.isFinite(x)) ? v : fallback);
+				const id = typeof o.id === 'string' && o.id.length > 0 && o.id.length <= 120 ? o.id : crypto.randomUUID();
+				host.requestSpawn({
+					id,
+					parentId: typeof o.parentId === 'string' ? o.parentId : null,
+					name: typeof o.name === 'string' ? o.name.slice(0, 120) : 'Fragment',
+					position: vec(o.position, 3, [0, 0, 0]) as Vec3,
+					rotation: vec(o.rotation, 4, [0, 0, 0, 1]) as Quat,
+					scale: vec(o.scale, 3, [1, 1, 1]) as Vec3,
+					components: [{ type: 'fragment', source: { kind: 'asset', assetId } }],
+					...(o.disabled ? { disabled: true } : {})
+				});
+				return id;
+			},
+			/** Removes a slot made by `loadFragment`, and with it the content it built. */
+			unloadFragment: (slotId: string) => host.requestDelete(slotId),
+			/**
+			 * Sends everything written with `broadcast: false` since the last send to the guests, as one difference (only the slots and
+			 * components that changed), instead of a write per change: update quietly as often as needed, `flush()` a few times a second.
+			 */
+			flush: () => host.flush?.(),
 			/** Switches a slot (and everything below it) on or off for all players: hidden, not pickable, not grabbable. Host/solo only; returns whether it changed. Its code blocks keep running. */
 			setSlotEnabled: (targetId: string, enabled: boolean, broadcast = true): boolean => host.setSlotEnabled(targetId, enabled, broadcast),
 			deleteSelf: () => host.requestDelete(slotId),
@@ -408,7 +467,47 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 			 */
 			getPlayerPose: (playerId: string) => host.getPlayerPose(playerId),
 			/** Puts a player's feet at `target.position`, facing `target.yaw` (radians, 0 looks along +Z). Host/solo only; returns whether it was done. */
-			teleportPlayer: (playerId: string, target: TeleportTarget) => host.teleportPlayer(playerId, target)
+			teleportPlayer: (playerId: string, target: TeleportTarget) => host.teleportPlayer(playerId, target),
+			/**
+			 * Sets the speed of a player's body (m/s, `[x, y, z]`), or with `{ add: true }` adds to it: a knockback, a launch pad, a shove. The
+			 * vertical part is a jump if it points up; the horizontal part fades by the world's `characterController.impulseDrag`. Host/solo only;
+			 * returns whether the player was found.
+			 */
+			setPlayerVelocity: (playerId: unknown, velocity: Vec3, options?: { add?: boolean }): boolean => {
+				const id = playerIdOf(playerId);
+				const ok = Array.isArray(velocity) && velocity.length === 3 && velocity.every((n) => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= 200);
+				if (!id || !ok || !host.isHost()) return false;
+				return host.setPlayerVelocity?.(id, velocity, options?.add === true) ?? false;
+			},
+			/**
+			 * Puts the equippable `slotId` in the `hand` ('left' or 'right') of a player, replacing what it held, as if they had equipped it
+			 * from the radial menu: its `onEquip` runs and its trigger then drives its `onTrigger`. Host/solo only, and only for the player at
+			 * the device that runs the world (a guest equips by hand); returns whether it was done. A desktop player has the right hand only.
+			 */
+			equipPlayer: (playerId: string, slotId: string, hand: 'left' | 'right') => (hand === 'left' || hand === 'right') && host.equipPlayer(playerId, slotId, hand),
+			/** Takes what a player holds equipped in a hand off it (`onUnequip` runs; it stays where the hand was). Same limits as `equipPlayer`. */
+			unequipPlayer: (playerId: string, hand: 'left' | 'right') => (hand === 'left' || hand === 'right') && host.unequipPlayer(playerId, hand)
+		},
+		physics: {
+			/** The first solid a ray meets within `maxDistance` m, as `{ slotId, t, point, normal }`, or null. `options.ignore`: slots to pass through, with what is under them. */
+			raycast: (origin: Vec3, direction: Vec3, maxDistance: number, options?: { ignore?: string[] }) => host.physics?.raycast(origin, direction, maxDistance, options) ?? null,
+			/** Moves a sphere along `direction` and says where it first touches a solid: `{ slotId, t, point, normal }`, or null. */
+			sphereCast: (origin: Vec3, radius: number, direction: Vec3, maxDistance: number, options?: { ignore?: string[] }) => host.physics?.sphereCast(origin, radius, direction, maxDistance, options) ?? null,
+			/** Every solid a sphere is inside of or touching, deepest first, as `{ slotId, normal, depth, point }`: push the sphere out along `normal` by `depth`. */
+			overlapSphere: (center: Vec3, radius: number, options?: { ignore?: string[] }) => host.physics?.overlapSphere(center, radius, options) ?? [],
+			/** The solid nearest to a point (within `maxDistance`), as `{ slotId, normal, depth, point, distance }`, or null. */
+			closest: (point: Vec3, maxDistance?: number, options?: { ignore?: string[] }) => host.physics?.closest(point, maxDistance, options) ?? null
+		},
+		haptics: {
+			/** Makes the controller(s) of a player buzz: `{ hand: 'left' | 'right' | 'both' (both), intensity: 0 to 1 (0.5), durationMs (100) }`. Host/solo only; returns whether the player was found. */
+			pulse: (playerId: unknown, options: { hand?: 'left' | 'right' | 'both'; intensity?: number; durationMs?: number } = {}): boolean => {
+				const id = playerIdOf(playerId);
+				if (!id || !host.isHost()) return false;
+				const hand = options.hand === 'left' || options.hand === 'right' ? options.hand : 'both';
+				const intensity = typeof options.intensity === 'number' && Number.isFinite(options.intensity) ? Math.min(1, Math.max(0, options.intensity)) : 0.5;
+				const durationMs = typeof options.durationMs === 'number' && Number.isFinite(options.durationMs) ? Math.min(2000, Math.max(1, options.durationMs)) : 100;
+				return host.hapticPulse?.(id, hand, intensity, durationMs) ?? false;
+			}
 		},
 		particles: {
 			burst: (opts: { color?: string; count?: number; durationMs?: number } = {}) => {
@@ -467,13 +566,49 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 			 * seconds on the audio clock, the one to sync gameplay or visuals to. Options: `volume` (0-1), `loop`, `offset` (seconds).
 			 * Runs on the peer that calls it, so gate it behind `world.isHost()` when only one player should hear it.
 			 */
-			playTrack: async (source: unknown, options?: { volume?: number; loop?: boolean; offset?: number }) => {
+			playTrack: async (source: unknown, options?: { volume?: number; loop?: boolean; offset?: number; rate?: number }) => {
 				const handle = await requireAudio(host).playTrack(source, options);
 				// The track belongs to this code block: when the block is removed (a world is left) it stops, even if it only
 				// finished loading after that. A script that outlives its slot would otherwise keep a song playing in another world.
 				if (scope.disposed) handle.stop();
 				else scope.tracks.add(handle);
 				return handle;
+			},
+			/**
+			 * Plays an audio source from a point in the world, heard from where it is (louder the nearer the listener): the handle is
+			 * `playTrack`'s with `setPosition([x, y, z])`. Options: `volume`, `loop`, `offset`, `rate` (pitch), `refDistance` (1 m: as loud
+			 * as it gets up to there), `maxDistance` (60 m) and `rolloff` (1). Runs on the peer that calls it: every peer that should hear it calls it.
+			 */
+			playAt: async (source: unknown, position: Vec3, options?: { volume?: number; loop?: boolean; offset?: number; rate?: number; refDistance?: number; maxDistance?: number; rolloff?: number }) => {
+				const handle = await requireAudio(host).playAt(source, position, options);
+				if (scope.disposed) handle.stop();
+				else scope.tracks.add(handle);
+				return handle;
+			}
+		},
+		time: {
+			/** The time the last `tick` was given, in seconds: the frame's time times the scale. */
+			delta: () => scope.time?.delta ?? 0,
+			/** The real time of the last frame, whatever the scale. */
+			unscaledDelta: () => scope.time?.rawDelta ?? 0,
+			/** Seconds this script has run for, at the scale it ran at. */
+			now: () => scope.time?.elapsed ?? 0,
+			/** How fast this script's time runs: 1 normally, 0.25 in slow motion, 0 stops it. `tick` gets the scaled time from the next frame on. */
+			setScale: (scale: number) => {
+				if (scope.time && typeof scale === 'number' && Number.isFinite(scale)) scope.time.scale = Math.min(10, Math.max(0, scale));
+			},
+			getScale: () => scope.time?.scale ?? 1,
+			/**
+			 * How many steps of `step` seconds are due now: run your simulation that many times per `tick` (`for (let i = ctx.time.fixed(0.02); i > 0; i--) simulate(0.02)`)
+			 * and it behaves the same at any frame rate. At most `maxSteps` (8) in one frame; the rest of a long frame is dropped, not caught up.
+			 */
+			fixed: (step: number, maxSteps = 8): number => {
+				const clock = scope.time;
+				if (!clock || typeof step !== 'number' || !(step > 1e-4)) return 0;
+				const due = Math.floor(clock.accumulator / step + 1e-9);
+				const n = Math.min(due, Math.max(1, Math.min(60, Math.floor(maxSteps) || 8)));
+				clock.accumulator = n < due ? 0 : clock.accumulator - n * step;
+				return n;
 			}
 		},
 		net: {
@@ -544,7 +679,15 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 			/** Playback state of a `video` uiElement on this peer (position, duration, paused, ended...). Write `playing`/`src`/`currentTime` with `world.setComponentField` to control it. */
 			getMedia: (slotId: string) => host.getUIMedia(slotId),
 			/** What the user has typed in an `input` uiElement. */
-			getInputText: (slotId: string) => host.getUIInputText(slotId)
+			getInputText: (slotId: string) => host.getUIInputText(slotId),
+			/**
+			 * Opens the game's menu on this device at a tab (`'session'`, `'home'`, `'worlds'`, `'inventory'`, `'settings'`, `'account'`). With
+			 * `{ invite: true }` the Session tab shows the choices of who can join: choosing one hosts the session, and the room code is there.
+			 * It opens on the device that runs the code: a press on a button reaches the host's, so the host's player is the one who sees it.
+			 */
+			openDash: (tab: string, options?: { invite?: boolean }) => {
+				if (typeof tab === 'string') host.openDash?.(tab, options?.invite === true ? { invite: true } : undefined);
+			}
 		},
 		math,
 		log: (...args: unknown[]) => {
@@ -575,7 +718,8 @@ const RETURN_MODES: Record<string, ReturnMode> = {
 	'world.findNear': 'list',
 	'storage.player': 'live',
 	'storage.world': 'live',
-	'audio.playTrack': 'live'
+	'audio.playTrack': 'live',
+	'audio.playAt': 'live'
 };
 
 const isThenable = (value: unknown): value is PromiseLike<unknown> => !!value && typeof (value as { then?: unknown }).then === 'function';
@@ -599,7 +743,7 @@ export function createCodeBlockHandlers(slotId: string, node: TransformNode, cod
 		pushLog('error', hook, describeError(err));
 	};
 
-	const scope: ScriptScope = { disposed: false, tracks: new Set() };
+	const scope: ScriptScope = { disposed: false, tracks: new Set(), time: newClock() };
 	let vm: CodeBlockVm | undefined;
 	const dispose = () => {
 		scope.disposed = true;
@@ -659,7 +803,16 @@ export function createCodeBlockHandlers(slotId: string, node: TransformNode, cod
 		onEquip: safe('onEquip'),
 		onUnequip: safe('onUnequip'),
 		onTrigger: safe('onTrigger'),
-		tick: safe('tick'),
+		tick: handlerNames.includes('tick')
+			? (dt: number) => {
+					const clock = scope.time!;
+					clock.rawDelta = dt;
+					clock.delta = dt * clock.scale;
+					clock.elapsed += clock.delta;
+					clock.accumulator += clock.delta;
+					run('tick', [clock.delta]);
+				}
+			: undefined,
 		getRadialItems: () => {
 			if (!handlerNames.includes('getRadialItems')) return [];
 			const items = run('getRadialItems', []);

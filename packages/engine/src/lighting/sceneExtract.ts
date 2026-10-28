@@ -1,4 +1,6 @@
 import type { Component, Slot, SlotTree } from '../ecs/types.ts';
+import { expandFragments, type FragmentData } from '../assets/fragment.ts';
+import type { AssetId } from '../assets/ref.ts';
 import { compose, invert, multiply, transformDirection, transformPoint } from './matrix.ts';
 import { worldBounds } from './primitives.ts';
 import type { BakeLight, BakePrimitive, BakeScene, BakeSky, Mat4, PrimitiveShape, V3 } from './types.ts';
@@ -14,8 +16,15 @@ export interface ExtractOptions {
 	texturedAlbedo?: number;
 	/** A further factor on every surface's reflectance as the baker sees it, so that a world of pale colours can still bounce like concrete (1). */
 	albedoScale?: number;
+	/**
+	 * The box a model fills, in the slot's own coordinates (the engine shows a model with its largest side 1, centred on the slot), or null
+	 * when it is not known. Without it a model is a box the size of its whole slot, which is the largest side of the model in every direction.
+	 */
+	modelBox?: (assetId: string) => { min: V3; max: V3 } | null;
 	/** Take every light, not only those marked `baked`. */
 	allLights?: boolean;
+	/** The content of a scene fragment by asset id: the world is baked with the fragments of its enabled `fragment` slots built into it. */
+	fragments?: (assetId: AssetId) => FragmentData | undefined;
 }
 
 /** `#rgb`, `#rrggbb` or `#rrggbbaa` as 0 to 1 channels (white for anything else). */
@@ -37,7 +46,8 @@ const SHAPES: readonly string[] = ['box', 'sphere', 'plane', 'ground', 'cylinder
  * What the renderer draws, as the baker needs it: the world matrix of every slot, the shape and colour of what blocks light,
  * the lights marked as baked, and the sky. A slot that is switched off takes its whole subtree with it.
  */
-export function extractScene(tree: SlotTree, options: ExtractOptions = {}): BakeScene {
+export function extractScene(source: SlotTree, options: ExtractOptions = {}): BakeScene {
+	const tree = options.fragments ? expandFragments(source, options.fragments, { onlyEnabled: true }) : source;
 	const byId = new Map(tree.map((slot) => [slot.id, slot]));
 	const worlds = new Map<string, Mat4 | null>();
 	const world = (slot: Slot): Mat4 | null => {
@@ -94,7 +104,12 @@ export function extractScene(tree: SlotTree, options: ExtractOptions = {}): Bake
 		let shape: PrimitiveShape | null = null, shapeMatrix = m;
 		if (mesh) {
 			if (mesh.meshRef.kind === 'builtin') shape = (SHAPES.includes(mesh.meshRef.id) ? mesh.meshRef.id : 'box') as PrimitiveShape;
-			else shape = 'box'; // a model: a box the size of its slot (the real size comes from the file, which the baker cannot read)
+			else {
+				// A model: the box it fills, when the caller knows it, else the whole slot.
+				shape = 'box';
+				const box = mesh.meshRef.kind === 'asset' ? options.modelBox?.(mesh.meshRef.assetId) : null;
+				if (box) shapeMatrix = multiply(compose([(box.min[0] + box.max[0]) / 2, (box.min[1] + box.max[1]) / 2, (box.min[2] + box.max[2]) / 2], [0, 0, 0, 1], [box.max[0] - box.min[0], box.max[1] - box.min[1], box.max[2] - box.min[2]]), m);
+			}
 		} else if (panel) {
 			// A panel with no mesh of its own is a plane of its own size.
 			shape = 'plane';
@@ -127,10 +142,10 @@ export function extractScene(tree: SlotTree, options: ExtractOptions = {}): Bake
 	return { primitives, lights: lights.filter(reaches), sky };
 }
 
-/** A fingerprint of what a volume depends on: the surfaces within reach, the lights, the sky and the grid. Changing any of them changes it. */
-export function sceneSignature(scene: BakeScene, grid: { min: V3; voxel: number; dims: [number, number, number] }, reachFrom: { min: V3; max: V3 }, margin = 24): string {
+/** A fingerprint of what a volume depends on: the surfaces within reach, the lights, the sky and the grid (and the bake settings, when given: see `bakeSettingsKey`). Changing any of them changes it. */
+export function sceneSignature(scene: BakeScene, grid: { min: V3; voxel: number; dims: [number, number, number] }, reachFrom: { min: V3; max: V3 }, margin = 24, settings = ''): string {
 	const r = (n: number) => Math.round(n * 1000) / 1000;
-	const parts: string[] = [JSON.stringify([grid.min.map(r), r(grid.voxel), grid.dims])];
+	const parts: string[] = [JSON.stringify([grid.min.map(r), r(grid.voxel), grid.dims]), ...(settings ? [`settings|${settings}`] : [])];
 	for (const p of scene.primitives) {
 		if (!p.opaque) continue;
 		if (p.min[0] > reachFrom.max[0] + margin || p.max[0] < reachFrom.min[0] - margin || p.min[1] > reachFrom.max[1] + margin || p.max[1] < reachFrom.min[1] - margin || p.min[2] > reachFrom.max[2] + margin || p.max[2] < reachFrom.min[2] - margin) continue;

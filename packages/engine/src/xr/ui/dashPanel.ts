@@ -91,6 +91,8 @@ export interface DashPanelHandle {
 	removeTab(id: string): void;
 	/** Opens a tab by its id. */
 	showTab(id: string): void;
+	/** Shows the choices of who can join (the Session tab's invitation), when the player is not in a session yet. */
+	openInvite(): void;
 }
 
 export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks: DashPanelCallbacks): DashPanelHandle {
@@ -1638,6 +1640,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		authBusy = true;
 		submitBtn.background = INV.border;
 		setStatus(authMode === 'register' ? 'Creating your account…' : 'Signing in…');
+		let signedIn = false;
 		try {
 			const { error } =
 				authMode === 'register'
@@ -1650,6 +1653,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			} else {
 				passwordInput.text = '';
 				setStatus('');
+				signedIn = true;
 			}
 		} catch {
 			setStatus('Could not reach the server. Try again.', 'error');
@@ -1657,7 +1661,8 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			authBusy = false;
 			submitBtn.background = INV.accent;
 		}
-		await refreshSession();
+		// Refreshing with nobody signed in clears the status line, which would wipe the reason the attempt failed.
+		if (signedIn) await refreshSession();
 	}
 
 	// Signed in: who you are, and how to sign out.
@@ -1736,6 +1741,11 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		refreshWorldsTab,
 		addTab,
 		removeTab,
-		showTab
+		showTab,
+		openInvite() {
+			inviteOpen = true;
+			setSessionNotice('');
+			void refreshWorldsTab();
+		}
 	};
 }

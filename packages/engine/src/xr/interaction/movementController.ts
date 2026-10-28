@@ -25,6 +25,13 @@ export function setupMovementController(scene: Scene, xr: WebXRDefaultExperience
 	xr.input.onControllerAddedObservable.add((controller) => {
 		if (controller.inputSource.handedness === 'right') {
 			controller.onMotionControllerInitObservable.add((motionController) => {
+				// The A button jumps in a world that turns it on (the body decides: nothing happens elsewhere).
+				const jumpButton = motionController.getComponentIds().find((id) => /a-button/i.test(id));
+				if (jumpButton) {
+					motionController.getComponent(jumpButton).onButtonStateChangedObservable.add((component) => {
+						if (component.changes.pressed?.current) body?.jump();
+					});
+				}
 				motionController.getComponentOfType(WebXRControllerComponent.THUMBSTICK_TYPE)?.onAxisValueChangedObservable.add((axes) => {
 					runY = axes.y;
 				});
@@ -67,7 +74,8 @@ export function setupMovementController(scene: Scene, xr: WebXRDefaultExperience
 		const dt = scene.getEngine().getDeltaTime() / 1000;
 		// gamepad Y: pushing the stick forward/up reports a negative value
 		const running = walkY < -RUN_PUSH && runY < -RUN_PUSH && !isHandLocked('right') && !isStickYClaimed('right');
-		const speed = running ? RUN_SPEED : WALK_SPEED;
+		const speeds = body?.speeds();
+		const speed = running ? speeds?.run ?? RUN_SPEED : speeds?.walk ?? WALK_SPEED;
 		const delta = forward.scale(-walkY * speed * dt).add(right.scale(moveX * speed * dt));
 		camera.position.addInPlace(body ? body.constrainMove(delta) : delta);
 	});

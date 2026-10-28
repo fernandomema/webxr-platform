@@ -21,6 +21,11 @@ export interface MeshRendererComponent {
 	opacity?: number;
 	/** Draw the primitive at its own color regardless of scene lighting (stars, lamps, signs). */
 	unlit?: boolean;
+	/**
+	 * How a model is sized: `'fit'` (the default) shows it with its largest side 1 and centred on the slot, like a built-in shape, so the slot's
+	 * scale sizes it; `'native'` shows it as authored, in the file's own metres and around the file's own origin, so a scale of 1 is its real size.
+	 */
+	modelScale?: 'fit' | 'native';
 }
 
 /**
@@ -56,6 +61,11 @@ export interface MaterialComponent {
 export interface ColliderComponent {
 	type: 'collider';
 	shape: 'box' | 'sphere' | 'mesh';
+	/**
+	 * A solid that can also be stood on in a headset, where a body only stands on floors: it blocks the sides like any collider and its upper
+	 * surface (flat or sloped) is a floor. A platform, a ledge, a stair.
+	 */
+	standable?: boolean;
 }
 
 export interface GrabbableComponent {
@@ -293,6 +303,18 @@ export interface LightVolumeComponent {
 }
 
 /**
+ * A piece of the world kept as an asset (a map, a room, a prefab; see `assets/fragment.ts`). While the slot is enabled the fragment's
+ * slots are built under it, placed relative to it; switched off (or deleted), they are taken down and their memory is free. The same
+ * fragment can be loaded by any number of slots. What it holds is scenery (meshes, colliders, lights, text); it does not count in the
+ * world's slot limit and is not part of the saved scene, only the slot that loads it is.
+ */
+export interface FragmentComponent {
+	type: 'fragment';
+	/** The fragment, a `fragment` asset. */
+	source: SourceRef;
+}
+
+/**
  * The properties of a whole world, on its main node: what it is about, how it is lit and the picture that stands for it.
  * Publishing takes them from here. Use one per scene.
  */
@@ -304,6 +326,71 @@ export interface WorldSettingsComponent {
 	lighting?: 'live' | 'baked' | 'both';
 	/** An image asset used as the 360° preview in place of the one taken from the Preview Camera when saving. */
 	preview?: SourceRef;
+}
+
+/**
+ * How the player's body moves in this world, for platformers: how hard a jump pushes and how fast things fall, whether the button of a
+ * headset jumps (the keyboard's Space always does) and whether a jump next to a wall can be repeated in the air, which climbs it. Put
+ * it on any slot; use one per scene. Each field has the engine's usual value when left out.
+ */
+export interface PlayerMovementComponent {
+	type: 'playerMovement';
+	/** The speed a jump leaves the floor at, in m/s (3.6 by default: about 0.65 m high; 6 reaches about 1.8 m). */
+	jumpSpeed?: number;
+	/** How fast a fall speeds up, in m/s² (9.8 by default). */
+	gravity?: number;
+	/** The fastest a fall gets, in m/s (25 by default). */
+	terminalSpeed?: number;
+	/** How fast the player walks and runs, in m/s (about 2 and 3.5 by default; running is Shift, or both sticks forward in a headset). */
+	walkSpeed?: number;
+	runSpeed?: number;
+	/** The A button of the right controller jumps in a headset. */
+	vrJump?: boolean;
+	/** Jumping in the air while touching a wall jumps again, so a wall can be climbed by jumping against it. */
+	wallJump?: boolean;
+}
+
+/**
+ * How the player's body moves, for any kind of game. Each field has a value that is a person walking, so a world only says what is
+ * different. The body is a capsule that stands on flat ground and slopes, walks up low steps, slides along walls, falls and jumps;
+ * `playerMovement` is the older, simpler version of this (jump and gravity only). Put it on any slot; use one per scene.
+ */
+export interface CharacterControllerComponent {
+	type: 'characterController';
+	/** Walking and running speed, m/s (about 2 and 3.5 by default: running is Shift, or both sticks forward in a headset). */
+	walkSpeed?: number;
+	runSpeed?: number;
+	/** The speed a jump leaves the ground at, m/s (3.6: about 0.65 m high). Gravity in m/s² (9.8) and the fastest fall in m/s (25). */
+	jumpSpeed?: number;
+	gravity?: number;
+	terminalSpeed?: number;
+	/** A jump still works this long after leaving the ground, and one asked for this long before landing is not lost, in seconds. */
+	coyoteTime?: number;
+	jumpBuffer?: number;
+	/** Jumps allowed in the air before touching ground again. */
+	airJumps?: number;
+	/** Jumping next to a wall jumps again off it: up by `wallJumpUp` times the jump speed (1) and away from it at `wallJumpOut` m/s (0). */
+	wallJump?: boolean;
+	wallJumpUp?: number;
+	wallJumpOut?: number;
+	/** Holding against a wall slows a fall to this, m/s (0: off). */
+	wallSlideSpeed?: number;
+	/** How much of what the player steers is kept in the air, 0 to 1 (1). */
+	airControl?: number;
+	/** The tallest step walked onto, m (0.4); the steepest slope stood on, degrees (50); whether steeper ones are slid down. */
+	stepHeight?: number;
+	slopeLimit?: number;
+	slideSteepSlopes?: boolean;
+	/** The capsule: radius and height of the body, m (0.3 and 1.8). How fast a push fades, per second (5). */
+	radius?: number;
+	height?: number;
+	impulseDrag?: number;
+	/** The A button of the right controller jumps in a headset (the keyboard's Space always does). */
+	vrJump?: boolean;
+	/** Keeps the player in a lane (a 2.5D game): across `laneAxis`, within `laneWidth` m of `laneCenter`. */
+	laneAxis?: 'x' | 'z';
+	laneCenter?: number;
+	laneWidth?: number;
 }
 
 /** A gradient sky with optional stars, drawn behind everything and following the camera. Use one per scene. */
@@ -329,6 +416,14 @@ export interface SkyboxComponent {
 	reflectionPreset?: 'polygon-quest';
 	/** Apply ACES tone mapping while this world is active. */
 	toneMapping?: 'aces';
+	/** Colour grading of the whole picture while this sky is active: a multiplier on the light (1 by default, 0.2 to 3). */
+	exposure?: number;
+	/** The contrast of the picture (1 by default, 0.5 to 2). */
+	contrast?: number;
+	/** How much colour the picture has (1 by default, 0 is grey, 2 is vivid). */
+	saturation?: number;
+	/** Glow around bright things, 0 (none, the default) to 1. A post-process that only a desktop screen gets: a headset draws without it. */
+	bloom?: number;
 }
 
 /**
@@ -359,7 +454,16 @@ export interface TextDisplayComponent {
 	/** Rendered larger, above `lines` — generic floating sign/label surface, not tied to any one demo. */
 	title?: string;
 	lines: string[];
+	/** The background of the sign: any colour, with transparency (`#00000000` draws only the text). Same as `background`; `background` wins. */
 	color?: string;
+	background?: string;
+	/** The colour of the title (yellow) and of the lines (white), and of single lines (`lineColors[i]` for `lines[i]`) and their size, times the line size (`lineSizes[i]`). */
+	titleColor?: string;
+	lineColor?: string;
+	lineColors?: string[];
+	lineSizes?: number[];
+	/** Turns the sign to face each player's own eyes: about the vertical only (`'y'`), or any way (`'full'`). */
+	billboard?: 'none' | 'y' | 'full';
 	/** How big the text is, times the usual size (1). Larger for shop signs, smaller to fit more lines. */
 	scale?: number;
 	/** Where the text block sits in the sign: from the top (the default) or centred vertically. */
@@ -649,7 +753,10 @@ export type Component =
 	| PointLightComponent
 	| SpotLightComponent
 	| LightVolumeComponent
+	| FragmentComponent
 	| WorldSettingsComponent
+	| PlayerMovementComponent
+	| CharacterControllerComponent
 	| VelocityComponent
 	| PressableButtonComponent
 	| ImpactSoundComponent

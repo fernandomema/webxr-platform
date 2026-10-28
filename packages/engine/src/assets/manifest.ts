@@ -58,8 +58,17 @@ export interface LightmapManifest extends AssetManifestBase {
 	signature: string;
 }
 
+/** A scene fragment (see `assets/fragment.ts`): `slots` slots, using the assets in `assets` besides itself. */
+export interface FragmentManifest extends AssetManifestBase {
+	type: 'fragment';
+	format: 'kfrag';
+	mimeType: 'application/x-kithin-fragment+json';
+	slots: number;
+	assets: AssetId[];
+}
+
 /** Add a kind's manifest here when registering a new kind. */
-export type AssetManifest = ModelManifest | AudioManifest | ImageManifest | LightmapManifest;
+export type AssetManifest = ModelManifest | AudioManifest | ImageManifest | LightmapManifest | FragmentManifest;
 export type AssetType = AssetManifest['type'];
 
 /** Where a peer can get the bytes from: the cloud, or (only) the host of the current session. */
