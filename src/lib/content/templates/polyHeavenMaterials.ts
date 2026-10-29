@@ -145,7 +145,7 @@ export const POLY_HAVEN_WORLD = {
 } as const;
 
 /** How the workshop's tools are held (in the fist, like a wand): the applicator is held the same way. */
-const GRIP = WAND_GRIP as { position: [number, number, number]; rotation: [number, number, number] };
+const GRIP = WAND_GRIP as Record<'left' | 'right', { position: [number, number, number]; rotation: [number, number, number] }>;
 
 const TOKENS = { id: '__ID__', label: '__LABEL__' } as const;
 
@@ -226,7 +226,7 @@ function buildTool(): Slot[] {
 			id,
 			name: 'Material Applicator',
 			position: [x, top + 0.075, z - 0.1],
-			components: [{ type: 'container' }, { type: 'grabbable', scalable: false }, { type: 'equippable', left: GRIP, right: GRIP, autoGrip: true }, { type: 'codeBlock', code: TOOL_SCRIPT }]
+			components: [{ type: 'container' }, { type: 'grabbable', scalable: false }, { type: 'equippable', left: GRIP.left, right: GRIP.right, autoGrip: true }, { type: 'codeBlock', code: TOOL_SCRIPT }]
 		}),
 		part('Handle', [0, 0, 0], [0.03, 0.03, 0.16], '#374151', true),
 		part('Head', [0, 0.01, 0.14], [0.07, 0.04, 0.12], '#1e293b'),

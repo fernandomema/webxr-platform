@@ -14,7 +14,10 @@ const ALONG = [s45, 0, 0, s45];
 const tilt = (radians) => [Math.sin(radians / 2), 0, 0, Math.cos(radians / 2)];
 
 /** Held like a wand: the handle in the fist, the working end forward. */
-export const WAND_GRIP = { position: [0, 0, 0.04], rotation: [15, 0, 0] };
+export const WAND_GRIP = {
+	left: { position: [0.03, 0, 0.04], rotation: [15, 0, 0] },
+	right: { position: [-0.03, 0, 0.04], rotation: [15, 0, 0] }
+};
 
 /** Shared by every tool's script: its parts, what it may act on, aiming, the beam, and going back to its bench. */
 export const PRELUDE = String.raw`
@@ -992,10 +995,11 @@ export const TOOLS = [
 ];
 
 /** How a tool is held: in the fist like a wand by default, or with its own `grip` per hand. */
+/** @param {{ grip?: { left: object, right: object } }} [tool] */
 export const toolEquippable = (tool) => ({
 	type: 'equippable',
-	left: tool?.grip?.left ?? WAND_GRIP,
-	right: tool?.grip?.right ?? WAND_GRIP,
+	left: tool?.grip?.left ?? WAND_GRIP.left,
+	right: tool?.grip?.right ?? WAND_GRIP.right,
 	autoGrip: true
 });
 
