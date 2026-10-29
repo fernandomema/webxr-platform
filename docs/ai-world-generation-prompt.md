@@ -396,6 +396,7 @@ ctx.hierarchy
   .getChildren(id)                      direct children (array of slot data); null = root slots
   .getParent(id)
   .findByName(name)                     first slot in the whole world with that name
+  .getSlotHash(id) -> Promise<string|null>  stable SHA-256 of the slot and descendants; ignores ids, root pose and session state
   .getWorldPose(id) -> { position, rotation, forward, up, right }   unit vectors in world space
 
 ctx.world

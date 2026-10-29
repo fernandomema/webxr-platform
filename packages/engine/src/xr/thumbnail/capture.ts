@@ -48,7 +48,7 @@ export async function captureItemThumbnail(
 			signal.cancelled = true;
 			return null;
 		}
-		const { manifest } = await importAsset(new Uint8Array(await blob.arrayBuffer()), options.name ? `${options.name} preview` : 'Preview', getLocalAssetStore(), { type: 'image' });
+		const { manifest } = await importAsset(new Uint8Array(await blob.arrayBuffer()), options.name ? `${options.name} preview` : 'Preview', getLocalAssetStore(), { type: 'image', origin: 'generated' });
 		return manifest.assetId;
 	} catch (error) {
 		signal.cancelled = true;

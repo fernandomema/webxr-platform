@@ -1,0 +1,22 @@
+# Local Postgres for development: `npm run db:up` starts it and creates the tables.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: webxr-platform-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: webxr
+      POSTGRES_PASSWORD: webxr
+      POSTGRES_DB: webxr
+    ports:
+      - '127.0.0.1:5440:5432'
+    volumes:
+      - webxr-platform-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U webxr -d webxr']
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  webxr-platform-db:

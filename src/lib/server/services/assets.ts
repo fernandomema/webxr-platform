@@ -49,7 +49,7 @@ function extensionOf(manifest: AssetManifest): string {
 	return (format?.extensions[0] ?? '').replace(/^\./, '');
 }
 
-export const userQuotaBytes = () => Number(env.ASSET_USER_QUOTA_BYTES ?? 524_288_000);
+export const userQuotaBytes = () => Number(env.ASSET_USER_QUOTA_BYTES ?? 104_857_600);
 
 function requireStorage(): void {
 	if (!assetStorageConfigured()) throw new BadRequestError('Asset storage is not configured on this server.');

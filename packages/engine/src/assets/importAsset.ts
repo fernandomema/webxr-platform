@@ -1,7 +1,7 @@
 import { assetIdOf } from './hash.ts';
 import { AssetImportError, formatOf, getAssetKind, sniffAssetKind, type AssetKindDef } from './kinds/index.ts';
 import type { AssetManifest } from './manifest.ts';
-import type { AssetStore } from './store.ts';
+import type { AssetOrigin, AssetStore } from './store.ts';
 
 export interface ImportResult {
 	manifest: AssetManifest;
@@ -20,6 +20,8 @@ export interface ImportOptions {
 	type?: string;
 	/** Kind-specific budgets, passed to the kind's `analyze`. Tests use it to shrink limits. */
 	limits?: unknown;
+	/** Where the bytes came from, when it was not the user. */
+	origin?: AssetOrigin;
 }
 
 /**
@@ -40,7 +42,10 @@ export async function importAsset(bytes: Uint8Array, fileName: string, store: As
 	const analysis = await kind.analyze(bytes, fileName, options.limits);
 	const assetId = await assetIdOf(bytes);
 	const existing = await store.getManifest(assetId);
-	if (existing) return { manifest: existing, alreadyStored: true };
+	if (existing) {
+		if (options.origin === 'app' && (existing as { origin?: string }).origin !== 'app') await store.setOrigin(assetId, 'app');
+		return { manifest: existing, alreadyStored: true };
+	}
 
 	const format = formatOf(kind, analysis.format as string);
 	if (!format) throw new AssetImportError('unsupported', 'This file format is not supported.');
@@ -52,7 +57,7 @@ export async function importAsset(bytes: Uint8Array, fileName: string, store: As
 		byteSize: bytes.byteLength,
 		name: assetNameFromFile(fileName, kind.defaultName)
 	} as AssetManifest;
-	await store.put(manifest, bytes);
+	await store.put(manifest, bytes, options.origin);
 	return { manifest, alreadyStored: false };
 }
 

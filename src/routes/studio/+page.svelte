@@ -1,38 +1,47 @@
 <script lang="ts">
-	import { adapterIcon, adapterLabel } from '$lib/studio/ui/adapters';
-	import { getInventoryAdapter } from '@kithin/engine/inventory/registry';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import type { InventoryItem } from '@kithin/engine/inventory/types';
-	import { Library } from '$lib/studio/state/library.svelte';
+	import { listRecentProjects, type RecentProject } from '@kithin/engine/inventory/recent';
 	import { studioSession } from '$lib/studio/state/session.svelte';
-	import { dialogs } from '$lib/studio/state/dialogs.svelte';
-	import { toasts } from '$lib/studio/state/toasts.svelte';
+	import { studioModels } from '$lib/studio/state/models.svelte';
+	import { handOverNewAvatar } from '$lib/studio/state/newAvatar';
 	import { TEMPLATES } from '$lib/studio/templates';
 	import Icon from '$lib/studio/ui/Icon.svelte';
 	import AvatarWizard from '$lib/studio/components/AvatarWizard.svelte';
 	import ItemThumb from '$lib/studio/components/ItemThumb.svelte';
-	import { studioModels } from '$lib/studio/state/models.svelte';
-	import { handOverNewAvatar } from '$lib/studio/state/newAvatar';
+	import { importProjectFile } from '$lib/studio/state/containerFiles';
+	import { toasts } from '$lib/studio/state/toasts.svelte';
+	import LauncherShell from '$lib/studio/components/LauncherShell.svelte';
 	import type { SlotTree } from '@kithin/engine/ecs/types';
-	import { PLATFORM_NAME } from '$lib/platform';
 
-	const library = new Library(studioSession.context);
-	const adapterPreferenceKey = 'studio-inventory-adapter';
-	let loadedFor = $state<string | null>(null);
+	const RECENT_LIMIT = 12;
 
-	const adapters = $derived(studioSession.adapters.filter((adapter) => adapter.id !== 'world'));
+	// A file dropped on the Home screen is imported into this device's projects.
+	async function importDropped(files: File[]) {
+		try {
+			for (const file of files) {
+				const result = await importProjectFile(file, { adapterId: 'local', folderId: null, context: studioSession.context });
+				if (result.missing) toasts.error(new Error(`${result.missing} asset${result.missing === 1 ? ' is' : 's are'} missing from the file and from this device.`), `Imported “${result.item.name}” incomplete`);
+				else toasts.success(`Imported “${result.item.name}”`);
+			}
+			await goto(resolve('/studio/projects'));
+		} catch (error) {
+			toasts.error(error, 'Could not import the file');
+		}
+	}
 
+	let recent = $state<RecentProject[]>([]);
+	let recentLoaded = $state(false);
+	let loadedFor = $state<string | null | undefined>(undefined);
+
+	// Recents span every storage the user can write to, so they are reloaded when the account changes (signing in adds the cloud).
 	$effect(() => {
-		if (!studioSession.ready) return;
-		const key = adapters.map((adapter) => adapter.id).join(',');
-		if (loadedFor === key) return;
-		loadedFor = key;
-		let preferred: string | null = null;
-		try { preferred = localStorage.getItem(adapterPreferenceKey); } catch { /* Storage may be disabled. */ }
-		if (preferred && adapters.some((adapter) => adapter.id === preferred)) library.adapterId = preferred;
-		else if (!adapters.some((adapter) => adapter.id === library.adapterId)) library.adapterId = adapters[0]?.id ?? 'local';
-		void library.load();
+		if (!studioSession.ready || loadedFor === studioSession.userId) return;
+		loadedFor = studioSession.userId;
+		void listRecentProjects(studioSession.context, RECENT_LIMIT)
+			.then((projects) => { recent = projects; })
+			.catch(() => { recent = []; })
+			.finally(() => { recentLoaded = true; });
 	});
 
 	function editUrl(params: Record<string, string>): string {
@@ -57,214 +66,91 @@
 		void goto(editUrl({ template: 'avatar', draft }));
 	}
 
-	function openItem(item: InventoryItem) {
-		void goto(editUrl({ source: library.adapterId, folder: library.folderId ?? 'root', item: item.id }));
+	function openRecent(project: RecentProject) {
+		void goto(editUrl({ source: project.adapterId, folder: project.item.folderId ?? 'root', item: project.item.id }));
 	}
 
-	async function switchAdapter(id: string) {
-		try { localStorage.setItem(adapterPreferenceKey, id); } catch { /* Storage may be disabled. */ }
-		await library.switchAdapter(id);
-	}
+	const kindLabel = (project: RecentProject): string => project.item.kind === 'world' ? 'World' : project.item.kind === 'avatar' ? 'Avatar' : 'Object';
+	const kindIcon = (project: RecentProject) => project.item.kind === 'world' ? 'world' : project.item.kind === 'avatar' ? 'user' : 'cube';
 
-	async function reconnectDirectory() {
-		try { await library.adapter?.connect?.(); await library.load(); }
-		catch (error) { toasts.error(error, 'Could not reconnect the folder'); }
-	}
-
-	async function connectDirectory() {
-		try {
-			await library.adapter?.connect?.(true);
-			await library.goTo(-1);
-		} catch (error) {
-			if (error instanceof DOMException && error.name === 'AbortError') return;
-			toasts.error(error, 'Could not open the folder');
-		}
-	}
-
-	async function newFolder() {
-		const name = await dialogs.prompt({ title: 'New folder', value: 'New folder', confirmLabel: 'Create' });
-		if (!name) return;
-		try {
-			await library.createFolder(name);
-		} catch (error) {
-			toasts.error(error, 'Could not create the folder');
-		}
-	}
-
-	async function removeItem(item: InventoryItem) {
-		const ok = await dialogs.confirm({ title: `Delete “${item.name}”?`, message: 'This cannot be undone.', confirmLabel: 'Delete', danger: true });
-		if (!ok) return;
-		try {
-			await library.deleteItem(item);
-			toasts.success('Deleted');
-		} catch (error) {
-			toasts.error(error, 'Could not delete');
-		}
-	}
-
-	async function removeFolder(folder: { id: string; name: string; parentId: string | null }) {
-		const ok = await dialogs.confirm({ title: `Delete folder “${folder.name}”?`, message: 'Everything inside it is deleted too.', confirmLabel: 'Delete', danger: true });
-		if (!ok) return;
-		try {
-			await library.deleteFolder(folder);
-		} catch (error) {
-			toasts.error(error, 'Could not delete the folder');
-		}
-	}
-
-	function dateLabel(iso: string): string {
-		const date = new Date(iso);
-		return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+	function ago(iso: string): string {
+		const minutes = Math.max(1, Math.round((Date.now() - new Date(iso).getTime()) / 60_000));
+		if (Number.isNaN(minutes)) return '';
+		if (minutes < 60) return `${minutes} min ago`;
+		if (minutes < 60 * 24) return `${Math.round(minutes / 60)} h ago`;
+		return `${Math.round(minutes / 60 / 24)} d ago`;
 	}
 </script>
 
-<svelte:head>
-	<title>Studio · {PLATFORM_NAME}</title>
-	<meta name="description" content={`Create and edit worlds and objects for ${PLATFORM_NAME}.`} />
-</svelte:head>
-
-<div class="page">
-	<header class="top">
-		<div class="brand"><Icon name="cube" size={20} /><strong>Studio</strong></div>
-		<nav>
-			<a class="btn ghost" href={resolve('/play')}>Open game</a>
-			{#if studioSession.userId}
-				<a class="badge" href={resolve('/settings')} title="Account settings"><Icon name="user" size={12} />{studioSession.userName ?? 'Signed in'}</a>
-				<a class="btn ghost" href={resolve('/settings')}>Settings</a>
-			{:else if studioSession.ready}
-				<a class="btn" href={resolve('/login')}>Sign in</a>
-			{/if}
-		</nav>
-	</header>
-
-	<main>
+<LauncherShell active="home" ondropfiles={(files) => void importDropped(files)}>
+	<div class="page">
 		<section aria-labelledby="new-heading">
-			<h1 id="new-heading">Start something new</h1>
-			<div class="templates">
+			<h1 id="new-heading">Create new</h1>
+			<div class="tiles">
 				{#each TEMPLATES as template (template.id)}
-					<button class="template" onclick={() => startFromTemplate(template.id)}>
-						<span class="template-icon"><Icon name={template.kind === 'world' ? 'world' : 'cube'} size={22} /></span>
-						<span class="template-text">
-							<strong>{template.label}</strong>
-							<span class="muted">{template.description}</span>
-						</span>
-						<span class="badge {template.kind === 'world' ? 'accent' : ''}">{template.kind === 'world' ? 'World' : 'Object'}</span>
+					<button class="tile" onclick={() => startFromTemplate(template.id)}>
+						<span class="tile-icon"><Icon name={template.kind === 'world' ? 'world' : 'cube'} size={26} /></span>
+						<strong>{template.label}</strong>
+						<span class="muted">{template.description}</span>
 					</button>
 				{/each}
-				<button class="template" onclick={openWizard}>
-					<span class="template-icon"><Icon name="user" size={22} /></span>
-					<span class="template-text">
-						<strong>New avatar</strong>
-						<span class="muted">A guided wizard that turns a rigged .glb model into a player avatar.</span>
-					</span>
-					<span class="badge">Avatar</span>
+				<button class="tile" onclick={openWizard}>
+					<span class="tile-icon"><Icon name="user" size={26} /></span>
+					<strong>New avatar</strong>
+					<span class="muted">A guided wizard that turns a rigged .glb model into a player avatar.</span>
 				</button>
+				<a class="tile" href={resolve('/studio/content')}>
+					<span class="tile-icon alt"><Icon name="layers" size={26} /></span>
+					<strong>Manage content</strong>
+					<span class="muted">Models, sounds and images kept on this device or in the cloud.</span>
+				</a>
 			</div>
 		</section>
 
-		<section aria-labelledby="projects-heading">
+		<section aria-labelledby="recent-heading">
 			<div class="row">
-				<h2 id="projects-heading">Your projects</h2>
-				<div class="tools">
-					{#if adapters.length > 1}
-						<div class="tabs" role="tablist" aria-label="Storage">
-							{#each adapters as adapter (adapter.id)}
-								<button class="tab" role="tab" aria-selected={library.adapterId === adapter.id} onclick={() => switchAdapter(adapter.id)}>
-									<Icon name={adapterIcon(adapter.id)} size={14} />{adapterLabel(adapter.id, adapter.label)}
-								</button>
-							{/each}
-						</div>
-					{/if}
-					<label class="search">
-						<Icon name="search" size={14} />
-						<span class="sr-only">Search projects</span>
-						<input class="input" placeholder="Search" bind:value={library.query} />
-					</label>
-					{#if library.adapter?.connect}<button class="btn" onclick={connectDirectory}><Icon name="folder" size={14} />Choose folder</button>{/if}
-					{#if library.adapter?.createFolder}<button class="btn" onclick={newFolder}><Icon name="folder-plus" size={14} />New folder</button>{/if}
-				</div>
+				<h2 id="recent-heading"><Icon name="clock" size={15} />Recent</h2>
+				<a class="btn ghost sm" href={resolve('/studio/projects')}>All projects<Icon name="chevron-right" size={12} /></a>
 			</div>
-
-			{#if library.path.length}
-				<nav class="crumbs" aria-label="Folder path">
-					<button class="btn ghost sm" onclick={() => library.goTo(-1)}>All projects</button>
-					{#each library.path as folder, index (folder.id)}
-						<Icon name="chevron-right" size={12} />
-						<button class="btn ghost sm" onclick={() => library.goTo(index)}>{folder.name}</button>
-					{/each}
-				</nav>
-			{/if}
-
-			{#if library.error}
-				<div class="empty" role="alert"><Icon name="warning" size={22} /><strong>Could not load projects</strong>{library.error}<button class="btn" onclick={() => library.load()}>Try again</button>{#if library.adapter?.connect}<button class="btn" onclick={reconnectDirectory}>Reconnect folder</button>{/if}</div>
-			{:else if library.loading && !library.items.length && !library.folders.length}
+			{#if !recentLoaded}
 				<div class="empty">Loading…</div>
-			{:else if !library.visibleItems.length && !library.visibleFolders.length}
-				<div class="empty">
-					<strong>{library.query ? 'No matches' : 'Nothing here yet'}</strong>
-					{library.query ? 'Try a different search.' : library.adapter?.connect ? 'Choose a folder to load or save inventory JSON files.' : 'Pick a template above to create your first project.'}
-				</div>
+			{:else if !recent.length}
+				<div class="empty"><strong>Nothing here yet</strong>Pick one of the options above to create your first project.</div>
 			{:else}
-				<ul class="grid">
-					{#each library.visibleFolders as folder (folder.id)}
-						<li class="card folder">
-							<button class="card-main" onclick={() => library.openFolder(folder)}>
-								<span class="card-icon"><Icon name="folder" size={20} /></span>
-								<strong>{folder.name}</strong>
+				<ul class="recent">
+					{#each recent as project (project.adapterId + project.item.id)}
+						<li>
+							<button class="project" onclick={() => openRecent(project)}>
+								<span class="preview"><ItemThumb assetId={project.item.thumbnailAssetId} icon={kindIcon(project)} iconSize={28} /></span>
+								<strong>{project.item.name}</strong>
+								<span class="meta muted">{kindLabel(project)} · {project.adapterLabel} · {ago(project.item.createdAt)}</span>
 							</button>
-							{#if library.adapter?.deleteFolder}<button class="icon-btn danger" aria-label={`Delete folder ${folder.name}`} onclick={() => removeFolder(folder)}><Icon name="trash" size={14} /></button>{/if}
-						</li>
-					{/each}
-					{#each library.visibleItems as item (item.id)}
-						<li class="card">
-							<button class="card-main" onclick={() => openItem(item)}>
-								<span class="card-icon preview"><ItemThumb assetId={item.thumbnailAssetId} icon={item.kind === 'world' ? 'world' : item.kind === 'avatar' ? 'user' : 'cube'} iconSize={22} /></span>
-								<span class="card-text">
-									<strong>{item.name}</strong>
-									<span class="muted">{dateLabel(item.createdAt)}{item.kind === 'world' && item.revisionNumber ? ` · revision ${item.revisionNumber}` : ''}</span>
-								</span>
-							</button>
-							<span class="badge {item.kind === 'world' ? 'accent' : ''}">{item.kind === 'world' ? 'World' : item.kind === 'avatar' ? 'Avatar' : 'Object'}</span>
-							{#if library.adapter?.deleteItem}<button class="icon-btn danger" aria-label={`Delete ${item.name}`} onclick={() => removeItem(item)}><Icon name="trash" size={14} /></button>{/if}
 						</li>
 					{/each}
 				</ul>
 			{/if}
 		</section>
-	</main>
-</div>
+	</div>
+</LauncherShell>
 
 {#if wizardOpen}
 	<AvatarWizard models={studioModels.items.filter((item) => item.type === 'model')} canCreate={true} oncreate={startAvatar} onclose={() => (wizardOpen = false)} />
 {/if}
 
 <style>
-	.page { max-width: var(--page-width); margin: 0 auto; padding: 0 20px 64px; }
-	@media (min-width: 640px) { .page { padding-inline: 32px; } }
-	.top { display: flex; align-items: center; justify-content: space-between; height: 56px; }
-	.brand { display: flex; align-items: center; gap: 8px; color: var(--accent); }
-	.brand strong { color: var(--text); font-size: 15px; }
-	nav { display: flex; align-items: center; gap: 8px; }
-	main { display: grid; gap: 40px; padding-top: 24px; }
+	.page { display: grid; gap: 40px; max-width: var(--page-width); }
 	h1 { margin: 0 0 14px; font-size: 22px; font-weight: 650; }
-	h2 { margin: 0; font-size: 16px; font-weight: 600; }
-	.templates { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
-	.template { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); color: inherit; text-align: left; cursor: pointer; font: inherit; }
-	.template:hover { border-color: var(--accent); background: var(--panel-2); }
-	.template-icon, .card-icon { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); }
-	.template-text, .card-text { display: grid; flex: 1; min-width: 0; gap: 2px; }
-	.row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
-	.tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-	.search { position: relative; display: flex; align-items: center; width: 200px; color: var(--muted); }
-	.search :global(svg) { position: absolute; left: 9px; pointer-events: none; }
-	.search .input { padding-left: 28px; }
-	.crumbs { display: flex; align-items: center; gap: 2px; margin-bottom: 12px; color: var(--muted); }
-	.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
-	.card { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 6px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); }
-	.card:hover { border-color: #3a4157; }
-	.card-main { display: flex; flex: 1; align-items: center; gap: 10px; min-width: 0; padding: 4px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
-	.card-main strong, .card-text strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-	.card-icon.preview { width: 56px; height: 56px; overflow: hidden; }
-	.card.folder .card-icon { background: var(--panel-3); color: var(--muted); }
-	@media (max-width: 600px) { .search { width: 100%; } .tools { width: 100%; } }
+	h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 16px; font-weight: 600; }
+	.row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+	.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+	.tile { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); color: inherit; text-align: left; cursor: pointer; font: inherit; }
+	.tile:hover { border-color: var(--accent); background: var(--panel-2); }
+	.tile-icon { display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 8px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); }
+	.tile-icon.alt { background: var(--panel-3); color: var(--muted); }
+	.recent { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+	.project { display: grid; gap: 2px; width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); color: inherit; text-align: left; cursor: pointer; font: inherit; }
+	.project:hover { border-color: var(--accent); }
+	.preview { display: grid; place-items: center; aspect-ratio: 16 / 10; margin-bottom: 6px; overflow: hidden; border-radius: 8px; background: var(--panel-3); color: var(--muted); }
+	.project strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
 </style>

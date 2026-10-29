@@ -14,6 +14,7 @@ import { CloudResolver } from '@kithin/engine/assets/cloud';
 import type { AssetId } from '@kithin/engine/assets/ref';
 import { isAvatarTree } from '@kithin/engine/xr/avatar/build';
 import { takeNewAvatar } from './newAvatar';
+import { diffTrees, formatTreeDiff, isEmptyDiff } from '@kithin/engine/document/diff';
 
 export interface SaveTarget {
 	adapterId: string;
@@ -59,6 +60,29 @@ export class StudioProject {
 
 	get isSaved(): boolean {
 		return this.item !== null;
+	}
+
+	/**
+	 * The id of the built-in world this project was opened from (Starter kit > Dev > Worlds). Its scene is made by code, so there is
+	 * nothing to save it to: the edits are handed on as a diff instead (see `codeWorldDiff`).
+	 */
+	get codeWorldId(): string | null {
+		return this.adapterId === 'builtin' ? (/^builtin:world:(.+)$/.exec(this.item?.id ?? '')?.[1] ?? null) : null;
+	}
+
+	/** What the Studio changed in a code-built world, as text to give to whoever edits its builder; `null` when nothing changed. */
+	codeWorldDiff(): string | null {
+		const id = this.codeWorldId;
+		if (!id || !this.item) return null;
+		const diff = diffTrees(this.item.slotData, cloneTree(this.doc.tree));
+		if (isEmptyDiff(diff)) return null;
+		return [
+			`# Changes to the built-in world "${this.item.name}" (id \`${id}\`)`,
+			'',
+			'Before is the world as its code builds it; after is the copy edited in the Studio. Make the same changes in the code that builds this world: find the entry with `id: \'' + id + '\'` in `src/lib/content/templates/builtinWorlds.ts` and follow its builder (and the files it imports or loads from). Slots are identified by their `id` (or, if the builder generates ids, by name and position in the hierarchy). Positions are in metres and rotations are quaternions [x, y, z, w]. Keep the style of the surrounding code and keep strings in English.',
+			'',
+			formatTreeDiff(diff)
+		].join('\n');
 	}
 
 	/** Stable across saves of the same lineage, so a world's revisions share one draft and one publication. */
@@ -130,6 +154,7 @@ export class StudioProject {
 	}
 
 	async save(target?: SaveTarget): Promise<InventoryItem> {
+		if (this.codeWorldId) throw new Error('This world is built by code, so it cannot be saved. Use Get diff to hand the changes on.');
 		const current = this.adapterId ? getInventoryAdapter(this.adapterId) : undefined;
 		const adapterId = target?.adapterId ?? (current && !current.saveItem ? 'local' : this.adapterId);
 		const adapter = adapterId ? getInventoryAdapter(adapterId) : undefined;

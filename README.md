@@ -6,7 +6,7 @@ Ver `/home/fernando/.claude/plans/crea-un-nuevo-proyecto-precious-breeze.md` par
 
 ## Stack
 
-SvelteKit 2 + adapter-node · Tailwind v4 · better-auth (email/contraseña + Discord) · Prisma 7 + Postgres (`prisma dev` local) · Babylon.js (motor WebXR) · wuchale (i18n, en/es) · WebSocket de señalización propio (sin dependencias externas, un único handler TS reutilizado en dev y producción).
+SvelteKit 2 + adapter-node · Tailwind v4 · better-auth (email/contraseña + Discord) · Prisma 7 + Postgres (Docker local) · Babylon.js (motor WebXR) · wuchale (i18n, en/es) · WebSocket de señalización propio (sin dependencias externas, un único handler TS reutilizado en dev y producción).
 
 ## El motor como paquete
 
@@ -19,11 +19,10 @@ Un juego en otro sitio se registra en Ajustes → Apps: eso da un `appId` (compa
 ```sh
 npm install
 
-# en otra terminal: levanta Postgres local y deja corriendo
-npx prisma dev
+cp .env.example .env   # ya apunta al Postgres del docker-compose.yml
 
-# copia la URL que imprime a .env (o cp .env.example .env y edítala)
-npx prisma db push
+# levanta Postgres (Docker) y crea las tablas
+npm run db:up
 
 npm run dev
 ```
@@ -48,6 +47,10 @@ The package is a Trusted Web Activity that loads the hosted game from `https://k
 3. Run `node scripts/package-meta-quest.mjs init`. This initializes `meta-quest-package/` from **`https://kithin.app/manifest.webmanifest`**. Select `immersive` app mode, a permanent unique Android package identifier, and no Horizon Billing unless in-app purchases have been configured. Save the signing keystore, alias, and passwords securely outside Git. Keep the same signing key for every update.
 4. In `meta-quest-package/`, run `keytool -list -v -keystore <keystore-path> -alias <alias>` and `bubblewrap fingerprint add <SHA256-fingerprint>`. Publish the generated `assetlinks.json` at `https://kithin.app/.well-known/assetlinks.json`, then confirm it returns the generated JSON. If this origin hosts other packaged apps, merge their statements into the same JSON array.
 5. Run `node scripts/package-meta-quest.mjs build` from the repository root. It disables Android backups and notification delegation, excludes `android.permission.POST_NOTIFICATIONS` from the merged manifest, reapplies these settings if Bubblewrap regenerates the project, and verifies `allowBackup=false` in the compiled APK. Run `node scripts/package-meta-quest.mjs verify` to inspect an existing APK before upload. The result is `meta-quest-package/app-release-signed.apk`. Verify the hosted Digital Asset Links before sideloading with `adb install meta-quest-package/app-release-signed.apk` on a developer-mode Quest.
+
+### Development APK
+
+`node scripts/package-meta-quest-dev.mjs [https://192.168.1.144:5173]` builds `meta-quest-package-dev/app-release-signed.apk`, which loads the local `vite dev` server instead of kithin.app. It installs next to the official app: package `app.kithin.play.dev`, name "Kithin Dev", blue icon with a DEV ribbon, and its own throwaway signing key. It needs the same Bubblewrap CLI, JDK and Android SDK as above. The dev server's certificate is self-signed, so Digital Asset Links cannot verify it and the app falls back to a Custom Tab; accept the certificate warning once in the headset browser.
 
 The package directory is ignored by Git because it can contain signing material. The `assetlinks.json` file needs the real package name and signing fingerprint; a placeholder cannot verify the immersive app.
 

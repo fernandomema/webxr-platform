@@ -54,6 +54,7 @@ msgstr "Sign-up failed"
 #: src/routes/register/+page.svelte
 #: src/routes/register/+page.svelte
 #: src/routes/settings/apps/+page.svelte
+#: src/routes/studio/content/+page.svelte
 msgid "Name"
 msgstr "Name"
 
@@ -92,7 +93,6 @@ msgstr "Email or username"
 #: src/lib/studio/components/PublishPanel.svelte
 #: src/routes/home/+page.svelte
 #: src/routes/login/+page.svelte
-#: src/routes/studio/+page.svelte
 msgid "Sign in"
 msgstr "Sign in"
 
@@ -120,8 +120,8 @@ msgstr "Sign in"
 #~ msgid "Folder name"
 #~ msgstr "Folder name"
 
-#: src/routes/studio/+page.svelte
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "New folder"
 msgstr "New folder"
 
@@ -141,7 +141,7 @@ msgstr "New folder"
 #~ msgstr "Could not save asset"
 
 #. 0: item.name
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Delete “{0}”?"
 msgstr "Delete “{0}”?"
 
@@ -247,9 +247,9 @@ msgstr "Code"
 
 #: src/routes/(admin)/admin/feedback/+page.svelte
 #: src/routes/settings/apps/+page.svelte
-#: src/routes/studio/+page.svelte
-#: src/routes/studio/+page.svelte
 #: src/routes/studio/edit/+page.svelte
+#: src/routes/studio/projects/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Delete"
 msgstr "Delete"
 
@@ -383,7 +383,7 @@ msgstr "Rotation"
 #: src/routes/(admin)/admin/worlds/+page.svelte
 #: src/routes/home/+page.svelte
 #: src/routes/studio/+page.svelte
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "World"
 msgstr "World"
 
@@ -641,6 +641,7 @@ msgid "M7 4l13 8-13 8z"
 msgstr "M7 4l13 8-13 8z"
 
 #: src/lib/studio/ui/Icon.svelte
+#: src/lib/studio/ui/Icon.svelte
 msgid "M12 16V4M7 9l5-5 5 5M4 20h16"
 msgstr "M12 16V4M7 9l5-5 5 5M4 20h16"
 
@@ -727,146 +728,155 @@ msgstr "M9 9h6v6H9zM9 9V6a3 3 0 10-3 3h3M15 9h3a3 3 0 10-3-3M9 15H6a3 3 0 103 3M
 #: src/routes/+page.svelte
 #: src/routes/+page.svelte
 #: src/routes/home/+page.svelte
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Create"
 msgstr "Create"
 
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Could not create the folder"
 msgstr "Could not create the folder"
 
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "This cannot be undone."
 msgstr "This cannot be undone."
 
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Deleted"
 msgstr "Deleted"
 
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Could not delete"
 msgstr "Could not delete"
 
 #. 0: folder.name
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Delete folder “{0}”?"
 msgstr "Delete folder “{0}”?"
 
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Everything inside it is deleted too."
 msgstr "Everything inside it is deleted too."
 
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Could not delete the folder"
 msgstr "Could not delete the folder"
 
 #~ msgid "Create and edit worlds and objects for the WebXR platform."
 #~ msgstr "Create and edit worlds and objects for the WebXR platform."
 
-#: src/routes/studio/+page.svelte
+#: src/lib/studio/components/LauncherShell.svelte
+#: src/lib/studio/components/LauncherShell.svelte
 msgid "Studio"
 msgstr "Studio"
 
-#: src/routes/studio/+page.svelte
-msgid "Signed in"
-msgstr "Signed in"
+#~ msgid "Signed in"
+#~ msgstr "Signed in"
 
-#: src/routes/studio/+page.svelte
-msgid "Open game"
-msgstr "Open game"
+#~ msgid "Open game"
+#~ msgstr "Open game"
 
 #: src/lib/studio/components/TopBar.svelte
 #: src/routes/home/+page.svelte
 #: src/routes/studio/+page.svelte
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 #: src/routes/xr-panel/inspector/+page.svelte
 msgid "Object"
 msgstr "Object"
 
-#: src/routes/studio/+page.svelte
-msgid "Start something new"
-msgstr "Start something new"
+#~ msgid "Start something new"
+#~ msgstr "Start something new"
 
+#: src/lib/studio/components/AssetPicker.svelte
 #: src/routes/settings/cloud/+page.svelte
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/content/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Storage"
 msgstr "Storage"
 
 #: src/lib/studio/components/SaveDialog.svelte
 #: src/routes/settings/+layout.svelte
+#: src/routes/studio/content/+page.svelte
 msgid "Cloud"
 msgstr "Cloud"
 
 #: src/lib/studio/components/SaveDialog.svelte
 #: src/routes/settings/+page.svelte
+#: src/routes/studio/content/+page.svelte
 msgid "This device"
 msgstr "This device"
 
 #: src/lib/studio/ui/Select.svelte
 #: src/routes/(admin)/admin/users/+page.svelte
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/content/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Search"
 msgstr "Search"
 
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Search projects"
 msgstr "Search projects"
 
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "<0/>New folder"
 msgstr "<0/>New folder"
 
-#: src/routes/studio/+page.svelte
-msgid "Your projects"
-msgstr "Your projects"
+#~ msgid "Your projects"
+#~ msgstr "Your projects"
 
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Folder path"
 msgstr "Folder path"
 
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "All projects"
 msgstr "All projects"
 
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Could not load projects"
 msgstr "Could not load projects"
 
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/content/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Try again"
 msgstr "Try again"
 
 #: src/lib/studio/components/AiPanel.svelte
+#: src/lib/studio/components/AssetPicker.svelte
+#: src/lib/studio/components/ContentPreview.svelte
 #: src/lib/studio/components/MarketplacePanel.svelte
 #: src/lib/studio/components/PublishPanel.svelte
 #: src/routes/settings/+page.svelte
 #: src/routes/studio/+page.svelte
+#: src/routes/studio/content/+page.svelte
+#: src/routes/studio/content/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Loading…"
 msgstr "Loading…"
 
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/content/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "No matches"
 msgstr "No matches"
 
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/content/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Nothing here yet"
 msgstr "Nothing here yet"
 
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Try a different search."
 msgstr "Try a different search."
 
-#: src/routes/studio/+page.svelte
-msgid "Pick a template above to create your first project."
-msgstr "Pick a template above to create your first project."
+#~ msgid "Pick a template above to create your first project."
+#~ msgstr "Pick a template above to create your first project."
 
 #. 0: folder.name
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Delete folder {0}"
 msgstr "Delete folder {0}"
 
 #. 0: item.name
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Delete {0}"
 msgstr "Delete {0}"
 
@@ -1508,6 +1518,7 @@ msgid "Clear {0}"
 msgstr "Clear {0}"
 
 #: src/lib/studio/components/AiPanel.svelte
+#: src/routes/studio/content/+page.svelte
 msgid "Clear"
 msgstr "Clear"
 
@@ -1666,9 +1677,9 @@ msgstr "Provider request failed."
 msgid "Provider"
 msgstr "Provider"
 
+#: src/lib/studio/components/LauncherShell.svelte
 #: src/routes/home/+page.svelte
 #: src/routes/settings/+layout.svelte
-#: src/routes/studio/+page.svelte
 msgid "Settings"
 msgstr "Settings"
 
@@ -1870,16 +1881,20 @@ msgstr "Objects and worlds that use it will show a placeholder until it is impor
 #: src/routes/(admin)/admin/scoreboards/+page.svelte
 #: src/routes/settings/+page.svelte
 #: src/routes/settings/cloud/+page.svelte
+#: src/routes/studio/content/+page.svelte
 msgid "Remove"
 msgstr "Remove"
 
 #: src/lib/studio/components/AssetsPanel.svelte
+#: src/lib/studio/components/LauncherShell.svelte
+#: src/routes/studio/content/+page.svelte
 msgid "Files"
 msgstr "Files"
 
 #: src/lib/studio/components/AssetsPanel.svelte
 #: src/lib/studio/components/AssetsPanel.svelte
 #: src/lib/studio/components/AvatarWizard.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Importing…"
 msgstr "Importing…"
 
@@ -2190,20 +2205,18 @@ msgstr "Import audio"
 msgid "Drop an .mp3, .wav or .ogg file here, or import one. Audio is stored on this device."
 msgstr "Drop an .mp3, .wav or .ogg file here, or import one. Audio is stored on this device."
 
-#: src/lib/studio/components/FieldEditor.svelte
-msgid "Imported"
-msgstr "Imported"
+#~ msgid "Imported"
+#~ msgstr "Imported"
 
-#. 0: missing.slice(7, 15)
-#: src/lib/studio/components/FieldEditor.svelte
+#. 0: source.assetId.slice(7, 15)
+#: src/lib/studio/components/AssetPicker.svelte
 msgid "{0}… (not on this device)"
 msgstr "{0}… (not on this device)"
 
-#: src/lib/studio/components/FieldEditor.svelte
-msgid "Import a file…"
-msgstr "Import a file…"
+#~ msgid "Import a file…"
+#~ msgstr "Import a file…"
 
-#: src/lib/studio/components/FieldEditor.svelte
+#: src/lib/studio/components/AssetPicker.svelte
 msgid "From a URL"
 msgstr "From a URL"
 
@@ -2227,7 +2240,7 @@ msgstr "Use this rigged model as a player avatar"
 #: src/lib/studio/components/AssetsPanel.svelte
 #: src/routes/home/+page.svelte
 #: src/routes/studio/+page.svelte
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Avatar"
 msgstr "Avatar"
 
@@ -2688,12 +2701,12 @@ msgstr "FreeCameraKeyboardMoveInput"
 #~ msgstr "{0}: host your own WebXR world from the browser and build what's in it with the Studio editor."
 
 #. 0: PLATFORM_NAME
-#: src/routes/studio/+page.svelte
+#: src/lib/studio/components/LauncherShell.svelte
 msgid "Create and edit worlds and objects for {0}."
 msgstr "Create and edit worlds and objects for {0}."
 
 #. 0: PLATFORM_NAME
-#: src/routes/studio/+page.svelte
+#: src/lib/studio/components/LauncherShell.svelte
 msgid "Studio · {0}"
 msgstr "Studio · {0}"
 
@@ -2834,7 +2847,11 @@ msgstr "Choose…"
 msgid "Tab"
 msgstr "Tab"
 
+#. 0: kindLabel
+#. 0: kindLabel
 #. 0: label
+#: src/lib/studio/components/AssetPicker.svelte
+#: src/lib/studio/components/AssetPicker.svelte
 #: src/lib/studio/ui/Select.svelte
 msgid "Search {0}"
 msgstr "Search {0}"
@@ -3029,23 +3046,23 @@ msgstr "Who’s in?"
 #~ msgstr "© KITHIN 2026"
 
 #: src/lib/studio/components/SaveDialog.svelte
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "AbortError"
 msgstr "AbortError"
 
 #: src/lib/studio/components/SaveDialog.svelte
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Could not open the folder"
 msgstr "Could not open the folder"
 
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "<0/>Choose folder"
 msgstr "<0/>Choose folder"
 
 #~ msgid "Choose a folder containing inventory JSON files."
 #~ msgstr "Choose a folder containing inventory JSON files."
 
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Choose a folder to load or save inventory JSON files."
 msgstr "Choose a folder to load or save inventory JSON files."
 
@@ -3403,11 +3420,11 @@ msgstr "Cómo funciona"
 msgid "© {0} Kithin"
 msgstr "© {0} Kithin"
 
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Could not reconnect the folder"
 msgstr "Could not reconnect the folder"
 
-#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
 msgid "Reconnect folder"
 msgstr "Reconnect folder"
 
@@ -4793,6 +4810,7 @@ msgid "Cloud · {0}"
 msgstr "Cloud · {0}"
 
 #: src/routes/settings/cloud/+page.svelte
+#: src/routes/studio/content/+page.svelte
 msgid "Storage used"
 msgstr "Storage used"
 
@@ -4813,6 +4831,7 @@ msgid "In use"
 msgstr "In use"
 
 #: src/routes/settings/cloud/+page.svelte
+#: src/routes/studio/content/+page.svelte
 msgid "Unused"
 msgstr "Unused"
 
@@ -4870,7 +4889,7 @@ msgstr "Continue with Discord"
 msgid "<0/>or<1/>"
 msgstr "<0/>or<1/>"
 
-#: src/routes/studio/+page.svelte
+#: src/lib/studio/components/LauncherShell.svelte
 msgid "Account settings"
 msgstr "Account settings"
 
@@ -5094,17 +5113,23 @@ msgid "Fresh from the community."
 msgstr "Fresh from the community."
 
 #. 0: minutes
+#. 0: minutes
 #: src/routes/home/+page.svelte
+#: src/routes/studio/+page.svelte
 msgid "{0} min ago"
 msgstr "{0} min ago"
 
 #. 0: Math.round(minutes / 60)
+#. 0: Math.round(minutes / 60)
 #: src/routes/home/+page.svelte
+#: src/routes/studio/+page.svelte
 msgid "{0} h ago"
 msgstr "{0} h ago"
 
 #. 0: Math.round(minutes / 60 / 24)
+#. 0: Math.round(minutes / 60 / 24)
 #: src/routes/home/+page.svelte
+#: src/routes/studio/+page.svelte
 msgid "{0} d ago"
 msgstr "{0} d ago"
 
@@ -5356,6 +5381,7 @@ msgid "Ideas and bugs from players, most voted first. Change the status to move 
 msgstr "Ideas and bugs from players, most voted first. Change the status to move an item through the roadmap."
 
 #: src/routes/(admin)/admin/feedback/+page.svelte
+#: src/routes/studio/content/+page.svelte
 msgid "All"
 msgstr "All"
 
@@ -5372,6 +5398,8 @@ msgid "Title"
 msgstr "Title"
 
 #: src/routes/(admin)/admin/feedback/+page.svelte
+#: src/routes/studio/content/+page.svelte
+#: src/routes/studio/content/+page.svelte
 msgid "Type"
 msgstr "Type"
 
@@ -5921,3 +5949,494 @@ msgstr "Apps"
 #: src/routes/settings/apps/+page.svelte
 msgid "An app is a game of your own, on its own site, that uses {0} for accounts, saved data, leaderboards, credits and multiplayer. All its levels share the app's id, so you do not publish each one here."
 msgstr "An app is a game of your own, on its own site, that uses {0} for accounts, saved data, leaderboards, credits and multiplayer. All its levels share the app's id, so you do not publish each one here."
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M4 11l8-7 8 7M6 10v10h12V10M10 20v-6h4v6"
+msgstr "M4 11l8-7 8 7M6 10v10h12V10M10 20v-6h4v6"
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M12 4v12M7 11l5 5 5-5M4 20h16"
+msgstr "M12 4v12M7 11l5 5 5-5M4 20h16"
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M9 18V5l11-2v13M9 18a3 3 0 11-3-3 3 3 0 013 3zM20 16a3 3 0 11-3-3 3 3 0 013 3z"
+msgstr "M9 18V5l11-2v13M9 18a3 3 0 11-3-3 3 3 0 013 3zM20 16a3 3 0 11-3-3 3 3 0 013 3z"
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M9 9.5a.5.5 0 100-1 .5.5 0 000 1z"
+msgstr "M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M9 9.5a.5.5 0 100-1 .5.5 0 000 1z"
+
+#: src/lib/studio/ui/Icon.svelte
+msgid "M12 3a9 9 0 100 18 9 9 0 000-18zM12 7v5l3 2"
+msgstr "M12 3a9 9 0 100 18 9 9 0 000-18zM12 7v5l3 2"
+
+#: src/routes/studio/+page.svelte
+msgid "Manage content"
+msgstr "Manage content"
+
+#: src/routes/studio/+page.svelte
+msgid "Models, sounds and images kept on this device or in the cloud."
+msgstr "Models, sounds and images kept on this device or in the cloud."
+
+#: src/routes/studio/+page.svelte
+msgid "Create new"
+msgstr "Create new"
+
+#: src/routes/studio/+page.svelte
+msgid "<0/>Recent"
+msgstr "<0/>Recent"
+
+#: src/routes/studio/+page.svelte
+msgid "All projects<0/>"
+msgstr "All projects<0/>"
+
+#: src/routes/studio/+page.svelte
+msgid "<0>Nothing here yet</0>Pick one of the options above to create your first project."
+msgstr "<0>Nothing here yet</0>Pick one of the options above to create your first project."
+
+#: src/lib/studio/components/LauncherShell.svelte
+msgid "Home"
+msgstr "Home"
+
+#: src/lib/studio/components/LauncherShell.svelte
+#: src/routes/studio/projects/+page.svelte
+msgid "Projects"
+msgstr "Projects"
+
+#: src/lib/studio/components/LauncherShell.svelte
+#: src/routes/studio/content/+page.svelte
+#: src/routes/studio/content/+page.svelte
+msgid "Content"
+msgstr "Content"
+
+#: src/lib/studio/components/LauncherShell.svelte
+msgid "<0/>Sign in"
+msgstr "<0/>Sign in"
+
+#: src/lib/studio/components/LauncherShell.svelte
+msgid "<0/>Open game"
+msgstr "<0/>Open game"
+
+#: src/routes/studio/projects/+page.svelte
+msgid "Create your first project from the Home screen."
+msgstr "Create your first project from the Home screen."
+
+#: src/routes/studio/content/+page.svelte
+msgid "Could not read the content"
+msgstr "Could not read the content"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Everything selected is still used by an object or world."
+msgstr "Everything selected is still used by an object or world."
+
+#. 0: removable.length
+#. 0: removable.length
+#: src/routes/studio/content/+page.svelte
+#: src/routes/studio/content/+page.svelte
+msgid "{0} files"
+msgstr "{0} files"
+
+#. 0: single
+#: src/routes/studio/content/+page.svelte
+msgid "Remove {0}?"
+msgstr "Remove {0}?"
+
+#. 0: formatBytes(totalBytes(removable)); 1: blocked.length ? ` ${blocked.length} still in use will be kept.` \\: ''
+#: src/routes/studio/content/+page.svelte
+msgid "Frees {0} of cloud storage.{1}"
+msgstr "Frees {0} of cloud storage.{1}"
+
+#. 0: formatBytes(totalBytes(removable))
+#: src/routes/studio/content/+page.svelte
+msgid "Frees {0} on this device. Objects and worlds that use a removed file show a placeholder until it is imported again or downloaded from the cloud."
+msgstr "Frees {0} on this device. Objects and worlds that use a removed file show a placeholder until it is imported again or downloaded from the cloud."
+
+#. 0: failed
+#: src/routes/studio/content/+page.svelte
+msgid "{0} could not be removed."
+msgstr "{0} could not be removed."
+
+#. 0: removable.length === 1 ? removable[0].manifest.name \\: `${removable.length} files`
+#: src/routes/studio/content/+page.svelte
+msgid "Removed {0}"
+msgstr "Removed {0}"
+
+#: src/routes/studio/content/+page.svelte
+msgid "The file is not available right now."
+msgstr "The file is not available right now."
+
+#: src/routes/studio/content/+page.svelte
+msgid "Copied the asset id"
+msgstr "Copied the asset id"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Could not copy to the clipboard."
+msgstr "Could not copy to the clipboard."
+
+#: src/routes/studio/content/+page.svelte
+msgid "Unknown"
+msgstr "Unknown"
+
+#. 0: entry.usedBy.items; 1: entry.usedBy.items === 1 ? '' \\: 's'
+#: src/routes/studio/content/+page.svelte
+msgid "{0} object{1}"
+msgstr "{0} object{1}"
+
+#. 0: entry.usedBy.worlds; 1: entry.usedBy.worlds === 1 ? '' \\: 's'
+#: src/routes/studio/content/+page.svelte
+msgid "{0} world{1}"
+msgstr "{0} world{1}"
+
+#. 0: entry.usedBy.publications; 1: entry.usedBy.publications === 1 ? '' \\: 's'
+#: src/routes/studio/content/+page.svelte
+msgid "{0} publication{1}"
+msgstr "{0} publication{1}"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Not used"
+msgstr "Not used"
+
+#: src/routes/studio/content/+page.svelte
+msgid "<0/>Import files"
+msgstr "<0/>Import files"
+
+#. 0: info.quota > 0 ? `of ${formatBytes(info.quota)}` \\: 'used'; 1: info.count; 2: info.count === 1 ? '' \\: 's'
+#: src/routes/studio/content/+page.svelte
+msgid "{0} · {1} file{2}"
+msgstr "{0} · {1} file{2}"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Search content"
+msgstr "Search content"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Sort by"
+msgstr "Sort by"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Newest"
+msgstr "Newest"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Largest"
+msgstr "Largest"
+
+#~ msgid "<0/>Remove {0} unused ({1})"
+#~ msgstr "<0/>Remove {0} unused ({1})"
+
+#: src/routes/studio/content/+page.svelte
+msgid "<0/>Unused only"
+msgstr "<0/>Unused only"
+
+#. 0: selected.length
+#: src/routes/studio/content/+page.svelte
+msgid "{0} selected"
+msgstr "{0} selected"
+
+#: src/routes/studio/content/+page.svelte
+#: src/routes/studio/content/+page.svelte
+msgid "<0/>Remove"
+msgstr "<0/>Remove"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Could not load the content"
+msgstr "Could not load the content"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Try a different search or filter."
+msgstr "Try a different search or filter."
+
+#: src/routes/studio/content/+page.svelte
+msgid "Import models, sounds and images, or drop files here."
+msgstr "Import models, sounds and images, or drop files here."
+
+#: src/routes/studio/content/+page.svelte
+msgid "Files you upload from an object or world appear here."
+msgstr "Files you upload from an object or world appear here."
+
+#: src/routes/studio/content/+page.svelte
+msgid "Select all shown"
+msgstr "Select all shown"
+
+#. 0: visible.length; 1: visible.length === 1 ? '' \\: 's'; 2: formatBytes(totalBytes(visible))
+#: src/routes/studio/content/+page.svelte
+msgid "{0} file{1} · {2}"
+msgstr "{0} file{1} · {2}"
+
+#. 0: entry.manifest.name
+#: src/routes/studio/content/+page.svelte
+msgid "Select {0}"
+msgstr "Select {0}"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Details"
+msgstr "Details"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Close details"
+msgstr "Close details"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Added"
+msgstr "Added"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Last used"
+msgstr "Last used"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Size"
+msgstr "Size"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Used by"
+msgstr "Used by"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Id"
+msgstr "Id"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Still used by an object or world"
+msgstr "Still used by an object or world"
+
+#: src/routes/studio/content/+page.svelte
+msgid "<0/>Download"
+msgstr "<0/>Download"
+
+#: src/routes/studio/content/+page.svelte
+msgid "<0/>Copy id"
+msgstr "<0/>Copy id"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Cache"
+msgstr "Cache"
+
+#~ msgid "Nothing of yours (cached copy)"
+#~ msgstr "Nothing of yours (cached copy)"
+
+#~ msgid "Clear cache"
+#~ msgstr "Clear cache"
+
+#~ msgid "Remove unused"
+#~ msgstr "Remove unused"
+
+#~ msgid "<0/>{0} only"
+#~ msgstr "<0/>{0} only"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Nothing (cached copy)"
+msgstr "Nothing (cached copy)"
+
+#. 0: unused.length; 1: formatBytes(totalBytes(unused))
+#: src/routes/studio/content/+page.svelte
+msgid "<0/>Remove unused ({0} · {1})"
+msgstr "<0/>Remove unused ({0} · {1})"
+
+#~ msgid "<0/>Unused or cache only"
+#~ msgstr "<0/>Unused or cache only"
+
+#. 0: cache.length
+#: src/routes/studio/content/+page.svelte
+msgid "<0/>Show cache ({0})"
+msgstr "<0/>Show cache ({0})"
+
+#. 0: formatBytes(totalBytes(cache))
+#: src/routes/studio/content/+page.svelte
+msgid "<0/>Clear cache ({0})"
+msgstr "<0/>Clear cache ({0})"
+
+#: src/routes/studio/content/+page.svelte
+msgid "The app (base avatar)"
+msgstr "The app (base avatar)"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Built-in"
+msgstr "Built-in"
+
+#: src/lib/studio/components/ContentPreview.svelte
+msgid "Preview not available right now."
+msgstr "Preview not available right now."
+
+#: src/lib/studio/components/ContentPreview.svelte
+msgid "Lighting slice"
+msgstr "Lighting slice"
+
+#. 0: slotNames.length - 40
+#: src/lib/studio/components/ContentPreview.svelte
+msgid "+{0} more"
+msgstr "+{0} more"
+
+#: src/lib/studio/components/ModelViewer.svelte
+msgid "This model could not be previewed."
+msgstr "This model could not be previewed."
+
+#: src/routes/studio/content/+page.svelte
+msgid "Used in"
+msgstr "Used in"
+
+#. 0: focused.usedIn.length - 8
+#: src/routes/studio/content/+page.svelte
+msgid "and {0} more"
+msgstr "and {0} more"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Sign in to see it"
+msgstr "Sign in to see it"
+
+#: src/routes/studio/content/+page.svelte
+msgid "<0/><1>Your cloud content</1>Sign in to see the files stored in your account and how much of your quota they use.<2>Sign in</2>"
+msgstr "<0/><1>Your cloud content</1>Sign in to see the files stored in your account and how much of your quota they use.<2>Sign in</2>"
+
+#: src/lib/studio/components/AssetPicker.svelte
+msgid "Could not read the cloud"
+msgstr "Could not read the cloud"
+
+#~ msgid "<0/>This device ({0})"
+#~ msgstr "<0/>This device ({0})"
+
+#~ msgid "<0/>Cloud{0}"
+#~ msgstr "<0/>Cloud{0}"
+
+#: src/lib/studio/components/AssetPicker.svelte
+msgid "No matches."
+msgstr "No matches."
+
+#. 0: kindLabel
+#: src/lib/studio/components/AssetPicker.svelte
+msgid "No {0} here yet."
+msgstr "No {0} here yet."
+
+#. 0: matches.length - shown.length
+#: src/lib/studio/components/AssetPicker.svelte
+msgid "Show more ({0} left — or search)"
+msgstr "Show more ({0} left — or search)"
+
+#: src/lib/studio/components/AssetPicker.svelte
+msgid "<0/>Import a file…"
+msgstr "<0/>Import a file…"
+
+#: src/lib/studio/components/AssetPicker.svelte
+msgid "<0/>Use a URL"
+msgstr "<0/>Use a URL"
+
+#. 0: result.missing; 1: result.missing === 1 ? ' is' \\: 's are'
+#. 0: result.missing; 1: result.missing === 1 ? ' is' \\: 's are'
+#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
+msgid "{0} asset{1} missing from the file and from this device."
+msgstr "{0} asset{1} missing from the file and from this device."
+
+#. 0: result.item.name
+#. 0: result.item.name
+#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
+msgid "Imported “{0}” incomplete"
+msgstr "Imported “{0}” incomplete"
+
+#. 0: result.item.name
+#. 0: result.item.name
+#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
+msgid "Imported “{0}”"
+msgstr "Imported “{0}”"
+
+#: src/routes/studio/+page.svelte
+#: src/routes/studio/projects/+page.svelte
+msgid "Could not import the file"
+msgstr "Could not import the file"
+
+#: src/lib/studio/components/LauncherShell.svelte
+msgid "Drop to import"
+msgstr "Drop to import"
+
+#: src/lib/studio/components/LauncherShell.svelte
+msgid ".kiw worlds, .kin objects and .kia avatars"
+msgstr ".kiw worlds, .kin objects and .kia avatars"
+
+#: src/routes/studio/projects/+page.svelte
+msgid "Import .kiw, .kin or .kia files"
+msgstr "Import .kiw, .kin or .kia files"
+
+#: src/routes/studio/projects/+page.svelte
+msgid "Import"
+msgstr "Import"
+
+#. 0: result.missing; 1: result.missing === 1 ? ' was' \\: 's were'; 2: result.missing === 1 ? 'it is' \\: 'they are'
+#: src/routes/studio/edit/+page.svelte
+msgid "{0} asset{1} not found on this device or in the cloud, so {2} not in the file."
+msgstr "{0} asset{1} not found on this device or in the cloud, so {2} not in the file."
+
+#. 0: result.fileName
+#: src/routes/studio/edit/+page.svelte
+msgid "Exported “{0}” without some assets"
+msgstr "Exported “{0}” without some assets"
+
+#. 0: result.fileName; 1: result.assetCount; 2: result.assetCount === 1 ? '' \\: 's'
+#: src/routes/studio/edit/+page.svelte
+msgid "Exported “{0}” with {1} asset{2}"
+msgstr "Exported “{0}” with {1} asset{2}"
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Could not export"
+msgstr "Could not export"
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Export as a Kithin file…"
+msgstr "Export as a Kithin file…"
+
+#: src/lib/studio/components/TopBar.svelte
+msgid "Export as a Kithin file"
+msgstr "Export as a Kithin file"
+
+#: src/lib/studio/components/TopBar.svelte
+msgid "Export"
+msgstr "Export"
+
+#: src/lib/studio/components/TopBar.svelte
+msgid "Copy what you changed, to hand to whoever edits this world's code (Ctrl+S)"
+msgstr "Copy what you changed, to hand to whoever edits this world's code (Ctrl+S)"
+
+#: src/lib/studio/components/TopBar.svelte
+#: src/routes/studio/edit/+page.svelte
+msgid "Get diff"
+msgstr "Get diff"
+
+#: src/routes/studio/edit/+page.svelte
+msgid "No changes to hand on yet"
+msgstr "No changes to hand on yet"
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Diff copied to the clipboard"
+msgstr "Diff copied to the clipboard"
+
+#: src/routes/studio/edit/+page.svelte
+msgid "Diff downloaded"
+msgstr "Diff downloaded"
+
+#: src/lib/studio/state/project.svelte.ts
+msgid "Before is the world as its code builds it; after is the copy edited in the Studio. Make the same changes in the code that builds this world: find the entry with `id: '"
+msgstr "Before is the world as its code builds it; after is the copy edited in the Studio. Make the same changes in the code that builds this world: find the entry with `id: '"
+
+#: src/lib/studio/components/Inspector.svelte
+msgid "Export this object and everything under it as a .kin file"
+msgstr "Export this object and everything under it as a .kin file"
+
+#: src/lib/studio/components/Inspector.svelte
+msgid "Export object"
+msgstr "Export object"
+
+#. 0: device.length
+#: src/lib/studio/components/AssetPicker.svelte
+msgid "This device ({0})"
+msgstr "This device ({0})"
+
+#. 0: cloud ? ` (${cloud.length})` \\: ''
+#: src/lib/studio/components/AssetPicker.svelte
+msgid "Cloud{0}"
+msgstr "Cloud{0}"
+
+#. 0: manifest.name
+#: src/lib/studio/state/models.svelte.ts
+msgid "Uploaded “{0}” to the cloud."
+msgstr "Uploaded “{0}” to the cloud."

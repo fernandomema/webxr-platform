@@ -23,9 +23,11 @@
 		getViewPose?: () => { position: Vec3; rotation: [number, number, number, number] } | null | Promise<{ position: Vec3; rotation: [number, number, number, number] } | null>;
 		/** Extra content after the components (the in-game actions and debug log). */
 		footer?: Snippet<[Slot]>;
+		/** Exports a slot and everything under it as a Kithin file. Without it the button is not shown. */
+		onExportNode?: (slotId: string) => void;
 	}
 
-	let { doc, advanced, onOpenCode, onGenerateProbe, getViewPose = () => null, footer }: Props = $props();
+	let { doc, advanced, onOpenCode, onGenerateProbe, getViewPose = () => null, footer, onExportNode }: Props = $props();
 
 	let showAdd = $state(false);
 	let dialog = $state<'bakeLighting' | 'worldPreview' | null>(null);
@@ -100,11 +102,14 @@
 			Pick an object in the hierarchy or click it in the 3D view.
 		</div>
 	{:else}
-		<div class="section">
+		<div class="section name-row">
 			<label class="name">
 				<span class="sr-only">Name</span>
 				<input class="input" disabled={doc.readonly} value={slot.name} oninput={(event) => doc.renameSlot(slot.id, event.currentTarget.value)} aria-label="Object name" />
 			</label>
+			{#if onExportNode}
+				<button class="icon-btn" title="Export this object and everything under it as a .kin file" aria-label="Export object" onclick={() => onExportNode(slot.id)}><Icon name="download" size={14} /></button>
+			{/if}
 		</div>
 
 		<fieldset class="editable" disabled={doc.readonly}>
@@ -179,6 +184,8 @@
 	.section { display: grid; gap: 8px; padding: 12px; border-bottom: 1px solid var(--border); }
 	.section.grow { flex: 1; border-bottom: 0; align-content: start; }
 	h3 { margin: 0; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+	.name-row { display: flex; align-items: center; gap: 6px; }
+	.name-row .name { flex: 1; min-width: 0; }
 	.name .input { height: calc(var(--control-h, 30px) + 4px); font-size: 14px; font-weight: 600; }
 	.transform { display: grid; grid-template-columns: var(--label-w, 70px) 1fr; align-items: center; gap: 8px; }
 	.row-label { color: var(--muted); font-size: 12px; }

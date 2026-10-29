@@ -42,3 +42,5 @@ export const loadDraft = async (key: string): Promise<Draft | undefined> => {
 };
 export const saveDraft = (draft: Draft) => run('readwrite', (store) => store.put(draft));
 export const deleteDraft = (key: string) => run('readwrite', (store) => store.delete(key));
+
+export const listDrafts = async (): Promise<Draft[]> => (await run<Draft[]>('readonly', (store) => store.getAll())) ?? [];

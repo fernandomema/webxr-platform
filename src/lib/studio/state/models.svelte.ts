@@ -1,8 +1,9 @@
 import { AssetImportError } from '@kithin/engine/assets/kinds/index';
 import { acceptedExtensions, assetKindForFileName } from '@kithin/engine/assets/kinds/index';
-import { importAssetFile } from '@kithin/engine/assets/importAsset';
+import { cloudAssets } from '@kithin/engine/assets/cloud';
+import { importAsset, importAssetFile } from '@kithin/engine/assets/importAsset';
 import type { AssetId } from '@kithin/engine/assets/ref';
-import { getLocalAssetStore, type AssetListing } from '@kithin/engine/assets/store';
+import { getLocalAssetStore, MemoryAssetStore, type AssetListing } from '@kithin/engine/assets/store';
 import { toasts } from './toasts.svelte';
 
 /** The assets imported on this device, as the Studio shows them. Works for every registered asset kind. */
@@ -57,16 +58,53 @@ class StudioAssets {
 		return imported;
 	}
 
+	/** Uploads each file to the cloud without keeping a copy on this device; a bad file reports its own reason. Returns the ids that are now in the cloud. */
+	async uploadFiles(files: Iterable<File>, type?: string): Promise<AssetId[]> {
+		this.importing = true;
+		const uploaded: AssetId[] = [];
+		try {
+			for (const file of files) {
+				const kind = assetKindForFileName(file.name);
+				if (!kind || (type && kind.type !== type)) {
+					toasts.push('error', `“${file.name}” is not a supported file.`);
+					continue;
+				}
+				try {
+					const { manifest } = await importAsset(new Uint8Array(await file.arrayBuffer()), file.name, new MemoryAssetStore());
+					const bytes = new Uint8Array(await file.arrayBuffer());
+					const result = await cloudAssets.upload(manifest, bytes);
+					uploaded.push(manifest.assetId);
+					toasts.success(result === 'existing' ? `“${manifest.name}” was already in the cloud.` : `Uploaded “${manifest.name}” to the cloud.`);
+				} catch (error) {
+					toasts.push('error', error instanceof AssetImportError ? `“${file.name}”: ${error.message}` : `“${file.name}” could not be uploaded.`);
+				}
+			}
+		} finally {
+			this.importing = false;
+		}
+		return uploaded;
+	}
+
+	private pickFiles(type: string | undefined, then: (files: File[]) => Promise<void>): void {
+		const input = document.createElement('input');
+		input.type = 'file';
+		input.accept = acceptedExtensions(type).join(',');
+		input.multiple = true;
+		input.onchange = () => void then([...(input.files ?? [])]);
+		input.click();
+	}
+
 	/** Opens the system file picker (restricted to one kind when given) and imports what is chosen. */
 	pickAndImport(type?: string): Promise<AssetListing[]> {
 		return new Promise((resolve) => {
-			const input = document.createElement('input');
-			input.type = 'file';
-			input.accept = acceptedExtensions(type).join(',');
-			input.multiple = true;
-			input.onchange = () => void this.importFiles([...(input.files ?? [])], type).then(resolve);
-			input.oncancel = () => resolve([]);
-			input.click();
+			this.pickFiles(type, async (files) => resolve(await this.importFiles(files, type)));
+		});
+	}
+
+	/** Like `pickAndImport`, but the files go to the cloud and no copy is kept on this device. */
+	pickAndUpload(type?: string): Promise<AssetId[]> {
+		return new Promise((resolve) => {
+			this.pickFiles(type, async (files) => resolve(await this.uploadFiles(files, type)));
 		});
 	}
 

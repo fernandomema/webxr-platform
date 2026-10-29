@@ -1,4 +1,4 @@
-import { importGlb } from '../../assets/importGlb.ts';
+import { importAsset } from '../../assets/importAsset.ts';
 import { getLocalAssetStore } from '../../assets/store.ts';
 import type { SlotTree } from '../../ecs/types.ts';
 import { assetUrl } from '../platform/config.ts';
@@ -42,7 +42,7 @@ export function loadBaseAvatar(): Promise<SlotTree | null> {
 		try {
 			const response = await fetch(assetUrl(BASE_AVATAR_URL));
 			if (!response.ok) throw new Error(`HTTP ${response.status}`);
-			const { manifest } = await importGlb(new Uint8Array(await response.arrayBuffer()), 'Subject 7', getLocalAssetStore());
+			const { manifest } = await importAsset(new Uint8Array(await response.arrayBuffer()), 'Subject 7', getLocalAssetStore(), { type: 'model', origin: 'app' });
 			if (manifest.type !== 'model') return null;
 			return buildAvatarTree({ assetId: manifest.assetId, name: 'Avatar', joints: manifest.skeleton?.joints ?? [], bounds: manifest.bounds }, { bones: BASE_AVATAR_BONES, height: BASE_AVATAR_HEIGHT });
 		} catch (error) {

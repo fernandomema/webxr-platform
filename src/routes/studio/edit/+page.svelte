@@ -26,6 +26,7 @@
 	import CodeView from '$lib/studio/views/CodeView.svelte';
 	import JsonView from '$lib/studio/views/JsonView.svelte';
 	import Icon from '$lib/studio/ui/Icon.svelte';
+	import { exportProjectFile } from '$lib/studio/state/containerFiles';
 
 	const project = new StudioProject(studioSession.context);
 	const doc = project.doc;
@@ -117,7 +118,33 @@
 		if (doc.dirty) event.preventDefault();
 	}
 
+	/** Copies the changes made to a code-built world, for handing to whoever edits its builder. */
+	async function getDiff(): Promise<void> {
+		const text = project.codeWorldDiff();
+		if (!text) {
+			toasts.success('No changes to hand on yet');
+			return;
+		}
+		try {
+			await navigator.clipboard.writeText(text);
+			toasts.success('Diff copied to the clipboard');
+		} catch {
+			// Clipboard access can be refused; the file is the same text.
+			const url = URL.createObjectURL(new Blob([text], { type: 'text/markdown' }));
+			const link = document.createElement('a');
+			link.href = url;
+			link.download = `${project.codeWorldId}.diff.md`;
+			link.click();
+			setTimeout(() => URL.revokeObjectURL(url), 10_000);
+			toasts.success('Diff downloaded');
+		}
+	}
+
 	async function save(): Promise<boolean> {
+		if (project.codeWorldId) {
+			await getDiff();
+			return false;
+		}
 		if (project.adapterId === 'filesystem') {
 			try { await getInventoryAdapter('filesystem')?.connect?.(); }
 			catch (error) { toasts.error(error, 'Could not reconnect the project folder'); return false; }
@@ -127,6 +154,16 @@
 			return false;
 		}
 		return persist();
+	}
+
+	async function exportFile(nodeId?: string) {
+		try {
+			const result = await exportProjectFile(project, studioSession.userId, nodeId);
+			if (result.missing) toasts.error(new Error(`${result.missing} asset${result.missing === 1 ? ' was' : 's were'} not found on this device or in the cloud, so ${result.missing === 1 ? 'it is' : 'they are'} not in the file.`), `Exported “${result.fileName}” without some assets`);
+			else toasts.success(`Exported “${result.fileName}” with ${result.assetCount} asset${result.assetCount === 1 ? '' : 's'}`);
+		} catch (error) {
+			toasts.error(error, 'Could not export');
+		}
 	}
 
 	async function persist(target?: SaveTarget): Promise<boolean> {
@@ -195,7 +232,7 @@
 	}
 
 	const commands = $derived<Command[]>([
-		{ id: 'save', label: 'Save', shortcut: 'Ctrl+S', run: () => void save() },
+		{ id: 'save', label: project.codeWorldId ? 'Get diff' : 'Save', shortcut: 'Ctrl+S', run: () => void save() },
 		{ id: 'undo', label: 'Undo', shortcut: 'Ctrl+Z', enabled: doc.canUndo, run: () => doc.undo() },
 		{ id: 'redo', label: 'Redo', shortcut: 'Ctrl+Shift+Z', enabled: doc.canRedo, run: () => doc.redo() },
 		{ id: 'add', label: 'Add object…', run: () => { leftTab = 'hierarchy'; mobilePanel = 'left'; showAddObject = true; } },
@@ -203,6 +240,7 @@
 		{ id: 'delete', label: 'Delete selected object', shortcut: 'Del', enabled: Boolean(doc.selectedId && canRemoveSlot(doc.tree, doc.selectedId)), run: removeSelected },
 		{ id: 'focus', label: 'Focus camera on selection', shortcut: 'F', enabled: Boolean(doc.selectedId), run: () => preview?.focusSelected() },
 		{ id: 'import-model', label: 'Import model (.glb)…', run: () => void studioModels.pickAndImport() },
+		{ id: 'export', label: 'Export as a Kithin file…', run: () => void exportFile() },
 		{ id: 'play', label: 'Play in the game', run: play },
 		{ id: 'publish', label: 'Publish world…', enabled: doc.kind === 'world', run: openMarketplace },
 		{ id: 'marketplace', label: 'Marketplace…', enabled: doc.kind === 'object' && !isReadOnlyAdapter(project.adapterId), run: openMarketplace },
@@ -277,7 +315,7 @@
 	</div>
 {:else}
 	<div class="editor" data-panel={mobilePanel}>
-		<TopBar {project} {advanced} onmode={setAdvanced} onback={back} onsave={() => void save()} onplay={play} onpalette={() => (dialog = 'palette')} />
+		<TopBar {project} {advanced} onmode={setAdvanced} onback={back} onsave={() => void save()} ondiff={() => void getDiff()} onexport={() => void exportFile()} onplay={play} onpalette={() => (dialog = 'palette')} />
 
 		{#if project.pendingDraft}
 			<div class="banner" role="status">
@@ -341,7 +379,7 @@
 					{/if}
 				</div>
 				<div class="right-body">
-					<div class="right-view" hidden={rightTab !== 'inspector'}><Inspector {doc} {advanced} onOpenCode={openCode} onGenerateProbe={generateProbe} getViewPose={() => preview?.getViewPose() ?? null} /></div>
+					<div class="right-view" hidden={rightTab !== 'inspector'}><Inspector {doc} {advanced} onExportNode={(id) => void exportFile(id)} onOpenCode={openCode} onGenerateProbe={generateProbe} getViewPose={() => preview?.getViewPose() ?? null} /></div>
 					<div class="right-view" hidden={rightTab !== 'ai'}><AiPanel {doc} projectKey={project.key} /></div>
 					{#if doc.kind === 'world' || !isReadOnlyAdapter(project.adapterId)}
 						<div class="right-view" hidden={rightTab !== 'marketplace'}>

@@ -280,6 +280,20 @@ test('a class instance of the host can be called but its fields and internals ca
 	assert.deepEqual(JSON.parse(logs()[0]), ['pong', true, true, true, 0, false]);
 });
 
+test('slot hashes cross the sandbox as promises and do not expose host objects', async () => {
+	const { runtime, logs, errors } = run(`
+		return { async onSpawn() {
+			ctx.log(JSON.stringify([await ctx.hierarchy.getSlotHash('a'), await ctx.hierarchy.getSlotHash('missing')]));
+		} };
+	`, { slots: slotFixture() });
+	await tick();
+	assert.deepEqual(errors(), []);
+	const [hash, missing] = JSON.parse(logs()[0]);
+	assert.match(hash, /^[a-f0-9]{64}$/);
+	assert.equal(missing, null);
+	runtime.dispose();
+});
+
 test('a broken script is reported and leaves a runtime that can be disposed; a missing sandbox leaves the block inert', () => {
 	const { runtime, errors } = run(`throw new Error('broken');`);
 	assert.match(errors()[0], /broken/);

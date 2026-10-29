@@ -9,6 +9,7 @@ import type { PlayerPoseView, PlayerSummary, TeleportTarget } from './playerPose
 import type { PayResult, ScriptPayments } from './payments/types.ts';
 import type { ScriptPhysics } from './scriptPhysics.ts';
 import { isAssetId } from '../assets/ref.ts';
+import { hashSlot } from '../ecs/slotHash.ts';
 
 /** What SceneGraph exposes to a codeBlock's compiled handlers — narrow, read-mostly, no Babylon types leak into `ctx`. */
 export interface CodeBlockHost {
@@ -329,6 +330,11 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 				return parentId ? host.getSlot(parentId) : undefined;
 			},
 			findByName: (name: string) => host.allSlots().find((s) => s.name === name),
+			/** Stable content hash of a slot and its descendants, independent of ids and the root's world pose; null for a missing slot. */
+			getSlotHash: async (id: string): Promise<string | null> => {
+				const root = host.getSlot(id);
+				return root ? hashSlot(root, (parentId) => host.getChildren(parentId)) : null;
+			},
 			/** World position, rotation and direction vectors of any slot — use this (not summed local positions) to spawn from a child such as a gun's muzzle. */
 			getWorldPose: (id: string): WorldPose | undefined => {
 				const target = host.getNode(id);

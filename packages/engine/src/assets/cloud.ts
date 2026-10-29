@@ -71,7 +71,7 @@ export const cloudAssets = {
 		return (await response.json()) as MyCloudAsset[];
 	},
 
-	async usage(): Promise<{ bytes: number; count: number; quota: number }> {
+	async usage(): Promise<{ bytes: number; count: number; quota: number; assetBytes: number; inventoryBytes: number }> {
 		const response = await platformFetch('/api/assets/usage');
 		if (!response.ok) throw await failure(response);
 		return await response.json();

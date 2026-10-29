@@ -18,6 +18,8 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test": "node --experimental-transform-types --test tests/*.test.mjs",
+		"db:up": "docker compose up -d --wait db && prisma db push",
+		"db:down": "docker compose down",
 		"db:generate": "prisma generate",
 		"db:push": "prisma db push",
 		"db:migrate": "prisma migrate dev",

@@ -8,9 +8,14 @@ const announcePut = () => assetStoreChanges.dispatchEvent(new Event('put'));
 /** Something new can now supply assets (a peer connected), so models that were missing should look again. */
 export const announceAssetSourcesChanged = announcePut;
 
+/** `download` marks a copy fetched for something that needed it (a world someone else made); `app` a file the app keeps for itself (the base avatar); `generated` something the app made and can make again (a world's preview picture). Anything else was put here by the user. */
+export type AssetOrigin = 'download' | 'app' | 'generated';
+
 export type AssetListing = AssetManifest & {
 	importedAt: number;
 	lastUsedAt: number;
+	/** Absent for files the user imported or made, and for everything stored before origins were recorded. */
+	origin?: AssetOrigin;
 };
 
 /**
@@ -23,8 +28,10 @@ export interface AssetStore {
 	getManifest(id: AssetId): Promise<AssetManifest | undefined>;
 	getBytes(id: AssetId): Promise<Uint8Array | undefined>;
 	/** Idempotent: storing the same id again keeps the existing record. */
-	put(manifest: AssetManifest, bytes: Uint8Array): Promise<void>;
+	put(manifest: AssetManifest, bytes: Uint8Array, origin?: AssetOrigin): Promise<void>;
 	list(): Promise<AssetListing[]>;
+	/** Records where an already stored file came from, for files stored before origins existed. */
+	setOrigin(id: AssetId, origin: AssetOrigin): Promise<void>;
 	delete(id: AssetId): Promise<void>;
 	usage(): Promise<{ count: number; bytes: number }>;
 }
@@ -47,15 +54,20 @@ export class MemoryAssetStore implements AssetStore {
 		return record?.bytes;
 	}
 
-	async put(manifest: AssetManifest, bytes: Uint8Array) {
+	async put(manifest: AssetManifest, bytes: Uint8Array, origin?: AssetOrigin) {
 		if (this.records.has(manifest.assetId)) return;
 		const now = Date.now();
-		this.records.set(manifest.assetId, { listing: { ...manifest, importedAt: now, lastUsedAt: now }, bytes: bytes.slice() });
+		this.records.set(manifest.assetId, { listing: { ...manifest, importedAt: now, lastUsedAt: now, ...(origin && { origin }) }, bytes: bytes.slice() });
 		announcePut();
 	}
 
 	async list() {
 		return [...this.records.values()].map((record) => ({ ...record.listing }));
+	}
+
+	async setOrigin(id: AssetId, origin: AssetOrigin) {
+		const record = this.records.get(id);
+		if (record) record.listing.origin = origin;
 	}
 
 	async delete(id: AssetId) {
@@ -147,19 +159,29 @@ export class IndexedDbAssetStore implements AssetStore {
 		}
 	}
 
-	async put(manifest: AssetManifest, bytes: Uint8Array) {
+	async put(manifest: AssetManifest, bytes: Uint8Array, origin?: AssetOrigin) {
 		if (await this.has(manifest.assetId)) return;
 		const now = Date.now();
 		const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 		await this.run([MANIFESTS, BLOBS], 'readwrite', (tx) => {
 			tx.objectStore(BLOBS).put({ assetId: manifest.assetId, bytes: buffer });
-			tx.objectStore(MANIFESTS).put({ ...manifest, importedAt: now, lastUsedAt: now } satisfies AssetListing);
+			tx.objectStore(MANIFESTS).put({ ...manifest, importedAt: now, lastUsedAt: now, ...(origin && { origin }) } satisfies AssetListing);
 		});
 		announcePut();
 	}
 
 	async list() {
 		return (await this.run<AssetListing[]>([MANIFESTS], 'readonly', (tx) => tx.objectStore(MANIFESTS).getAll())) ?? [];
+	}
+
+	async setOrigin(id: AssetId, origin: AssetOrigin) {
+		await this.run([MANIFESTS], 'readwrite', (tx) => {
+			const store = tx.objectStore(MANIFESTS);
+			const request = store.get(id);
+			request.onsuccess = () => {
+				if (request.result) store.put({ ...request.result, origin });
+			};
+		});
 	}
 
 	async delete(id: AssetId) {

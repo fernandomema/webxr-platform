@@ -2,7 +2,8 @@
 	export type IconName =
 		| 'back' | 'plus' | 'undo' | 'redo' | 'save' | 'play' | 'publish' | 'trash' | 'copy' | 'folder'
 		| 'cube' | 'world' | 'search' | 'chevron-right' | 'chevron-down' | 'code' | 'json' | 'close'
-		| 'check' | 'cloud' | 'device' | 'warning' | 'user' | 'layers' | 'sliders' | 'command' | 'folder-plus';
+		| 'check' | 'cloud' | 'device' | 'warning' | 'user' | 'layers' | 'sliders' | 'command' | 'folder-plus'
+		| 'home' | 'download' | 'upload' | 'music' | 'image' | 'clock';
 </script>
 
 <script lang="ts">
@@ -40,7 +41,13 @@
 		user: 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21c0-4 4-6 8-6s8 2 8 6',
 		layers: 'M12 3l9 5-9 5-9-5zM3 13l9 5 9-5',
 		sliders: 'M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6',
-		command: 'M9 9h6v6H9zM9 9V6a3 3 0 10-3 3h3M15 9h3a3 3 0 10-3-3M9 15H6a3 3 0 103 3M15 15v3a3 3 0 103-3'
+		command: 'M9 9h6v6H9zM9 9V6a3 3 0 10-3 3h3M15 9h3a3 3 0 10-3-3M9 15H6a3 3 0 103 3M15 15v3a3 3 0 103-3',
+		home: 'M4 11l8-7 8 7M6 10v10h12V10M10 20v-6h4v6',
+		download: 'M12 4v12M7 11l5 5 5-5M4 20h16',
+		upload: 'M12 16V4M7 9l5-5 5 5M4 20h16',
+		music: 'M9 18V5l11-2v13M9 18a3 3 0 11-3-3 3 3 0 013 3zM20 16a3 3 0 11-3-3 3 3 0 013 3z',
+		image: 'M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M9 9.5a.5.5 0 100-1 .5.5 0 000 1z',
+		clock: 'M12 3a9 9 0 100 18 9 9 0 000-18zM12 7v5l3 2'
 	};
 </script>
 

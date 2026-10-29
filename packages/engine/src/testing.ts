@@ -53,6 +53,8 @@ export interface TestWorldOptions {
 	modelBox?: (assetId: string) => { min: Vec3; max: Vec3 } | null;
 	/** The content of a scene fragment by asset id: a `fragment` slot that is on has it built under it, as the engine does. */
 	fragments?: (assetId: AssetId) => FragmentData | undefined;
+	/** Persistent storage used by `ctx.storage`, with the same service the live engine uses. */
+	storage?: CodeBlockHost['storage'];
 }
 
 /** A script that was started in the test world. */
@@ -148,6 +150,7 @@ export class TestWorld {
 	private readonly localPlayerId: string;
 	private readonly modelBox: TestWorldOptions['modelBox'];
 	private readonly fragments: TestWorldOptions['fragments'];
+	private readonly storage: TestWorldOptions['storage'];
 	/** The slots each built fragment holds, by the slot that loaded it. */
 	private readonly built = new Map<string, string[]>();
 
@@ -157,6 +160,7 @@ export class TestWorld {
 		this.localPlayerId = options.localPlayerId ?? 'host';
 		this.modelBox = options.modelBox;
 		this.fragments = options.fragments;
+		this.storage = options.storage;
 		for (const slot of tree) this.add(structuredClone(slot));
 		for (const slot of this.slots.values()) this.attach(slot);
 		this.host = this.makeHost();
@@ -585,6 +589,7 @@ export class TestWorld {
 				return true;
 			},
 			audio: this.audio,
+			storage: this.storage,
 			importPolyHavenModel: () => Promise.reject(new Error('Not available in a test world'))
 		};
 	}

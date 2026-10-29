@@ -8,6 +8,7 @@ node_modules
 /.svelte-kit
 /build
 /meta-quest-package/
+/meta-quest-package-dev/
 
 # OS
 .DS_Store

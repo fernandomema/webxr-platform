@@ -14,19 +14,26 @@ import { buildWishEngine } from './wishEngine';
 import { buildArcade } from './arcade';
 import { buildDeadDrop } from './deadDrop';
 import { buildBistro } from './bistro';
+import { buildHalloweenGathering } from './halloweenGathering';
 
 /** The worlds that ship with the app: always there to go to, and the starting points for the Studio's world templates. */
 export interface BuiltinWorld {
-	id: 'lobby' | 'workshop' | 'pop-up-store' | 'pulse' | 'avatarShowcase' | 'archive-film-test' | 'mirror-maze' | 'beat-turntable' | 'archive-jukebox' | 'polyheaven-materials' | 'wish-engine' | 'arcade' | 'dead-drop' | 'bistro-rush';
+	id: 'lobby' | 'workshop' | 'pop-up-store' | 'pulse' | 'avatarShowcase' | 'archive-film-test' | 'mirror-maze' | 'beat-turntable' | 'archive-jukebox' | 'polyheaven-materials' | 'wish-engine' | 'arcade' | 'dead-drop' | 'bistro-rush' | 'lantern-night';
 	name: string;
 	description: string;
 	scene: SlotTree;
 }
 
 /** Worlds listed under the Development category instead of the official ones. */
-export const DEV_WORLD_IDS: readonly BuiltinWorld['id'][] = ['archive-film-test', 'mirror-maze', 'beat-turntable', 'polyheaven-materials', 'wish-engine', 'arcade', 'dead-drop', 'bistro-rush'];
+export const DEV_WORLD_IDS: readonly BuiltinWorld['id'][] = ['archive-film-test', 'mirror-maze', 'beat-turntable', 'polyheaven-materials', 'wish-engine', 'arcade', 'dead-drop', 'bistro-rush', 'lantern-night'];
 
 export const BUILTIN_WORLDS: readonly BuiltinWorld[] = [
+	{
+		id: 'lantern-night',
+		name: 'Lantern Night',
+		description: 'A Halloween gathering for a group. Knock on three haunted houses, share the gifts they give you, and bring them (or something from your inventory) to the offering bowl together until the Great Pumpkin wakes up. No timers, no winners: what you leave behind is yours, and the gifts you find are remembered on your account.',
+		scene: buildHalloweenGathering()
+	},
 	{
 		id: 'bistro-rush',
 		name: 'Bistro Rush',

@@ -8,11 +8,13 @@
 		onmode: (advanced: boolean) => void;
 		onback: () => void;
 		onsave: () => void;
+		ondiff: () => void;
+		onexport: () => void;
 		onplay: () => void;
 		onpalette: () => void;
 	}
 
-	let { project, advanced, onmode, onback, onsave, onplay, onpalette }: Props = $props();
+	let { project, advanced, onmode, onback, onsave, ondiff, onexport, onplay, onpalette }: Props = $props();
 
 	const doc = $derived(project.doc);
 	const state = $derived(project.saving ? 'saving' : !project.isSaved ? 'new' : doc.dirty ? 'dirty' : 'saved');
@@ -43,7 +45,12 @@
 
 	<button class="icon-btn" aria-label="Command palette" title="Commands (Ctrl+K)" onclick={onpalette}><Icon name="command" /></button>
 	<button class="btn" title="Try it in the game" onclick={onplay}><Icon name="play" size={14} /><span class="hide-sm">Play</span></button>
-	<button class="btn" title="Save (Ctrl+S)" disabled={project.saving} onclick={onsave}><Icon name="save" size={14} /><span class="hide-sm">Save</span></button>
+	<button class="btn" title="Export as a Kithin file" onclick={onexport}><Icon name="download" size={14} /><span class="hide-sm">Export</span></button>
+	{#if project.codeWorldId}
+		<button class="btn" title="Copy what you changed, to hand to whoever edits this world's code (Ctrl+S)" onclick={ondiff}><Icon name="copy" size={14} /><span class="hide-sm">Get diff</span></button>
+	{:else}
+		<button class="btn" title="Save (Ctrl+S)" disabled={project.saving} onclick={onsave}><Icon name="save" size={14} /><span class="hide-sm">Save</span></button>
+	{/if}
 </header>
 
 <style>

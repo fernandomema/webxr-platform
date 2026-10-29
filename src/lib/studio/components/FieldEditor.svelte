@@ -6,6 +6,7 @@
 	import type { EquipPose } from '@kithin/engine/ecs/types';
 	import { assetMesh, assetSource, BUILTIN_MESH_IDS, isAssetId, normalizeMeshRef, normalizeSourceRef, urlSource, type BuiltinMeshId } from '@kithin/engine/assets/ref';
 	import { studioAssets, studioModels } from '../state/models.svelte';
+	import AssetPicker from './AssetPicker.svelte';
 	import BoneMapEditor from './BoneMapEditor.svelte';
 	import Select, { type SelectGroup, type SelectOption } from '../ui/Select.svelte';
 	import Checkbox from '../ui/Checkbox.svelte';
@@ -49,6 +50,7 @@
 	async function setUnset() {
 		if (field.kind === 'asset' && field.action && onaction) return onaction(field.action);
 		if (field.kind !== 'asset') return onchange(fallback);
+		if (!studioAssets.loaded) await studioAssets.refresh();
 		const [existing] = studioAssets.items.filter((item) => item.type === field.assetType);
 		const [chosen] = existing ? [existing] : await studioAssets.pickAndImport(field.assetType);
 		if (chosen) onchange(assetSource(chosen.assetId));
@@ -63,20 +65,6 @@
 					...studioModels.items.map((model) => ({ value: model.assetId, label: model.name })),
 					...(known ? [] : [{ value: current, label: `Model ${current.slice(7, 15)}… (not on this device)`, disabled: true }]),
 					{ value: '__import', label: 'Import a .glb…' }
-				]
-			}
-		];
-	}
-
-	function assetOptions(choices: { assetId: string; name: string }[], missing: string | null): (SelectOption | SelectGroup)[] {
-		return [
-			{ value: '__url', label: 'From a URL' },
-			{
-				label: 'Imported',
-				options: [
-					...choices.map((item) => ({ value: item.assetId, label: item.name })),
-					...(missing ? [{ value: missing, label: `${missing.slice(7, 15)}… (not on this device)`, disabled: true }] : []),
-					{ value: '__import', label: 'Import a file…' }
 				]
 			}
 		];
@@ -119,7 +107,7 @@
 	}
 </script>
 
-<div class="field" class:wide={field.kind === 'pose' || field.kind === 'boneMap'}>
+<div class="field" class:wide={field.kind === 'pose' || field.kind === 'asset' || field.kind === 'boneMap'}>
 	<label class="label" for={id}>
 		{field.label}
 		{#if field.help}<Tooltip text={field.help} />{/if}
@@ -176,22 +164,8 @@
 			/>
 		{:else if field.kind === 'asset'}
 			{@const source = normalizeSourceRef(value)}
-			{@const choices = studioAssets.items.filter((item) => item.type === field.assetType)}
-			{@const known = source.kind !== 'asset' || choices.some((item) => item.assetId === source.assetId)}
 			<div class="asset-field">
-				<Select
-					{id}
-					label={field.label}
-					value={source.kind === 'asset' ? source.assetId : '__url'}
-					options={assetOptions(choices, source.kind === 'asset' && !known ? source.assetId : null)}
-					onchange={async (next) => {
-						if (next === '__import') {
-							const [first] = await studioAssets.pickAndImport(field.assetType);
-							if (first) onchange(assetSource(first.assetId));
-						} else if (isAssetId(next)) onchange(assetSource(next));
-						else onchange(urlSource(source.kind === 'url' ? source.url : ''));
-					}}
-				/>
+				<AssetPicker {id} label={field.label} assetType={field.assetType} {source} onchange={(next) => onchange(next)} />
 				{#if source.kind === 'url'}
 					<input class="input" type="url" placeholder="https://…" aria-label={field.label} value={source.url} oninput={(event) => onchange(urlSource(event.currentTarget.value))} />
 				{/if}

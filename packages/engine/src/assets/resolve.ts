@@ -48,7 +48,7 @@ export async function resolveAsset(
 			continue;
 		}
 		try {
-			await importAsset(bytes, options.nameHint ?? '', store);
+			await importAsset(bytes, options.nameHint ?? '', store, { origin: 'download' });
 		} catch (error) {
 			if (error instanceof AssetImportError) {
 				invalid = error.message;
