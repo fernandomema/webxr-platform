@@ -16,7 +16,7 @@ import type { SceneGraph } from '../sceneGraph.ts';
 import { currentUser, isAdminUser, platformAuth } from '../platform/auth.ts';
 import { startDeviceSignIn, type DeviceSignIn } from '../platform/deviceSignIn.ts';
 import { getFeatures } from '../features.ts';
-import { availableInventoryFolders, getInventoryAdapter, isReadOnlyAdapter } from '../../inventory/registry.ts';
+import { availableInventoryFolders, canHoldWorlds, getInventoryAdapter, isReadOnlyAdapter } from '../../inventory/registry.ts';
 import type { InventoryAdapter, InventoryAdapterId, InventoryStorageAdapterId, InventoryFolder, InventoryItem } from '../../inventory/types.ts';
 import { validateWorldScene } from '../../worlds/package.ts';
 import { ensureCloudAssets } from '../../assets/cloudSync.ts';
@@ -599,7 +599,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	async function saveWorld(asNew: boolean) {
 		const loaded = asNew ? null : gameState.loadedWorld;
 		const selected = getInventoryAdapter(loaded?.adapterId ?? gameState.currentInventoryAdapterId ?? 'local');
-		const adapter = selected?.isAvailable(getInventoryContext()) && selected.saveItem ? selected : getInventoryAdapter('local');
+		const adapter = selected?.isAvailable(getInventoryContext()) && selected.saveItem && canHoldWorlds(selected.id) ? selected : getInventoryAdapter('local');
 		if (!adapter) { saveWorldStatus.color = THEME.error; saveWorldStatus.text = 'No inventory is available'; return; }
 		const folderId = loaded && loaded.adapterId === adapter.id ? loaded.folderId
 			: adapter.id === gameState.currentInventoryAdapterId ? gameState.currentInventoryFolderId : null;
@@ -609,7 +609,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			const snapshot = sceneGraph.serialize({ withoutAvatars: true });
 			validateWorldScene(snapshot);
 			const lineage = loaded && loaded.adapterId === adapter.id ? loaded.worldLineageId : undefined;
-			if (!adapter.saveItem || isReadOnlyAdapter(adapter.id)) throw new Error('This inventory is read-only');
+			if (!adapter.saveItem || !canHoldWorlds(adapter.id)) throw new Error('Worlds cannot be saved in this inventory');
 			saveWorldStatus.color = THEME.muted;
 			saveWorldStatus.text = 'Saving…';
 			const saved = await saveWithPreview(adapter, getInventoryContext(), folderId, name, snapshot, 'world', lineage);
@@ -860,7 +860,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			refreshToolbar();
 			refreshList();
 		} else if (entry.item.kind === 'world') {
-			if (isReadOnlyAdapter(adapter.id)) return;
+			if (!canHoldWorlds(adapter.id)) return;
 			callbacks.onSpawnWorldOrb(entry.item, adapter.id);
 			showMessage(`Placed “${entry.name}” as a world orb`, 'ok');
 		} else if (entry.item.kind === 'avatar') {
@@ -949,6 +949,20 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		} catch (error) { showMessage(error instanceof Error ? error.message : 'Could not rename', 'error'); }
 	}
 
+	/** Cloud only: flips whether anyone with the link may read the entry (a public folder covers everything inside it). */
+	async function toggleVisibility(entry: Entry) {
+		const adapter = activeAdapter;
+		if (!adapter) return;
+		const visibility = (entry.type === 'folder' ? entry.folder.visibility : entry.item.visibility) === 'public' ? 'private' : 'public';
+		try {
+			if (entry.type === 'folder') await adapter.updateFolder!(getInventoryContext(), entry.id, { visibility });
+			else await adapter.updateItemInfo!(getInventoryContext(), entry.id, { visibility });
+			showMessage(visibility === 'public' ? `“${entry.name}” is public: anyone with its link can load it` : `“${entry.name}” is private again`, 'ok');
+			select(null);
+			void refreshList();
+		} catch (error) { showMessage(error instanceof Error ? error.message : 'Could not change visibility', 'error'); }
+	}
+
 	function startMove(entry: Entry) {
 		moving = { entry, fromFolderId: currentFolderId() };
 		select(null);
@@ -1007,6 +1021,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			if (adapter.updateFolder) {
 				inventoryToolbar.addControl(actionButton('tb-rename', 'Rename', INV.surface, 100, () => void renameEntry(entry)));
 				inventoryToolbar.addControl(actionButton('tb-move', 'Move', INV.surface, 84, () => startMove(entry)));
+				if (adapter.id === 'cloud') inventoryToolbar.addControl(actionButton('tb-visibility', entry.folder.visibility === 'public' ? 'Make private' : 'Make public', INV.surface, 130, () => void toggleVisibility(entry)));
 			}
 			if (adapter.deleteFolder) inventoryToolbar.addControl(actionButton('tb-delete', 'Delete', INV.danger, 100, async () => {
 				await adapter.deleteFolder!(getInventoryContext(), entry.id);
@@ -1021,7 +1036,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 				? actionButton('tb-unset-avatar', 'Unset', INV.surface, 110, () => void unsetDefaultAvatar())
 				: actionButton('tb-set-avatar', 'Set as default', INV.accent, 150, () => void setDefaultAvatar(item)));
 			else inventoryToolbar.addControl(actionButton('tb-spawn', isWorld ? 'Place orb' : 'Spawn', INV.accent, isWorld ? 116 : 94, () => activate(entry)));
-			if (!isWorld && gameState.userId && !isReadOnlyAdapter(adapter.id) && (adapter.id !== 'world' || gameState.role === 'host')) {
+			if (!isWorld && gameState.userId && !isReadOnlyAdapter(adapter.id) && adapter.id !== 'worldStorage' && (adapter.id !== 'world' || gameState.role === 'host')) {
 				inventoryToolbar.addControl(actionButton('tb-marketplace', item.marketplaceItemId ? 'Update Marketplace' : 'Publish', THEME.accent, 160, async () => {
 					try {
 						// The listing shows the object's own preview, which goes up with its models.
@@ -1041,7 +1056,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			}
 			if (isWorld) {
 				inventoryToolbar.addControl(actionButton('tb-load', 'Load', THEME.go, 84, async () => {
-					if (isReadOnlyAdapter(adapter.id)) return;
+					if (!canHoldWorlds(adapter.id)) return;
 					try { await callbacks.onLaunchWorldItem(item, adapter.id); }
 					catch (error) { showMessage(error instanceof Error ? error.message : 'Could not load world', 'error'); }
 				}));
@@ -1065,6 +1080,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			if (adapter.updateItemInfo) {
 				inventoryToolbar.addControl(actionButton('tb-rename', 'Rename', INV.surface, 100, () => void renameEntry(entry)));
 				inventoryToolbar.addControl(actionButton('tb-move', 'Move', INV.surface, 84, () => startMove(entry)));
+				if (adapter.id === 'cloud' && !isWorld) inventoryToolbar.addControl(actionButton('tb-visibility', item.visibility === 'public' ? 'Make private' : 'Make public', INV.surface, 130, () => void toggleVisibility(entry)));
 			}
 			if (adapter.deleteItem) inventoryToolbar.addControl(actionButton('tb-delete', 'Delete', INV.danger, 90, async () => {
 				await adapter.deleteItem!(getInventoryContext(), item.id);
@@ -1530,6 +1546,12 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	settingRow('volume', 'Master volume', 'Controls the volume of music, sound effects and other world audio.', () =>
 		([0, 0.25, 0.5, 0.75, 1] as const).map((value) => pick('masterVolume', value, `${Math.round(value * 100)}%`, () => callbacks.onAudioSettingsChanged()))
 	);
+
+	settingsSection('World storage');
+	settingRow('worldStorage', 'Saved objects', 'Where the objects a published world saves for you when you host it (records on a shelf, things you build) are kept. On this device costs no cloud space and works without an account, but is lost if the browser\u2019s data is cleared and is not on your other devices. In the cloud they count in your storage. Objects saved in the other place are still found.', () => [
+		pick('worldStorageLocation', 'local', 'This device', () => refreshList()),
+		pick('worldStorageLocation', 'cloud', 'Cloud', () => refreshList())
+	]);
 
 	settingsSection('Keyboard');
 	settingRow('keyboard', 'Keyboard layout', 'The keys of the in-world keyboard. Auto follows the language of the page.', () => {

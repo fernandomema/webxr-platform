@@ -117,6 +117,19 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		create: () => ({ type: 'fragment', source: { kind: 'url', url: '' } })
 	},
 	{
+		type: 'loader',
+		label: 'Object loader',
+		group: 'World',
+		description: 'Builds an object from outside the world under this slot while it is enabled: the starter kit, the marketplace, a public cloud object, or something saved in the host\u2019s world storage. The object is not saved with the world, only this slot is.',
+		glyph: '\u21e9',
+		fields: [
+			{ key: 'adapter', label: 'From', kind: 'enum', options: [{ value: 'builtin', label: 'Starter kit' }, { value: 'marketplace', label: 'Marketplace' }, { value: 'cloud', label: 'Public cloud object' }, { value: 'worldStorage', label: 'World storage' }] },
+			{ key: 'id', label: 'Object id', kind: 'text', optional: true, help: 'The object\u2019s id in that source (for the starter kit, the id of the starter object).' },
+			{ key: 'key', label: 'Saved as', kind: 'text', optional: true, when: { key: 'adapter', is: 'worldStorage' }, help: 'The name a script saved the object under. Works for every host, unlike an id.' }
+		],
+		create: () => ({ type: 'loader', adapter: 'builtin', id: '' })
+	},
+	{
 		type: 'worldSettings',
 		label: 'World settings',
 		group: 'World',

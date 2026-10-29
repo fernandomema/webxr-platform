@@ -101,14 +101,20 @@ async function hardenAndroidProject(directory) {
 		config.enableNotifications = false;
 		changed = true;
 	}
-	if (config.applicationId !== appId) {
-		// The store only accepts a version it has not seen, so a build that changes the app it belongs to is a new version.
+	// Horizon Billing is what answers the page's Digital Goods calls from inside the app (without it the store says "Client app unavailable"). Bubblewrap
+	// only adds it with its alpha dependencies on.
+	const billing = config.features?.horizonBilling;
+	const sellsInside = config.applicationId === appId && config.alphaDependencies?.enabled === true && billing?.enabled === true && billing.horizonOSAppMode === config.horizonOSAppMode;
+	if (!sellsInside) {
 		config.applicationId = appId;
+		config.alphaDependencies = { ...config.alphaDependencies, enabled: true };
+		config.features = { ...config.features, horizonBilling: { enabled: true, horizonOSAppMode: config.horizonOSAppMode } };
+		// The store only accepts a version it has not seen, so a build that changes what the app does is a new version.
 		config.appVersionCode = Number(config.appVersionCode ?? 0) + 1;
 		config.appVersion = String(config.appVersionCode);
 		config.appVersionName = String(config.appVersionCode);
 		changed = true;
-		console.log(`The Quest app now belongs to Meta app ${appId}; its version is ${config.appVersionCode}.`);
+		console.log(`The Quest app now sells from inside the headset for Meta app ${appId}; its version is ${config.appVersionCode}.`);
 	}
 	if (changed) await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
 	const gradlePath = resolve(directory, 'app/build.gradle');
@@ -133,7 +139,7 @@ async function androidProjectIsHardened(directory) {
 	const gradle = await readFile(resolve(directory, 'app/build.gradle'), 'utf8');
 	const appId = await metaAppId();
 	return application.includes('android:allowBackup="false"') && config.enableNotifications === false
-		&& config.applicationId === appId && manifest.includes(`\\ ${appId}"`)
+		&& config.applicationId === appId && config.features?.horizonBilling?.enabled === true && manifest.includes('org.chromium.intent.action.PAY') && manifest.includes(`\\ ${appId}"`)
 		&& !/enableNotifications:\s*true\b/.test(gradle)
 		&& permissions.length === 1 && permissions[0].includes('tools:node="remove"');
 }
@@ -165,7 +171,8 @@ async function verifyCompiledManifest(directory) {
 		throw new Error(`The compiled APK does not explicitly disable Android backup: ${apk}`);
 	}
 	if (!result.stdout.includes(await metaAppId())) throw new Error(`The compiled APK does not carry the Meta app id, so the store cannot sell from inside it: ${apk}`);
-	console.log(`Verified android:allowBackup=false and the Meta app id in ${apk}.`);
+	if (!result.stdout.includes('org.chromium.intent.action.PAY')) throw new Error(`The compiled APK has no Horizon Billing payment service, so the store cannot sell from inside it: ${apk}`);
+	console.log(`Verified android:allowBackup=false, the Meta app id and Horizon Billing in ${apk}.`);
 }
 
 try {

@@ -436,7 +436,7 @@ export function setupPointerAndGrabControllers(
 			const controller = controllers.get(hand);
 			if (!controller || !visuals.has(hand) || !laserActive.get(hand)) return null;
 			const slotId = visuals.get(hand)?.targetSlotId;
-			return slotId && sceneGraph.slotIds({ withoutAvatars: true }).includes(slotId) ? slotId : null;
+			return slotId && sceneGraph.slotIds({ withoutAvatars: true, withExternal: true }).includes(slotId) ? slotId : null;
 		}
 	};
 }

@@ -1,10 +1,13 @@
 import type { SlotTree } from '../ecs/types.ts';
 import type { AssetId } from '../assets/ref.ts';
+import type { InventoryVisibility } from './visibility.ts';
 
 export interface InventoryFolder {
 	id: string;
 	name: string;
 	parentId: string | null;
+	/** Cloud only. Absent means private. A public folder makes everything inside it public. */
+	visibility?: InventoryVisibility;
 }
 
 /** `avatar` items are objects that can be worn: a skinned model with an `avatar` component. */
@@ -21,17 +24,21 @@ export interface InventoryItem {
 	/** The preview image: an `image` asset. Local items keep it in the on-device store only; cloud items also have it in the cloud. */
 	thumbnailAssetId?: AssetId | null;
 	marketplaceItemId?: string | null;
+	/** Cloud only. Absent means private. Public here or on a folder above makes the item readable by anyone with its id. */
+	visibility?: InventoryVisibility;
 	createdAt: string;
 }
 
 export interface InventoryFolderChanges {
 	name?: string;
 	parentId?: string | null;
+	visibility?: InventoryVisibility;
 }
 
 export interface InventoryItemChanges {
 	name?: string;
 	folderId?: string | null;
+	visibility?: InventoryVisibility;
 }
 
 export interface InventoryContext {
@@ -39,6 +46,8 @@ export interface InventoryContext {
 	userId: string | null;
 	/** The signed-in account is an administrator; adapters may show development content to them. */
 	isAdmin?: boolean;
+	/** The published world being hosted by this player; null otherwise (a guest, a draft). Only then does world storage exist. */
+	publicationId?: string | null;
 }
 
 /** How much of an adapter's capacity is in use, for the usage bar. `total` 0 means unlimited. */
@@ -48,8 +57,9 @@ export interface InventoryUsage {
 	unit: 'bytes' | 'count';
 }
 
-export type InventoryAdapterId = 'local' | 'world' | 'cloud' | 'purchased' | 'builtin' | 'filesystem';
-export type InventoryStorageAdapterId = Exclude<InventoryAdapterId, 'purchased' | 'builtin'>;
+export type InventoryAdapterId = 'local' | 'world' | 'cloud' | 'purchased' | 'builtin' | 'filesystem' | 'worldStorage';
+/** The adapters a world can be saved in: not the read-only ones, and not world storage, which holds objects only. */
+export type InventoryStorageAdapterId = Exclude<InventoryAdapterId, 'purchased' | 'builtin' | 'worldStorage'>;
 
 export interface InventoryAdapter {
 	readonly id: InventoryAdapterId;

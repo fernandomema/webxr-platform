@@ -179,7 +179,7 @@ const tick = () => new Promise((resolve) => setImmediate(resolve));
  * Runs the world's script on a fake `ctx`: a socket that can hold a disc, a track on a clock the test advances, in-memory
  * storage and boards, and sabers placed by `swing`. Returns what the script did.
  */
-function runWorld({ analysis = fakeAnalysis(), swing = 'perfect', storage = true, withPlayer = true } = {}) {
+function runWorld({ analysis = fakeAnalysis(), swing = 'perfect', storage = true, withPlayer = true, kept = null } = {}) {
 	const slots = new Map(tree.map((slot) => [slot.id, structuredClone(slot)]));
 	const enabled = new Map();
 	const poses = new Map();
@@ -187,6 +187,7 @@ function runWorld({ analysis = fakeAnalysis(), swing = 'perfect', storage = true
 	const saved = new Map();
 	const logs = [];
 	const spawned = [];
+	const loadedItems = [];
 	const bladePoses = [{ position: [-1.6, 0.96, 1.55], forward: [1, 0, 0] }, { position: [-1.6, 0.96, 1.85], forward: [1, 0, 0] }];
 	let trackTime = 0;
 	let trackStopped = false;
@@ -212,7 +213,18 @@ function runWorld({ analysis = fakeAnalysis(), swing = 'perfect', storage = true
 				if (slot && pose.rotation) slot.rotation = [...pose.rotation];
 				return true;
 			},
-			spawn: (partial) => { spawned.push(partial); }
+			spawn: (partial) => { spawned.push(partial); },
+			// The host's saved objects (`kept`: key -> { name }), when the test gives some: a loaded one becomes a disc under the socket.
+			...(kept ? {
+				loadItem: async (source, options) => {
+					const entry = kept.get(source.key);
+					if (!entry) return null;
+					const id = `${options.id}::disc`;
+					slots.set(id, { id, parentId: options.parentId, name: entry.name, position: options.position, rotation: options.rotation, scale: [1, 1, 1], components: [] });
+					loadedItems.push({ source, options });
+					return { id: options.id, roots: [id] };
+				}
+			} : {})
 		},
 		math: { quatFromAxisAngle: (axis, angle) => [0, 0, Math.sin(angle / 2), Math.cos(angle / 2)], quatMultiply: (a) => a },
 		audio: {
@@ -227,6 +239,15 @@ function runWorld({ analysis = fakeAnalysis(), swing = 'perfect', storage = true
 		},
 		storage: {
 			available: storage,
+			...(kept ? {
+				items: {
+					available: true,
+					has: async (key) => kept.has(key),
+					save: async (key, slotId, options) => { kept.set(key, { slotId, name: options?.name }); return true; },
+					remove: async (key) => kept.delete(key),
+					list: async () => [...kept].map(([key, entry]) => ({ key, name: entry.name }))
+				}
+			} : {}),
 			player: () => ({ get: async (key, fallback) => (saved.has(key) ? structuredClone(saved.get(key)) : fallback), set: async (key, value) => { saved.set(key, structuredClone(value)); } })
 		},
 		log: (message) => logs.push(message)
@@ -236,7 +257,7 @@ function runWorld({ analysis = fakeAnalysis(), swing = 'perfect', storage = true
 	const socket = find(slots.get(BEAT_TURNTABLE.socketId), 'socket');
 	/** Where each block is: its slot's data, which the script sets once and the engine then moves. */
 	const notePoses = () => [...slots.values()].filter((slot) => /^bt-note-\d-\d+$/.test(slot.id)).map((slot) => [slot.id, { position: slot.position, rotation: slot.rotation }]);
-	const state = { notePoses, slots, enabled, poses, submitted, saved, logs, spawned, handlers, ctx, text, socket, handle, get trackStopped() { return trackStopped; }, get trackStarted() { return trackStarted; }, bladePoses };
+	const state = { notePoses, slots, enabled, poses, submitted, saved, logs, spawned, loadedItems, handlers, ctx, text, socket, handle, get trackStopped() { return trackStopped; }, get trackStarted() { return trackStarted; }, bladePoses };
 
 	/** One frame: the sabers move (to cut every note, or to stay out of the way), then the script ticks. */
 	state.frame = async (swingMode = swing) => {
@@ -832,4 +853,54 @@ test('the pack\'s world.ts builds the same scene', async () => {
 	const { default: world } = await import('./world.ts');
 	assert.equal(world.name, 'Beat Turntable');
 	assert.equal(world.build().length, tree.length);
+});
+
+// --- the record rack remembers its discs for the host ---
+
+const rackSocket = (world, row, slot) => find(world.slots.get(`bt-rack-socket-${row}-${slot}`), 'socket');
+const frames = async (world, n) => { for (let i = 0; i < n; i++) await world.frame('none'); };
+
+test('a disc put on the rack is kept for the host, replaces the one there, and is not lost when taken off', async () => {
+	const kept = new Map();
+	const world = runWorld({ kept, swing: 'none' });
+	await frames(world, 70);
+	assert.equal(kept.size, 0, 'the records the world starts with are not saved');
+	rackSocket(world, 1, 2).occupantId = 'bt-disc-2';
+	await frames(world, 70);
+	assert.deepEqual([...kept.keys()], ['rack-1-2'], 'a disc moved to a shelf is saved under that shelf');
+	assert.equal(kept.get('rack-1-2').slotId, 'bt-disc-2');
+	assert.equal(kept.get('rack-1-2').name, 'Ambient');
+	rackSocket(world, 1, 2).occupantId = '';
+	await frames(world, 70);
+	assert.equal(kept.get('rack-1-2').slotId, 'bt-disc-2', 'taken off, what was saved stays: a disc carried away to play is not lost');
+	rackSocket(world, 1, 2).occupantId = 'bt-disc-1';
+	await frames(world, 70);
+	assert.equal(kept.get('rack-1-2').slotId, 'bt-disc-1', 'a disc put there later replaces it');
+	assert.equal(kept.size, 1);
+});
+
+test('saved discs come back into empty shelves, seated as a disc is, and shelves with a disc are left alone', async () => {
+	const kept = new Map([['rack-1-3', { name: 'Mine' }], ['rack-0-0', { name: 'Not me' }]]);
+	const world = runWorld({ kept, swing: 'none' });
+	await frames(world, 70);
+	assert.equal(world.loadedItems.length, 1, 'only the empty shelf is filled');
+	const { source, options } = world.loadedItems[0];
+	assert.deepEqual(source, { adapter: 'worldStorage', key: 'rack-1-3' });
+	assert.equal(options.parentId, 'bt-rack-socket-1-3');
+	assert.deepEqual(options.position, [0, 0, 0]);
+	assert.deepEqual(options.rotation, [0.5, 0.5, -0.5, 0.5], 'turned the way the rack holds a disc');
+	assert.equal(rackSocket(world, 1, 3).occupantId, 'bt-saved-1-3::disc', 'and the shelf knows it holds it');
+	assert.equal(rackSocket(world, 0, 0).occupantId, 'bt-disc-1', 'the starting record stays');
+	assert.equal(kept.get('rack-1-3').slotId, undefined, 'restoring does not save it again');
+});
+
+test('without storage, or as a guest, the rack is as it always was', async () => {
+	const world = runWorld({ swing: 'none' });
+	await frames(world, 70);
+	assert.equal(rackSocket(world, 0, 0).occupantId, 'bt-disc-1');
+	const guestKept = new Map([['rack-1-0', { name: 'x' }]]);
+	const guest = runWorld({ kept: guestKept, swing: 'none' });
+	guest.ctx.world.isHost = () => false;
+	await frames(guest, 70);
+	assert.equal(guest.loadedItems.length, 0, 'only the host restores');
 });

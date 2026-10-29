@@ -1,4 +1,6 @@
 import type { WorldStorageService } from './worldStorageService.ts';
+import type { ScriptWorldItems } from './scriptWorldItems.ts';
+import { normalizeExternalSource } from '../inventory/external.ts';
 import { requestScriptJson } from './scriptNet.ts';
 import { CodeBlockVm, isCodeBlockSandboxReady, type ReturnMode } from './sandbox/codeBlockVm.ts';
 import { Vector3, Quaternion, type TransformNode } from '@babylonjs/core';
@@ -74,6 +76,8 @@ export interface CodeBlockHost {
 	setSlotEnabled(slotId: string, enabled: boolean, broadcast?: boolean): boolean;
 	/** Persistent storage and leaderboards. Absent where the engine provides none; scripts then see them as unavailable. */
 	storage?: WorldStorageService;
+	/** Objects the world has saved for its host (see `ctx.storage.items`). Absent where nothing can be kept. */
+	worldItems?: ScriptWorldItems;
 	/** Audio analysis and clock-accurate playback. Absent where the engine has no audio. */
 	audio?: ScriptAudio;
 	/**
@@ -85,6 +89,10 @@ export interface CodeBlockHost {
 	payments?: ScriptPayments;
 	/** Imports an asset of an external library (`source:id`) into this device's asset store and local inventory. Host/solo only. */
 	importLibraryAsset(ref: string, name: string): Promise<string>;
+	/** Builds an object from outside the world (see `inventory/external.ts`) with no slot of its own to hold it. Host/solo only; null when it could not be loaded. */
+	loadExternalItem(source: unknown, options?: { id?: unknown; parentId?: unknown; position?: unknown; rotation?: unknown; scale?: unknown }): Promise<{ id: string; roots: string[] } | null>;
+	/** Takes down an object `loadExternalItem` built. Returns whether there was one. */
+	unloadExternalItem(id: string): boolean;
 }
 
 /** A ray's hit against the live scene, resolved back to the Slot it belongs to — see `CodeBlockHost.raycast`. */
@@ -396,6 +404,39 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 			/** Removes a slot made by `loadFragment`, and with it the content it built. */
 			unloadFragment: (slotId: string) => host.requestDelete(slotId),
 			/**
+			 * Adds a slot with a `loader` component for an object from outside the world and returns its id; null when `source` does not name one.
+			 * `source` is `{ adapter: 'builtin' | 'marketplace' | 'cloud', id }` or `{ adapter: 'worldStorage', key }` (or `id`). Only the host
+			 * reads the object, everyone sees it. The slot is part of the world and is saved with it; the object it builds is not. Switch the
+			 * slot off with `setSlotEnabled` to take the object down, or delete the slot.
+			 */
+			addLoader: (source: unknown, options?: { id?: string; name?: string; parentId?: string | null; position?: Vec3; rotation?: Quat; scale?: Vec3; disabled?: boolean }): string | null => {
+				const ref = normalizeExternalSource(source);
+				if (!ref) return null;
+				const o = options ?? {};
+				const vec = (v: unknown, n: number, fallback: number[]) => (Array.isArray(v) && v.length === n && v.every((x) => typeof x === 'number' && Number.isFinite(x)) ? v : fallback);
+				const id = typeof o.id === 'string' && o.id.length > 0 && o.id.length <= 120 ? o.id : crypto.randomUUID();
+				host.requestSpawn({
+					id,
+					parentId: typeof o.parentId === 'string' ? o.parentId : null,
+					name: typeof o.name === 'string' ? o.name.slice(0, 120) : 'Loader',
+					position: vec(o.position, 3, [0, 0, 0]) as Vec3,
+					rotation: vec(o.rotation, 4, [0, 0, 0, 1]) as Quat,
+					scale: vec(o.scale, 3, [1, 1, 1]) as Vec3,
+					components: [{ type: 'loader', adapter: ref.adapter, ...(ref.id ? { id: ref.id } : {}), ...(ref.key ? { key: ref.key } : {}) }],
+					...(o.disabled ? { disabled: true } : {})
+				});
+				return id;
+			},
+			/**
+			 * Builds an object from outside the world right away, with no slot or component of your own to hold it (`source` as in `addLoader`).
+			 * `options` may give the `parentId` its roots hang from, and a `position`, `rotation` and `scale` for them. Resolves `{ id, roots }`
+			 * (the id to take it down with, and its root slots), or null when it could not be loaded: not the host, it does not exist, it is
+			 * not public, or too much is loaded already. Nothing is saved: do it again the next time the world runs.
+			 */
+			loadItem: (source: unknown, options?: { id?: string; parentId?: string | null; position?: Vec3; rotation?: Quat; scale?: Vec3 }) => host.loadExternalItem(source, options),
+			/** Takes down an object `loadItem` built. Returns whether there was one. */
+			unloadItem: (id: string): boolean => host.unloadExternalItem(id),
+			/**
 			 * Sends everything written with `broadcast: false` since the last send to the guests, as one difference (only the slots and
 			 * components that changed), instead of a write per change: update quietly as often as needed, `flush()` a few times a second.
 			 */
@@ -633,6 +674,23 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 			/** Data shared by every session of this published world. */
 			get world() {
 				return requireStorage(host).world;
+			},
+			/**
+			 * Objects (a slot and everything under it) this world keeps for the person hosting it, per published world: a record put on a shelf,
+			 * something built. Whoever plays in the session saves into the host's, because it is the host's session. Where they are kept (this
+			 * device or the cloud) is the host's choice. Bring one back with `world.addLoader` or `world.loadItem` and `{ adapter: 'worldStorage', key }`.
+			 * Host/solo only; in a draft or without a published world nothing is kept (`available` is false).
+			 */
+			items: {
+				get available(): boolean {
+					return host.worldItems?.available ?? false;
+				},
+				/** Saves the object at `slotId` under `key` (up to 64 letters, digits and `_ . : -`). Resolves whether it was saved. */
+				save: async (key: string, slotId: string, options?: { name?: string }): Promise<boolean> => host.worldItems?.save(key, slotId, options) ?? false,
+				/** What is saved, as `[{ key, name }]`. */
+				list: async () => host.worldItems?.list() ?? [],
+				has: async (key: string): Promise<boolean> => host.worldItems?.has(key) ?? false,
+				remove: async (key: string): Promise<boolean> => host.worldItems?.remove(key) ?? false
 			}
 		},
 		leaderboards: {

@@ -499,7 +499,7 @@ export class HostAuthority {
 				const spawned = migrateSlotTree([msg.slot])[0];
 				try {
 					for (const portal of spawned.components.filter((component) => component.type === 'worldPortal')) validateWorldPackage(portal.world);
-					if (JSON.stringify([...this.sceneGraph.serialize(), spawned]).length > MAX_SHARED_SCENE_BYTES) throw new Error('Shared scene is too large');
+					if (JSON.stringify([...this.sceneGraph.serialize({ withExternal: true }), spawned]).length > MAX_SHARED_SCENE_BYTES) throw new Error('Shared scene is too large');
 				} catch { this.sendSnapshotToGuest(guestId); break; }
 				if (!this.sceneGraph.getLive(spawned.id)) this.sceneGraph.addSlot(spawned);
 				this.broadcastSnapshot();
@@ -522,7 +522,7 @@ export class HostAuthority {
 		if (this.guests.size === 0) return;
 		const changed: SlotTransform[] = [];
 		const seen = new Set<string>();
-		for (const { id, position, rotation, scale, components } of this.sceneGraph.serialize()) {
+		for (const { id, position, rotation, scale, components } of this.sceneGraph.serialize({ withExternal: true })) {
 			seen.add(id);
 			// An avatar's body is posed locally by every peer from presence; streaming it as well would double the traffic.
 			if (components.some((component) => component.type === 'avatar')) continue;
@@ -552,7 +552,7 @@ export class HostAuthority {
 	private sendSnapshotToGuest(guestId: string): void {
 		const entry = this.guests.get(guestId);
 		if (!entry) return;
-		const tree = this.sceneGraph.serialize();
+		const tree = this.sceneGraph.serialize({ withExternal: true });
 		// The first guest to come is the first to hold the world: what later changes is told as a difference from this.
 		if (this.guests.size <= 1) this.deltas.reset(tree);
 		entry.link.send({
@@ -606,7 +606,7 @@ export class HostAuthority {
 	}
 
 	private sendSnapshotToAll(): void {
-		const tree = this.sceneGraph.serialize();
+		const tree = this.sceneGraph.serialize({ withExternal: true });
 		this.deltas.reset(tree);
 		this.changedSlots.clear();
 		this.lastTransforms.clear();

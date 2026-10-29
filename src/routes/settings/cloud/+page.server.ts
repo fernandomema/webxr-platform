@@ -1,13 +1,15 @@
 import { prisma } from '$lib/server/db';
 import { assetUsage, listMyAssets } from '$lib/server/services/assets';
+import { worldItemUsage } from '$lib/server/services/worldPlayerItems';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const user = locals.user!;
 	const userId = user.id;
-	const [usage, assets, worlds, published, inventoryItems, inventoryFolders, marketplaceItems, purchases, sessions] = await Promise.all([
+	const [usage, assets, worldStorage, worlds, published, inventoryItems, inventoryFolders, marketplaceItems, purchases, sessions] = await Promise.all([
 		assetUsage(user),
 		listMyAssets(user),
+		worldItemUsage(user),
 		prisma.world.count({ where: { hostUserId: userId } }),
 		prisma.publishedWorld.count({ where: { ownerId: userId, kind: 'world' } }),
 		prisma.cloudInventoryItem.count({ where: { ownerId: userId } }),
@@ -20,5 +22,5 @@ export const load: PageServerLoad = async ({ locals }) => {
 		.sort((a, b) => b.byteSize - a.byteSize)
 		.slice(0, 10)
 		.map((asset) => ({ assetId: asset.assetId, name: asset.name, byteSize: asset.byteSize, source: asset.source, inUse: asset.usedIn.items + asset.usedIn.worlds + asset.usedIn.publications > 0 }));
-	return { usage, largest, counts: { worlds, published, inventoryItems, inventoryFolders, marketplaceItems, purchases, sessions } };
+	return { usage, largest, worldStorage, counts: { worlds, published, inventoryItems, inventoryFolders, marketplaceItems, purchases, sessions } };
 };

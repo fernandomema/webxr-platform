@@ -271,6 +271,8 @@ Required fields are marked **(req)**. Everything else is optional; omit a field 
 
 **`fragment`**: a piece of the world kept as a file (a map, a room, a prefab) that is built under this slot while the slot is on and taken down when it is off. `source` **(req)**: `{ "kind": "asset", "assetId": "sha256:..." }` of a `fragment` asset (`.kfrag`: `{ "format": "kithin-fragment", "version": 1, "slots": [...] }`, slots written as in a world, the ones with `parentId: null` hanging from this slot). A fragment may hold scenery only (`meshRenderer`, `material`, `collider`, lights, `textDisplay`, `surfaceMask`, `mirror`, `particleEmitter`, `stroke`, `expires`), does not count in the 2000-slot limit, is not saved or synced (every device builds it from the file) and can be loaded by any number of slots. Its slots' ids are `"<this slot's id>::<id in the file>"`. Not for AI-generated worlds (needs a file): made by tools (`serializeFragment`) and loaded by `ctx.world.loadFragment`.
 
+**`loader`**: builds an object from outside the world under this slot while the slot is on, and takes it down when it is off. Only the host reads it; everyone sees the result. What it builds is real slots (scripts, grabbing and physics treat them like any other) but is never saved with the world and the editor does not list or change it: only the loader slot is part of the world. `adapter` **(req)**: `"builtin"` (a starter-kit object, `id` is its id), `"marketplace"` (`id` of a marketplace item), `"cloud"` (`id` of an object its owner made public, itself or through a public folder) or `"worldStorage"` (an object the world saved for its host, by `key` or `id`). `id`, `key`: which one. An object that is not there (made private, deleted, never saved) just leaves the slot empty; the world goes on. Nothing else (a local or private inventory) is a source, because other hosts could not read it.
+
 **`container`**: no fields. Marks a slot as a group. Use it on unscaled parent slots.
 
 **`appInfo`**: how the world presents itself when installed as an app: `name`, `shortName`, `description`, `themeColor`, `backgroundColor`. Optional, one per world.
@@ -410,6 +412,9 @@ ctx.world
   .setParent(slotId, parentId | null, broadcast = true) -> boolean             keeps its world pose; refused while held
   .setSlotEnabled(slotId, enabled, broadcast = true) -> boolean                 show/hide for everyone
   .flush()                                                                      send what was written with `broadcast: false` to guests, as one difference (only what changed): write quietly as often as needed, flush a few times a second
+  .addLoader({ adapter, id?, key? }, { id?, name?, parentId?, position?, rotation?, scale?, disabled? }) -> id | null   adds a slot with a `loader` component (saved with the world); null for a source that is not allowed
+  .loadItem({ adapter, id?, key? }, { id?, parentId?, position?, rotation?, scale? }) -> Promise<{ id, roots } | null>   builds an outside object right now with no slot of its own; the roots hang from parentId and are placed by position/rotation/scale; host only, null when it cannot be loaded; not saved
+  .unloadItem(id) -> boolean                                                    takes down what loadItem built
   .loadFragment(assetId, { id?, name?, parentId?, position?, rotation?, scale?, disabled? }) -> id   builds a scene fragment asset in the world for everyone, under a new slot; host only
   .unloadFragment(slotId)                                                       removes that slot and what it built
   .setPlayerVelocity(playerId, [x,y,z], { add? })                               sets a player's body speed, or adds to it (a push; |v| <= 200 m/s); needs a `characterController`; host only
@@ -473,6 +478,9 @@ ctx.pay                                 charging credits, only in PUBLISHED worl
 ctx.storage                             persistent data, only in PUBLISHED worlds with a signed-in player
   .available -> boolean                 false: reads return the default, writes do nothing
   .player(player)                       per player (player from onPlayerReady / getPlayer)
+  .items                                objects (a slot and everything under it) the world keeps for whoever HOSTS it, per published world: a record put on a shelf, something built. Whoever plays in the session saves into the host's. The host chooses where (this device or the cloud). Host only; `available` is false in a draft or without a published world
+    .save(key, slotId, { name? }) -> Promise<boolean>   saves the object at slotId under key (up to 64 of letters, digits and _ . : -); it is kept at the origin
+    .list() -> Promise<[{ key, name }]>   .has(key)   .remove(key)   bring one back with addLoader / loadItem and { adapter: 'worldStorage', key }
   .world                                shared by all sessions of this world
     each: .get(key, default) .set(key, value) .increment(key, by, { min, max }) .addToSet(key, v)
           .removeFromSet(key, v) .remove(key) .transaction([{ op: 'increment', key, by }, ...])   (all async)

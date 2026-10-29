@@ -590,7 +590,9 @@ export class TestWorld {
 			},
 			audio: this.audio,
 			storage: this.storage,
-			importLibraryAsset: () => Promise.reject(new Error('Not available in a test world'))
+			importLibraryAsset: () => Promise.reject(new Error('Not available in a test world')),
+			loadExternalItem: async () => null,
+			unloadExternalItem: () => false
 		};
 	}
 }

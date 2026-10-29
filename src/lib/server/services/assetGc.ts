@@ -26,7 +26,7 @@ export async function runAssetGc(apply: boolean): Promise<GcReport> {
 	const rows = await prisma.asset.findMany({
 		select: {
 			id: true, status: true, createdAt: true, orphanedAt: true, byteSize: true, storageKey: true,
-			_count: { select: { owners: true, cloudItems: true, worldItems: true, revisions: true, worlds: true } }
+			_count: { select: { owners: true, cloudItems: true, worldItems: true, revisions: true, marketplaceRevisions: true, worlds: true, playerItems: true } }
 		}
 	});
 	const byId = new Map(rows.map((row) => [row.id, row]));
@@ -37,7 +37,7 @@ export async function runAssetGc(apply: boolean): Promise<GcReport> {
 			createdAt: row.createdAt,
 			orphanedAt: row.orphanedAt,
 			owners: row._count.owners,
-			references: row._count.cloudItems + row._count.worldItems + row._count.revisions + row._count.worlds
+			references: row._count.cloudItems + row._count.worldItems + row._count.revisions + row._count.marketplaceRevisions + row._count.worlds + row._count.playerItems
 		})),
 		new Date(),
 		{ graceDays }
@@ -48,11 +48,11 @@ export async function runAssetGc(apply: boolean): Promise<GcReport> {
 	const stillUnused = async (id: string) => {
 		const fresh = await prisma.asset.findUnique({
 			where: { id },
-			select: { _count: { select: { owners: true, cloudItems: true, worldItems: true, revisions: true, worlds: true } } }
+			select: { _count: { select: { owners: true, cloudItems: true, worldItems: true, revisions: true, marketplaceRevisions: true, worlds: true, playerItems: true } } }
 		});
 		if (!fresh) return false;
 		const c = fresh._count;
-		return c.owners + c.cloudItems + c.worldItems + c.revisions + c.worlds === 0;
+		return c.owners + c.cloudItems + c.worldItems + c.revisions + c.marketplaceRevisions + c.worlds + c.playerItems === 0;
 	};
 
 	if (apply) {

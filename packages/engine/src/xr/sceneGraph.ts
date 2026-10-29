@@ -36,6 +36,11 @@ import { setupSkybox } from './skyboxRenderer.ts';
 import { setupLightVolume } from './lightVolumeRenderer.ts';
 import { setupFragment } from './fragmentRuntime.ts';
 import { FRAGMENT_LIMITS } from '../assets/fragment.ts';
+import { createScriptWorldItems } from './scriptWorldItems.ts';
+import type { WorldItemStore } from '../worldStorage/items.ts';
+import { extractSubtree } from '../ecs/serialize.ts';
+import { setupLoader, type LoaderBinding, type LoaderStatus } from './loaderRuntime.ts';
+import { EXTERNAL_LIMITS, ExternalItemError, externalSourceKey, instantiateExternal, normalizeExternalSource, validateExternalTree, type ExternalResolver } from '../inventory/external.ts';
 import { LightVolumeManager } from './lightVolumeManager.ts';
 import { setupParticleEmitter } from './particleEmitter.ts';
 import { setupWorldGlobe } from './worldGlobe.ts';
@@ -68,6 +73,10 @@ const instanceColor = (color: string | undefined): Color4 => {
 	return new Color4(c.r, c.g, c.b, 1);
 };
 
+/** How fast, and how many at once, scripts may bring outside objects in. */
+const EXTERNAL_LOADS_PER_SECOND = 20;
+const EXTERNAL_MAX_OWNERS = 500;
+
 interface LiveSlot {
 	slot: Slot;
 	node: TransformNode;
@@ -75,6 +84,8 @@ interface LiveSlot {
 	system?: boolean;
 	/** Set on the slots a `fragment` built: the id of the slot that loaded them. They are scenery that every peer builds for itself, so they are neither saved nor synced. */
 	fragment?: string;
+	/** Present on a `loader`: what it is doing, for the inspector and for scripts. */
+	loader?: LoaderBinding;
 	/** Present for a `meshRenderer` that points at a model asset: the TransformNode holds a pickable proxy, a placeholder, and (once loaded) the model. */
 	model?: {
 		assetId: AssetId;
@@ -111,6 +122,8 @@ interface LiveSlot {
 }
 
 export interface SceneGraphOptions {
+	/** Reads the objects that `loader` components and scripts name (see `inventory/external.ts`). Absent: they cannot be loaded here. */
+	externalItems?: ExternalResolver;
 	onMediaControl?: (slotId: string, action: MediaControlAction) => void;
 	/** Routes UI interactions (button press, input change/submit) through the host-authoritative world channel. */
 	onUIEvent?: (event: UIEvent) => void;
@@ -154,6 +167,8 @@ export interface SceneGraphOptions {
 	payments?: ScriptPayments;
 	/** Persistent storage and leaderboards for `ctx.storage` / `ctx.leaderboards` (see worldStorageService.ts). */
 	storage?: WorldStorageService;
+	/** The objects the world has saved for the person hosting it. Absent where nothing can be kept; scripts then see them as unavailable. */
+	worldItems?: WorldItemStore;
 	/** Audio analysis and clock-accurate playback for `ctx.audio.analyze` / `ctx.audio.playTrack` (see scriptAudio.ts). */
 	audio?: ScriptAudio;
 	/** Where model bytes come from. Without it, a slot that points at a model stays a placeholder. */
@@ -325,6 +340,122 @@ export class SceneGraph {
 		this.notifyChanged(ids);
 	}
 
+	/** The slots built from outside objects, per owner (a loader's slot, or the id a script was given). */
+	private externalOwned = new Map<string, string[]>();
+
+	/** Scripts may not keep more outside objects than this at once, nor ask faster than `EXTERNAL_LOADS_PER_SECOND`. */
+	private externalLoads: number[] = [];
+
+	/**
+	 * Builds an outside object's slots for `ownerId`. They are real slots, marked `external`: scripts, grabbing and physics treat them
+	 * like any other, and the host tells everyone in the session; they are never saved and the editor does not list them. False
+	 * when that would pass the budget.
+	 */
+	loadExternalSlots(ownerId: string, slots: Slot[]): boolean {
+		const used = [...this.live.values()].reduce((n, e) => n + (e.slot.external ? 1 : 0), 0) - (this.externalOwned.get(ownerId)?.length ?? 0);
+		if (used + slots.length > EXTERNAL_LIMITS.maxLiveSlots) {
+			console.warn(`[sceneGraph] ${ownerId} not loaded: ${used + slots.length} outside slots would pass the limit of ${EXTERNAL_LIMITS.maxLiveSlots}`);
+			return false;
+		}
+		this.unloadExternalSlots(ownerId);
+		batchMaterialUpdates(this.scene, () => {
+			for (const slot of slots) if (!this.live.has(slot.id)) this.spawnNode(slot);
+			for (const slot of slots) {
+				const parent = this.parentNodeFor(slot);
+				const self = this.live.get(slot.id)?.node;
+				if (parent && self) self.parent = parent;
+			}
+		});
+		this.externalOwned.set(ownerId, slots.map((slot) => slot.id));
+		this.invalidateIndexes();
+		for (const slot of slots) {
+			const node = this.live.get(slot.id)?.node;
+			if (node) this.activateCodeBlock(slot, node);
+		}
+		this.syncUIPanels();
+		this.notifyChanged(slots.map((slot) => slot.id));
+		this.options.onSlotMutated?.(ownerId, 'structure');
+		return true;
+	}
+
+	/** The object that starts at a slot, to be kept: the slot and everything under it, what a loader brought in included. */
+	private subtreeForSaving(slotId: string): SlotTree | null {
+		const tree = extractSubtree(this.serialize({ withExternal: true }), slotId);
+		return tree.length ? tree : null;
+	}
+
+	/** The sources of the loaders above a slot, nearest first. */
+	private loaderAncestors(slotId: string): string[] {
+		const sources: string[] = [];
+		const seen = new Set<string>([slotId]);
+		for (let at = this.live.get(slotId)?.slot.parentId ?? null; at && !seen.has(at); at = this.live.get(at)?.slot.parentId ?? null) {
+			seen.add(at);
+			const loader = this.live.get(at)?.slot.components.find((component) => component.type === 'loader');
+			const source = loader ? normalizeExternalSource(loader) : null;
+			if (source) sources.push(externalSourceKey(source));
+		}
+		return sources;
+	}
+
+	/** Takes down what `loadExternalSlots` built for `ownerId`. */
+	unloadExternalSlots(ownerId: string): void {
+		const ids = this.externalOwned.get(ownerId);
+		if (!ids) return;
+		this.externalOwned.delete(ownerId);
+		const mine = new Set(ids);
+		for (const id of ids) {
+			const entry = this.live.get(id);
+			// The roots only: removing one takes what hangs from it, which may be what another loader inside it built.
+			if (entry && !(entry.slot.parentId && mine.has(entry.slot.parentId))) this.removeSlot(id);
+		}
+		this.options.onSlotMutated?.(ownerId, 'structure');
+	}
+
+	/** What a `loader` slot is doing now; null when the slot is not a loader. */
+	getLoaderStatus(slotId: string): LoaderStatus | null {
+		return this.live.get(slotId)?.loader?.status ?? null;
+	}
+
+	/**
+	 * Reads an outside object and builds it with no slot of its own to hold it: the roots hang from `parentId` (the world's root by
+	 * default), placed by `pose` if given. Resolves the id to take it down with and the ids of its roots, or null when it could not
+	 * be loaded (not the host, nothing by that name, not allowed, over budget).
+	 */
+	async loadExternalItem(sourceInput: unknown, options: { id?: unknown; parentId?: unknown; position?: unknown; rotation?: unknown; scale?: unknown } = {}): Promise<{ id: string; roots: string[] } | null> {
+		const source = normalizeExternalSource(sourceInput);
+		const resolver = this.options.externalItems;
+		if (!(this.options.isHost?.() ?? true) || !source || !resolver) return null;
+		const now = Date.now();
+		this.externalLoads = this.externalLoads.filter((at) => now - at < 1000);
+		if (this.externalLoads.length >= EXTERNAL_LOADS_PER_SECOND || this.externalOwned.size >= EXTERNAL_MAX_OWNERS) return null;
+		this.externalLoads.push(now);
+		try {
+			const item = await resolver(source);
+			const tree = validateExternalTree(item.slots);
+			const id = typeof options.id === 'string' && options.id.length > 0 && options.id.length <= 120 && !this.externalOwned.has(options.id) ? options.id : `ext-${crypto.randomUUID()}`;
+			const vec = (v: unknown, n: number) => (Array.isArray(v) && v.length === n && v.every((x) => typeof x === 'number' && Number.isFinite(x)) ? (v as number[]) : undefined);
+			const parentId = typeof options.parentId === 'string' && this.live.has(options.parentId) ? options.parentId : null;
+			const pose = {
+				...(vec(options.position, 3) ? { position: vec(options.position, 3) as Slot['position'] } : {}),
+				...(vec(options.rotation, 4) ? { rotation: vec(options.rotation, 4) as Slot['rotation'] } : {}),
+				...(vec(options.scale, 3) ? { scale: vec(options.scale, 3) as Slot['scale'] } : {})
+			};
+			const slots = instantiateExternal(id, tree, parentId, pose);
+			if (!this.loadExternalSlots(id, slots)) return null;
+			return { id, roots: slots.filter((slot) => slot.parentId === parentId).map((slot) => slot.id) };
+		} catch (error) {
+			console.warn('[sceneGraph] could not load an outside object', error instanceof ExternalItemError ? error.message : error);
+			return null;
+		}
+	}
+
+	/** Takes down an object `loadExternalItem` built. Returns whether there was one. */
+	unloadExternalItem(id: string): boolean {
+		if (!this.externalOwned.has(id)) return false;
+		this.unloadExternalSlots(id);
+		return true;
+	}
+
 	removeSlot(slotId: string): void {
 		const idsToRemove = [...this.live.entries()]
 			.filter(([id, entry]) => id === slotId || this.isDescendantOf(entry.slot, slotId))
@@ -341,10 +472,13 @@ export class SceneGraph {
 		});
 		this.invalidateIndexes();
 		this.syncUIPanels();
+		// An outside object whose slots are all gone (a script deleted them) no longer counts against what scripts may hold.
+		for (const [owner, ids] of this.externalOwned) if (!ids.some((id) => this.live.has(id))) this.externalOwned.delete(owner);
 		this.notifyChanged(idsToRemove);
 	}
 
 	dispose(): void {
+		this.externalOwned.clear();
 		batchMaterialUpdates(this.scene, () => batchMeshDisposal(this.scene, () => {
 			for (const entry of this.live.values()) {
 				this.disposeRuntime(entry);
@@ -566,30 +700,31 @@ export class SceneGraph {
 	 * Current world state as a fresh SlotTree (ids/parentId unchanged, transforms live). System nodes (UI panels) are excluded.
 	 * Avatars belong to the session, not the world, so anything saved or re-hosted asks for `withoutAvatars`.
 	 */
-	serialize(options: { withoutAvatars?: boolean } = {}): SlotTree {
+	serialize(options: { withoutAvatars?: boolean; withExternal?: boolean } = {}): SlotTree {
 		const avatarIds = options.withoutAvatars
 			? [...this.live.values()].filter((entry) => findComponent(entry.slot, 'avatar')).map((entry) => entry.slot.id)
 			: [];
 		return [...this.live.values()]
 			.filter((entry) => !entry.system)
+			.filter((entry) => options.withExternal || !entry.slot.external)
 			.filter((entry) => !avatarIds.some((id) => entry.slot.id === id || this.isDescendantOf(entry.slot, id)))
 			.map((entry) => this.serializeEntry(entry));
 	}
 
 	/** The ids serialize() would return, in the same order, without the cost of reading every pose. */
-	slotIds(options: { withoutAvatars?: boolean } = {}): string[] {
+	slotIds(options: { withoutAvatars?: boolean; withExternal?: boolean } = {}): string[] {
 		const avatarIds = options.withoutAvatars
 			? [...this.live.values()].filter((entry) => findComponent(entry.slot, 'avatar')).map((entry) => entry.slot.id)
 			: [];
 		return [...this.live.values()]
-			.filter((entry) => !entry.system && !avatarIds.some((id) => entry.slot.id === id || this.isDescendantOf(entry.slot, id)))
+			.filter((entry) => !entry.system && (options.withExternal || !entry.slot.external) && !avatarIds.some((id) => entry.slot.id === id || this.isDescendantOf(entry.slot, id)))
 			.map((entry) => entry.slot.id);
 	}
 
 	/** One slot as serialize() would give it, or null when it does not exist (or is a system slot). */
-	serializeSlot(slotId: string): Slot | null {
+	serializeSlot(slotId: string, options: { withExternal?: boolean } = {}): Slot | null {
 		const entry = this.live.get(slotId);
-		return entry && !entry.system ? this.serializeEntry(entry) : null;
+		return entry && !entry.system && (options.withExternal || !entry.slot.external) ? this.serializeEntry(entry) : null;
 	}
 
 	private serializeEntry({ slot, node }: LiveSlot): Slot {
@@ -629,9 +764,10 @@ export class SceneGraph {
 	 * (typically whatever this client is itself actively grabbing, so a
 	 * locally-optimistic grab isn't fought by a slightly-stale broadcast).
 	 */
-	reconcile(tree: SlotTree, ignoreSlotIds: Set<string> = new Set()): void {
+	reconcile(tree: SlotTree, ignoreSlotIds: Set<string> = new Set(), options: { keepExternal?: boolean } = {}): void {
 		const incomingIds = new Set(tree.map((s) => s.id));
-		const removedIds = [...this.live.keys()].filter((id) => !incomingIds.has(id) && !this.live.get(id)?.system);
+		// `keepExternal` is for an editor feeding in the world's own slots: what loaders built is not in that list and must stay.
+		const removedIds = [...this.live.keys()].filter((id) => !incomingIds.has(id) && !this.live.get(id)?.system && !(options.keepExternal && this.live.get(id)?.slot.external));
 		if (removedIds.length > 0) {
 			batchMeshDisposal(this.scene, () => {
 				for (const id of removedIds) this.removeSlot(id);
@@ -886,6 +1022,19 @@ export class SceneGraph {
 			});
 			this.addRuntime(entry, { dispose: () => binding.dispose(), sync: (currentSlot) => { const next = findComponent(currentSlot, 'fragment'); if (next) binding.sync(next); }, tick: () => binding.tick() });
 		}
+		const loader = findComponent(slot, 'loader');
+		if (loader) {
+			const binding = setupLoader(slot.id, loader, {
+				isHost: () => this.options.isHost?.() ?? true,
+				isEnabled: () => node.isEnabled(),
+				ancestors: () => this.loaderAncestors(slot.id),
+				resolve: (source, signal) => this.options.externalItems?.(source, signal) ?? Promise.reject(new ExternalItemError('unavailable', 'Outside objects cannot be loaded here')),
+				load: (ownerId, slots) => this.loadExternalSlots(ownerId, slots),
+				unload: (ownerId) => this.unloadExternalSlots(ownerId)
+			});
+			entry.loader = binding;
+			this.addRuntime(entry, { dispose: () => binding.dispose(), sync: (currentSlot) => { const next = findComponent(currentSlot, 'loader'); if (next) binding.sync(next); }, tick: () => binding.tick() });
+		}
 		const worldSettings = findComponent(slot, 'worldSettings');
 		if (worldSettings) {
 			const manager = LightVolumeManager.for(this.scene);
@@ -931,6 +1080,8 @@ export class SceneGraph {
 			getNode: (slotId) => this.live.get(slotId)?.node,
 			getChildren: (parentId) => this.getChildren(parentId).map((entry) => entry.slot),
 			allSlots: () => this.allSlots().filter((entry) => !entry.fragment).map((entry) => entry.slot),
+			loadExternalItem: (source, options) => this.loadExternalItem(source, options),
+			unloadExternalItem: (id) => this.unloadExternalItem(id),
 			getGrabbers: (slotId) => this.grabQuery?.getGrabbersForSlot(slotId) ?? [],
 			isHost: () => this.options.isHost?.() ?? true,
 			requestSpawn: (slot, options) => this.options.onSpawnRequest?.(slot, options),
@@ -1000,6 +1151,7 @@ export class SceneGraph {
 				return changed;
 			},
 			storage: this.options.storage,
+			worldItems: this.options.worldItems ? createScriptWorldItems(this.options.worldItems, (slotId) => this.subtreeForSaving(slotId), () => this.options.isHost?.() ?? true) : undefined,
 			payments: this.options.payments,
 			sameOriginPathsFor: this.options.sameOriginPathsFor,
 			audio: this.options.audio,
@@ -1142,7 +1294,7 @@ export class SceneGraph {
 		// of static decorative slots, so do not scan all of them several times on every headset frame.
 		for (const entry of this.slotsWith('codeBlock')) entry.runtime?.tick?.(dt);
 		// What follows whether its slot is on (a map's fragment and baked light) is looked at every frame; a slot with a script is ticked above.
-		for (const type of ['fragment', 'lightVolume'] as const) for (const entry of this.slotsWith(type)) if (!entry.slot.components.some((c) => c.type === 'codeBlock')) entry.runtime?.tick?.(dt);
+		for (const type of ['fragment', 'lightVolume', 'loader'] as const) for (const entry of this.slotsWith(type)) if (!entry.slot.components.some((c) => c.type === 'codeBlock')) entry.runtime?.tick?.(dt);
 		this.flushUISync();
 		this.updateModelPriorities(dt);
 

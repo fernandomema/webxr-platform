@@ -1,4 +1,5 @@
 import type { SlotTree } from '../ecs/types.ts';
+import type { WorldItemLocation } from '../worldStorage/items.ts';
 import { DEFAULT_DASHBOARD_LAYOUT, normalizeDashboardLayout, type DashboardItemId } from './dashboardLayout.ts';
 
 export type MovementMode = 'teleport' | 'smooth';
@@ -35,6 +36,8 @@ export interface XrSettings {
 	desktopFov: number;
 	/** Master volume for music, effects and other world audio. */
 	masterVolume: number;
+	/** Where the objects a world saves for you (as its host) are kept. Local costs no cloud space; cloud follows you between devices. */
+	worldStorageLocation: WorldItemLocation;
 }
 
 export const MOUSE_SENSITIVITIES = [0.5, 1, 1.6, 2.5] as const;
@@ -55,7 +58,8 @@ export const xrSettings: XrSettings = {
 	mouseSensitivity: 1,
 	invertY: false,
 	desktopFov: 46,
-	masterVolume: 1
+	masterVolume: 1,
+	worldStorageLocation: 'local'
 };
 
 const STORAGE_KEY = 'webxr-platform-settings';
@@ -81,6 +85,7 @@ export function loadSettings(): void {
 		if (typeof parsed.invertY === 'boolean') xrSettings.invertY = parsed.invertY;
 		if (typeof parsed.desktopFov === 'number' && parsed.desktopFov >= 30 && parsed.desktopFov <= 110) xrSettings.desktopFov = parsed.desktopFov;
 		if (typeof parsed.masterVolume === 'number' && parsed.masterVolume >= 0 && parsed.masterVolume <= 1) xrSettings.masterVolume = parsed.masterVolume;
+		if (parsed.worldStorageLocation === 'local' || parsed.worldStorageLocation === 'cloud') xrSettings.worldStorageLocation = parsed.worldStorageLocation;
 	} catch {
 		// unavailable/malformed storage — keep defaults
 	}

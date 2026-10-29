@@ -6,6 +6,7 @@ import { ASSET_LIMITS } from '../assets/manifest.ts';
 import { collectAssetIds, isAssetId, isBuiltinMeshId } from '../assets/ref.ts';
 import { isValidMaterialMap } from '../xr/materialSources.ts';
 import { collectProducts } from '../credits/catalog.ts';
+import { EXTERNAL_ADAPTERS } from '../inventory/external.ts';
 
 export const MAX_WORLD_BYTES = 1_500_000;
 export const MAX_WORLD_DESCRIPTION = 2000;
@@ -25,7 +26,9 @@ export function validateWorldScene(value: unknown): asserts value is SlotTree {
 			typeof slot.name !== 'string' || !Array.isArray(slot.components) ||
 			!Array.isArray(slot.position) || slot.position.length !== 3 ||
 			!Array.isArray(slot.rotation) || slot.rotation.length !== 4 ||
-			!Array.isArray(slot.scale) || slot.scale.length !== 3) throw new Error('Invalid world slot');
+			!Array.isArray(slot.scale) || slot.scale.length !== 3 ||
+			// What a loader brought in is never part of the world: it is asked for again every time.
+			slot.external) throw new Error('Invalid world slot');
 		ids.add(slot.id);
 	}
 	validateAssetRefs(value as SlotTree);
@@ -84,6 +87,13 @@ function validateAssetRefs(scene: SlotTree): void {
 				// A fragment is an asset, never an address: its hash says which content it is.
 				const c = component as unknown as { source?: { kind?: unknown; assetId?: unknown } };
 				if (!c.source || c.source.kind !== 'asset' || !isAssetId(c.source.assetId)) throw new Error('Invalid fragment source');
+				continue;
+			}
+			if (component?.type === 'loader') {
+				// An id may still be empty (a loader just added in the editor); what is checked is that nothing odd is stored.
+				const c = component as unknown as { adapter?: unknown; id?: unknown; key?: unknown };
+				const text = (value: unknown) => value === undefined || (typeof value === 'string' && value.length <= 200);
+				if (!(EXTERNAL_ADAPTERS as readonly unknown[]).includes(c.adapter) || !text(c.id) || !text(c.key)) throw new Error('Invalid loader source');
 				continue;
 			}
 			if (component?.type === 'worldSettings') {

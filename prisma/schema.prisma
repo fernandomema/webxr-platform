@@ -33,6 +33,7 @@ model user {
   marketplacePurchases marketplacePurchase[]
   cloudItems      cloudInventoryItem[]
   cloudFolders    cloudInventoryFolder[]
+  worldPlayerItems worldPlayerItem[]
   assetOwnerships assetOwner[]
   feedbackVotes feedbackVote[]
   feedbackEntries feedbackEntry[]
@@ -162,6 +163,8 @@ model cloudInventoryFolder {
   parent    cloudInventoryFolder?  @relation("CloudFolderChildren", fields: [parentId], references: [id], onDelete: Cascade)
   children  cloudInventoryFolder[] @relation("CloudFolderChildren")
   name      String
+  /// private | public. A public folder makes every item and folder inside it readable by anyone who knows the item's id.
+  visibility String                @default("private")
   createdAt DateTime               @default(now())
   items     cloudInventoryItem[]
 
@@ -178,6 +181,8 @@ model cloudInventoryItem {
   name         String
   slotData     Json
   kind         String                @default("object")
+  /// private | public. Public lets anyone who knows the id read it (never listed); a public folder above it has the same effect.
+  visibility   String                @default("private")
   worldLineageId String?
   revisionNumber Int?
   thumbnailAssetId String?
@@ -250,6 +255,7 @@ model publishedWorld {
   visits           worldVisit[]
   revisions        publishedWorldRevision[]
   storageEntries   worldStorageEntry[]
+  playerItems      worldPlayerItem[]
   leaderboards     leaderboard[]
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -354,6 +360,7 @@ model asset {
   revisions         publishedRevisionAsset[]
   marketplaceRevisions marketplaceRevisionAsset[]
   worlds            worldAsset[]
+  playerItems       worldPlayerItemAsset[]
 
   @@index([status, createdAt])
   @@index([orphanedAt])
@@ -410,6 +417,37 @@ model marketplaceRevisionAsset {
   asset      asset @relation(fields: [assetId], references: [id], onDelete: Restrict)
 
   @@id([revisionId, assetId])
+  @@index([assetId])
+}
+
+// Objects (slot trees with the models they use) a published world keeps for the person who hosts it, in the cloud. They are that
+// account's, not the world creator's: they count in the account's storage. The same objects can instead be kept on the device.
+model worldPlayerItem {
+  id               String   @id @default(cuid())
+  publicationId    String
+  publication      publishedWorld @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+  accountId        String
+  account          user     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  /// The name a script saved it under, the same for every host. Null for objects saved from the Dash.
+  key              String?
+  name             String
+  slotData         Json
+  thumbnailAssetId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  assets           worldPlayerItemAsset[]
+
+  @@unique([publicationId, accountId, key])
+  @@index([accountId])
+}
+
+model worldPlayerItemAsset {
+  itemId  String
+  assetId String
+  item    worldPlayerItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  asset   asset           @relation(fields: [assetId], references: [id], onDelete: Restrict)
+
+  @@id([itemId, assetId])
   @@index([assetId])
 }
 

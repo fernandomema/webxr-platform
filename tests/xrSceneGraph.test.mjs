@@ -24,11 +24,12 @@ let graphCode = compile(await readFile(new URL('xr/sceneGraph.ts', libUrl), 'utf
 	.replaceAll("'./lightVolumeRenderer.ts'", JSON.stringify(new URL('xr/lightVolumeRenderer.ts', libUrl).href))
 	.replaceAll("'./lightVolumeManager.ts'", JSON.stringify(new URL('xr/lightVolumeManager.ts', libUrl).href))
 	.replaceAll("'./fragmentRuntime.ts'", JSON.stringify(new URL('xr/fragmentRuntime.ts', libUrl).href))
+	.replaceAll("'./loaderRuntime.ts'", JSON.stringify(new URL('xr/loaderRuntime.ts', libUrl).href))
 	.replaceAll("'./performance.ts'", JSON.stringify(new URL('xr/performance.ts', libUrl).href))
 	.replaceAll("'./codeBlockRuntime.ts'", JSON.stringify(codeBlockUrl));
 // These tests exercise real scene nodes, picking, scripts and collisions without creating DOM/media surfaces.
 // Fail explicitly if a fixture accidentally asks for one of those browser-only renderers.
-graphCode = graphCode.replace(/import \{ (setup(?!Fragment)\w+) \} from '\.\/[^']+';/g,
+graphCode = graphCode.replace(/import \{ (setup(?!Fragment|Loader)\w+) \} from '\.\/[^']+';/g,
 	(_, name) => `const ${name} = () => { throw new Error('Unexpected browser surface: ${name}'); };`);
 const { SceneGraph } = await import(moduleUrl(graphCode, 'xr/sceneGraph.ts'));
 const { setupPlayerBody } = await import(moduleUrl(compile(await readFile(new URL('xr/interaction/playerBody.ts', libUrl), 'utf8')), 'xr/interaction/playerBody.ts'));
@@ -775,4 +776,205 @@ test('seated mode that was on before the headset session is applied when the ses
 		body.update(0.02);
 		assert.ok(Math.abs(f.camera.position.y - raised) < 0.01, 'and only once');
 	} finally { graph.dispose(); f.dispose(); }
+});
+
+// --- loaders: objects from outside the world ---
+
+const outsideTable = {
+	disc: () => [
+		createSlot({ id: 'disc', name: 'Disc', position: [1, 0, 0], components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'cylinder' } }, { type: 'grabbable' }] }),
+		createSlot({ id: 'label', parentId: 'disc', name: 'Label', position: [0, 0.5, 0], components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'box' } }] })
+	]
+};
+const outsideResolver = (calls = []) => async (source) => {
+	calls.push(source);
+	const build = outsideTable[source.id];
+	if (!build) { const { ExternalItemError } = await import('../packages/engine/src/inventory/external.ts'); throw new ExternalItemError('not-found', 'nothing'); }
+	return { name: source.id, slots: build() };
+};
+const settleLater = () => new Promise((resolve) => setTimeout(resolve, 0));
+const loaderSlot = (id, source, extra = {}) => createSlot({ id, name: id, ...extra, components: [{ type: 'loader', ...source }] });
+
+test('a loader builds an outside object under its slot: real slots for scripts and everyone in the session, never saved or listed to the editor', async () => {
+	const engine = new NullEngine();
+	const scene = new Scene(engine);
+	const mutated = [];
+	const graph = new SceneGraph(scene, { isHost: () => true, externalItems: outsideResolver(), onSlotMutated: (id, change) => mutated.push([id, change]) });
+	try {
+		graph.load([loaderSlot('shelf', { adapter: 'builtin', id: 'disc' }, { position: [10, 0, 0] })]);
+		graph.tick(0.016);
+		await settleLater();
+		const disc = graph.getLive('shelf::disc');
+		assert.ok(disc, 'built with ids of its own');
+		assert.equal(disc.slot.external, true);
+		assert.equal(disc.slot.parentId, 'shelf');
+		disc.node.computeWorldMatrix(true);
+		assert.deepEqual(disc.node.getAbsolutePosition().asArray().map((n) => Math.round(n * 1000) / 1000), [11, 0, 0], 'placed relative to the loader');
+		assert.deepEqual(graph.getLoaderStatus('shelf'), { state: 'ready', slots: 2 });
+		assert.deepEqual(graph.serialize().map((slot) => slot.id), ['shelf'], 'the saved world is only the loader');
+		assert.deepEqual(graph.slotIds(), ['shelf'], 'and the editor lists only that');
+		assert.equal(graph.serializeSlot('shelf::disc'), null, 'it cannot be opened for editing');
+		assert.deepEqual(graph.serialize({ withExternal: true }).map((slot) => slot.id).sort(), ['shelf', 'shelf::disc', 'shelf::label'], 'but the session is told all of it');
+		assert.deepEqual(graph.slotIds({ withExternal: true }).sort(), ['shelf', 'shelf::disc', 'shelf::label'], 'and it can be pointed at and grabbed');
+		assert.equal(graph.buildCodeBlockHost().allSlots().length, 3, 'scripts see it like any other slot');
+		assert.ok(mutated.some(([id, change]) => id === 'shelf' && change === 'structure'), 'the host is told to send everyone the new scene');
+		graph.setSlotEnabled('shelf', false);
+		graph.tick(0.016);
+		assert.equal(graph.getLive('shelf::disc'), undefined, 'switched off, it is taken down');
+		assert.deepEqual(graph.getLoaderStatus('shelf'), { state: 'idle' });
+	} finally { graph.dispose(); scene.dispose(); engine.dispose(); }
+});
+
+test('what a loader brought stays when an editor feeds in the world\'s own slots, and goes when a snapshot says it is gone', async () => {
+	const engine = new NullEngine();
+	const scene = new Scene(engine);
+	const graph = new SceneGraph(scene, { isHost: () => true, externalItems: outsideResolver() });
+	try {
+		const owner = loaderSlot('shelf', { adapter: 'builtin', id: 'disc' });
+		graph.load([owner]);
+		graph.tick(0.016);
+		await settleLater();
+		graph.reconcile([owner], undefined, { keepExternal: true });
+		assert.ok(graph.getLive('shelf::disc'), 'an edit in the studio does not take it down');
+		graph.reconcile([owner]);
+		assert.equal(graph.getLive('shelf::disc'), undefined, 'a snapshot without it does');
+	} finally { graph.dispose(); scene.dispose(); engine.dispose(); }
+});
+
+test('a guest receives what the host built and does not read anything itself', async () => {
+	const engine = new NullEngine();
+	const scene = new Scene(engine);
+	const calls = [];
+	const graph = new SceneGraph(scene, { isHost: () => false, externalItems: outsideResolver(calls) });
+	try {
+		const owner = loaderSlot('shelf', { adapter: 'builtin', id: 'disc' });
+		graph.reconcile([owner, { ...createSlot({ id: 'shelf::disc', parentId: 'shelf', name: 'Disc' }), external: true }]);
+		graph.tick(0.016);
+		await settleLater();
+		assert.equal(calls.length, 0, 'only the host reads');
+		assert.ok(graph.getLive('shelf::disc'), 'the snapshot built it');
+		assert.deepEqual(graph.serialize().map((slot) => slot.id), ['shelf'], 'and it is no more saveable here than on the host');
+	} finally { graph.dispose(); scene.dispose(); engine.dispose(); }
+});
+
+test('an object that is not there leaves the loader empty and the world running', async () => {
+	const engine = new NullEngine();
+	const scene = new Scene(engine);
+	const graph = new SceneGraph(scene, { isHost: () => true, externalItems: outsideResolver() });
+	const warn = console.warn;
+	console.warn = () => {};
+	try {
+		graph.load([loaderSlot('shelf', { adapter: 'cloud', id: 'private-or-gone' }), createSlot({ id: 'other', name: 'other' })]);
+		graph.tick(0.016);
+		await settleLater();
+		graph.tick(0.016);
+		assert.equal(graph.getLoaderStatus('shelf').state, 'error');
+		assert.equal(graph.getLoaderStatus('shelf').code, 'not-found');
+		assert.deepEqual(graph.serialize().map((slot) => slot.id).sort(), ['other', 'shelf']);
+	} finally { console.warn = warn; graph.dispose(); scene.dispose(); engine.dispose(); }
+});
+
+test('a loader inside an object a loader brought in is built too, and goes with it', async () => {
+	const engine = new NullEngine();
+	const scene = new Scene(engine);
+	outsideTable.nested = () => [createSlot({ id: 'inner', name: 'inner' }), loaderSlot('slot', { adapter: 'builtin', id: 'disc' }, { parentId: 'inner' })];
+	const graph = new SceneGraph(scene, { isHost: () => true, externalItems: outsideResolver() });
+	try {
+		graph.load([loaderSlot('top', { adapter: 'builtin', id: 'nested' })]);
+		for (let i = 0; i < 3; i++) { graph.tick(0.016); await settleLater(); }
+		assert.ok(graph.getLive('top::slot::disc'), 'the inner loader built its object');
+		graph.removeSlot('top');
+		assert.equal(graph.allSlots().length, 0, 'removing the outer one removes both levels');
+	} finally { delete outsideTable.nested; graph.dispose(); scene.dispose(); engine.dispose(); }
+});
+
+test('a script brings an object in with no slot of its own, places it, and takes it down; guests cannot', async () => {
+	const engine = new NullEngine();
+	const scene = new Scene(engine);
+	let host = true;
+	const graph = new SceneGraph(scene, { isHost: () => host, externalItems: outsideResolver() });
+	try {
+		graph.load([createSlot({ id: 'dir', name: 'dir', components: [{ type: 'container' }, { type: 'codeBlock', code: 'return {};' }] })]);
+		const ctx = buildCodeBlockCtx('dir', graph.getLive('dir').node, graph.buildCodeBlockHost(), () => {}, { disposed: false, tracks: new Set() });
+		const loaded = await ctx.world.loadItem({ adapter: 'builtin', id: 'disc' }, { id: 'rack-1', parentId: 'dir', position: [0, 2, 0] });
+		assert.deepEqual(loaded, { id: 'rack-1', roots: ['rack-1::disc'] });
+		assert.equal(graph.getLive('rack-1::disc').slot.external, true);
+		assert.equal(graph.getLive('rack-1::disc').slot.parentId, 'dir');
+		assert.deepEqual(graph.getLive('rack-1::disc').slot.position, [0, 2, 0], 'placed where the script said');
+		assert.equal(ctx.world.unloadItem('rack-1'), true);
+		assert.equal(graph.getLive('rack-1::disc'), undefined);
+		assert.equal(ctx.world.unloadItem('rack-1'), false);
+		assert.equal(await ctx.world.loadItem({ adapter: 'cloud', id: 'nothing' }), null, 'one that cannot be read gives null');
+		assert.equal(await ctx.world.loadItem({ adapter: 'local', id: 'x' }), null, 'and a source that is not allowed too');
+		host = false;
+		assert.equal(await ctx.world.loadItem({ adapter: 'builtin', id: 'disc' }), null, 'a guest does not read');
+	} finally { graph.dispose(); scene.dispose(); engine.dispose(); }
+});
+
+test('a script adds a loader slot, which is part of the world; a bad source adds nothing', () => {
+	const engine = new NullEngine();
+	const scene = new Scene(engine);
+	const spawned = [];
+	const graph = new SceneGraph(scene, { isHost: () => true, onSpawnRequest: (slot) => spawned.push(slot) });
+	try {
+		graph.load([createSlot({ id: 'dir', name: 'dir', components: [{ type: 'container' }, { type: 'codeBlock', code: 'return {};' }] })]);
+		const ctx = buildCodeBlockCtx('dir', graph.getLive('dir').node, graph.buildCodeBlockHost(), () => {}, { disposed: false, tracks: new Set() });
+		const id = ctx.world.addLoader({ adapter: 'worldStorage', key: 'disc-1' }, { id: 'socket-1', position: [1, 2, 3] });
+		assert.equal(id, 'socket-1');
+		assert.deepEqual(spawned[0].components, [{ type: 'loader', adapter: 'worldStorage', key: 'disc-1' }]);
+		assert.deepEqual(spawned[0].position, [1, 2, 3]);
+		assert.equal(ctx.world.addLoader({ adapter: 'purchased', id: 'x' }), null);
+		assert.equal(ctx.world.addLoader('cloud:abc'), null);
+		assert.equal(spawned.length, 1);
+	} finally { graph.dispose(); scene.dispose(); engine.dispose(); }
+});
+
+test('scripts see the world\'s saved objects as unavailable where nothing can be kept', async () => {
+	const engine = new NullEngine();
+	const scene = new Scene(engine);
+	const graph = new SceneGraph(scene, { isHost: () => true });
+	try {
+		graph.load([createSlot({ id: 'dir', name: 'dir', components: [{ type: 'container' }, { type: 'codeBlock', code: 'return {};' }] })]);
+		const ctx = buildCodeBlockCtx('dir', graph.getLive('dir').node, graph.buildCodeBlockHost(), () => {}, { disposed: false, tracks: new Set() });
+		assert.equal(ctx.storage.items.available, false);
+		assert.equal(await ctx.storage.items.save('k', 'dir'), false);
+		assert.deepEqual(await ctx.storage.items.list(), []);
+	} finally { graph.dispose(); scene.dispose(); engine.dispose(); }
+});
+
+test('an object saved from a script comes back through a loader by its key, with its parts and without where it stood', async () => {
+	const { createMemoryWorldItemBackend, createWorldItemStore } = await import('../packages/engine/src/worldStorage/items.ts');
+	const { ExternalItemError } = await import('../packages/engine/src/inventory/external.ts');
+	const store = createWorldItemStore({
+		backends: { local: createMemoryWorldItemBackend('local'), cloud: createMemoryWorldItemBackend('cloud') },
+		getLocation: () => 'local',
+		getPublicationId: () => 'pub-1'
+	});
+	const resolver = async (source) => {
+		const item = await store.find({ id: source.id, key: source.key });
+		if (!item) throw new ExternalItemError('not-found', 'nothing saved');
+		return { name: item.name, slots: item.slotData };
+	};
+	const engine = new NullEngine();
+	const scene = new Scene(engine);
+	const graph = new SceneGraph(scene, { isHost: () => true, worldItems: store, externalItems: resolver });
+	try {
+		graph.load([
+			createSlot({ id: 'dir', name: 'dir', components: [{ type: 'container' }, { type: 'codeBlock', code: 'return {};' }] }),
+			createSlot({ id: 'disc', name: 'My disc', position: [5, 1, 5], components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'cylinder' } }] }),
+			createSlot({ id: 'label', parentId: 'disc', name: 'Label' })
+		]);
+		const ctx = buildCodeBlockCtx('dir', graph.getLive('dir').node, graph.buildCodeBlockHost(), () => {}, { disposed: false, tracks: new Set() });
+		assert.equal(ctx.storage.items.available, true);
+		assert.equal(await ctx.storage.items.save('fav', 'disc'), true);
+		assert.deepEqual(await ctx.storage.items.list(), [{ key: 'fav', name: 'My disc' }]);
+		graph.removeSlot('disc');
+		const loaded = await ctx.world.loadItem({ adapter: 'worldStorage', key: 'fav' }, { id: 'again', position: [0, 3, 0] });
+		assert.deepEqual(loaded, { id: 'again', roots: ['again::disc'] });
+		assert.ok(graph.getLive('again::label'), 'its parts came with it');
+		assert.deepEqual(graph.getLive('again::disc').slot.position, [0, 3, 0]);
+		assert.deepEqual(graph.serialize().map((slot) => slot.id), ['dir'], 'and it is still not part of the saved world');
+		assert.equal(await ctx.storage.items.save('fav2', 'again::disc'), true, 'an object that was brought in can be saved again');
+		assert.equal((await store.find({ key: 'fav2' })).slotData.every((slot) => slot.external === undefined), true);
+	} finally { graph.dispose(); scene.dispose(); engine.dispose(); }
 });

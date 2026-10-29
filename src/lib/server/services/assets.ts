@@ -33,12 +33,13 @@ import type { SessionUser } from './worlds';
 /** Either the shared client or a transaction, so the same helpers work inside both. */
 type Db = Pick<
 	typeof prisma,
-	'asset' | 'assetOwner' | 'cloudItemAsset' | 'worldInventoryItemAsset' | 'publishedRevisionAsset' | 'marketplaceRevisionAsset' | 'worldAsset' | '$queryRaw'
+	'asset' | 'assetOwner' | 'cloudItemAsset' | 'worldInventoryItemAsset' | 'worldPlayerItemAsset' | 'publishedRevisionAsset' | 'marketplaceRevisionAsset' | 'worldAsset' | '$queryRaw'
 >;
 
 export type AssetHolder =
 	| { kind: 'cloudItem'; id: string }
 	| { kind: 'worldInventoryItem'; id: string }
+	| { kind: 'worldPlayerItem'; id: string }
 	| { kind: 'publishedRevision'; id: string }
 	| { kind: 'marketplaceRevision'; id: string }
 	| { kind: 'world'; id: string };
@@ -82,8 +83,14 @@ export async function inventoryJsonBytes(db: Db, userId: string): Promise<number
 	return Number(rows[0]?.bytes ?? 0);
 }
 
+/** Size of the objects the user keeps in the cloud for the published worlds they host. */
+export async function worldItemJsonBytes(db: Db, userId: string): Promise<number> {
+	const rows = await db.$queryRaw<Array<{ bytes: bigint }>>`SELECT COALESCE(SUM(octet_length("slotData"::text)), 0)::bigint AS bytes FROM "worldPlayerItem" WHERE "accountId" = ${userId}`;
+	return Number(rows[0]?.bytes ?? 0);
+}
+
 async function usedBytes(db: Db, userId: string): Promise<number> {
-	return (await assetBytes(db, userId)) + (await inventoryJsonBytes(db, userId));
+	return (await assetBytes(db, userId)) + (await inventoryJsonBytes(db, userId)) + (await worldItemJsonBytes(db, userId));
 }
 
 /** Refuses a save that would push the user over their storage quota. `adding` is the extra bytes of scene JSON. */
@@ -110,14 +117,15 @@ async function grantOwnership(db: Db, userId: string, asset: { id: string; byteS
 }
 
 async function referenceCount(db: Db, assetId: string): Promise<number> {
-	const [items, worldItems, revisions, marketplaceRevisions, worlds] = await Promise.all([
+	const [items, worldItems, revisions, marketplaceRevisions, worlds, playerItems] = await Promise.all([
 		db.cloudItemAsset.count({ where: { assetId } }),
 		db.worldInventoryItemAsset.count({ where: { assetId } }),
 		db.publishedRevisionAsset.count({ where: { assetId } }),
 		db.marketplaceRevisionAsset.count({ where: { assetId } }),
-		db.worldAsset.count({ where: { assetId } })
+		db.worldAsset.count({ where: { assetId } }),
+		db.worldPlayerItemAsset.count({ where: { assetId } })
 	]);
-	return items + worldItems + revisions + marketplaceRevisions + worlds;
+	return items + worldItems + revisions + marketplaceRevisions + worlds + playerItems;
 }
 
 /** Starts the grace period for an asset nobody owns or uses (the cleanup script is the final judge). */
@@ -314,14 +322,15 @@ const idlePreviewOf = (assetId: string) => ({ thumbnailAssetId: assetId, session
 
 /** Counts of the things this user owns that still use the asset. */
 async function referencesOwnedBy(db: Db & Pick<typeof prisma, 'cloudInventoryItem'>, userId: string, assetId: string) {
-	const [items, worldItems, revisions, marketplaceRevisions, worlds] = await Promise.all([
+	const [items, worldItems, revisions, marketplaceRevisions, worlds, playerItems] = await Promise.all([
 		db.cloudItemAsset.count({ where: { assetId, item: { ownerId: userId } } }),
 		db.worldInventoryItemAsset.count({ where: { assetId, item: { world: { hostUserId: userId } } } }),
 		db.publishedRevisionAsset.count({ where: { assetId, revision: { publication: { ownerId: userId } } } }),
 		db.marketplaceRevisionAsset.count({ where: { assetId, revision: { marketplaceItem: { ownerId: userId } } } }),
-		db.worldAsset.count({ where: { assetId, world: { hostUserId: userId, NOT: idlePreviewOf(assetId) } } })
+		db.worldAsset.count({ where: { assetId, world: { hostUserId: userId, NOT: idlePreviewOf(assetId) } } }),
+		db.worldPlayerItemAsset.count({ where: { assetId, item: { accountId: userId } } })
 	]);
-	return { items: items + worldItems, worlds, publications: revisions + marketplaceRevisions };
+	return { items: items + worldItems + playerItems, worlds, publications: revisions + marketplaceRevisions };
 }
 
 export async function listMyAssets(user: SessionUser | null): Promise<MyAsset[]> {
@@ -345,14 +354,15 @@ export async function listMyAssets(user: SessionUser | null): Promise<MyAsset[]>
 	);
 }
 
-export async function assetUsage(user: SessionUser | null): Promise<{ bytes: number; assetBytes: number; inventoryBytes: number; count: number; quota: number }> {
+export async function assetUsage(user: SessionUser | null): Promise<{ bytes: number; assetBytes: number; inventoryBytes: number; worldItemBytes: number; count: number; quota: number }> {
 	if (!user) throw new UnauthorizedError();
-	const [models, inventoryBytes, count] = await Promise.all([
+	const [models, inventoryBytes, worldItemBytes, count] = await Promise.all([
 		assetBytes(prisma, user.id),
 		inventoryJsonBytes(prisma, user.id),
+		worldItemJsonBytes(prisma, user.id),
 		prisma.assetOwner.count({ where: { ownerId: user.id } })
 	]);
-	return { bytes: models + inventoryBytes, assetBytes: models, inventoryBytes, count, quota: userQuotaBytes() };
+	return { bytes: models + inventoryBytes + worldItemBytes, assetBytes: models, inventoryBytes, worldItemBytes, count, quota: userQuotaBytes() };
 }
 
 /**
@@ -396,6 +406,7 @@ export async function assertAssetsReady(db: Db, scene: unknown[]): Promise<Asset
 const holderTables = {
 	cloudItem: (db: Db, holderId: string, assetIds: string[]) => db.cloudItemAsset.createMany({ data: assetIds.map((assetId) => ({ itemId: holderId, assetId })), skipDuplicates: true }),
 	worldInventoryItem: (db: Db, holderId: string, assetIds: string[]) => db.worldInventoryItemAsset.createMany({ data: assetIds.map((assetId) => ({ itemId: holderId, assetId })), skipDuplicates: true }),
+	worldPlayerItem: (db: Db, holderId: string, assetIds: string[]) => db.worldPlayerItemAsset.createMany({ data: assetIds.map((assetId) => ({ itemId: holderId, assetId })), skipDuplicates: true }),
 	publishedRevision: (db: Db, holderId: string, assetIds: string[]) => db.publishedRevisionAsset.createMany({ data: assetIds.map((assetId) => ({ revisionId: holderId, assetId })), skipDuplicates: true }),
 	marketplaceRevision: (db: Db, holderId: string, assetIds: string[]) => db.marketplaceRevisionAsset.createMany({ data: assetIds.map((assetId) => ({ revisionId: holderId, assetId })), skipDuplicates: true }),
 	world: (db: Db, holderId: string, assetIds: string[]) => db.worldAsset.createMany({ data: assetIds.map((assetId) => ({ worldId: holderId, assetId })), skipDuplicates: true })
@@ -411,6 +422,11 @@ async function clearHolder(db: Db, holder: AssetHolder): Promise<string[]> {
 		case 'worldInventoryItem': {
 			const previous = await db.worldInventoryItemAsset.findMany({ where: { itemId: holder.id }, select: { assetId: true } });
 			await db.worldInventoryItemAsset.deleteMany({ where: { itemId: holder.id } });
+			return previous.map((row) => row.assetId);
+		}
+		case 'worldPlayerItem': {
+			const previous = await db.worldPlayerItemAsset.findMany({ where: { itemId: holder.id }, select: { assetId: true } });
+			await db.worldPlayerItemAsset.deleteMany({ where: { itemId: holder.id } });
 			return previous.map((row) => row.assetId);
 		}
 		case 'publishedRevision': {

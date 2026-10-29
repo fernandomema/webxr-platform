@@ -8,6 +8,7 @@
 
 import type { MeshRef, SourceRef } from '../assets/ref.ts';
 import type { HumanoidMap } from '../xr/avatar/humanoid.ts';
+import type { ExternalAdapter } from '../inventory/external.ts';
 
 export type Vec3 = [number, number, number];
 export type Quat = [number, number, number, number];
@@ -327,6 +328,20 @@ export interface FragmentComponent {
 	type: 'fragment';
 	/** The fragment, a `fragment` asset. */
 	source: SourceRef;
+}
+
+/**
+ * Builds an object that lives outside the world (the starter kit, the marketplace, a public cloud object, an object saved in the host's
+ * world storage) under this slot while it is enabled, and takes it down when it is not. Only the host reads it; everyone sees the result.
+ * The object's slots are not saved with the world: only this slot is, and it asks again every time the world runs.
+ */
+export interface LoaderComponent {
+	type: 'loader';
+	adapter: ExternalAdapter;
+	/** The object's id in that source. */
+	id?: string;
+	/** `worldStorage` only: the name a script saved the object under, instead of its id. */
+	key?: string;
 }
 
 /**
@@ -769,6 +784,7 @@ export type Component =
 	| SpotLightComponent
 	| LightVolumeComponent
 	| FragmentComponent
+	| LoaderComponent
 	| WorldSettingsComponent
 	| PlayerMovementComponent
 	| CharacterControllerComponent
@@ -799,6 +815,11 @@ export interface Slot {
 	components: Component[];
 	/** Switched off: neither this slot nor anything below it is drawn, picked, grabbed or hit by rays. Its code blocks keep running. Set by a script with `ctx.world.setSlotEnabled`. */
 	disabled?: boolean;
+	/**
+	 * Brought in from outside the world by a `loader` (or a script): it exists while the world runs and is sent to everyone in the session,
+	 * but it is not part of the world itself, so it is never saved or published, and the editor does not list or change it.
+	 */
+	external?: boolean;
 }
 
 /** A flat list of slots forming one or more trees via parentId — the on-disk/over-the-wire shape. */

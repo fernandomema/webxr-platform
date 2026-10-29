@@ -1,5 +1,5 @@
 import { Vector3, WebXRControllerComponent, type Scene, type TransformNode, type WebXRDefaultExperience, type WebXRInputSource } from '@babylonjs/core';
-import { extractSubtree } from '../../ecs/serialize.ts';
+import { extractSubtree, withoutExternal } from '../../ecs/serialize.ts';
 import { isEquippable } from '../../ecs/types.ts';
 import { getInventoryAdapter } from '../../inventory/registry.ts';
 import { gameState, getInventoryContext } from '../gameState.ts';
@@ -70,7 +70,7 @@ export function buildRadialItems(
 				onSelect: async () => {
 					const adapter = gameState.currentInventoryAdapterId ? getInventoryAdapter(gameState.currentInventoryAdapterId) : undefined;
 					if (!adapter?.saveItem) return;
-					const subtree = extractSubtree(sceneGraph.serialize(), slotId);
+					const subtree = withoutExternal(extractSubtree(sceneGraph.serialize({ withExternal: true }), slotId));
 					if (!subtree.length) return;
 					const { tree, kind } = forInventory(subtree);
 					await saveWithPreview(adapter, getInventoryContext(), gameState.currentInventoryFolderId, tree[0].name, tree, kind);

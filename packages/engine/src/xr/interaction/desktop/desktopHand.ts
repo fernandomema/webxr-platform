@@ -89,7 +89,7 @@ export function setupDesktopHand(options: DesktopHandOptions): DesktopHand {
 	const slotNameOf = (slotId: string | null): string => (slotId ? sceneGraph.getLive(slotId)?.slot.name || 'Object' : '');
 	/** The objects of the world (not the avatars, not the panels the game itself keeps). */
 	const isWorldSlot = (slotId: string): boolean => {
-		validIds ??= new Set(sceneGraph.slotIds({ withoutAvatars: true }));
+		validIds ??= new Set(sceneGraph.slotIds({ withoutAvatars: true, withExternal: true }));
 		return validIds.has(slotId);
 	};
 

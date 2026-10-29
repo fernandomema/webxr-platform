@@ -3,7 +3,7 @@ import { createSlot } from '@kithin/engine/ecs/types';
 import { LEVEL_LOGIC_SOURCE } from './beatTurntableLogic.ts';
 import { BEAT_TURNTABLE, BLUE, RED, box } from '../../src/lib/content/templates/beatTurntableParts.ts';
 import { STAGE_FX_SOURCE, buildStageSlots } from './beatTurntableStage.ts';
-import { buildDeckSlots } from './beatTurntableDesk.ts';
+import { DECK, buildDeckSlots } from './beatTurntableDesk.ts';
 import { OPTION_BUTTONS, UI, buildConsole, buildHud, buildJudge, buildResults } from './beatTurntableUi.ts';
 
 /**
@@ -608,6 +608,74 @@ function deckTick(dt) {
   fxColor('bt-led', busy ? '#ef4444' : '#22c55e');
 }
 
+/**
+ * The record rack remembers its discs for whoever hosts the world (the engine's world storage keeps them, on this device or in the
+ * cloud as the host chose): a disc put on a shelf is saved, replacing what that shelf had, and brought back to its place the next time
+ * the world is hosted. Taking a disc off a shelf keeps what was saved, so a record carried off to play and left behind is not lost. The
+ * two records the world starts with stay where they began and are not saved. Without storage the rack simply starts as it always did.
+ */
+const RACK = ${JSON.stringify({ rows: DECK.rackRows, slots: DECK.rackSlots, quat: DECK.rackQuat })};
+const rackSocketId = (row, slot) => 'bt-rack-socket-' + row + '-' + slot;
+const rackKey = (row, slot) => 'rack-' + row + '-' + slot;
+const rackSeen = {};
+let rackReady = false;
+let rackBusy = false;
+let rackTimer = 0;
+
+function rackOccupant(socketId) {
+  const slot = ctx.hierarchy.getSlot(socketId);
+  const socket = slot && slot.components.find((c) => c.type === 'socket');
+  return (socket && socket.occupantId) || '';
+}
+
+function rackPlaces() {
+  const places = [];
+  for (let row = 0; row < RACK.rows; row++) for (let slot = 0; slot < RACK.slots; slot++) places.push({ socketId: rackSocketId(row, slot), key: rackKey(row, slot), row: row, slot: slot });
+  return places;
+}
+
+const rackStorage = () => (ctx.storage && ctx.storage.items && ctx.storage.items.available ? ctx.storage.items : null);
+
+/** Brings the host's saved discs back into the shelves that are empty. */
+async function restoreRack() {
+  const items = rackStorage();
+  if (!items || !ctx.world.loadItem) return;
+  for (const place of rackPlaces()) {
+    if (rackOccupant(place.socketId) || !(await items.has(place.key))) continue;
+    const loaded = await ctx.world.loadItem({ adapter: 'worldStorage', key: place.key }, { id: 'bt-saved-' + place.row + '-' + place.slot, parentId: place.socketId, position: [0, 0, 0], rotation: RACK.quat });
+    if (loaded && loaded.roots.length) set(place.socketId, 'socket', 'occupantId', loaded.roots[0]);
+  }
+}
+
+/** A shelf that got a disc saves it, replacing what it had; one that was emptied keeps what was saved. */
+function scanRack() {
+  const items = rackStorage();
+  if (!items) return;
+  for (const place of rackPlaces()) {
+    const now = rackOccupant(place.socketId);
+    if (now === rackSeen[place.socketId]) continue;
+    rackSeen[place.socketId] = now;
+    if (!now) continue;
+    const info = ctx.hierarchy.getSlot(now);
+    const record = info && info.components.find((c) => c.type === 'recordDisc');
+    guard(items.save(place.key, now, { name: record && record.title ? record.title : (info ? info.name : 'Disc') }), 'rack');
+  }
+}
+
+function rackTick(dt) {
+  if (rackBusy || !ctx.world.isHost || !ctx.world.isHost()) return;
+  rackTimer -= dt;
+  if (rackTimer > 0) return;
+  rackTimer = 1;
+  if (rackReady) { scanRack(); return; }
+  rackBusy = true;
+  guard(restoreRack(), 'rack').then(() => {
+    for (const place of rackPlaces()) rackSeen[place.socketId] = rackOccupant(place.socketId);
+    rackReady = true;
+    rackBusy = false;
+  });
+}
+
 return {
   async onPlayerReady(who) {
     if (player) return;
@@ -655,6 +723,7 @@ return {
     }
     fxTick(dt);
     deckTick(dt);
+    rackTick(dt);
     runCues(dt);
     if (state !== 'results') flushHud(dt, false);
     if (judgeTimer > 0) {

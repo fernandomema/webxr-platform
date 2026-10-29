@@ -27,6 +27,17 @@
 		{ label: '3D models', value: data.usage.count }
 	]);
 
+	async function clearWorld(publicationId: string) {
+		busyId = publicationId; error = '';
+		try {
+			const response = await fetch(`/api/world-storage?publicationId=${encodeURIComponent(publicationId)}`, { method: 'DELETE' });
+			if (!response.ok) throw new Error((await response.json().catch(() => null))?.message ?? 'Could not clear the saved objects.');
+			await invalidateAll();
+		} catch (caught) {
+			error = caught instanceof Error ? caught.message : 'Could not clear the saved objects.';
+		} finally { busyId = null; }
+	}
+
 	async function release(assetId: string) {
 		busyId = assetId; error = '';
 		try {
@@ -57,6 +68,7 @@
 			<dl class="mt-4 grid grid-cols-2 gap-4 text-sm">
 				<div><dt class="text-bone/60">3D models</dt><dd>{formatBytes(data.usage.assetBytes)}</dd></div>
 				<div><dt class="text-bone/60">Inventory data</dt><dd>{formatBytes(data.usage.inventoryBytes)}</dd></div>
+				<div><dt class="text-bone/60">Saved in worlds</dt><dd>{formatBytes(data.usage.worldItemBytes)}</dd></div>
 			</dl>
 		</div>
 	</section>
@@ -68,6 +80,21 @@
 				<div class="rounded-xl border border-white/10 bg-ink-2 px-4 py-3"><dd class="text-2xl font-semibold">{stat.value}</dd><dt class="text-xs text-bone/60">{stat.label}</dt></div>
 			{/each}
 		</dl>
+	</section>
+
+	<section>
+		<h2 class="text-lg font-medium">Saved in worlds</h2>
+		<p class="mt-1 text-sm text-bone/60">Objects published worlds keep for you when you host them, if you chose to keep them in the cloud (the choice is in the in-game settings). Their models stay in your storage until you remove them under Largest models.</p>
+		<ul class="mt-4 divide-y divide-white/6 rounded-xl border border-white/10 bg-ink-2 text-sm">
+			{#each data.worldStorage as world (world.publicationId)}
+				<li class="flex items-center justify-between gap-4 px-4 py-3">
+					<div class="min-w-0"><p class="truncate">{world.name}</p><p class="text-xs text-bone/40">{world.items} {world.items === 1 ? 'object' : 'objects'} · {formatBytes(world.bytes)}</p></div>
+					<button class="rounded-full border border-white/15 px-4 py-2 text-sm hover:bg-white/5 disabled:opacity-40" disabled={busyId === world.publicationId} onclick={() => clearWorld(world.publicationId)}>Clear</button>
+				</li>
+			{:else}
+				<li class="px-4 py-3 text-bone/60">Nothing is saved in the cloud for any world.</li>
+			{/each}
+		</ul>
 	</section>
 
 	<section>

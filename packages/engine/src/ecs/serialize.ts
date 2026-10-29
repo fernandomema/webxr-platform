@@ -1,5 +1,10 @@
 import type { Slot, SlotTree, Vec3 } from './types.ts';
 
+/** The tree without the mark that says its slots were brought in from outside, for when it is kept (saved, put in an inventory). */
+export function withoutExternal(tree: SlotTree): SlotTree {
+	return tree.map(({ external: _external, ...slot }) => slot);
+}
+
 /**
  * Extracts `rootId` and every descendant from `tree` into a standalone
  * SlotTree (the root's parentId is cleared). Used to serialize a single

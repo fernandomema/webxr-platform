@@ -16,6 +16,7 @@
 		Vector3
 	} from '@babylonjs/core';
 	import { SceneGraph } from '@kithin/engine/xr/sceneGraph';
+	import { createExternalResolver } from '@kithin/engine/inventory/externalResolver';
 	import { initBrowserCodeBlockSandbox } from '@kithin/engine/xr/sandbox/browserInit';
 	import { bakeReflectionProbe, type ProbeFaces } from '@kithin/engine/xr/bakeReflectionProbe';
 	import { BlobAssetLibrary } from '@kithin/engine/xr/blobAssetLibrary';
@@ -169,7 +170,7 @@
 
 		models = new ModelLibrary(scene, { getResolvers: () => [cloudResolver] });
 		mediaAssets = new BlobAssetLibrary({ getResolvers: () => [cloudResolver] });
-		sceneGraph = new SceneGraph(scene, { models, mediaAssets, getViewerPosition: () => camera?.position ?? null });
+		sceneGraph = new SceneGraph(scene, { models, mediaAssets, externalItems: createExternalResolver(), getViewerPosition: () => camera?.position ?? null });
 		cameraHelper = new PreviewCameraHelper(scene, canvas, camera, {
 			getSnapPrecision: () => snapPrecision,
 			getNode: (slotId) => sceneGraph?.getLive(slotId)?.node,
@@ -249,7 +250,8 @@
 			if (event.button !== 0 || !scene || !sceneGraph) return;
 			if (moved > 6 || elapsed > 500 || cameraHelper?.recentlyDragged() || zoneHelper?.recentlyDragged() || transformHelper?.recentlyDragged() || colliderHelper?.recentlyDragged()) return;
 			const slotId = sceneGraph.getSlotIdForNode(scene.pick(scene.pointerX, scene.pointerY)?.pickedMesh);
-			if (slotId) onSelect(slotId);
+			// What a loader brought in is not part of the world being edited: it can be seen, not picked.
+			if (slotId && !sceneGraph.getLive(slotId)?.slot.external) onSelect(slotId);
 		};
 		canvas.addEventListener('pointerdown', onPointerDown);
 		canvas.addEventListener('pointermove', onPanPointerMove);
@@ -325,7 +327,7 @@
 			knownSignatures = nextSignatures;
 			clearTimeout(rebuildTimer);
 			if (structural) rebuildTimer = setTimeout(() => rebuild(slots), 120);
-			else sceneGraph?.reconcile(cloneTree(slots));
+			else sceneGraph?.reconcile(cloneTree(slots), undefined, { keepExternal: true });
 		});
 	});
 
@@ -443,7 +445,7 @@
 			handNode.setEnabled(false);
 			if (previewingHand) {
 				previewingHand = null;
-				sceneGraph.reconcile(cloneTree(slots));
+				sceneGraph.reconcile(cloneTree(slots), undefined, { keepExternal: true });
 			}
 		}
 	});

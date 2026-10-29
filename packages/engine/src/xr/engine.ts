@@ -86,6 +86,11 @@ import type { AvatarHooks } from './avatar/avatarHooks.ts';
 import { HostAuthority } from './net/hostAuthority.ts';
 import { GuestSync } from './net/guestSync.ts';
 import { WorldStorageService } from './worldStorageService.ts';
+import { createWorldItemStore } from '../worldStorage/items.ts';
+import { localWorldItems } from '../worldStorage/localItems.ts';
+import { cloudWorldItems } from '../worldStorage/cloudItems.ts';
+import { setWorldItemStore } from '../worldStorage/registry.ts';
+import { createExternalResolver } from '../inventory/externalResolver.ts';
 import { PaymentService } from './payments/paymentService.ts';
 import { createMetaPayments } from './payments/metaPayments.ts';
 import { createAtmController } from './payments/atmController.ts';
@@ -103,7 +108,7 @@ import { createWorldOrb, copyScene, validateWorldPackage, validateWorldScene, wo
 import type { WorldPackage } from '../worlds/types.ts';
 import type { InventoryAdapterId, InventoryStorageAdapterId, InventoryItem } from '../inventory/types.ts';
 import { createWorldPortalMenu } from './ui/worldPortalMenu.ts';
-import { getInventoryAdapter } from '../inventory/registry.ts';
+import { canHoldWorlds, getInventoryAdapter } from '../inventory/registry.ts';
 import { getInventoryContext } from './gameState.ts';
 
 export interface MountedGame {
@@ -192,6 +197,17 @@ export async function mountGame(
 		isSignedIn: () => !!gameState.userId,
 		relay: (playerId, call) => hostAuthority?.relayPlayerApi(playerId, call) ?? Promise.resolve({ ok: false, error: 'No session is hosted' })
 	});
+	// What this world has saved for its host, kept where the host chose (this device or the cloud); only a hosted published world has any.
+	const worldItems = createWorldItemStore({
+		backends: { local: localWorldItems, cloud: cloudWorldItems(() => !!gameState.userId) },
+		getLocation: () => xrSettings.worldStorageLocation,
+		getPublicationId: () => (gameState.role === 'guest' ? null : gameState.publication?.publicationId ?? null)
+	});
+	setWorldItemStore(worldItems);
+	// Objects from outside the world (starter kit, marketplace, public cloud objects, saved objects) that loaders and scripts bring in.
+	const externalItems = createExternalResolver({
+		worldStorage: { read: async (ref) => { const item = await worldItems.find(ref); return item ? { name: item.name, slotData: item.slotData } : null; } }
+	});
 	// Paying: the prompt and the service belong to the game, outside everything a world's scripts can reach (see ui/purchasePrompt.ts).
 	const purchasePrompt = createPurchasePrompt(scene, () => getActiveCamera());
 	// In-app purchases with Meta's payments (see payments/metaPayments.ts): used by the ATM and by the purchase prompt's "Add credits".
@@ -230,6 +246,8 @@ export async function mountGame(
 		getUiContext: () => ({ locale: engineLocale(), device: inputDevice }),
 		sameOriginPathsFor: (code) => getContent().sameOriginPathsFor?.(code) ?? [],
 		storage: worldStorage,
+		worldItems,
+		externalItems,
 		audio: scriptAudio,
 		payments: {
 			// The host asks for a player; the player's own client does the paying, with their own account.
@@ -634,7 +652,7 @@ export async function mountGame(
 		if (visibility !== 'solo' && visibility !== 'private' && !gameState.userId) {
 			throw new Error('Sign in to host a public session');
 		}
-		const previousScene = sceneGraph.serialize();
+		const previousScene = sceneGraph.serialize({ withExternal: true });
 		const track = visibility === 'solo' ? undefined : await ensureLocalAudio();
 		let roomCode = crypto.randomUUID().replaceAll('-', '').slice(0, 12);
 		let worldId: string | null = null;
@@ -901,7 +919,7 @@ export async function mountGame(
 	const worldPortalMenu = createWorldPortalMenu(scene, sceneGraph, getActiveCamera, launchWorldPackage, async (world) => {
 		validateWorldPackage(world);
 		const selected = getInventoryAdapter(gameState.currentInventoryAdapterId ?? 'local');
-		const adapter = selected?.isAvailable(getInventoryContext()) && selected.saveItem ? selected : getInventoryAdapter('local');
+		const adapter = selected?.isAvailable(getInventoryContext()) && selected.saveItem && canHoldWorlds(selected.id) ? selected : getInventoryAdapter('local');
 		if (!adapter?.saveItem) throw new Error('Choose a writable inventory first');
 		const folderId = adapter.id === gameState.currentInventoryAdapterId ? gameState.currentInventoryFolderId : null;
 		await saveWithPreview(adapter, getInventoryContext(), folderId, world.name, copyScene(world.scene), 'world');

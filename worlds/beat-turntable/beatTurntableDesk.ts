@@ -102,7 +102,7 @@ function buildRack(): Slot[] {
 			scale: [0.9, 0.2, 1],
 			components: [
 				{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'plane' }, color: '#1a1020' },
-				{ type: 'textDisplay', title: 'Record Rack', lines: ['Bring your own discs'], color: '#1a1020', verticalAlign: 'middle' }
+				{ type: 'textDisplay', title: 'Record Rack', lines: ['Bring your own discs', 'The host keeps them'], color: '#1a1020', verticalAlign: 'middle' }
 			]
 		})
 	];

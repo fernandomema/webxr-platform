@@ -10,6 +10,7 @@ import type { SessionUser } from './worlds';
 export async function exportAccountData(user: SessionUser | null) {
 	if (!user) throw new UnauthorizedError();
 	const userId = user.id;
+	const worldStorageItems = await prisma.worldPlayerItem.findMany({ where: { accountId: userId } });
 	const [profile, accounts, sessions, worlds, worldSessions, worldInventoryFolders, worldInventoryItems, cloudFolders, cloudItems, publications, publicationRevisions, marketplaceItems, marketplaceRevisions, purchases, assets, feedbackEntries, feedbackVotes, feedbackInteractions, moodResponses, creditAccount, creditTransactions, productEntitlements, paymentIdentities] = await Promise.all([
 		prisma.user.findUnique({ where: { id: userId } }),
 		prisma.account.findMany({ where: { userId }, select: { providerId: true, accountId: true, createdAt: true } }),
@@ -44,6 +45,8 @@ export async function exportAccountData(user: SessionUser | null) {
 		worldSessions,
 		worldInventory: { folders: worldInventoryFolders, items: worldInventoryItems },
 		cloudInventory: { folders: cloudFolders, items: cloudItems },
+		/** Objects published worlds keep for this account when it hosts them, if it chose to keep them in the cloud. */
+		worldStorageItems,
 		publishedWorlds: { publications, revisions: publicationRevisions },
 		marketplace: { items: marketplaceItems, revisions: marketplaceRevisions, purchases },
 		models: assets,

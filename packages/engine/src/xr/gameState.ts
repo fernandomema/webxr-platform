@@ -55,5 +55,6 @@ export const gameState: GameState = {
 };
 
 export function getInventoryContext() {
-	return { worldId: gameState.worldId, userId: gameState.userId, isAdmin: gameState.isAdmin };
+	// World storage belongs to whoever hosts the published world: a guest's saves go into the host's, through the world's scripts.
+	return { worldId: gameState.worldId, userId: gameState.userId, isAdmin: gameState.isAdmin, publicationId: gameState.role === 'guest' ? null : gameState.publication?.publicationId ?? null };
 }
