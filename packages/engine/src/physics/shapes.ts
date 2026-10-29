@@ -3,6 +3,8 @@
  * controller, the script API (`ctx.physics`) and the tests all run the same code, in the page, in the sandbox's host and in Node.
  */
 
+import { nearestOnMesh, rayMesh, type TriMesh } from './triMesh.ts';
+
 export type V3 = [number, number, number];
 
 /** An oriented box: its middle, half its size along each of its three axes, and those axes (unit vectors, a rotation's columns). */
@@ -28,7 +30,7 @@ export interface CylinderShape {
 	halfLength: number;
 }
 
-export type Shape = BoxShape | SphereShape | CylinderShape;
+export type Shape = BoxShape | SphereShape | CylinderShape | TriMesh;
 
 export interface Bounds {
 	min: V3;
@@ -65,6 +67,7 @@ export const cylinder = (center: V3, radius: number, halfLength: number, rotatio
 
 /** The smallest axis-aligned box around a shape. */
 export function boundsOf(shape: Shape): Bounds {
+	if (shape.kind === 'mesh') return { min: shape.min, max: shape.max };
 	if (shape.kind === 'sphere') {
 		const r = shape.radius;
 		return { min: [shape.center[0] - r, shape.center[1] - r, shape.center[2] - r], max: [shape.center[0] + r, shape.center[1] + r, shape.center[2] + r] };
@@ -85,9 +88,13 @@ export interface Nearest {
 	distance: number;
 	point: V3;
 	normal: V3;
+	/** The distance is only a lower bound: nothing was found within it, and nothing looked further (a mesh looks only `reach` far). */
+	bound?: boolean;
 }
 
-export function nearest(shape: Shape, p: V3): Nearest {
+/** `reach` is how far a mesh looks for its nearest triangle; the other shapes know their nearest point exactly and ignore it. */
+export function nearest(shape: Shape, p: V3, reach = 4): Nearest {
+	if (shape.kind === 'mesh') return nearestOnMesh(shape, p, reach) ?? { distance: reach, point: p, normal: [0, 1, 0], bound: true };
 	if (shape.kind === 'sphere') {
 		const d = sub(p, shape.center);
 		const l = length(d);
@@ -150,6 +157,10 @@ export interface RayHit {
 /** Where a ray (a unit `direction`) first enters a shape within `maxT`; null when it does not. A ray that starts inside hits at 0. */
 export function rayShape(shape: Shape, origin: V3, direction: V3, maxT: number): RayHit | null {
 	const at = (t: number, normal: V3): RayHit => ({ t, point: add(origin, scale(direction, t)), normal });
+	if (shape.kind === 'mesh') {
+		const hit = rayMesh(shape, origin, direction, maxT);
+		return hit ? at(hit.t, hit.normal) : null;
+	}
 	if (shape.kind === 'sphere') {
 		const oc = sub(origin, shape.center);
 		const b = dot(oc, direction), c = dot(oc, oc) - shape.radius * shape.radius;

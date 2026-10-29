@@ -76,7 +76,6 @@ for every field):
 | Component or API | What it is for |
 | --- | --- |
 | `characterController` | the player's body (a capsule): slopes, steps, walls, jumps with coyote time, a jump buffer, air jumps, wall jumps and wall slides, pushes (`ctx.world.setPlayerVelocity`), and an optional **lane** for 2.5D games. The same code for a desktop and a headset; it is opt-in (`playerMovement` is the older, simpler one). `physics/character.ts` is the body without Babylon, so a game can test it headless |
-| `collider.standable` | a solid that is also a floor on its top, flat or sloped: the way to make a platform, with no ground plane on top |
 | `ctx.physics` | `raycast`, `sphereCast`, `overlapSphere` and `closest` against the world's own colliders, in sandbox-safe form: no game needs its own geometry to know what a bullet or a sight line meets |
 | `fragment` component and asset kind | a map, a room or a prefab as a file (`assets/fragment.ts`) built under a slot while it is on and taken down when it is off. It is not in the world's slot limit, not saved and not synced (every device builds it from the file), can be loaded several times, and is baked into lighting with `extractScene({ fragments })`. Scripts: `ctx.world.loadFragment(assetId, …)` / `unloadFragment`. The fragment's manifest lists the assets its slots use (`assets`), but a world that is published or shared lists only the fragment's own file: ship the rest with it (a game's bundle does) |
 | `ctx.haptics.pulse`, `ctx.world.setPlayerVelocity` | controller buzzes and pushes to a player's body (host only) |

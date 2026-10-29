@@ -29,6 +29,8 @@
 	import { EDITOR_ONLY, PreviewCameraHelper, type GizmoMode } from './previewCameraHelper';
 	import { DropZoneHelper, type ZoneGizmoMode } from './dropZoneHelper';
 	import { SelectionTransformHelper, type TransformMode } from './selectionTransformHelper';
+	import { ColliderBoxHelper, drawnBox, type ColliderGizmoMode } from './colliderBoxHelper';
+	import { colliderEdit } from './state/colliderEdit.svelte';
 	import { SNAP_PRECISIONS, type SnapPrecision } from './transformSnapping';
 	import { INSET_MARGIN, insetPixels } from './previewCameraGeometry';
 	import { createStudioHand, type StudioHand } from './studioHand';
@@ -45,9 +47,11 @@
 		onMoveSlot?: (slotId: string, position: [number, number, number], rotation: [number, number, number, number]) => void;
 		/** A slot was moved, turned or resized with the handles; these are its new local position, rotation and scale. */
 		onTransformSlot?: (slotId: string, position: [number, number, number], rotation: [number, number, number, number], scale: [number, number, number]) => void;
+		/** The box of a slot's collider was moved or resized with the handles (or first set from what the slot draws); these are its new center and size. */
+		onColliderBox?: (slotId: string, center: [number, number, number], size: [number, number, number]) => void;
 	}
 
-	let { tree, selectedId = null, onSelect = () => {}, cameraKind = 'object', onMoveSlot = () => {}, onTransformSlot = () => {} }: ScenePreviewProps = $props();
+	let { tree, selectedId = null, onSelect = () => {}, cameraKind = 'object', onMoveSlot = () => {}, onTransformSlot = () => {}, onColliderBox = () => {} }: ScenePreviewProps = $props();
 
 	let canvas: HTMLCanvasElement;
 	let engine: Engine | null = null;
@@ -65,6 +69,9 @@
 	let cameraHelper: PreviewCameraHelper | null = null;
 	let zoneHelper: DropZoneHelper | null = null;
 	let transformHelper: SelectionTransformHelper | null = null;
+	let colliderHelper: ColliderBoxHelper | null = null;
+	let colliderMode = $state<ColliderGizmoMode>('move');
+	let colliderEditing = $state(false);
 	let snapPrecision = $state<SnapPrecision>('medium');
 	let transformMode = $state<TransformMode>('move');
 	let transformSelected = $state(false);
@@ -181,6 +188,12 @@
 			onChanged: (id, position, rotation, scale) => onTransformSlot(id, position, rotation, scale)
 		});
 
+		colliderHelper = new ColliderBoxHelper(scene, canvas, camera, {
+			getSnapPrecision: () => snapPrecision,
+			getNode: (id) => sceneGraph?.getLive(id)?.node,
+			onChanged: (id, center, size) => onColliderBox(id, center, size)
+		});
+
 		handNode = new TransformNode('studio-hand', scene);
 		handNode.position = new Vector3(0, 1.2, 0);
 		const handleMaterial = new StandardMaterial('studio-hand-mat', scene);
@@ -220,7 +233,7 @@
 			const dy = event.clientY - panPointer.y;
 			panPointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
 			// Dragging a handle is not dragging the view.
-			if (cameraHelper?.isDragging() || zoneHelper?.isDragging() || transformHelper?.isDragging()) return;
+			if (cameraHelper?.isDragging() || zoneHelper?.isDragging() || transformHelper?.isDragging() || colliderHelper?.isDragging()) return;
 			const right = camera.getDirection(Axis.X);
 			const up = camera.getDirection(Axis.Y);
 			camera.position.addInPlace(right.scale(-dx * 0.004)).addInPlace(up.scale(dy * 0.004));
@@ -234,7 +247,7 @@
 			const elapsed = performance.now() - pointerDownAt.time;
 			pointerDownAt = null;
 			if (event.button !== 0 || !scene || !sceneGraph) return;
-			if (moved > 6 || elapsed > 500 || cameraHelper?.recentlyDragged() || zoneHelper?.recentlyDragged() || transformHelper?.recentlyDragged()) return;
+			if (moved > 6 || elapsed > 500 || cameraHelper?.recentlyDragged() || zoneHelper?.recentlyDragged() || transformHelper?.recentlyDragged() || colliderHelper?.recentlyDragged()) return;
 			const slotId = sceneGraph.getSlotIdForNode(scene.pick(scene.pointerX, scene.pointerY)?.pickedMesh);
 			if (slotId) onSelect(slotId);
 		};
@@ -369,9 +382,30 @@
 		const specialised = slot?.components.some((component) => component.type === 'previewCamera' || component.type === 'dropZone');
 		const handPose = Boolean(handPreview.hand && slot?.components.some((component) => component.type === 'equippable'));
 		if (!ready || !transformHelper) return;
-		const id = slot && !specialised && !handPose ? slot.id : null;
+		const id = slot && !specialised && !handPose && colliderEdit.slotId !== slot.id ? slot.id : null;
 		transformHelper.update(id, mode);
 		transformSelected = Boolean(id);
+	});
+
+	// The box of the selected slot's collider, while it is being edited: its handles replace the object's own.
+	$effect(() => {
+		void rebuilds;
+		const slot = tree.find((candidate) => candidate.id === selectedId);
+		const collider = slot?.components.find((component) => component.type === 'collider');
+		const mode = colliderMode;
+		if (!ready || !colliderHelper || !sceneGraph) return;
+		const editing = Boolean(slot && collider && collider.shape === 'box' && colliderEdit.slotId === slot.id);
+		colliderEditing = editing;
+		if (!editing || !slot || !collider) { colliderHelper.update(null, [0, 0, 0], [1, 1, 1], mode); return; }
+		const node = sceneGraph.getLive(slot.id)?.node;
+		if (!node) return;
+		// The first time, the box is the one round what the slot draws, so the numbers say what it is.
+		if (!collider.size) {
+			const drawn = drawnBox(node);
+			onColliderBox(slot.id, drawn.center, drawn.size);
+			return;
+		}
+		colliderHelper.update(slot.id, collider.center ?? [0, 0, 0], collider.size, mode);
 	});
 
 	// Shows the selected equippable object in a stand-in controller, using the pose being edited.
@@ -418,6 +452,7 @@
 		clearTimeout(rebuildTimer);
 		cameraHelper?.dispose();
 		zoneHelper?.dispose();
+		colliderHelper?.dispose();
 		transformHelper?.dispose();
 		for (const hand of Object.values(hands ?? {})) hand.dispose();
 		sceneGraph?.dispose();
@@ -445,6 +480,14 @@
 			<button class="btn sm" aria-pressed={transformMode === 'rotate'} onclick={() => (transformMode = 'rotate')}>Rotate</button>
 			<button class="btn sm" aria-pressed={transformMode === 'scale'} onclick={() => (transformMode = 'scale')}>Scale</button>
 			{@render snapOptions(transformMode)}
+		</div>
+	{/if}
+	{#if colliderEditing}
+		<div class="camera-tools" role="toolbar" aria-label="Collider box handles">
+			<button class="btn sm" aria-pressed={colliderMode === 'move'} onclick={() => (colliderMode = 'move')}>Move box</button>
+			<button class="btn sm" aria-pressed={colliderMode === 'scale'} onclick={() => (colliderMode = 'scale')}>Resize box</button>
+			{@render snapOptions(colliderMode === 'move' ? 'move' : 'scale')}
+			<button class="btn sm" onclick={() => (colliderEdit.slotId = null)}>Done</button>
 		</div>
 	{/if}
 	{#if zoneSelected}

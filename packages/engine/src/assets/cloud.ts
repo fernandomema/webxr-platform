@@ -45,6 +45,10 @@ export interface MyCloudAsset {
 	ownedSince: string;
 	manifest: AssetManifest;
 	usedIn: { items: number; worlds: number; publications: number };
+	/** It is the user's profile picture. */
+	profile?: boolean;
+	/** The hosted worlds behind `usedIn.worlds`. */
+	worlds?: Array<{ id: string; name: string; preview: boolean }>;
 }
 
 export const cloudAssets = {

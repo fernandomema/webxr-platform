@@ -42,7 +42,7 @@ function stage(controller, solids) {
 const slope = (deg) => (m) => { const a = (deg * Math.PI) / 180; m.scaling = new Vector3(40, 1, 20); m.rotationQuaternion = Quaternion.RotationAxis(new Vector3(0, 0, 1), a); m.position = new Vector3(0.5 * Math.sin(a), -0.5 * Math.cos(a), 0); };
 
 test('with a character controller the player walks up a 40° slope, which is what a world of ramps and diamonds asks of the body', () => {
-	const s = stage({ jumpSpeed: 5 }, (add) => add('ramp', 'box', [{ type: 'collider', shape: 'box', standable: true }], slope(40)));
+	const s = stage({ jumpSpeed: 5 }, (add) => add('ramp', 'box', [{ type: 'collider', shape: 'box' }], slope(40)));
 	s.run(0.5);
 	s.run(2, [1.5, 0]);
 	assert.ok(s.camera.position.x > 2.5, `across: ${s.camera.position.x.toFixed(2)}`);
@@ -51,7 +51,7 @@ test('with a character controller the player walks up a 40° slope, which is wha
 });
 
 test('standing on a slope the player can jump, and walk on', () => {
-	const s = stage({ jumpSpeed: 5, gravity: 12 }, (add) => add('ramp', 'box', [{ type: 'collider', shape: 'box', standable: true }], slope(35)));
+	const s = stage({ jumpSpeed: 5, gravity: 12 }, (add) => add('ramp', 'box', [{ type: 'collider', shape: 'box' }], slope(35)));
 	s.run(1.5, [1.5, 0]);
 	const y = s.feet();
 	s.body.jump();
@@ -66,7 +66,7 @@ test('standing on a slope the player can jump, and walk on', () => {
 
 test('jumping against a wall again and again climbs it, and the player never ends up inside it', () => {
 	const s = stage({ jumpSpeed: 5, gravity: 14, wallJump: true, coyoteTime: 0.1 }, (add) => {
-		add('wall', 'box', [{ type: 'collider', shape: 'box', standable: true }], (m) => { m.position = new Vector3(2, 10, 0); m.scaling = new Vector3(1, 20, 20); });
+		add('wall', 'box', [{ type: 'collider', shape: 'box' }], (m) => { m.position = new Vector3(2, 10, 0); m.scaling = new Vector3(1, 20, 20); });
 	});
 	s.run(0.3);
 	s.run(1.5, [1.5, 0]);
@@ -78,7 +78,7 @@ test('jumping against a wall again and again climbs it, and the player never end
 });
 
 test('the colliders and a push: addImpulse throws the player and the floor under a head is the one it stands on', () => {
-	const s = stage({}, (add) => add('platform', 'box', [{ type: 'collider', shape: 'box', standable: true }], (m) => { m.position = new Vector3(5, 3, 0); m.scaling = new Vector3(4, 0.5, 4); }));
+	const s = stage({}, (add) => add('platform', 'box', [{ type: 'collider', shape: 'box' }], (m) => { m.position = new Vector3(5, 3, 0); m.scaling = new Vector3(4, 0.5, 4); }));
 	s.run(0.3);
 	assert.ok(Math.abs(s.body.floorAt(5, 8, 0) - 3.25) < 0.01, 'the top of the platform, not the floor');
 	assert.ok(Math.abs(s.body.floorAt(0, 8, 0)) < 0.02, 'the floor where there is no platform');
@@ -102,7 +102,7 @@ const { type: _type, ...ROUNDS } = roundsBody;
 /** The blocks and pillars of a map of the game, as the engine builds them from its fragment, for the body to stand on. */
 const mapBlocks = (m) => (add) => {
 	for (const block of layoutOf(m)) {
-		add(block.id, block.kind === 'block' ? 'box' : 'cylinder', [{ type: 'collider', shape: 'box', standable: true }], (mesh) => {
+		add(block.id, block.kind === 'block' ? 'box' : 'cylinder', [{ type: 'collider', shape: 'box' }], (mesh) => {
 			mesh.position = new Vector3(...block.position);
 			mesh.rotationQuaternion = new Quaternion(...block.rotation);
 			mesh.scaling = new Vector3(...block.scale);
@@ -141,7 +141,7 @@ test('on the maps of ROUNDS VR a player put on a spawn stands there, can run alo
 });
 
 test('a player of ROUNDS VR climbs a wall by jumping against it again and again, as in the game, and slides when it lets go', () => {
-	const s = stage(ROUNDS, (add) => add('wall', 'box', [{ type: 'collider', shape: 'box', standable: true }], (m) => { m.position = new Vector3(2, 10, 0); m.scaling = new Vector3(1, 20, 3.5); }));
+	const s = stage(ROUNDS, (add) => add('wall', 'box', [{ type: 'collider', shape: 'box' }], (m) => { m.position = new Vector3(2, 10, 0); m.scaling = new Vector3(1, 20, 3.5); }));
 	s.run(0.3);
 	s.run(1.5, [3, 0]);
 	assert.ok(s.camera.position.x < 1.5 - 0.29 + 0.05, `held off the wall: ${s.camera.position.x.toFixed(2)}`);
@@ -155,7 +155,7 @@ test('a player of ROUNDS VR climbs a wall by jumping against it again and again,
 });
 
 test('a player of ROUNDS VR walks up a slope of the game and jumps on it (the maps are full of turned blocks)', () => {
-	const s = stage(ROUNDS, (add) => add('ramp', 'box', [{ type: 'collider', shape: 'box', standable: true }], slope(35)));
+	const s = stage(ROUNDS, (add) => add('ramp', 'box', [{ type: 'collider', shape: 'box' }], slope(35)));
 	s.run(1.5, [3, 0]);
 	const y = s.feet();
 	assert.ok(y > 0.8, `up the ramp (${y.toFixed(2)} m)`);

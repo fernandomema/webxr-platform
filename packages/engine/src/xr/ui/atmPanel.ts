@@ -88,9 +88,11 @@ export function createAtmPanel(scene: Scene, getCamera: () => Camera, atm: AtmCo
 			row.alpha = state.busy ? 0.6 : 1;
 		});
 		const cannotBuy = state.phase === 'ready' && !state.canBuyHere;
-		note.text = cannotBuy ? (deps.inXr() ? 'Credits are bought on the website: open this site on a computer or phone, sign in and go to Settings, then Credits.' : 'Credits are bought on the website.') : '';
+		// In a headset the app cannot open the website, so it says what is missing here instead of sending the player there.
+		const why = { device: 'Buying credits in the headset needs the app from the Horizon Store.', server: 'Buying credits in the headset is not set up yet.', store: 'The store did not answer. Check that you are signed in to your Meta account and try again.' };
+		note.text = cannotBuy ? (deps.inXr() ? why[state.cannotBuyBecause ?? 'store'] : 'Credits are bought on the website.') : '';
 		website.isVisible = cannotBuy && !deps.inXr();
-		retry.isVisible = state.phase === 'error';
+		retry.isVisible = state.phase === 'error' || (cannotBuy && deps.inXr() && state.cannotBuyBecause === 'store');
 		close.isEnabled = !state.busy;
 	}
 

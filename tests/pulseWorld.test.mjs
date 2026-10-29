@@ -7,7 +7,7 @@ const pulse = JSON.parse(readFileSync(new URL('../src/lib/content/templates/puls
 const find = (slot, type) => slot.components.find((c) => c.type === type);
 const meshId = (slot) => find(slot, 'meshRenderer')?.meshRef.id;
 const isFloor = (slot) => meshId(slot) === 'ground' || meshId(slot) === 'disc';
-// The same rule as playerBody.isSolidSlot: a collider you cannot pick up that is not a floor.
+// A solid is a collider you cannot pick up that is not a floor.
 const isSolid = (slot) => Boolean(find(slot, 'collider')) && !find(slot, 'grabbable') && !isFloor(slot) && Boolean(find(slot, 'meshRenderer'));
 const bounds = (slot) => ({ min: slot.position.map((p, i) => p - slot.scale[i] / 2), max: slot.position.map((p, i) => p + slot.scale[i] / 2) });
 

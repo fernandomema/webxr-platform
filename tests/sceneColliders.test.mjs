@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { MeshBuilder, NullEngine, Quaternion, Scene, Vector3 } from '@babylonjs/core';
+import { Mesh, MeshBuilder, NullEngine, Quaternion, Scene, Vector3, VertexData } from '@babylonjs/core';
 import { createSlot } from '../packages/engine/src/ecs/types.ts';
 import { SceneColliders } from '../packages/engine/src/xr/sceneColliders.ts';
 
@@ -72,5 +72,45 @@ test('a slot that moves is found where it went, a slot switched off is gone, and
 	s.entries.shift();
 	colliders.invalidate();
 	assert.equal(colliders.sync().size, 0, 'a removed slot is taken out');
+	s.dispose();
+});
+
+test('a collider with its own box is that box, placed and sized in the object\'s space and scaled with it', () => {
+	const s = stage();
+	// A cylinder drawn 1 across, scaled 2 on every side; the box is 1 x 3 x 1 and sits 0.5 to the side of its middle.
+	s.add('post', 'cylinder', [{ type: 'collider', shape: 'box', center: [0.5, 0, 0], size: [1, 3, 1] }], (m) => { m.position = new Vector3(10, 0, 0); m.scaling = new Vector3(2, 2, 2); });
+	const shape = new SceneColliders(s.source).sync().get('post').shape;
+	assert.equal(shape.kind, 'box');
+	assert.deepEqual(shape.center.map((n) => Math.round(n * 1e4) / 1e4), [11, 0, 0]);
+	near(shape.half[0], 1); near(shape.half[1], 3); near(shape.half[2], 1);
+	s.dispose();
+});
+
+test('a model collider of shape mesh is solid as its triangles: a room is hollow, not a box round the player', () => {
+	const s = stage();
+	// A room 10 x 4 x 10 whose faces are triangles, made as a child of the model's root and scaled by it.
+	const room = new Mesh('room-geometry', s.scene);
+	const [x0, x1, y0, y1, z0, z1] = [-0.5, 0.5, 0, 0.4, -0.5, 0.5];
+	const quad = (a, b, c, d) => [a, b, c, a, c, d];
+	const corners = [
+		...quad([x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1]), ...quad([x0, y1, z0], [x0, y1, z1], [x1, y1, z1], [x1, y1, z0]),
+		...quad([x0, y0, z0], [x0, y1, z0], [x1, y1, z0], [x1, y0, z0]), ...quad([x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]),
+		...quad([x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0]), ...quad([x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [x1, y0, z1])
+	];
+	const data = new VertexData();
+	data.positions = corners.flat();
+	data.indices = corners.map((_, i) => i);
+	data.applyToMesh(room);
+	const root = MeshBuilder.CreateBox('room-proxy', { size: 1 }, s.scene);
+	root.scaling = new Vector3(10, 10, 10);
+	room.parent = root;
+	const slot = createSlot({ id: 'room', name: 'room', components: [{ type: 'meshRenderer', meshRef: { kind: 'asset', assetId: 'sha256:x' } }, { type: 'collider', shape: 'mesh' }] });
+	s.entries.push({ slot, node: root, model: { instance: { root: { getChildMeshes: () => [room] } } } });
+	const world = new SceneColliders(s.source).sync();
+	assert.equal(world.get('room').shape.kind, 'mesh');
+	const down = world.raycast([0, 2, 0], [0, -1, 0], 50);
+	near(down.t, 2, 1e-3);
+	near(world.raycast([0, 1, 0], [1, 0, 0], 50).t, 5, 1e-3);
+	assert.equal(world.overlapSphere([0, 2, 0], 0.5).length, 0, 'nothing is solid in the middle of the room');
 	s.dispose();
 });

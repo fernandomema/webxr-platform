@@ -4483,6 +4483,7 @@ msgstr ""
 msgid "Settings stay on this device. Scene data you ask the AI to inspect is sent to the selected provider."
 msgstr ""
 
+#: src/lib/studio/ScenePreview.svelte
 #: src/lib/studio/components/AiPanel.svelte
 #: src/routes/device/+page.svelte
 msgid "Done"
@@ -6825,4 +6826,32 @@ msgstr ""
 
 #: src/lib/studio/ui/Icon.svelte
 msgid "M15 6l-6 6 6 6"
+msgstr ""
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Collider box handles"
+msgstr ""
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Move box"
+msgstr ""
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Resize box"
+msgstr ""
+
+#: src/routes/studio/content/+page.svelte
+msgid "Group by"
+msgstr ""
+
+#: src/routes/studio/content/+page.svelte
+msgid "No grouping"
+msgstr ""
+
+#: src/routes/studio/content/+page.svelte
+msgid "Group by used in"
+msgstr ""
+
+#: src/routes/studio/content/+page.svelte
+msgid "Your profile picture"
 msgstr ""

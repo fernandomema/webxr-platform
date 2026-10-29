@@ -40,7 +40,7 @@ What flies, hits or is blocked is asked of the engine's solids (`ctx.physics`: r
 
 ## Engine additions (all generic)
 
-- **`characterController`** and **`CharacterBody`**: the body of a player (slopes, steps, walls, wall jumps and slides, coyote time, jump buffer, a lane for 2.5D games); `collider.standable`; `ctx.world.setPlayerVelocity` and `ctx.haptics.pulse`. The avatar now follows the body's height (it used to stay at the height it was given).
+- **`characterController`** and **`CharacterBody`**: the body of a player (slopes, steps, walls, wall jumps and slides, coyote time, jump buffer, a lane for 2.5D games); `ctx.world.setPlayerVelocity` and `ctx.haptics.pulse`. The avatar now follows the body's height (it used to stay at the height it was given).
 - **`ctx.physics`**: `raycast`, `sphereCast`, `overlapSphere`, `closest` against the real colliders.
 - **Fragments**: the `fragment` component and asset kind, `ctx.world.loadFragment`/`unloadFragment`; the baker builds them in. The 24 maps are 24 files, not pools of blocks, so the world has 444 slots (it had 898) and loads a map when it is played.
 - **`ctx.time`** (`fixed`, `setScale`), **`ctx.audio.playAt`**, **`textDisplay`** colours, `background` and `billboard`, **`ctx.world.flush`** and field-level **scene deltas** (`PROTOCOL_VERSION` 3).

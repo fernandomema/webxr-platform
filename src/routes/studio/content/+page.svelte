@@ -4,7 +4,7 @@
 	import { loadBaseAvatar } from '@kithin/engine/xr/avatar/baseAvatar';
 	import { resolve } from '$app/paths';
 	import { contentSourceFor } from '$lib/studio/content/sources';
-	import { isRemovable, isUnused, totalBytes, type ContentEntry, type ContentUsage } from '$lib/studio/content/entries';
+	import { displayName, groupOf, isRemovable, isUnused, totalBytes, type ContentEntry, type ContentUsage } from '$lib/studio/content/entries';
 	import { describeFields, formatDate } from '$lib/studio/content/describe';
 	import { dialogs } from '$lib/studio/state/dialogs.svelte';
 	import { formatBytes, studioAssets } from '$lib/studio/state/models.svelte';
@@ -43,6 +43,7 @@
 	let query = $state('');
 	let type = $state('all');
 	let sort = $state<Sort>('recent');
+	let groupBy = $state<'none' | 'usedIn'>('usedIn');
 	let onlyUnused = $state(false);
 	let showCache = $state(false);
 	let selected = $state<AssetId[]>([]);
@@ -94,11 +95,17 @@
 			(type === 'all' || entry.manifest.type === type) &&
 			(showCache || !isCacheOnly(entry)) &&
 			(!onlyUnused || isUnused(entry)) &&
-			(!needle || entry.manifest.name.toLowerCase().includes(needle))
+			(!needle || displayName(entry).toLowerCase().includes(needle))
 		);
-		if (sort === 'name') return shown.sort((a, b) => a.manifest.name.localeCompare(b.manifest.name));
+		if (sort === 'name') return shown.sort((a, b) => displayName(a).localeCompare(displayName(b)));
 		if (sort === 'size') return shown.sort((a, b) => b.manifest.byteSize - a.manifest.byteSize);
 		return shown.sort((a, b) => (b.addedAt ?? 0) - (a.addedAt ?? 0));
+	});
+	const groups = $derived.by(() => {
+		if (groupBy === 'none') return [{ name: '', entries: visible }];
+		const byName = new Map<string, ContentEntry[]>();
+		for (const entry of visible) byName.set(groupOf(entry), [...(byName.get(groupOf(entry)) ?? []), entry]);
+		return [...byName].sort(([a], [b]) => a.localeCompare(b)).map(([name, list]) => ({ name, entries: list }));
 	});
 	/** A downloaded copy nothing of yours uses: hidden by default, since it is not part of your own content. */
 	const isCacheOnly = (entry: ContentEntry): boolean => entry.cached && isUnused(entry);
@@ -204,6 +211,7 @@
 			entry.usedBy.worlds && `${entry.usedBy.worlds} world${entry.usedBy.worlds === 1 ? '' : 's'}`,
 			entry.usedBy.publications && `${entry.usedBy.publications} publication${entry.usedBy.publications === 1 ? '' : 's'}`
 		].filter(Boolean);
+		if (entry.profile) parts.push('Your profile picture');
 		return parts.length ? parts.join(', ') : entry.builtin ? 'The app (base avatar)' : entry.cached ? 'Nothing (cached copy)' : 'Not used';
 	};
 </script>
@@ -261,6 +269,10 @@
 				<option value="name">Name</option>
 				<option value="size">Largest</option>
 			</select>
+			<select class="select sort" aria-label="Group by" bind:value={groupBy}>
+				<option value="none">No grouping</option>
+				<option value="usedIn">Group by used in</option>
+			</select>
 			<label class="check"><input type="checkbox" bind:checked={onlyUnused} />Unused only</label>
 			{#if cache.length}<label class="check"><input type="checkbox" bind:checked={showCache} />Show cache ({cache.length})</label>{/if}
 			<span class="spacer"></span>
@@ -294,14 +306,16 @@
 						<input type="checkbox" aria-label="Select all shown" checked={visible.every((entry) => selected.includes(entry.assetId))} onchange={selectAllVisible} />
 						<span>{visible.length} file{visible.length === 1 ? '' : 's'} · {formatBytes(totalBytes(visible))}</span>
 					</div>
+					{#each groups as group (group.name)}
+					{#if group.name}<h3 class="group">{group.name} <span class="muted">{group.entries.length}</span></h3>{/if}
 					<ul>
-						{#each visible as entry (entry.assetId)}
+						{#each group.entries as entry (entry.assetId)}
 							<li class="entry" class:focused={focusId === entry.assetId}>
 								<input type="checkbox" aria-label={`Select ${entry.manifest.name}`} checked={selected.includes(entry.assetId)} onchange={() => toggle(entry.assetId)} />
 								<button class="entry-main" onclick={() => (focusId = focusId === entry.assetId ? null : entry.assetId)}>
 									<span class="entry-icon"><Icon name={kindIcon(entry.manifest.type)} size={18} /></span>
 									<span class="entry-text">
-										<strong>{entry.manifest.name}</strong>
+										<strong>{displayName(entry)}</strong>
 										<span class="muted">{kindLabel(entry.manifest.type)} · {entry.manifest.format.toUpperCase()} · {formatBytes(entry.manifest.byteSize)}</span>
 									</span>
 								</button>
@@ -309,13 +323,14 @@
 							</li>
 						{/each}
 					</ul>
+					{/each}
 				{/if}
 			</div>
 
 			{#if focused}
 				<aside class="detail" aria-label="Details">
 					<div class="detail-head">
-						<h2>{focused.manifest.name}</h2>
+						<h2>{displayName(focused)}</h2>
 						<button class="icon-btn" aria-label="Close details" onclick={() => (focusId = null)}><Icon name="close" size={14} /></button>
 					</div>
 					{#key focused.assetId}<ContentPreview manifest={focused.manifest} bytes={previewFor === focused.assetId ? previewBytes : null} loading={previewLoading || previewFor !== focused.assetId} icon={kindIcon(focused.manifest.type)} />{/key}
@@ -374,6 +389,7 @@
 	.layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
 	.layout.with-detail { grid-template-columns: minmax(0, 1fr) 320px; }
 	.head { display: flex; align-items: center; gap: 10px; padding: 0 10px 8px; color: var(--muted); font-size: 12px; }
+	.group { margin: 12px 0 6px; padding: 0 10px; font-size: 13px; }
 	ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
 	.entry { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); }
 	.entry:hover { border-color: #3a4157; }

@@ -35,7 +35,7 @@ const overlaps = (a: Bounds, b: Bounds, margin = 0): boolean =>
 
 /**
  * The solids of a world and the questions a game asks of them: what a ray hits, how far a sphere can go before it touches
- * something, what a sphere is inside of. Shapes are boxes (any turn), spheres and cylinders; nothing here knows about Babylon or
+ * something, what a sphere is inside of. Shapes are boxes (any turn), spheres, cylinders and meshes of triangles; nothing here knows about Babylon or
  * about slots, so a script, the player's body and a test all get the same answers.
  */
 export class CollisionWorld {
@@ -102,8 +102,10 @@ export class CollisionWorld {
 			const p = add(origin, scale(d, t));
 			let advance = Infinity;
 			for (const item of near) {
-				const n = nearest(item.shape, p);
+				const n = nearest(item.shape, p, radius + 1);
 				const gap = n.distance - radius;
+				// A mesh that looked only so far: nothing is nearer than this, so this much is safe, whichever way it goes.
+				if (n.bound) { advance = Math.min(advance, gap); continue; }
 				const approach = -dot(d, n.normal);
 				// Touching or inside while moving into it is a hit; moving along or away from it is not (a sphere resting on a floor rolls on).
 				if (gap <= EPS) {
@@ -124,8 +126,8 @@ export class CollisionWorld {
 		const found: Contact[] = [];
 		for (const item of this.items.values()) {
 			if (!overlaps(item.bounds, around) || options.ignore?.(item.id)) continue;
-			const n = nearest(item.shape, center);
-			if (n.distance < radius) found.push({ id: item.id, normal: n.normal, depth: radius - n.distance, point: n.point });
+			const n = nearest(item.shape, center, radius);
+			if (!n.bound && n.distance < radius) found.push({ id: item.id, normal: n.normal, depth: radius - n.distance, point: n.point });
 		}
 		return found.sort((a, b) => b.depth - a.depth);
 	}
@@ -136,8 +138,8 @@ export class CollisionWorld {
 		for (const item of this.items.values()) {
 			if (options.ignore?.(item.id)) continue;
 			if (maxDistance < Infinity && !overlaps(item.bounds, { min: point, max: point }, maxDistance)) continue;
-			const n = nearest(item.shape, point);
-			if (n.distance <= maxDistance && (!best || n.distance < best.distance)) best = { id: item.id, normal: n.normal, depth: Math.max(0, -n.distance), point: n.point, distance: n.distance };
+			const n = nearest(item.shape, point, Math.min(maxDistance, 100));
+			if (!n.bound && n.distance <= maxDistance && (!best || n.distance < best.distance)) best = { id: item.id, normal: n.normal, depth: Math.max(0, -n.distance), point: n.point, distance: n.distance };
 		}
 		return best;
 	}

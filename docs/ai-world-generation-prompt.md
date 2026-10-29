@@ -260,7 +260,7 @@ Required fields are marked **(req)**. Everything else is optional; omit a field 
 - `gravity`: m/s² (default 9.8).
 - `vrJump`: `true` makes the A button of the right controller jump in a headset (on a desktop Space always jumps).
 - `wallJump`: `true` lets a jump in the air next to a wall jump again, so a wall can be climbed by jumping against it.
-- In a headset players only stand on `ground` and `disc` meshes: to make a platform, put a solid box (it blocks the sides) and a thin `ground` plane on its top (walkable). With a `characterController` (below) a `collider` with `standable: true` is both: solid on the sides and a floor on its top, flat or sloped.
+- Players stand on any solid: a `box` with a `collider` is a platform you can walk on and that blocks its sides. Grabbable objects never block a player.
 
 **`characterController`**: how players' bodies move, for any kind of game (a platformer, a 2.5D fighter, a walking sim). Replaces `playerMovement` (use one of them per world, on any slot). The body is a capsule that stands on flat ground and slopes, walks up low steps, slides along walls, falls and jumps, the same on a desktop and in a headset. Every field is optional and has a value that is a person walking:
 - `walkSpeed`, `runSpeed`: m/s (about 2 and 3.5). `jumpSpeed`: m/s (3.6). `gravity`: m/s² (9.8). `terminalSpeed`: the fastest fall, m/s (25). `vrJump`: the A button jumps in a headset.

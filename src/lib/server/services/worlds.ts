@@ -3,7 +3,7 @@ import { prisma } from '../db';
 import { UnauthorizedError, ForbiddenError, NotFoundError, BadRequestError } from '../errors';
 import { validateWorldScene } from '@kithin/engine/worlds/package';
 import { migrateSlotTree } from '@kithin/engine/assets/ref';
-import { linkSceneAssets, readyAssetIds, resolveThumbnail, withThumbnail } from './assets';
+import { linkSceneAssets, readyAssetIds, releaseUnusedPreview, resolveThumbnail, withThumbnail } from './assets';
 import type { SlotTree } from '@kithin/engine/ecs/types';
 import type { HostedWorldVisibility } from '@kithin/engine/worldVisibility';
 import { getActiveRoomCodes } from '../rooms';
@@ -81,6 +81,7 @@ export async function startHostingSession(
 
 	let world = params.worldId ? await prisma.world.findUnique({ where: { id: params.worldId } }) : null;
 	if (world && world.hostUserId !== user.id) throw new ForbiddenError();
+	const replacedPreview = world?.thumbnailAssetId ?? null;
 
 	world = world
 		? await prisma.world.update({
@@ -101,6 +102,7 @@ export async function startHostingSession(
 	const hostedWorldId = world.id;
 	await prisma.$transaction(async (tx) => {
 		await linkSceneAssets(tx, user, { kind: 'world', id: hostedWorldId }, await readyAssetIds(tx, migrateSlotTree(params.sceneSnapshot)));
+		if (replacedPreview) await releaseUnusedPreview(tx, user.id, replacedPreview);
 	});
 
 	await prisma.worldSession.updateMany({
@@ -126,6 +128,7 @@ export async function setWorldPreview(user: SessionUser | null, worldId: string,
 		const sceneIds = await readyAssetIds(tx, migrateSlotTree(world.sceneData as unknown as SlotTree));
 		await linkSceneAssets(tx, user, { kind: 'world', id: worldId }, withThumbnail(sceneIds, thumbnail));
 		await tx.world.update({ where: { id: worldId }, data: { thumbnailAssetId: thumbnail } });
+		if (world.thumbnailAssetId && world.thumbnailAssetId !== thumbnail) await releaseUnusedPreview(tx, user.id, world.thumbnailAssetId);
 	});
 }
 
@@ -139,4 +142,14 @@ export async function stopHostingSession(user: SessionUser | null, worldId: stri
 		where: { worldId, endedAt: null },
 		data: { endedAt: new Date() }
 	});
+
+	// The preview only stood for the running session: let go of it so the cleanup can delete it.
+	if (world.thumbnailAssetId) {
+		const preview = world.thumbnailAssetId;
+		await prisma.$transaction(async (tx) => {
+			await tx.world.update({ where: { id: worldId }, data: { thumbnailAssetId: null } });
+			await tx.worldAsset.deleteMany({ where: { worldId, assetId: preview } });
+			await releaseUnusedPreview(tx, user.id, preview);
+		});
+	}
 }

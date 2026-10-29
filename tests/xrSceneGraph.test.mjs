@@ -142,11 +142,13 @@ for (const shape of ['box', 'mesh']) {
 			const body = setupPlayerBody(f.scene, graph, xr, f.camera, { x: 0, z: 0 });
 			const model = graph.getLive('solid').model;
 			const target = shape === 'mesh' ? model.instance.root.getChildMeshes()[0] : model.proxy;
-			assert.equal(target.checkCollisions, true);
 			assert.equal(target.isPickable, true);
-			assert.equal(model.placeholder.checkCollisions, false);
 			for (const mesh of f.scene.meshes) mesh.computeWorldMatrix(true);
-			assert.ok(body.constrainMove(new Vector3(0, 0, 1)).z < 1, 'walking into the model is constrained');
+			body.update(0.02); // the body is put down where the head is
+			const before = f.camera.position.z;
+			body.constrainMove(new Vector3(0, 0, 1));
+			body.update(0.02);
+			assert.ok(f.camera.position.z - before < 0.9, 'walking into the model is constrained');
 		} finally { graph.dispose(); f.dispose(); }
 	});
 }
@@ -578,12 +580,21 @@ test('a wall that appears or is switched on stops a headset player in the same f
 		f.camera.realWorldHeight = 1.6;
 		const xr = { baseExperience: { state: WebXRState.IN_XR, camera: f.camera } };
 		const body = setupPlayerBody(f.scene, graph, xr, f.camera, { x: 0, z: 0 }); // nothing solid yet; the set is cached
-		const walk = () => { for (const mesh of f.scene.meshes) mesh.computeWorldMatrix(true); return body.constrainMove(new Vector3(0, 0, 1)).z; };
-		assert.equal(walk(), 1, 'free to walk');
+		// A metre of walking asked for, from where the player starts: how far the head went.
+		const walk = () => {
+			for (const mesh of f.scene.meshes) mesh.computeWorldMatrix(true);
+			body.teleport({ position: [0, 0, -1.5] });
+			body.update(0.02); // the body is put down where the head is
+			const before = f.camera.position.z;
+			body.constrainMove(new Vector3(0, 0, 1));
+			body.update(0.02);
+			return f.camera.position.z - before;
+		};
+		assert.ok(Math.abs(walk() - 1) < 1e-6, 'free to walk');
 		graph.addSlot(createSlot({ id: 'wall', position: [0, 1, 0], components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'box' } }, { type: 'collider', shape: 'box' }] }));
 		assert.ok(walk() < 1, 'a wall that has just appeared blocks');
 		graph.setSlotEnabled('wall', false);
-		assert.equal(walk(), 1, 'a door that was opened lets them through');
+		assert.ok(Math.abs(walk() - 1) < 1e-6, 'a door that was opened lets them through');
 		graph.setSlotEnabled('wall', true);
 		assert.ok(walk() < 1, 'and blocks again when closed');
 	} finally { graph.dispose(); f.dispose(); }
@@ -746,4 +757,22 @@ test('a script loads a fragment by asset id; anything else is refused', () => {
 		ctx.world.unloadFragment('map-3');
 		assert.deepEqual(deleted, ['map-3']);
 	} finally { graph.dispose(); scene.dispose(); engine.dispose(); }
+});
+
+test('seated mode that was on before the headset session is applied when the session starts, without toggling it', () => {
+	const f = fixture();
+	const graph = new SceneGraph(f.scene, {});
+	try {
+		f.camera.position.set(0, 1.2, 0);
+		f.camera.realWorldHeight = 1.2;
+		const xr = { baseExperience: { state: WebXRState.NOT_IN_XR, camera: f.camera } };
+		const body = setupPlayerBody(f.scene, graph, xr, f.camera, { x: 0, z: 0 });
+		body.setSeated(true); // the saved setting, applied while the page is still a flat one
+		xr.baseExperience.state = WebXRState.IN_XR;
+		body.update(0.02);
+		assert.ok(Math.abs(f.camera.position.y - (1.2 + 0.5)) < 0.01, `head raised to a standing height (${f.camera.position.y.toFixed(3)})`);
+		const raised = f.camera.position.y;
+		body.update(0.02);
+		assert.ok(Math.abs(f.camera.position.y - raised) < 0.01, 'and only once');
+	} finally { graph.dispose(); f.dispose(); }
 });

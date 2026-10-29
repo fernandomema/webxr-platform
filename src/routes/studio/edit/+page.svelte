@@ -367,6 +367,12 @@
 							doc.setRotationEuler(id, quatToEuler(rotation).map((value) => roundDisplay(value, 2)) as [number, number, number]);
 						}}
 						onTransformSlot={(id, position, rotation, scale) => doc.setTransform(id, position, rotation, scale)}
+						onColliderBox={(id, center, size) => {
+							const index = doc.tree.find((slot) => slot.id === id)?.components.findIndex((component) => component.type === 'collider') ?? -1;
+							if (index < 0) return;
+							doc.setField(id, index, 'center', center);
+							doc.setField(id, index, 'size', size);
+						}}
 					/>
 					<p class="hint">Drag to orbit · Scroll to zoom · Right-drag to pan · <span class="kbd">F</span> to focus · <span class="kbd">F F</span> to fly to it</p>
 				</div>

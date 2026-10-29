@@ -16,7 +16,7 @@ test('Avatar Showcase scene refers to the bundled, valid GLB and has a walkable 
 	const ref = model.components.find((component) => component.type === 'meshRenderer').meshRef;
 	const hash = `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
 	assert.equal(ref.assetId, hash);
-	assert.ok(model.components.some((component) => component.type === 'collider' && component.shape === 'mesh'));
+	assert.ok(!model.components.some((component) => component.type === 'collider'), 'the room is not its own collider: invisible boxes round its walls are');
 	assert.ok(floor.components.some((component) => component.type === 'collider'));
 	const stats = parseGlb(bytes);
 	assert.ok(stats.triangles > 1000 && stats.triangles < ASSET_LIMITS.maxTriangles);
@@ -37,4 +37,15 @@ test('Avatar Showcase scene refers to the bundled, valid GLB and has a walkable 
 	const extents = stats.bounds.max.map((value, index) => value - stats.bounds.min[index]);
 	const roomBottom = model.position[1] - model.scale[1] * extents[1] / Math.max(...extents) / 2;
 	assert.ok(Math.abs(roomBottom) < 0.1);
+});
+
+test('Avatar Showcase has a few invisible box colliders for its walls instead of a collider on the model', async () => {
+	const scene = JSON.parse(await readFile(scenePath, 'utf8'));
+	const walls = scene.filter((slot) => slot.id.startsWith('polygon-quest-wall-'));
+	assert.ok(walls.length >= 8 && walls.length <= 20, 'a handful of boxes, not a copy of the model');
+	for (const wall of walls) {
+		const mesh = wall.components.find((component) => component.type === 'meshRenderer');
+		assert.equal(mesh.opacity, 0, `${wall.name} is not drawn`);
+		assert.ok(wall.components.some((component) => component.type === 'collider' && component.shape === 'box'));
+	}
 });

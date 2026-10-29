@@ -5,6 +5,10 @@ export interface UsedIn {
 	/** `Name (where it is kept)`. */
 	label: string;
 	href?: string;
+	/** The object or world on its own, without where it is kept. */
+	name?: string;
+	/** The file is this one's preview picture, not something it is made of. */
+	preview?: boolean;
 }
 
 /** One stored file as the content manager shows it, whichever storage it lives in. */
@@ -21,6 +25,8 @@ export interface ContentEntry {
 	builtin: boolean;
 	/** The objects and worlds behind `usedBy`, when the storage can say; `href` opens the one in the editor. */
 	usedIn?: UsedIn[];
+	/** It is the account's profile picture: in use even though no object or world mentions it. */
+	profile?: boolean;
 	usedBy: { items: number; worlds: number; publications: number } | null;
 }
 
@@ -45,8 +51,19 @@ export const totalBytes = (entries: readonly ContentEntry[]): number => entries.
 
 /** A file the storage would refuse to remove because something still uses it. */
 export function isRemovable(source: { adapterId: string }, entry: ContentEntry): boolean {
-	return source.adapterId !== 'cloud' || !entry.usedBy || entry.usedBy.items + entry.usedBy.worlds + entry.usedBy.publications === 0;
+	return source.adapterId !== 'cloud' || !entry.usedBy || (!entry.profile && entry.usedBy.items + entry.usedBy.worlds + entry.usedBy.publications === 0);
 }
 
-export const isUnused = (entry: ContentEntry): boolean => !entry.builtin && entry.usedBy !== null && entry.usedBy.items + entry.usedBy.worlds + entry.usedBy.publications === 0;
+export const isUnused = (entry: ContentEntry): boolean => !entry.builtin && !entry.profile && entry.usedBy !== null && entry.usedBy.items + entry.usedBy.worlds + entry.usedBy.publications === 0;
 
+
+/** What the file is called in lists: a preview picture says whose it is, since they are all named alike. */
+export function displayName(entry: ContentEntry): string {
+	const places = entry.usedIn ?? [];
+	if (entry.manifest.type !== 'image' || !places.length || !places.every((place) => place.preview && place.name)) return entry.manifest.name;
+	const first = places[0].name;
+	return places.length > 1 ? `Preview of ${first} and ${places.length - 1} more` : `Preview of ${first}`;
+}
+
+/** The group an entry belongs to when listed by where it is used: the first object or world that uses it. */
+export const groupOf = (entry: ContentEntry): string => entry.usedIn?.[0]?.name ?? (entry.builtin ? 'The app' : 'Not used');

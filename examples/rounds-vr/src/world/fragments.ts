@@ -38,7 +38,7 @@ function clearOf(m: number, at: Vec3): Vec3 {
 	return best ?? at;
 }
 
-/** The slots of a map: every block laid out as the game has it (solid, and standable: its upper surface is a floor), and the lights baked into its lighting. */
+/** The slots of a map: every block laid out as the game has it (solid: the body walks on its upper surface), and the lights baked into its lighting. */
 export function mapFragmentSlots(m: number): Slot[] {
 	const style = styleOf(m);
 	const body = polyHaven(style.body.id, style.body.size, style.body.id);
@@ -49,7 +49,7 @@ export function mapFragmentSlots(m: number): Slot[] {
 			position: p.position,
 			rotation: p.rotation,
 			scale: p.scale,
-			components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: p.kind === 'block' ? 'box' : 'cylinder' }, color: style.body.tint }, body, { type: 'collider', shape: 'box', standable: true }]
+			components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: p.kind === 'block' ? 'box' : 'cylinder' }, color: style.body.tint }, body, { type: 'collider', shape: 'box' }]
 		})
 	);
 	const lights = style.lights.map((light, n) => createSlot({ id: `light-${n}`, name: 'Map Light', position: clearOf(m, light.at), components: [{ type: 'pointLight', color: light.color, intensity: light.intensity, range: light.range, baked: true }] }));

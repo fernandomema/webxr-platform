@@ -39,6 +39,9 @@ function resolveMediaUrl(url: string): string {
 	return '';
 }
 
+/** HRTF is the better 3D sound but costly: a standalone headset's browser pans left and right only, which it plays without cuts. */
+const HEADSET_BROWSER = typeof navigator !== 'undefined' && /OculusBrowser|Quest/i.test(navigator.userAgent);
+
 function clampVolume(volume: number | undefined): number {
 	return Math.min(1, Math.max(0, volume ?? 1));
 }
@@ -128,7 +131,7 @@ export function setupAudioPlayerSurface(
 			}
 		);
 		// Babylon defaults to plain left/right panning, which cannot tell front from behind; HRTF can.
-		next.switchPanningModelToHRTF();
+		if (!HEADSET_BROWSER) next.switchPanningModelToHRTF();
 		place(next);
 		next.onEndedObservable.add(() => {
 			if (!next.loop) {
@@ -155,7 +158,7 @@ export function setupAudioPlayerSurface(
 		sound.loop = component.loop ?? false;
 		sound.setVolume(clampVolume(component.volume));
 		if (component.playing && !sound.isPlaying) sound.play(0, component.currentTime ?? 0);
-		else if (!component.playing && sound.isPlaying) sound.pause();
+		else if (!component.playing && sound.isPlaying) sound.stop();
 		else if (component.playing && (component.currentTime ?? 0) !== requestedTime) {
 			// Seek only when the requested position itself changed: a playing track's own progress is not a request to restart it.
 			sound.stop();
@@ -167,10 +170,12 @@ export function setupAudioPlayerSurface(
 	const control = (action: MediaControlAction) => {
 		component.playing = action === 'toggle' ? !component.playing : action === 'play';
 		if (!sound) return;
-		if (component.playing) sound.play(0, component.currentTime ?? 0);
-		else {
-			component.currentTime = sound.currentTime;
-			sound.pause();
+		if (component.playing) {
+			if (!sound.isPlaying) sound.play(0, component.currentTime ?? 0);
+		} else {
+			// Stopped, not paused: Babylon's resume keeps its own count of the time played, and a play from here always starts from this position.
+			component.currentTime = sound.isPlaying ? sound.currentTime : (component.currentTime ?? 0);
+			sound.stop();
 		}
 	};
 

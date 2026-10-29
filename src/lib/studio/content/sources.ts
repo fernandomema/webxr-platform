@@ -45,12 +45,14 @@ interface References {
  */
 async function localReferences(ctx: InventoryContext): Promise<Map<AssetId, References>> {
 	const used = new Map<AssetId, References>();
-	const note = (ids: Iterable<AssetId>, world: boolean, entry: UsedIn) => {
+	const slotOf = new Map<string, unknown>();
+	const note = (ids: Iterable<AssetId>, world: boolean, entry: UsedIn, thumbnail?: AssetId) => {
 		for (const id of ids) {
 			const count = used.get(id) ?? { items: 0, worlds: 0, in: [] };
 			if (world) count.worlds++;
 			else count.items++;
-			if (!count.in.some((known) => known.label === entry.label)) count.in.push(entry);
+			const here = id === thumbnail && !assetIdsIn(slotOf.get(entry.label)).has(id) ? { ...entry, preview: true } : entry;
+			if (!count.in.some((known) => known.label === entry.label)) count.in.push(here);
 			used.set(id, count);
 		}
 	};
@@ -63,9 +65,10 @@ async function localReferences(ctx: InventoryContext): Promise<Map<AssetId, Refe
 				const href = editHref({ source: adapter.id, folder: item.folderId ?? 'root', item: item.id });
 				opens.set(`item:${adapter.id}:${item.id}`, href);
 				if (item.worldLineageId) opens.set(`lineage:${item.worldLineageId}`, href);
+				slotOf.set(`${item.name} (${adapter.label})`, item.slotData);
 				const ids = assetIdsIn(item.slotData);
 				if (item.thumbnailAssetId) ids.add(item.thumbnailAssetId);
-				note(ids, item.kind === 'world', { label: `${item.name} (${adapter.label})`, href });
+				note(ids, item.kind === 'world', { label: `${item.name} (${adapter.label})`, href, name: item.name }, item.thumbnailAssetId ?? undefined);
 			}
 		} catch {
 			// Not readable now (signed out, folder not reconnected).
@@ -75,7 +78,7 @@ async function localReferences(ctx: InventoryContext): Promise<Map<AssetId, Refe
 		const href = draft.key.startsWith('new:')
 			? editHref({ template: draft.kind === 'world' ? 'blank-world' : 'blank-object', draft: draft.key.slice(4) })
 			: opens.get(draft.key);
-		note(assetIdsIn(draft.tree), draft.kind === 'world', { label: `${draft.name} (unsaved draft)`, href });
+		note(assetIdsIn(draft.tree), draft.kind === 'world', { label: `${draft.name} (unsaved draft)`, href, name: draft.name });
 	}
 	return used;
 }
@@ -124,6 +127,11 @@ function cloudSource(): ContentSource {
 				lastUsedAt: null,
 				cached: false,
 				builtin: false,
+				profile: asset.profile,
+				usedIn: [
+					...(asset.profile ? [{ label: 'Profile picture (your account)', name: 'Profile picture', href: resolve('/settings') }] : []),
+					...(asset.worlds ?? []).map((world) => ({ label: `${world.name} (hosted world)`, name: world.name, href: `${resolve('/play')}?world=${encodeURIComponent(world.id)}`, preview: world.preview }))
+				],
 				usedBy: asset.usedIn
 			}));
 		},

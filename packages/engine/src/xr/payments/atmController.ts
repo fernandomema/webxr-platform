@@ -14,6 +14,8 @@ export interface AtmState {
 	packs: AtmPackView[];
 	/** Credits can be bought without leaving the game (the Meta store is there). */
 	canBuyHere: boolean;
+	/** Why they cannot, when they cannot: this device has no in-app payments, the server does not take Meta receipts, or the store did not answer. */
+	cannotBuyBecause: 'device' | 'server' | 'store' | null;
 	message: string;
 	/** The pack being paid for, while a payment is under way. */
 	busy: string | null;
@@ -45,7 +47,7 @@ const money = (cents: number, currency: string): string => {
  * Nothing here is reachable from a world: the window is the game's.
  */
 export function createAtmController(deps: AtmDeps) {
-	let state: AtmState = { phase: 'loading', balance: 0, packs: [], canBuyHere: false, message: '', busy: null };
+	let state: AtmState = { phase: 'loading', balance: 0, packs: [], canBuyHere: false, cannotBuyBecause: null, message: '', busy: null };
 	const listeners = new Set<(next: AtmState) => void>();
 	const set = (patch: Partial<AtmState>) => {
 		state = { ...state, ...patch };
@@ -67,7 +69,10 @@ export function createAtmController(deps: AtmDeps) {
 		if (!deps.isSignedIn()) return set({ phase: 'signed-out', message: '', busy: null });
 		let summary = await readSummary();
 		if (!summary) return set({ phase: 'error', message: 'Could not reach your account. Try again in a moment.', busy: null });
-		const canBuyHere = deps.meta.isAvailable() && summary.providers.some((provider) => provider.id === 'meta') && (await deps.meta.open()) !== null;
+		const onDevice = deps.meta.isAvailable();
+		const onServer = summary.providers.some((provider) => provider.id === 'meta');
+		const canBuyHere = onDevice && onServer && (await deps.meta.open()) !== null;
+		const cannotBuyBecause = canBuyHere ? null : !onDevice ? 'device' : !onServer ? 'server' : 'store';
 		let message = '';
 		let details = new Map<string, { price: string }>();
 		if (canBuyHere) {
@@ -81,6 +86,7 @@ export function createAtmController(deps: AtmDeps) {
 			phase: 'ready',
 			balance: summary.balance,
 			canBuyHere,
+			cannotBuyBecause,
 			message,
 			busy: null,
 			packs: summary.packs.map((pack) => ({ id: pack.id, credits: pack.credits, metaSku: pack.metaSku, priceLabel: (canBuyHere && details.get(pack.metaSku)?.price) || money(pack.priceCents, pack.currency) }))

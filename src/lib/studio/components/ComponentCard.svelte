@@ -22,7 +22,9 @@
 
 	let open = $state(true);
 	const schema = $derived(componentSchema(component.type));
-	const fields = $derived(schema.fields.filter((field) => advanced || !field.advanced));
+	const fields = $derived(schema.fields.filter((field) =>
+		(advanced || !field.advanced) && (!field.when || (component as unknown as Record<string, unknown>)[field.when.key] === field.when.is)
+	));
 
 	/** A whole material from the online libraries: its maps, the real size of one repeat and by-size mapping, in one go. */
 	async function browseMaterials() {

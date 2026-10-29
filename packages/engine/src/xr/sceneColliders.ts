@@ -1,7 +1,8 @@
-import { Matrix, Vector3, type AbstractMesh, type Mesh, type TransformNode } from '@babylonjs/core';
+import { Matrix, Vector3, VertexBuffer, type AbstractMesh, type Mesh, type TransformNode } from '@babylonjs/core';
 import { isBuiltinMesh } from '../assets/ref.ts';
 import { isGrabbable, type Slot } from '../ecs/types.ts';
 import { axesOf, box, cylinder, normalize, sphere, type Shape, type V3 } from '../physics/shapes.ts';
+import { buildTriMesh } from '../physics/triMesh.ts';
 import { CollisionWorld } from '../physics/world.ts';
 
 /** What the world's colliders are made from: the slots and their nodes, narrowly, so that a test can stand in for the scene graph. */
@@ -14,9 +15,11 @@ interface Tracked {
 	slotId: string;
 	/** What is measured: the slot's own mesh, or for a model the invisible box that stands for it. */
 	node: TransformNode;
+	/** The slot's own node, whose space a collider's own box is given in. */
+	owner: TransformNode;
 	slot: Slot;
-	/** Meshes of a model whose collider is its geometry: its box is the box around them. */
-	meshes?: AbstractMesh[];
+	/** A collider of shape `mesh`: solid as the triangles of what is drawn. Which meshes those are is asked again each time, as a model arrives after its slot. */
+	triangles?: () => AbstractMesh[];
 	flag: number;
 	enabled: boolean;
 }
@@ -84,8 +87,9 @@ export class SceneColliders {
 			seen.add(live.slot.id);
 			const existing = this.tracked.get(live.slot.id);
 			if (existing && existing.slot === live.slot && existing.node === (((live.node.metadata as { selectionMesh?: TransformNode } | null)?.selectionMesh ?? live.node) as TransformNode)) continue;
-			const modelMeshes = live.slot.components.some((c) => c.type === 'collider' && c.shape === 'mesh') ? live.model?.instance?.root.getChildMeshes(false) : undefined;
-			this.tracked.set(live.slot.id, { slotId: live.slot.id, node: ((live.node.metadata as { selectionMesh?: TransformNode } | null)?.selectionMesh ?? live.node) as TransformNode, slot: live.slot, meshes: modelMeshes, flag: -1, enabled: false });
+			const wantsTriangles = live.slot.components.some((c) => c.type === 'collider' && c.shape === 'mesh');
+			const triangles = wantsTriangles ? () => live.model?.instance?.root.getChildMeshes(false) ?? ((live.node as Mesh).getTotalVertices?.() > 0 ? [live.node as Mesh] : []) : undefined;
+			this.tracked.set(live.slot.id, { slotId: live.slot.id, owner: live.node, node: ((live.node.metadata as { selectionMesh?: TransformNode } | null)?.selectionMesh ?? live.node) as TransformNode, slot: live.slot, triangles, flag: -1, enabled: false });
 		}
 		for (const id of [...this.tracked.keys()]) {
 			if (seen.has(id)) continue;
@@ -101,9 +105,15 @@ export class SceneColliders {
 			return;
 		}
 		const matrix = entry.node.computeWorldMatrix();
-		const flag = (matrix as Matrix & { updateFlag?: number }).updateFlag ?? 0;
-		if (entry.enabled && entry.flag === flag && !entry.meshes) return;
-		const shape = shapeOf(entry);
+		let flag = (matrix as Matrix & { updateFlag?: number }).updateFlag ?? 0;
+		let meshes: AbstractMesh[] | undefined;
+		if (entry.triangles) {
+			// Triangles are made again when the slot moves or when what it is drawn with changes (a model that has just loaded).
+			meshes = entry.triangles();
+			flag = flag * 4096 + meshes.length;
+		}
+		if (entry.enabled && entry.flag === flag) return;
+		const shape = meshes ? meshShape(meshes) : shapeOf(entry);
 		entry.flag = flag;
 		if (!shape) { this.world.remove(entry.slotId); entry.enabled = false; return; }
 		this.world.set(entry.slotId, shape);
@@ -115,7 +125,8 @@ export class SceneColliders {
 function shapeOf(entry: Tracked): Shape | null {
 	const { node, slot } = entry;
 	const renderer = slot.components.find((c) => c.type === 'meshRenderer');
-	if (entry.meshes && entry.meshes.length > 0) return modelBox(entry.meshes);
+	const custom = customBox(entry.owner, slot);
+	if (custom) return custom;
 	const mesh = node as Mesh;
 	if (typeof mesh.getBoundingInfo !== 'function') return null;
 	const bounds = mesh.getBoundingInfo().boundingBox;
@@ -141,21 +152,54 @@ function shapeOf(entry: Tracked): Shape | null {
 	return { kind: 'box', center, half, axes };
 }
 
-/** The box around a set of meshes (a model's geometry), axis-aligned in the world. */
-function modelBox(meshes: AbstractMesh[]): Shape | null {
-	const min = new Vector3(Infinity, Infinity, Infinity), max = new Vector3(-Infinity, -Infinity, -Infinity);
-	let any = false;
+/** The box a `collider` sets for itself (`center` and `size`, in the node's space before its scale), in the world; null when it sets none. */
+function customBox(node: TransformNode, slot: Slot): Shape | null {
+	const collider = slot.components.find((c) => c.type === 'collider');
+	if (!collider || collider.type !== 'collider' || collider.shape !== 'box' || !collider.size) return null;
+	const { size, center = [0, 0, 0] } = collider;
+	if (![...size, ...center].every(Number.isFinite)) return null;
+	const world = node.getWorldMatrix();
+	const m = world.m;
+	const column = (c: number): V3 => [m[c * 4], m[c * 4 + 1], m[c * 4 + 2]];
+	const lengths: V3 = [Math.hypot(...column(0)), Math.hypot(...column(1)), Math.hypot(...column(2))];
+	if (lengths.some((l) => l < 1e-9)) return null;
+	const axes: [V3, V3, V3] = [normalize(column(0)), normalize(column(1)), normalize(column(2))];
+	const at = Vector3.TransformCoordinates(new Vector3(center[0], center[1], center[2]), world).asArray() as V3;
+	const half: V3 = [Math.max(Math.abs(size[0]) / 2 * lengths[0], MIN_HALF), Math.max(Math.abs(size[1]) / 2 * lengths[1], MIN_HALF), Math.max(Math.abs(size[2]) / 2 * lengths[2], MIN_HALF)];
+	return { kind: 'box', center: at, half, axes };
+}
+
+/** The triangles of a set of meshes, in the world; null when there are none (a model that has not arrived). */
+function meshShape(meshes: AbstractMesh[]): Shape | null {
+	const parts: { positions: Float32Array; indices: ArrayLike<number>; m: ArrayLike<number> }[] = [];
+	let vertices = 0, indexCount = 0;
 	for (const mesh of meshes) {
-		if (typeof mesh.getBoundingInfo !== 'function' || !mesh.isEnabled(false)) continue;
-		mesh.computeWorldMatrix();
-		const b = mesh.getBoundingInfo().boundingBox;
-		min.minimizeInPlace(b.minimumWorld);
-		max.maximizeInPlace(b.maximumWorld);
-		any = true;
+		if (typeof mesh.getVerticesData !== 'function' || !mesh.isEnabled(false)) continue;
+		const positions = mesh.getVerticesData(VertexBuffer.PositionKind);
+		if (!positions || positions.length < 9) continue;
+		const own = mesh.getIndices();
+		const indices = own && own.length >= 3 ? own : Array.from({ length: Math.floor(positions.length / 9) * 3 }, (_, i) => i);
+		mesh.computeWorldMatrix(true);
+		parts.push({ positions: positions instanceof Float32Array ? positions : Float32Array.from(positions), indices, m: mesh.getWorldMatrix().m });
+		vertices += positions.length / 3;
+		indexCount += indices.length;
 	}
-	if (!any) return null;
-	const half: V3 = [Math.max((max.x - min.x) / 2, MIN_HALF), Math.max((max.y - min.y) / 2, MIN_HALF), Math.max((max.z - min.z) / 2, MIN_HALF)];
-	return box([(min.x + max.x) / 2, (min.y + max.y) / 2, (min.z + max.z) / 2], half);
+	if (indexCount === 0) return null;
+	const world = new Float32Array(vertices * 3);
+	const index = new Uint32Array(indexCount);
+	let v = 0, i = 0;
+	for (const { positions, indices, m } of parts) {
+		for (let k = 0; k < positions.length; k += 3) {
+			const x = positions[k], y = positions[k + 1], z = positions[k + 2];
+			world[(v + k / 3) * 3] = m[0] * x + m[4] * y + m[8] * z + m[12];
+			world[(v + k / 3) * 3 + 1] = m[1] * x + m[5] * y + m[9] * z + m[13];
+			world[(v + k / 3) * 3 + 2] = m[2] * x + m[6] * y + m[10] * z + m[14];
+		}
+		for (let k = 0; k < indices.length; k++) index[i + k] = indices[k] + v;
+		v += positions.length / 3;
+		i += indices.length;
+	}
+	return buildTriMesh(world, index);
 }
 
 /** A quaternion for orthonormal axes (a rotation matrix's columns), for the helpers that take one. */

@@ -126,6 +126,19 @@ export async function markOrphanIfUnused(db: Db, assetId: string): Promise<void>
 	if (owners === 0 && references === 0) await db.asset.updateMany({ where: { id: assetId, orphanedAt: null }, data: { orphanedAt: new Date() } });
 }
 
+/**
+ * Gives up a preview picture that nothing shows any more (the one of a hosted world that stopped or got a new one), so it
+ * stops counting against the user's storage and the cleanup can delete it. Nothing happens while an object, a world, a
+ * publication or the profile still uses it.
+ */
+export async function releaseUnusedPreview(db: Db & Pick<typeof prisma, 'cloudInventoryItem' | 'user'>, userId: string, assetId: string): Promise<void> {
+	if ((await db.user.findUnique({ where: { id: userId }, select: { image: true } }))?.image === assetId) return;
+	const used = await referencesOwnedBy(db, userId, assetId);
+	if (used.items + used.worlds + used.publications > 0) return;
+	await db.assetOwner.deleteMany({ where: { assetId, ownerId: userId } });
+	await markOrphanIfUnused(db, assetId);
+}
+
 // --- upload -------------------------------------------------------------------
 
 export type UploadRequestResult =
@@ -290,6 +303,10 @@ export interface MyAsset {
 	ownedSince: Date;
 	manifest: AssetManifest;
 	usedIn: { items: number; worlds: number; publications: number };
+	/** It is the user's profile picture. */
+	profile: boolean;
+	/** The hosted worlds counted in `usedIn.worlds`. */
+	worlds: Array<{ id: string; name: string; preview: boolean }>;
 }
 
 /** Counts of the things this user owns that still use the asset. */
@@ -306,7 +323,10 @@ async function referencesOwnedBy(db: Db & Pick<typeof prisma, 'cloudInventoryIte
 
 export async function listMyAssets(user: SessionUser | null): Promise<MyAsset[]> {
 	if (!user) throw new UnauthorizedError();
-	const owned = await prisma.assetOwner.findMany({ where: { ownerId: user.id }, include: { asset: true }, orderBy: { createdAt: 'desc' } });
+	const [owned, account] = await Promise.all([
+		prisma.assetOwner.findMany({ where: { ownerId: user.id }, include: { asset: true }, orderBy: { createdAt: 'desc' } }),
+		prisma.user.findUnique({ where: { id: user.id }, select: { image: true } })
+	]);
 	return Promise.all(
 		owned.map(async (row) => ({
 			assetId: row.assetId,
@@ -315,7 +335,9 @@ export async function listMyAssets(user: SessionUser | null): Promise<MyAsset[]>
 			source: row.source,
 			ownedSince: row.createdAt,
 			manifest: row.asset.manifest as unknown as AssetManifest,
-			usedIn: await referencesOwnedBy(prisma, user.id, row.assetId)
+			usedIn: await referencesOwnedBy(prisma, user.id, row.assetId),
+			profile: account?.image === row.assetId,
+			worlds: (await prisma.world.findMany({ where: { hostUserId: user.id, assets: { some: { assetId: row.assetId } } }, select: { id: true, name: true, thumbnailAssetId: true } })).map((world) => ({ id: world.id, name: world.name, preview: world.thumbnailAssetId === row.assetId }))
 		}))
 	);
 }

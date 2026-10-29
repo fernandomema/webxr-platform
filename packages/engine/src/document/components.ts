@@ -12,6 +12,8 @@ interface FieldBase {
 	advanced?: boolean;
 	/** Optional fields can be cleared, which removes the key from the component. */
 	optional?: boolean;
+	/** Only shown while another field of the same component has this value. */
+	when?: { key: string; is: unknown };
 }
 
 export type FieldDef = FieldBase &
@@ -351,7 +353,9 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 					{ value: 'mesh', label: 'Mesh' }
 				]
 			},
-			{ key: 'standable', label: 'Stand on it', kind: 'bool', optional: true, default: false, help: 'Players can stand on its upper surface, flat or sloped, as on a floor, and it still blocks the sides. For platforms and ledges.' }
+			{ key: 'box', label: 'Box', kind: 'action', action: 'editCollider', button: 'Edit in viewport', when: { key: 'shape', is: 'box' }, help: 'Drag the box in the viewport to move and resize it. Without a custom box it is the one round what is drawn.' },
+			{ key: 'center', label: 'Box center', kind: 'vec3', step: 0.05, default: [0, 0, 0], optional: true, when: { key: 'shape', is: 'box' }, help: 'Where the box is, in the object’s own space (before its scale).' },
+			{ key: 'size', label: 'Box size', kind: 'vec3', step: 0.05, default: [1, 1, 1], optional: true, when: { key: 'shape', is: 'box' }, help: 'The box’s full size, in the object’s own space (before its scale). Clear it to use the drawn shape’s.' }
 		],
 		create: () => ({ type: 'collider', shape: 'box' })
 	},

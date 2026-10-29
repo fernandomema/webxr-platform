@@ -44,7 +44,7 @@ export interface RigHost {
 /**
  * Drives the camera with a `CharacterBody`: what a desktop's keys or a headset's stick ask for is taken as how far the player wants to go,
  * and the camera is put where the body ends up. The body stands on, walks over and bumps into the colliders of the scene, so slopes, steps,
- * walls and jumps behave the same everywhere. Without a `characterController` in the world none of this is used.
+ * walls and jumps behave the same everywhere.
  */
 export class CharacterRig {
 	readonly body: CharacterBody;

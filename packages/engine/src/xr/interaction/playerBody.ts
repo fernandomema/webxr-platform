@@ -1,20 +1,11 @@
-import { Quaternion, Ray, Vector3, WebXRState, type AbstractMesh, type Scene, type UniversalCamera, type WebXRDefaultExperience } from '@babylonjs/core';
-import { findComponent, isGrabbable, type CharacterControllerComponent, type PlayerMovementComponent, type Slot } from '../../ecs/types.ts';
+import { Quaternion, Vector3, WebXRState, type Scene, type UniversalCamera, type WebXRDefaultExperience } from '@babylonjs/core';
+import { findComponent, type CharacterControllerComponent, type PlayerMovementComponent, type Slot } from '../../ecs/types.ts';
 import { isBuiltinMesh } from '../../assets/ref.ts';
 import type { SceneGraph } from '../sceneGraph.ts';
 import type { TeleportTarget } from '../playerPoses.ts';
 import { SceneColliders } from '../sceneColliders.ts';
 import { CharacterRig, characterConfigOf } from './characterRig.ts';
 
-const GRAVITY = 9.8; // m/s²
-const TERMINAL_SPEED = 25; // m/s
-const STEP_UP = 0.4; // tallest ledge walked onto
-const BODY_RADIUS = 0.3;
-const JUMP_SPEED = 3.6; // m/s: about 0.65 m high
-/** How far from the body a wall still counts as touching, for a jump against it. */
-const WALL_REACH = 0.25;
-/** Directions (radians about the vertical) looked along for a wall. */
-const WALL_DIRECTIONS = [0, 1, 2, 3, 4, 5, 6, 7].map((n) => (n * Math.PI) / 4);
 const DESKTOP_EYE_HEIGHT = 1.6;
 const VOID_Y = -20; // below this the player is put back at the spawn point
 const CACHE_MS = 500;
@@ -26,16 +17,9 @@ export function seatedLift(realHeadHeight: number): number {
 	return Math.max(0, SEATED_HEAD_HEIGHT - realHeadHeight);
 }
 
-/** A solid that can also be stood on (`collider.standable`). */
-const isStandableSlot = (slot: Slot): boolean => slot.components.some((c) => c.type === 'collider' && c.standable === true);
-
-/** Round or flat surfaces you stand on (and can teleport to), and solids marked standable. */
+/** Round or flat surfaces you stand on (and can teleport to). */
 export const isFloorSlot = (slot: Slot): boolean =>
-	slot.components.some((c) => c.type === 'meshRenderer' && (isBuiltinMesh(c.meshRef, 'ground') || isBuiltinMesh(c.meshRef, 'disc'))) || isStandableSlot(slot);
-
-/** Things you cannot walk through: a collider that is not a floor and not something you can pick up; a standable one blocks the sides too. */
-export const isSolidSlot = (slot: Slot): boolean =>
-	slot.components.some((c) => c.type === 'collider') && !isGrabbable(slot) && (!isFloorSlot(slot) || isStandableSlot(slot)) && Boolean(findComponent(slot, 'meshRenderer'));
+	slot.components.some((c) => c.type === 'meshRenderer' && (isBuiltinMesh(c.meshRef, 'ground') || isBuiltinMesh(c.meshRef, 'disc')));
 
 export interface PlayerBody {
 	/** Limits a horizontal step (XR smooth locomotion) so it slides along walls instead of passing through them. */
@@ -46,13 +30,13 @@ export interface PlayerBody {
 	 */
 	setSeated(seated: boolean): void;
 	/**
-	 * A jump, if standing on something. In a headset only where the world turns it on (`playerMovement.vrJump`). In the air, next to a
-	 * wall, it jumps again where the world allows it (`playerMovement.wallJump`), so a wall can be climbed.
+	 * A jump, if standing on something. In a headset only where the world turns it on (`vrJump`). In the air it jumps again where the world
+	 * allows it (`airJumps`, `wallJump`).
 	 */
 	jump(): void;
 	/** How fast this world lets the player walk and run, in m/s; undefined where it does not say (the engine's own speeds apply). */
 	speeds(): { walk?: number; run?: number };
-	/** Pushes the body (m/s added to its speed; the horizontal part fades). Only where the world has a `characterController`; elsewhere the vertical part still applies. */
+	/** Pushes the body (m/s added to its speed; the horizontal part fades). */
 	addImpulse(velocity: [number, number, number]): void;
 	/** Sets the body's speed outright (what a push cancelled, a launch). Same limits as `addImpulse`. */
 	setVelocity(velocity: [number, number, number]): void;
@@ -69,10 +53,8 @@ export interface PlayerBody {
 }
 
 /**
- * Gives the player a body. On desktop this switches on Babylon's own camera
- * collisions and gravity (meshes opt in from SceneGraph). In VR the head
- * position drives the camera, so the same rules are applied by hand: a ray
- * down finds the floor, rays along the step find walls.
+ * Gives the player a body: a `CharacterRig` that stands on, walks over and bumps into the scene's colliders, on a desktop and in a
+ * headset alike. The world's `characterController` (or the older `playerMovement`) says how it moves; without either it is a person walking.
  */
 export function setupPlayerBody(
 	scene: Scene,
@@ -84,11 +66,9 @@ export function setupPlayerBody(
 ): PlayerBody {
 	scene.collisionsEnabled = true;
 	scene.gravity = new Vector3(0, -0.18, 0);
-	desktopCamera.checkCollisions = true;
-	// Walls are Babylon's (collisions); falling, standing and jumping are done below, with real acceleration, so a jump
-	// is the same height at any frame rate.
+	// The body collides with the scene by itself: the camera's own collisions and gravity would fight it.
+	desktopCamera.checkCollisions = false;
 	desktopCamera.applyGravity = false;
-	desktopCamera.ellipsoid = new Vector3(BODY_RADIUS, DESKTOP_EYE_HEIGHT / 2, BODY_RADIUS); // eye height is twice the half-height
 	const desktopStart = desktopCamera.position.clone();
 
 	/** The world's `spawnPoint` slot, as a floor position and the direction (yaw, radians) it faces; `null` when the world has none. */
@@ -103,43 +83,16 @@ export function setupPlayerBody(
 		return null;
 	}
 
-	/** Parts of something you can pick up (a brush handle, a cue) travel with it and must never block the player. */
-	function insideGrabbable(slot: Slot): boolean {
-		let parentId = slot.parentId;
-		while (parentId) {
-			const parent = sceneGraph.getLive(parentId)?.slot;
-			if (!parent) return false;
-			if (isGrabbable(parent)) return true;
-			parentId = parent.parentId;
-		}
-		return false;
-	}
-
-	const hasDisposed = (meshes: Set<AbstractMesh>) => {
-		for (const mesh of meshes) if (mesh.isDisposed()) return true;
-		return false;
-	};
-	let floors = new Set<AbstractMesh>();
-	let solids = new Set<AbstractMesh>();
-	// How this world lets the body move (its `playerMovement` component), read with the floors and the solids.
-	let gravity = GRAVITY;
-	let jumpSpeed = JUMP_SPEED;
+	// How this world lets the body move: its `characterController`, or the older `playerMovement`, or a person walking.
 	let vrJump = false;
-	let wallJump = false;
-	let controllerComponent: CharacterControllerComponent | undefined;
 	let rig: CharacterRig | null = null;
-	let terminalSpeed = TERMINAL_SPEED;
 	let walkSpeed: number | undefined;
 	let runSpeed: number | undefined;
 	let refreshedAt = -Infinity;
 	function refreshSets(): void {
 		const now = performance.now();
-		// A world was swapped (or a floor rebuilt): the new floor must count at once, or the player falls through it before
-		// the next refresh and, by then more than a step below it, never finds it again.
-		if (now - refreshedAt < CACHE_MS && !hasDisposed(floors) && !hasDisposed(solids)) return;
+		if (now - refreshedAt < CACHE_MS) return;
 		refreshedAt = now;
-		floors = new Set();
-		solids = new Set();
 		let movement: PlayerMovementComponent | undefined;
 		let controller: CharacterControllerComponent | undefined;
 		for (const entry of sceneGraph.allSlots()) {
@@ -147,46 +100,17 @@ export function setupPlayerBody(
 			if (entry.system && !entry.fragment) continue;
 			movement ??= findComponent(entry.slot, 'playerMovement');
 			controller ??= findComponent(entry.slot, 'characterController');
-			// Model roots are transform containers: their proxy handles simple colliders, their geometry mesh colliders.
-			const mesh = (entry.node.metadata?.selectionMesh ?? entry.node) as AbstractMesh;
-			if (typeof mesh.getBoundingInfo !== 'function') continue;
-			const modelCollider = entry.slot.components.some((component) => component.type === 'collider' && component.shape === 'mesh');
-			const collisionMeshes = modelCollider ? entry.model?.instance?.root.getChildMeshes(false) ?? [] : [mesh];
-			for (const candidate of collisionMeshes) {
-				// Something switched off (a door that is open, a room that is not in use) is not there to walk into or stand on.
-				if (!candidate.isEnabled()) {
-					candidate.checkCollisions = false;
-					continue;
-				}
-				if (isFloorSlot(entry.slot)) floors.add(candidate);
-				if (isSolidSlot(entry.slot) && !insideGrabbable(entry.slot)) solids.add(candidate);
-				// Desktop camera collisions use the same rule: floors and solids block, the rest is walked through.
-				candidate.checkCollisions = floors.has(candidate) || solids.has(candidate);
-			}
 		}
-		const finite = (value: number | undefined, fallback: number, min: number) => (typeof value === 'number' && Number.isFinite(value) ? Math.max(min, value) : fallback);
-		gravity = finite(movement?.gravity, GRAVITY, 0.1);
-		jumpSpeed = finite(movement?.jumpSpeed, JUMP_SPEED, 0);
-		vrJump = movement?.vrJump === true;
-		wallJump = movement?.wallJump === true;
-		terminalSpeed = finite(movement?.terminalSpeed, TERMINAL_SPEED, 1);
+		const finite = (value: number | undefined) => (typeof value === 'number' && Number.isFinite(value) ? value : undefined);
 		// A world with a character controller is moved by it; `playerMovement` still says the speeds and the jump where there is no controller.
 		const speedsFrom = controller ?? movement;
-		walkSpeed = typeof speedsFrom?.walkSpeed === 'number' ? finite(speedsFrom.walkSpeed, 2, 0.1) : undefined;
-		runSpeed = typeof speedsFrom?.runSpeed === 'number' ? finite(speedsFrom.runSpeed, 3.5, 0.1) : undefined;
-		controllerComponent = controller;
-		if (controller) {
-			vrJump = controller.vrJump === true;
-			const config = characterConfigOf(controller);
-			if (rig) rig.configure(config);
-			else {
-				rig = new CharacterRig({ inXr: () => inXr(), camera: () => (inXr() ? xr!.baseExperience.camera : desktopCamera), feetBelowCamera: () => (inXr() ? xr!.baseExperience.camera.realWorldHeight + (lift ?? 0) : DESKTOP_EYE_HEIGHT) }, colliders, config);
-			}
-			// The body collides with the scene by itself: the camera's own collisions would fight it.
-			desktopCamera.checkCollisions = false;
-		} else if (rig) {
-			rig = null;
-			desktopCamera.checkCollisions = true;
+		walkSpeed = finite(speedsFrom?.walkSpeed);
+		runSpeed = finite(speedsFrom?.runSpeed);
+		vrJump = (controller ?? movement)?.vrJump === true;
+		const config = characterConfigOf(controller ?? (movement && { type: 'characterController', jumpSpeed: movement.jumpSpeed, gravity: movement.gravity, terminalSpeed: movement.terminalSpeed, wallJump: movement.wallJump }));
+		if (rig) rig.configure(config);
+		else {
+			rig = new CharacterRig({ inXr: () => inXr(), camera: () => (inXr() ? xr!.baseExperience.camera : desktopCamera), feetBelowCamera: () => (inXr() ? xr!.baseExperience.camera.realWorldHeight + (lift ?? 0) : DESKTOP_EYE_HEIGHT) }, colliders, config);
 		}
 	}
 
@@ -212,98 +136,7 @@ export function setupPlayerBody(
 		lift = seatedLift(camera.realWorldHeight);
 		camera.position.y += lift;
 	}
-	let verticalSpeed = 0;
-	let grounded = false;
-
-	function floorHeightBelow(x: number, y: number, z: number, onDesktop = false): number | null {
-		// Walking, you also stand on what you cannot walk through (a platform, a stair); in VR only on floors.
-		const hit = scene.pickWithRay(new Ray(new Vector3(x, y, z), Vector3.Down(), 200), (mesh) => floors.has(mesh) || (onDesktop && solids.has(mesh)));
-		return hit?.hit && hit.pickedPoint ? hit.pickedPoint.y : null;
-	}
-
-	function updateXr(dt: number): void {
-		const camera = xr!.baseExperience.camera;
-		calibrateSeated();
-		const feet = feetY();
-		const ground = floorHeightBelow(camera.position.x, feet + STEP_UP, camera.position.z);
-		if (ground !== null && feet <= ground + 0.02 && verticalSpeed <= 0) {
-			// On the floor (or a ledge low enough to step onto).
-			grounded = true;
-			verticalSpeed = 0;
-			if (Math.abs(ground - feet) > 0.001) camera.position.y += ground - feet;
-		} else {
-			grounded = false;
-			verticalSpeed = Math.max(verticalSpeed - gravity * dt, -terminalSpeed);
-			let dy = verticalSpeed * dt;
-			if (ground !== null && feet + dy < ground) {
-				dy = ground - feet;
-				verticalSpeed = 0;
-			}
-			camera.position.y += dy;
-		}
-		if (feetY() < VOID_Y) {
-			verticalSpeed = 0;
-			const point = worldSpawn();
-			camera.position.x = point?.x ?? spawn.x;
-			camera.position.z = point?.z ?? spawn.z;
-			camera.position.y = (point?.y ?? 0) + camera.realWorldHeight + (lift ?? 0);
-		}
-	}
-
-	/** The head hit something above: a ceiling stops the rise. */
-	function headBlocked(dy: number): boolean {
-		const origin = desktopCamera.position;
-		const hit = scene.pickWithRay(new Ray(origin.clone(), Vector3.Up(), Math.max(0, dy) + 0.15), (mesh) => solids.has(mesh) || floors.has(mesh));
-		return Boolean(hit?.hit);
-	}
-
-	function updateDesktop(dt: number): void {
-		const camera = desktopCamera;
-		const step = Math.min(dt, 0.05); // a long frame (a tab in the background) must not fire the player through the floor
-		const feet = camera.position.y - DESKTOP_EYE_HEIGHT;
-		const ground = floorHeightBelow(camera.position.x, feet + STEP_UP, camera.position.z, true);
-		if (ground !== null && feet <= ground + 0.02 && verticalSpeed <= 0) {
-			grounded = true;
-			verticalSpeed = 0;
-			if (Math.abs(ground - feet) > 0.001) camera.position.y += ground - feet;
-		} else {
-			grounded = false;
-			verticalSpeed = Math.max(verticalSpeed - gravity * step, -terminalSpeed);
-			let dy = verticalSpeed * step;
-			if (dy > 0 && headBlocked(dy)) {
-				verticalSpeed = 0;
-				dy = 0;
-			}
-			if (ground !== null && feet + dy < ground) {
-				dy = ground - feet;
-				verticalSpeed = 0;
-			}
-			camera.position.y += dy;
-		}
-		if (camera.position.y < VOID_Y) {
-			verticalSpeed = 0;
-			const point = worldSpawn();
-			if (point) camera.position.set(point.x, point.y + DESKTOP_EYE_HEIGHT, point.z);
-			else camera.position.copyFrom(desktopStart);
-		}
-	}
-
-	/** Whether a wall is within reach of the body, at about the height of its middle. */
-	function touchingWall(): boolean {
-		refreshSets();
-		if (solids.size === 0) return false;
-		const headset = inXr();
-		const camera = headset ? xr!.baseExperience.camera : desktopCamera;
-		const feet = headset ? feetY() : camera.position.y - DESKTOP_EYE_HEIGHT;
-		const origin = new Vector3(camera.position.x, feet + 1, camera.position.z);
-		return WALL_DIRECTIONS.some((angle) => {
-			const direction = new Vector3(Math.sin(angle), 0, Math.cos(angle));
-			return Boolean(scene.pickWithRay(new Ray(origin, direction, BODY_RADIUS + WALL_REACH), (mesh) => solids.has(mesh))?.hit);
-		});
-	}
-
 	function respawn(): void {
-		verticalSpeed = 0;
 		rig?.reset();
 		const point = worldSpawn();
 		if (inXr()) {
@@ -323,11 +156,9 @@ export function setupPlayerBody(
 		if (point) desktopCamera.position.set(point.x, point.y + DESKTOP_EYE_HEIGHT, point.z);
 		else desktopCamera.position.copyFrom(desktopStart);
 		desktopCamera.rotation.set(0, point?.yaw ?? 0, 0);
-		grounded = false;
 	}
 
 	function teleport({ position, yaw }: TeleportTarget): void {
-		verticalSpeed = 0;
 		rig?.reset();
 		refreshedAt = -Infinity; // the place arrived at may have just been switched on
 		if (inXr()) {
@@ -344,7 +175,6 @@ export function setupPlayerBody(
 		}
 		desktopCamera.position.set(position[0], position[1] + DESKTOP_EYE_HEIGHT, position[2]);
 		if (yaw !== undefined) desktopCamera.rotation.y = yaw;
-		grounded = false;
 	}
 
 	return {
@@ -356,33 +186,22 @@ export function setupPlayerBody(
 		},
 		addImpulse(velocity) {
 			refreshSets();
-			if (rig) rig.addImpulse(velocity);
-			else verticalSpeed += velocity[1];
+			rig?.addImpulse(velocity);
 		},
 		setVelocity(velocity) {
 			refreshSets();
-			if (rig) rig.setVelocity(velocity);
-			else verticalSpeed = velocity[1];
+			rig?.setVelocity(velocity);
 		},
 		floorAt(x, y, z) {
 			refreshSets();
-			if (rig) return rig.floorBelow(x, y, z);
-			return floorHeightBelow(x, y, z, true);
+			return rig ? rig.floorBelow(x, y, z) : null;
 		},
 		colliders,
 		jump() {
 			const headset = inXr();
 			if (headset && !vrJump) return;
-			if (rig) {
-				rig.jump();
-				return;
-			}
-			if (grounded) {
-				verticalSpeed = jumpSpeed;
-				grounded = false;
-			} else if (wallJump && touchingWall()) {
-				verticalSpeed = jumpSpeed;
-			}
+			refreshSets();
+			rig?.jump();
 		},
 		setSeated(enabled) {
 			if (enabled === seated) return;
@@ -402,49 +221,19 @@ export function setupPlayerBody(
 		constrainMove(delta) {
 			if (!inXr() || delta.lengthSquared() === 0) return delta;
 			refreshSets();
-			if (rig) {
-				// The body takes the step and the camera follows it in `update`.
-				rig.push(delta);
-				return new Vector3(0, 0, 0);
-			}
-			if (solids.size === 0) return delta;
-			const camera = xr!.baseExperience.camera;
-			const feet = feetY();
-			const length = delta.length();
-			const direction = delta.scale(1 / length);
-			let result = delta;
-			// Knee and chest height, so low ledges and tall obstacles both stop the player.
-			for (const height of [0.45, 1.2]) {
-				const origin = new Vector3(camera.position.x, feet + height, camera.position.z);
-				const hit = scene.pickWithRay(new Ray(origin, direction, BODY_RADIUS + length), (mesh) => solids.has(mesh));
-				if (!hit?.hit || !hit.distance) continue;
-				const normal = hit.getNormal(true);
-				if (!normal) continue;
-				normal.y = 0;
-				if (normal.lengthSquared() < 1e-6) continue;
-				normal.normalize();
-				// Remove the part of the step that goes into the wall; keep the part along it.
-				const into = Vector3.Dot(result, normal);
-				if (into < 0) result = result.subtract(normal.scale(into));
-			}
-			return result;
+			// The body takes the step and the camera follows it in `update`.
+			rig?.push(delta);
+			return new Vector3(0, 0, 0);
 		},
 		update(dt) {
 			refreshSets();
-			if (rig) {
-				// A fall out of the world: back to the start.
-				const feet = rig.body.position[1];
-				if (feet < VOID_Y) respawn();
-				rig.update(dt);
-				grounded = rig.body.grounded;
-				return;
-			}
-			if (inXr()) updateXr(dt);
-			else {
-				// A new headset session starts from a fresh origin, so the lift has to be measured again.
-				if (seated) lift = null;
-				updateDesktop(dt);
-			}
+			if (!rig) return;
+			// Seated mode is measured once a headset reports its height; a new session starts from a fresh origin, so it is measured again.
+			if (inXr()) calibrateSeated();
+			else if (seated) lift = null;
+			// A fall out of the world: back to the start.
+			if (rig.body.position[1] < VOID_Y) respawn();
+			rig.update(dt);
 		}
 	};
 }

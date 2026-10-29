@@ -84,7 +84,7 @@ test('the maps are the game\'s own: the scenes\' colliders, in metres', () => {
 	assert.ok(Math.abs(MOVEMENT.run - 3.4 * SCALE) < 1e-9 && TUNING.damage === 55 && TUNING.ammo === 3 && TUNING.reload === 2 && TUNING.interval === 0.3, 'the numbers are the game\'s');
 });
 
-test('every map is a fragment: its blocks and lights in a file, built only while the map is played, standable and valid', () => {
+test('every map is a fragment: its blocks and lights in a file, built only while the map is played, and valid', () => {
 	const scene = buildRounds();
 	const byId = new Map(scene.map((slot) => [slot.id, slot]));
 	MAPS.forEach((map, m) => {
@@ -93,7 +93,6 @@ test('every map is a fragment: its blocks and lights in a file, built only while
 		assert.equal(placed.length, map.boxes.length + map.circles.length);
 		const blocks = slots.filter((slot) => slot.components.some((c) => c.type === 'collider'));
 		assert.equal(blocks.length, placed.length, `${map.name}: a solid for every block`);
-		for (const slot of blocks) assert.equal(slot.components.find((c) => c.type === 'collider').standable, true, 'a block can be stood on');
 		assert.ok(slots.some((slot) => slot.components.some((c) => c.type === 'pointLight' && c.baked)), 'baked lights come with the map');
 		assert.equal(parseFragment(serializeFragment(slots)).slots.length, slots.length, 'the file is a valid fragment');
 		const owner = byId.get(`rd-map-${m}`);

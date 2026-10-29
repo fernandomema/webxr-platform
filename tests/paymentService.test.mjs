@@ -245,6 +245,7 @@ test('without the store the ATM lists our prices and cannot buy; signed out and 
 	const plain = createAtmController({ fetch: server.fetch, isSignedIn: server.isSignedIn, meta: createMetaPayments({ fetch: server.fetch, win: {} }) });
 	await plain.open();
 	assert.equal(plain.state.canBuyHere, false);
+	assert.equal(plain.state.cannotBuyBecause, 'device', 'this browser has no in-app payments');
 	assert.match(plain.state.packs[0].priceLabel, /4\D99/, 'our own list price');
 	assert.match(plain.state.packs[1].priceLabel, /9\D99/);
 	await plain.buy('credits-500');
@@ -253,6 +254,7 @@ test('without the store the ATM lists our prices and cannot buy; signed out and 
 	const unconfigured = createAtmController({ fetch: noMeta.fetch, isSignedIn: noMeta.isSignedIn, meta: createMetaPayments({ fetch: noMeta.fetch, win: metaWindow().win }) });
 	await unconfigured.open();
 	assert.equal(unconfigured.state.canBuyHere, false, 'the server does not accept Meta receipts');
+	assert.equal(unconfigured.state.cannotBuyBecause, 'server');
 	const out = atmServer({ signedIn: false });
 	const signedOut = createAtmController({ fetch: out.fetch, isSignedIn: out.isSignedIn, meta: createMetaPayments({ fetch: out.fetch, win: {} }) });
 	await signedOut.open();

@@ -76,10 +76,11 @@ export interface ColliderComponent {
 	type: 'collider';
 	shape: 'box' | 'sphere' | 'mesh';
 	/**
-	 * A solid that can also be stood on in a headset, where a body only stands on floors: it blocks the sides like any collider and its upper
-	 * surface (flat or sloped) is a floor. A platform, a ledge, a stair.
+	 * A box of its own instead of the one round what is drawn (shape `box` only): `size` is its full size and `center` where it is, both
+	 * in the object's own space before its scale (so they scale with it). Without `size` the box is the drawn shape's.
 	 */
-	standable?: boolean;
+	center?: [number, number, number];
+	size?: [number, number, number];
 }
 
 export interface GrabbableComponent {

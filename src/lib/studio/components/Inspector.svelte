@@ -12,6 +12,7 @@
 	import NumberInput from './NumberInput.svelte';
 	import Icon from '../ui/Icon.svelte';
 	import { skeletons } from '../state/skeletons.svelte';
+	import { colliderEdit } from '../state/colliderEdit.svelte';
 	import { normalizeMeshRef, type AssetId } from '@kithin/engine/assets/ref';
 	import type { Component, Slot } from '@kithin/engine/ecs/types';
 
@@ -160,7 +161,7 @@
 						onremove={() => doc.removeComponent(slot.id, index)}
 						{onOpenCode}
 						joints={skeletons.get(boneModelFor(component)) ?? []}
-						onaction={(action) => (dialog = action === 'bakeLighting' || action === 'worldPreview' ? action : null)}
+						onaction={(action) => { if (action === 'editCollider') colliderEdit.toggle(slot.id); else dialog = action === 'bakeLighting' || action === 'worldPreview' ? action : null; }}
 					/>
 					{#if component.type === 'previewCamera'}<PreviewCameraTools {doc} {slot} {getViewPose} />{/if}
 					{#if component.type === 'skybox' && onGenerateProbe}<button class="btn sm" disabled={bakingProbe || doc.readonly} onclick={() => void generateProbe(slot.id)}>{bakingProbe ? 'Capturing…' : 'Generate reflection probe'}</button>{/if}

@@ -4483,6 +4483,7 @@ msgstr "Direct browser connection; the endpoint must allow this origin (CORS). U
 msgid "Settings stay on this device. Scene data you ask the AI to inspect is sent to the selected provider."
 msgstr "Settings stay on this device. Scene data you ask the AI to inspect is sent to the selected provider."
 
+#: src/lib/studio/ScenePreview.svelte
 #: src/lib/studio/components/AiPanel.svelte
 #: src/routes/device/+page.svelte
 msgid "Done"
@@ -6826,3 +6827,31 @@ msgstr "Page {0} of {1}"
 #: src/lib/studio/ui/Icon.svelte
 msgid "M15 6l-6 6 6 6"
 msgstr "M15 6l-6 6 6 6"
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Collider box handles"
+msgstr "Collider box handles"
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Move box"
+msgstr "Move box"
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Resize box"
+msgstr "Resize box"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Group by"
+msgstr "Group by"
+
+#: src/routes/studio/content/+page.svelte
+msgid "No grouping"
+msgstr "No grouping"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Group by used in"
+msgstr "Group by used in"
+
+#: src/routes/studio/content/+page.svelte
+msgid "Your profile picture"
+msgstr "Your profile picture"
