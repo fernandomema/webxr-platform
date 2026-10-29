@@ -14,9 +14,9 @@ export class QuotaExceededError extends Error {}
 /** A rule on the stored data did not hold (stale version, not enough to spend). */
 export class ConflictError extends Error {}
 export class TooManyRequestsError extends Error {}
-/** A credits rule stopped a charge. `code` lets the client say why: 'insufficient' | 'owned' | 'limit' | 'balance-cap' | 'price-changed'. */
+/** A credits rule stopped a charge. `code` lets the client say why: 'insufficient' | 'owned' | 'limit' | 'balance-cap'. */
 export class CreditError extends ConflictError {
-	constructor(readonly code: 'insufficient' | 'owned' | 'limit' | 'balance-cap' | 'price-changed', message: string) {
+	constructor(readonly code: 'insufficient' | 'owned' | 'limit' | 'balance-cap', message: string) {
 		super(message);
 	}
 }

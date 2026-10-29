@@ -309,6 +309,9 @@ export interface MyAsset {
 	worlds: Array<{ id: string; name: string; preview: boolean }>;
 }
 
+/** A hosted world with no running session whose preview is this asset: the picture stands for nothing now, so it does not count as use. */
+const idlePreviewOf = (assetId: string) => ({ thumbnailAssetId: assetId, sessions: { none: { endedAt: null } } });
+
 /** Counts of the things this user owns that still use the asset. */
 async function referencesOwnedBy(db: Db & Pick<typeof prisma, 'cloudInventoryItem'>, userId: string, assetId: string) {
 	const [items, worldItems, revisions, marketplaceRevisions, worlds] = await Promise.all([
@@ -316,7 +319,7 @@ async function referencesOwnedBy(db: Db & Pick<typeof prisma, 'cloudInventoryIte
 		db.worldInventoryItemAsset.count({ where: { assetId, item: { world: { hostUserId: userId } } } }),
 		db.publishedRevisionAsset.count({ where: { assetId, revision: { publication: { ownerId: userId } } } }),
 		db.marketplaceRevisionAsset.count({ where: { assetId, revision: { marketplaceItem: { ownerId: userId } } } }),
-		db.worldAsset.count({ where: { assetId, world: { hostUserId: userId } } })
+		db.worldAsset.count({ where: { assetId, world: { hostUserId: userId, NOT: idlePreviewOf(assetId) } } })
 	]);
 	return { items: items + worldItems, worlds, publications: revisions + marketplaceRevisions };
 }
@@ -337,7 +340,7 @@ export async function listMyAssets(user: SessionUser | null): Promise<MyAsset[]>
 			manifest: row.asset.manifest as unknown as AssetManifest,
 			usedIn: await referencesOwnedBy(prisma, user.id, row.assetId),
 			profile: account?.image === row.assetId,
-			worlds: (await prisma.world.findMany({ where: { hostUserId: user.id, assets: { some: { assetId: row.assetId } } }, select: { id: true, name: true, thumbnailAssetId: true } })).map((world) => ({ id: world.id, name: world.name, preview: world.thumbnailAssetId === row.assetId }))
+			worlds: (await prisma.world.findMany({ where: { hostUserId: user.id, assets: { some: { assetId: row.assetId } }, NOT: idlePreviewOf(row.assetId) }, select: { id: true, name: true, thumbnailAssetId: true } })).map((world) => ({ id: world.id, name: world.name, preview: world.thumbnailAssetId === row.assetId }))
 		}))
 	);
 }
@@ -369,6 +372,10 @@ export async function releaseOwnership(user: SessionUser | null, assetId: string
 		if (!canReleaseOwnership(used.items + used.worlds + used.publications)) {
 			throw new BadRequestError('Some of your objects and worlds still use this model.');
 		}
+		// Worlds that stopped hosting still point at their old preview: those links go with it, or the file could never be deleted.
+		const idle = { hostUserId: user.id, ...idlePreviewOf(assetId) };
+		await tx.worldAsset.deleteMany({ where: { assetId, world: idle } });
+		await tx.world.updateMany({ where: idle, data: { thumbnailAssetId: null } });
 		await tx.assetOwner.delete({ where: { assetId_ownerId: { assetId, ownerId: user.id } } });
 		await markOrphanIfUnused(tx, assetId);
 	});

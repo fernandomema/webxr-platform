@@ -8,8 +8,14 @@ import { dev } from '$app/environment';
 import { allowedOrigin, corsHeaders, parseAllowedOrigins } from '$lib/server/cors';
 import { appAllowsOrigin } from '$lib/server/appOrigins';
 import * as main from './locales/main.loader.server.svelte.js';
+import { sweepAbandonedRuns } from '$lib/server/services/aiPlatform';
 
 loadLocales(main.key, main.loadCount, main.loadCatalog, locales);
+
+// AI runs whose browser disappeared (tab closed mid-run) never report their outcome; settle them on a timer so a used run is
+// never left uncharged. The sweep is idempotent, so overlapping instances are harmless.
+setTimeout(() => { void sweepAbandonedRuns().catch(() => {}); }, 60_000);
+setInterval(() => { void sweepAbandonedRuns().catch(() => {}); }, 30 * 60_000);
 
 /** A game on another site may call the API with a bearer token if its origin is on the list or an app runs there (see lib/server/cors.ts). */
 const engineOrigins = [...parseAllowedOrigins(env.ENGINE_ALLOWED_ORIGINS), ...(dev ? ['http://localhost:*', 'http://127.0.0.1:*', 'https://localhost:*'] : [])];

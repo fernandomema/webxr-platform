@@ -1,10 +1,10 @@
 import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
 import { prisma } from '../db';
-import { AI_TARIFF_VERSION, DEFAULT_PRICING, RUN_OUTCOMES, TYPICAL_RUN, budgetExceeded, classifyTask, isWorkersAiModel, parseOpenRouterRates, parsePlatformModels, parseWorkersAiRates, quoteCredits, runCostUsd, type ModelRates, type PricingPolicy, type PlatformModel, type RunOutcome } from '../aiPlatform';
+import { AI_TARIFF_VERSION, DEFAULT_PRICING, RUN_OUTCOMES, TYPICAL_RUN, budgetExceeded, classifyTask, isWorkersAiModel, parseOpenRouterRates, parsePlatformModels, parseWorkersAiRates, quoteCredits, runCostUsd, settleCredits, type ModelRates, type PricingPolicy, type PlatformModel, type RunOutcome, type RunUsage } from '../aiPlatform';
 import { AiBudgetError, BadRequestError, ConflictError, CreditError, NotFoundError, TooManyRequestsError, UnauthorizedError } from '../errors';
 import { takeRateToken } from '../rateLimit';
-import { applyCharge, applyCredit, type LedgerTx } from './creditLedger';
+import { applyCharge, type LedgerTx } from './creditLedger';
 import type { SessionUser } from './worlds';
 
 const MAX_PAYLOAD = 500_000;
@@ -69,10 +69,10 @@ const PRICE_TTL_MS = 10 * 60_000;
 const quotes = new Map<string, { at: number; credits: number; calibrated: boolean }>();
 
 /**
- * What one run of `model` costs now: its cost plus the fee. The cost is the measured cost of the latest completed runs once
+ * What a run of `model` is expected to cost now: its cost plus the fee. The cost is the measured cost of the latest completed runs once
  * there are enough, before that an estimate of a typical run at the model's rates. Quotes are cached for a few minutes so the
- * price on the button is stable, and `startRun` refuses a charge that differs from the one the person saw. Cost is computed from
- * the recorded tokens, so a changed rate re-prices the whole history.
+ * estimate on the button is stable; the run itself settles for its real usage when it ends. Cost is computed from the
+ * recorded tokens, so a changed rate re-prices the whole history.
  */
 async function priceOf(model: PlatformModel): Promise<{ credits: number; calibrated: boolean }> {
 	const cached = quotes.get(model.id);
@@ -102,7 +102,7 @@ function modelOrThrow(id: unknown): PlatformModel {
 	return model;
 }
 
-/** What the panel shows before anything is sent: the models, the fixed price of a run of each, and the balance. */
+/** What the panel shows before anything is sent: the models, the estimated price of a run of each, and the balance. */
 export async function getPlatformInfo(user: SessionUser | null) {
 	if (!user) throw new UnauthorizedError();
 	const free = isFree();
@@ -118,27 +118,35 @@ export async function getPlatformInfo(user: SessionUser | null) {
 	};
 }
 
-/** Takes the fixed price (unless free) and opens the run every model call of one message belongs to. */
+/** Opens the run every model call of one message belongs to. Nothing is charged here: the run settles for its real usage in `finishRun`. */
 export async function startRun(user: SessionUser | null, body: unknown) {
 	if (!user) throw new UnauthorizedError();
 	if (!available()) throw new ConflictError('The platform AI is not available.');
 	const model = modelOrThrow((body as { model?: unknown } | null)?.model);
 	if (!takeRateToken(`ai-run:${user.id}`, 30)) throw new TooManyRequestsError();
 	const free = isFree();
+	const estimate = free ? 0 : (await priceOf(model)).credits;
+	const account = await prisma.creditAccount.findUnique({ where: { userId: user.id } });
+	// A paid run settles for what it really used, so it needs at least something on the account; the exact amount is taken at settle time.
+	if (!free && (account?.balance ?? 0) < 1) throw new CreditError('insufficient', 'Not enough credits for this request.');
 	const id = crypto.randomUUID();
-	const charged = free ? 0 : (await priceOf(model)).credits;
-	// The price on the button was a quote: if it moved since the person saw it, they are asked again instead of paying a different amount.
-	const expected = (body as { expectedCredits?: unknown }).expectedCredits;
-	if (typeof expected === 'number' && expected !== charged) throw new CreditError('price-changed', `The price is now ${charged} credits.`);
-	const balance = await prisma.$transaction(async (tx) => {
-		await tx.aiRun.create({ data: { id, userId: user.id, model: model.id, free, credits: charged, tariffVersion: AI_TARIFF_VERSION } });
-		if (free) return (await tx.creditAccount.findUnique({ where: { userId: user.id } }))?.balance ?? 0;
-		return (await applyCharge(tx as unknown as LedgerTx, { userId: user.id, amount: charged, kind: 'ai', providerRef: id, idempotencyKey: `ai-run:${id}` })).balance;
-	});
-	return { runId: id, credits: charged, balance };
+	await prisma.aiRun.create({ data: { id, userId: user.id, model: model.id, free, quotedCredits: estimate, tariffVersion: AI_TARIFF_VERSION } });
+	return { runId: id, estimate, balance: account?.balance ?? 0 };
 }
 
 const toCount = (value: unknown): number => (typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.round(value) : 0);
+
+/** What runs really cost, in credits, at the provider's current rates and without the platform fee. Runs whose model has no known rates (or is no longer offered) are omitted. */
+export async function measureRunCosts(runs: (RunUsage & { id: string; model: string })[]): Promise<Map<string, number>> {
+	const costs = new Map<string, number>();
+	const creditUsd = policy().creditUsd;
+	await Promise.all(runs.map(async (run) => {
+		const model = models().find((candidate) => candidate.id === run.model);
+		const rates = model ? await ratesOf(model) : null;
+		if (rates) costs.set(run.id, runCostUsd(run, rates) / creditUsd);
+	}));
+	return costs;
+}
 
 /**
  * One model call of a run. The model, the output limit and the account come from the server, never from the browser; the
@@ -210,13 +218,50 @@ export async function runStep(user: SessionUser | null, body: Record<string, unk
 	return new Response(answer, { status: 200, headers: { 'content-type': contentType, 'cache-control': 'no-store' } });
 }
 
+interface SettledRun { id: string; userId: string; model: string; status: string; free: boolean; okCalls: number; quotedCredits: number; inputTokens: number; outputTokens: number; cacheReadTokens: number; cacheWriteTokens: number; createdAt: Date }
+
 /**
- * The browser reports how a run ended. A run that never got an answer from the model is refunded, so a provider outage costs
- * the person nothing. Reported counts only label the run for analysis; they never change what was charged.
+ * Settles one run: charges it for the tokens it really used, at the provider's current rates plus the fee, rounded up. A run
+ * the model never answered costs nothing. When the account cannot cover the full amount, everything it holds is taken instead,
+ * so an answer is never withheld over a margin. Runs already settled are not charged again. `report` (what the browser saw)
+ * only labels the run for analysis; it never changes what was charged.
  */
+async function settleRun(run: SettledRun, outcome: RunOutcome, report?: { tools: Record<string, number>; steps: number }): Promise<number> {
+	if (run.status !== 'running') return 0;
+	// What the run owes: nothing for free runs or runs the model never answered; otherwise its real usage at current rates
+	// plus the fee, falling back to the start-time estimate when the rates cannot be read.
+	const model = models().find((candidate) => candidate.id === run.model);
+	const rates = model && !run.free && run.okCalls > 0 ? await ratesOf(model) : null;
+	const owed = run.free || run.okCalls === 0 ? 0 : rates ? settleCredits(run, rates, policy()) : run.quotedCredits;
+	let settled = 0;
+	await prisma.$transaction(async (tx) => {
+		await tx.aiRun.update({ where: { id: run.id }, data: { status: outcome, ...(report ? { task: classifyTask(report.tools), steps: report.steps, toolCalls: Object.values(report.tools).reduce((sum, count) => sum + count, 0) } : {}), durationMs: Date.now() - run.createdAt.getTime(), finishedAt: new Date(), credits: 0, refunded: false } });
+		if (owed > 0) {
+			try {
+				settled = owed;
+				await applyCharge(tx as unknown as LedgerTx, { userId: run.userId, amount: owed, kind: 'ai', providerRef: run.id, idempotencyKey: `ai-settle:${run.id}` });
+			} catch (err) {
+				if (!(err instanceof CreditError) || err.code !== 'insufficient') throw err;
+				// The account was spent elsewhere during the run: take what is left rather than leave the run unpaid.
+				const have = (await tx.creditAccount.findUnique({ where: { userId: run.userId } }))?.balance ?? 0;
+				if (have > 0) {
+					settled = have;
+					await applyCharge(tx as unknown as LedgerTx, { userId: run.userId, amount: have, kind: 'ai', providerRef: run.id, idempotencyKey: `ai-settle:${run.id}:partial` });
+				}
+			}
+			await tx.aiRun.update({ where: { id: run.id }, data: { credits: settled } });
+		}
+	});
+	return settled;
+}
+
 /** `role` is a comma-separated list ("admin,moderator"). */
 const isAdmin = (role: string | null | undefined) => (role ?? '').split(',').some((entry) => entry.trim() === 'admin');
 
+/**
+ * The browser reports how a run ended and the run settles. A run whose browser never reported (tab closed) is settled by the
+ * sweeper instead.
+ */
 export async function finishRun(user: (SessionUser & { role?: string | null }) | null, runId: string, body: unknown) {
 	if (!user) throw new UnauthorizedError();
 	const run = await prisma.aiRun.findUnique({ where: { id: runId } });
@@ -227,15 +272,32 @@ export async function finishRun(user: (SessionUser & { role?: string | null }) |
 	if (input.tools && typeof input.tools === 'object') {
 		for (const [name, count] of Object.entries(input.tools as Record<string, unknown>).slice(0, 50)) tools[name.slice(0, 60)] = Math.min(toCount(count), MAX_TOOL_CALLS_REPORTED);
 	}
-	const refundable = run.status === 'running' && run.credits > 0 && !run.refunded && run.okCalls === 0;
-	await prisma.$transaction(async (tx) => {
-		if (run.status === 'running') {
-			await tx.aiRun.update({ where: { id: run.id }, data: { status: outcome, task: classifyTask(tools), steps: Math.min(toCount(input.steps), 100_000), toolCalls: Object.values(tools).reduce((sum, count) => sum + count, 0), durationMs: Date.now() - run.createdAt.getTime(), finishedAt: new Date(), refunded: refundable } });
-		}
-		if (refundable) await applyCredit(tx as unknown as LedgerTx, { userId: user.id, amount: run.credits, kind: 'refund', provider: 'ai', providerRef: run.id, idempotencyKey: `ai-refund:${run.id}` });
-	});
+	const settled = await settleRun(run, outcome, { tools, steps: Math.min(toCount(input.steps), 100_000) });
 	// The real cost (from the price list, not what was charged) is shown to admins and in development only.
 	const model = models().find((candidate) => candidate.id === run.model);
-	const rates = model && (dev || isAdmin(user.role)) ? await ratesOf(model) : null;
-	return { ok: true as const, refunded: refundable, costUsd: rates ? runCostUsd(run, rates) : null };
+	const costRates = model && (dev || isAdmin(user.role)) ? await ratesOf(model) : null;
+	const balance = (await prisma.creditAccount.findUnique({ where: { userId: user.id } }))?.balance ?? 0;
+	return { ok: true as const, settled, balance, costUsd: costRates ? runCostUsd(run, costRates) : null };
+}
+
+/**
+ * A run whose browser disappeared (tab closed) never reports its outcome; this settles those runs so a used run is never left
+ * uncharged. The threshold is longer than the longest run the budget allows (every model call may take up to 90 seconds), so a
+ * run still in flight is never cut short. Runs the model never answered settle for free; the rest for what they used.
+ */
+const ABANDONED_AFTER_MS = 4 * 3_600_000;
+
+export async function sweepAbandonedRuns(now = Date.now()): Promise<number> {
+	const abandoned = await prisma.aiRun.findMany({
+		where: { status: 'running', createdAt: { lt: new Date(now - ABANDONED_AFTER_MS) } },
+		orderBy: { createdAt: 'asc' },
+		take: 100
+	});
+	let settledRuns = 0;
+	for (const run of abandoned) {
+		try {
+			if (await settleRun(run, 'stopped') > 0) settledRuns += 1;
+		} catch { /* One failure must not stop the others; the run is picked up again on the next sweep. */ }
+	}
+	return settledRuns;
 }

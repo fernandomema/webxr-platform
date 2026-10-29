@@ -1,12 +1,13 @@
 /**
- * The models the platform offers in the Studio's AI panel, what a run of each costs and how much one run may consume.
- * The price is fixed per run (per message the person sends) and shown on the Send button before anything is spent; the
- * budget is what keeps that fixed price safe, because a run is stopped once it has used its calls or tokens.
+ * The models the platform offers in the Studio's AI panel, what a run of each roughly costs and how much one run may consume.
+ * Runs are metered: the run is charged when it settles, for the tokens it actually used at the provider's current rates plus
+ * the fee; the estimate on the Send button comes from recent runs of the same model. The budget is what keeps a run's cost
+ * bounded, because it is stopped once it has used its calls or tokens.
  *
  * Prices and budgets are a first guess: the `aiRun` / `aiCall` tables record the real usage so they can be calibrated,
  * and `AI_TARIFF_VERSION` changes whenever they do.
  */
-export const AI_TARIFF_VERSION = '2026-10-d';
+export const AI_TARIFF_VERSION = '2026-10-e';
 
 export interface PlatformModel {
 	/** The Workers AI model id. */
@@ -135,6 +136,12 @@ export const DEFAULT_PRICING: PricingPolicy = { feePercent: 0, feeFlatUsd: 1, cr
 export const TYPICAL_RUN: RunUsage = { inputTokens: 80_000, cacheReadTokens: 48_000, cacheWriteTokens: 8_000, outputTokens: 3_000 };
 
 const MAX_CREDITS = 100_000;
+
+/** What a finished run settles for, in credits: its real usage at the provider's current rates plus the fee, rounded up and capped. */
+export function settleCredits(run: RunUsage, rates: ModelRates, policy: PricingPolicy = DEFAULT_PRICING): number {
+	const credits = Math.ceil((runCostUsd(run, rates) * (1 + policy.feePercent) + policy.feeFlatUsd) / policy.creditUsd - 1e-9);
+	return Math.min(Math.max(credits, 0), MAX_CREDITS);
+}
 
 /**
  * The price of one run in credits: the cost of the run (measured from recent completed runs, else the estimate) plus the fee,

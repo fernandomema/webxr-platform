@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { applyCredit, applySpend } from '../src/lib/server/services/creditLedger.ts';
+import { applyCredit, applySpend, applyAdjustment } from '../src/lib/server/services/creditLedger.ts';
 import { CreditError } from '../src/lib/server/errors.ts';
 import { CREDIT_LIMITS } from '../packages/engine/src/credits/catalog.ts';
 import { createFakeDb } from './helpers/ledgerFake.mjs';
@@ -95,4 +95,32 @@ test('amounts that are not whole, positive and within the price cap are rejected
 	for (const amount of [0, -5, 1.5, NaN, CREDIT_LIMITS.maxPrice + 1]) await assert.rejects(spend(db, 'u', amount, `bad${amount}`), /Invalid price/);
 	for (const amount of [0, -5, 1.5, NaN]) await assert.rejects(buy(db, 'u', amount, `bad-credit${amount}`), /Invalid credit amount/);
 	assert.equal(db.state.accounts.get('u').balance, 1000);
+});
+
+const adjust = (db, userId, amount, note, key) => db.transaction((tx) => applyAdjustment(tx, { userId, amount, note, idempotencyKey: key }));
+
+test('an admin adjustment grants or removes credits and is recorded as such', async () => {
+	const db = createFakeDb();
+	assert.deepEqual(await adjust(db, 'u', 250, 'welcome grant', 'a1'), { balance: 250, duplicate: false });
+	assert.deepEqual(await adjust(db, 'u', -100, 'correction', 'a2'), { balance: 150, duplicate: false });
+	assert.deepEqual(await adjust(db, 'u', -100, 'welcome grant', 'a1'), { balance: 150, duplicate: true }, 'the same key applies once');
+	const row = db.state.transactions.at(-1);
+	assert.deepEqual([row.delta, row.kind, row.provider, row.providerRef, row.balanceAfter], [-100, 'adjustment', 'admin', 'correction', 150]);
+});
+
+test('an adjustment cannot take the balance below zero or hold more than the cap', async () => {
+	const db = createFakeDb();
+	assert.equal(await code(adjust(db, 'u', -1, 'nothing to take', 'a1')), 'insufficient');
+	await adjust(db, 'u', 50, 'seed', 'a2');
+	assert.equal(await code(adjust(db, 'u', -51, 'too much', 'a3')), 'insufficient');
+	assert.equal(db.state.accounts.get('u').balance, 50);
+	await adjust(db, 'u', CREDIT_LIMITS.maxBalance - 50, 'fill', 'a4');
+	assert.equal(await code(adjust(db, 'u', 1, 'over the cap', 'a5')), 'balance-cap');
+	assert.equal(db.state.accounts.get('u').balance, CREDIT_LIMITS.maxBalance);
+});
+
+test('adjustment amounts must be whole and within the per-adjustment limit', async () => {
+	const db = createFakeDb();
+	for (const amount of [0, 1.5, NaN, 100_001, -100_001]) await assert.rejects(adjust(db, 'u', amount, 'bad', `bad${amount}`), /Invalid adjustment amount/);
+	assert.equal(db.state.accounts.size, 0);
 });

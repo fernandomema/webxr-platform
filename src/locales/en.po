@@ -12,6 +12,7 @@ msgstr ""
 #~ msgstr "Error al entrar"
 
 #: src/routes/(admin)/admin/users/+page.svelte
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
 #: src/routes/register/+page.svelte
 #: src/routes/register/+page.svelte
 msgid "Email"
@@ -51,6 +52,7 @@ msgstr "Sign-up failed"
 #: src/lib/studio/components/AvatarWizard.svelte
 #: src/lib/studio/components/Inspector.svelte
 #: src/lib/studio/components/SaveDialog.svelte
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
 #: src/routes/register/+page.svelte
 #: src/routes/register/+page.svelte
 #: src/routes/settings/apps/+page.svelte
@@ -58,6 +60,7 @@ msgstr "Sign-up failed"
 msgid "Name"
 msgstr "Name"
 
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
 #: src/routes/register/+page.svelte
 #: src/routes/register/+page.svelte
 msgid "Username"
@@ -193,6 +196,7 @@ msgid "Preview"
 msgstr "Preview"
 
 #: src/routes/(admin)/admin/+page.svelte
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
 msgid "Assets"
 msgstr "Assets"
 
@@ -1474,6 +1478,7 @@ msgid "Reset"
 msgstr "Reset"
 
 #: src/lib/studio/views/JsonView.svelte
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
 #: src/routes/xr-panel/inspector/+page.svelte
 msgid "Apply"
 msgstr "Apply"
@@ -2105,6 +2110,7 @@ msgid "Hidden"
 msgstr "Hidden"
 
 #: src/lib/studio/components/MarketplacePanel.svelte
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
 msgid "Published"
 msgstr "Published"
 
@@ -4155,6 +4161,8 @@ msgstr "Open Studio"
 
 #: src/routes/(admin)/+layout.svelte
 #: src/routes/(admin)/admin/+page.svelte
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
 #: src/routes/(admin)/admin/worlds/+page.svelte
 #: src/routes/+page.svelte
 #: src/routes/settings/cloud/+page.svelte
@@ -4436,6 +4444,7 @@ msgstr "Connect"
 #: src/lib/studio/components/AiPanel.svelte
 #: src/lib/studio/components/AiPanel.svelte
 #: src/lib/studio/components/AiPanel.svelte
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
 msgid "Model"
 msgstr "Model"
 
@@ -4770,10 +4779,12 @@ msgid "Could not connect Discord{0}. It may already be linked to another account
 msgstr "Could not connect Discord{0}. It may already be linked to another account."
 
 #: src/routes/(admin)/admin/+page.svelte
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
 #: src/routes/settings/cloud/+page.svelte
 msgid "Published worlds"
 msgstr "Published worlds"
 
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
 #: src/routes/settings/cloud/+page.svelte
 msgid "Inventory items"
 msgstr "Inventory items"
@@ -5321,6 +5332,7 @@ msgstr "Role"
 #: src/routes/(admin)/admin/feedback/+page.svelte
 #: src/routes/(admin)/admin/feedback/+page.svelte
 #: src/routes/(admin)/admin/users/+page.svelte
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
 msgid "Status"
 msgstr "Status"
 
@@ -5333,6 +5345,7 @@ msgid "Banned"
 msgstr "Banned"
 
 #: src/routes/(admin)/admin/users/+page.svelte
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
 msgid "Active"
 msgstr "Active"
 
@@ -5637,6 +5650,8 @@ msgstr "Choose image…"
 msgid "Drag to orbit · Scroll to zoom · Right-drag to pan · <0>F</0> to focus · <1>F F</1> to fly to it"
 msgstr "Drag to orbit · Scroll to zoom · Right-drag to pan · <0>F</0> to focus · <1>F F</1> to fly to it"
 
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
 #: src/routes/settings/+layout.svelte
 #: src/routes/settings/credits/+page.svelte
 msgid "Credits"
@@ -5997,6 +6012,7 @@ msgid "Projects"
 msgstr "Projects"
 
 #: src/lib/studio/components/LauncherShell.svelte
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
 #: src/routes/studio/content/+page.svelte
 #: src/routes/studio/content/+page.svelte
 msgid "Content"
@@ -6441,10 +6457,8 @@ msgstr "Kithin AI"
 msgid "Send · Free"
 msgstr "Send · Free"
 
-#. 0: price; 1: price === 1 ? '' \\: 's'
-#: src/lib/studio/components/AiPanel.svelte
-msgid "Send · {0} credit{1}"
-msgstr "Send · {0} credit{1}"
+#~ msgid "Send · {0} credit{1}"
+#~ msgstr "Send · {0} credit{1}"
 
 #. 0: model.credits
 #. 0: (platform?.balance ?? 0).toLocaleString()
@@ -6474,9 +6488,8 @@ msgstr "{0} tokens in{1} · {2} out"
 msgid "Free for now. Usage is recorded to set fair prices."
 msgstr "Free for now. Usage is recorded to set fair prices."
 
-#: src/lib/studio/components/AiPanel.svelte
-msgid "Each message has a fixed price, shown on the Send button, and is refunded if the AI cannot answer."
-msgstr "Each message has a fixed price, shown on the Send button, and is refunded if the AI cannot answer."
+#~ msgid "Each message has a fixed price, shown on the Send button, and is refunded if the AI cannot answer."
+#~ msgstr "Each message has a fixed price, shown on the Send button, and is refunded if the AI cannot answer."
 
 #: src/lib/studio/components/AiPanel.svelte
 msgid "No API key needed."
@@ -6490,7 +6503,7 @@ msgstr "Add credits"
 msgid "Continue, but try a different approach."
 msgstr "Continue, but try a different approach."
 
-#. 0: price ? ` · ${price} credit${price === 1 ? '' \\: 's'}` \\: ''
+#. 0: price ? ` · ~${price} credit${price === 1 ? '' \\: 's'}` \\: ''
 #: src/lib/studio/components/AiPanel.svelte
 msgid "Continue{0}"
 msgstr "Continue{0}"
@@ -6499,10 +6512,8 @@ msgstr "Continue{0}"
 msgid "Not enough credits"
 msgstr "Not enough credits"
 
-#. 0: formatUsd(result.costUsd)
-#: src/lib/studio/components/AiPanel.svelte
-msgid "Cost {0}"
-msgstr "Cost {0}"
+#~ msgid "Cost {0}"
+#~ msgstr "Cost {0}"
 
 #~ msgid "Be economical: every step resends the whole conversation. The outline below lists every object, so skip list_scene; read_scene_json already includes everything list_scene would. Call independent tools together in one turn, and stage many edits at once with stage_set_component_fields / stage_update_slots instead of one call per edit. Do not re-read or re-validate what a tool already returned."
 #~ msgstr "Be economical: every step resends the whole conversation. The outline below lists every object, so skip list_scene; read_scene_json already includes everything list_scene would. Call independent tools together in one turn, and stage many edits at once with stage_set_component_fields / stage_update_slots instead of one call per edit. Do not re-read or re-validate what a tool already returned."
@@ -6855,3 +6866,197 @@ msgstr "Group by used in"
 #: src/routes/studio/content/+page.svelte
 msgid "Your profile picture"
 msgstr "Your profile picture"
+
+#: src/routes/(admin)/admin/users/[id]/+page.server.ts
+#: src/routes/(admin)/admin/users/[id]/+page.server.ts
+msgid "User not found"
+msgstr "User not found"
+
+#: src/routes/(admin)/admin/users/[id]/+page.server.ts
+msgid "Name and email are required."
+msgstr "Name and email are required."
+
+#: src/routes/(admin)/admin/users/[id]/+page.server.ts
+msgid "Invalid email address."
+msgstr "Invalid email address."
+
+#: src/routes/(admin)/admin/users/[id]/+page.server.ts
+msgid "Invalid ban expiry date."
+msgstr "Invalid ban expiry date."
+
+#: src/routes/(admin)/admin/users/[id]/+page.server.ts
+msgid "Unique constraint"
+msgstr "Unique constraint"
+
+#: src/routes/(admin)/admin/users/[id]/+page.server.ts
+msgid "That email or username is taken."
+msgstr "That email or username is taken."
+
+#: src/routes/(admin)/admin/users/[id]/+page.server.ts
+msgid "Could not save the user."
+msgstr "Could not save the user."
+
+#: src/routes/(admin)/admin/users/[id]/+page.server.ts
+msgid "Enter a non-zero whole number of credits."
+msgstr "Enter a non-zero whole number of credits."
+
+#: src/routes/(admin)/admin/users/[id]/+page.server.ts
+msgid "A single adjustment is limited to 100,000 credits."
+msgstr "A single adjustment is limited to 100,000 credits."
+
+#: src/routes/(admin)/admin/users/[id]/+page.server.ts
+msgid "A note explaining the adjustment is required."
+msgstr "A note explaining the adjustment is required."
+
+#: src/routes/(admin)/admin/users/[id]/+page.server.ts
+msgid "Could not adjust the balance."
+msgstr "Could not adjust the balance."
+
+#. 0: user.name
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "{0} · Admin"
+msgstr "{0} · Admin"
+
+#. 0: user.banExpires ? ` until ${date(user.banExpires)}` \\: ''
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "Banned{0}"
+msgstr "Banned{0}"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "← Users"
+msgstr "← Users"
+
+#. 0: user.email; 1: day(user.createdAt)
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "{0} · joined {1}"
+msgstr "{0} · joined {1}"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "Saved."
+msgstr "Saved."
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "Role (comma-separated)"
+msgstr "Role (comma-separated)"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "Ban reason"
+msgstr "Ban reason"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "Ban expires (empty = permanent)"
+msgstr "Ban expires (empty = permanent)"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "<0/> Banned"
+msgstr "<0/> Banned"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "Save user"
+msgstr "Save user"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "<0/> Email verified"
+msgstr "<0/> Email verified"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "Profile & access"
+msgstr "Profile & access"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "Role changes and bans apply on the person's next request. An admin cannot demote or ban themselves."
+msgstr "Role changes and bans apply on the person's next request. An admin cannot demote or ban themselves."
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "Amount (+ to grant, − to remove)"
+msgstr "Amount (+ to grant, − to remove)"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "Note (recorded in the ledger)"
+msgstr "Note (recorded in the ledger)"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "Date"
+msgstr "Date"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "Kind"
+msgstr "Kind"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "Δ"
+msgstr "Δ"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "Balance"
+msgstr "Balance"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "Note"
+msgstr "Note"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "No transactions yet"
+msgstr "No transactions yet"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "Runs"
+msgstr "Runs"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "Tokens in"
+msgstr "Tokens in"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "Tokens out"
+msgstr "Tokens out"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "Credits spent"
+msgstr "Credits spent"
+
+#. 0: m.model; 1: m.runs; 2: m.credits ? ` · ${m.credits.toLocaleString()} cr` \\: ''
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "{0} · {1} runs{2}"
+msgstr "{0} · {1} runs{2}"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "Steps"
+msgstr "Steps"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "No AI runs yet"
+msgstr "No AI runs yet"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "AI activity"
+msgstr "AI activity"
+
+#. 0: content.worldCount - content.worlds.length
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "…and {0} more"
+msgstr "…and {0} more"
+
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "Real cost"
+msgstr "Real cost"
+
+#. 0: run.costCredits.toFixed(2)
+#: src/routes/(admin)/admin/users/[id]/+page.svelte
+msgid "{0} cr"
+msgstr "{0} cr"
+
+#. 0: price; 1: price === 1 ? '' \\: 's'
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Send · ~{0} credit{1}"
+msgstr "Send · ~{0} credit{1}"
+
+#. 0: result.settled.toLocaleString(); 1: result.settled === 1 ? '' \\: 's'
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Charged {0} credit{1}"
+msgstr "Charged {0} credit{1}"
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Metered: you are charged for what a message actually used when it ends, and the button shows an estimate. Runs that get no answer cost nothing."
+msgstr "Metered: you are charged for what a message actually used when it ends, and the button shows an estimate. Runs that get no answer cost nothing."

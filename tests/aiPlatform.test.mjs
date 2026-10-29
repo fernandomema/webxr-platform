@@ -72,6 +72,16 @@ test('the price is the cost plus the flat fee, rounded up, at 100 credits per do
 	assert.equal(quoteCredits([], 0.101).credits, 111, 'never rounds the fee away');
 });
 
+test('a run settles for its real token usage plus the fee, rounded up and capped', async () => {
+	const { settleCredits } = await import('../src/lib/server/aiPlatform.ts');
+	const rates = { input: 3, cachedInput: 0.3, cacheWrite: 3.75, output: 15 };
+	// 0.3M plain input + 0.6M cache reads + 0.1M cache writes + 0.1M output cost 2.955 USD; + 1 USD fee at 100 credits/USD, rounded up
+	assert.equal(settleCredits({ inputTokens: 1_000_000, cacheReadTokens: 600_000, cacheWriteTokens: 100_000, outputTokens: 100_000 }, rates), 396);
+	// a zero-rate run still pays the flat fee; the cap bounds the most expensive possible run
+	assert.equal(settleCredits({ inputTokens: 1, cacheReadTokens: 0, cacheWriteTokens: 0, outputTokens: 0 }, { input: 0, output: 0 }), 100);
+	assert.equal(settleCredits({ inputTokens: 100_000_000, cacheReadTokens: 0, cacheWriteTokens: 0, outputTokens: 0 }, { input: 15, output: 0 }), 100_000);
+});
+
 test('measured cost replaces the estimate once there is enough data, and the percent fee applies to cost only', async () => {
 	const { quoteCredits, DEFAULT_PRICING } = await import('../src/lib/server/aiPlatform.ts');
 	const policy = { ...DEFAULT_PRICING, feePercent: 0.5, feeFlatUsd: 0, percentile: 0.5, minSamples: 4 };

@@ -20,7 +20,7 @@
 		<tbody class="divide-y divide-white/6">
 			{#each data.users as user (user.id)}
 				<tr class="hover:bg-white/3">
-					<td class="px-4 py-3"><div class="font-medium">{user.name}</div>{#if user.username}<div class="text-xs text-bone/50">@{user.username}</div>{/if}</td>
+					<td class="px-4 py-3"><a class="font-medium hover:underline" href={`/admin/users/${user.id}`}>{user.name}</a>{#if user.username}<div class="text-xs text-bone/50">@{user.username}</div>{/if}</td>
 					<td class="px-4 py-3 text-bone/70">{user.email}</td>
 					<td class="px-4 py-3">{user.role ?? 'user'}</td>
 					<td class="px-4 py-3">{#if user.banned}<span class="rounded bg-red-500/15 px-2 py-0.5 text-xs text-red-300">Banned</span>{:else}<span class="rounded bg-mint/15 px-2 py-0.5 text-xs text-mint">Active</span>{/if}</td>

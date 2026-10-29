@@ -57,10 +57,11 @@
 	const keyless = $derived(kind === 'ollama' || kind === 'custom' || kind === 'platform');
 	const direct = $derived(kind === 'ollama' || kind === 'custom' || kind === 'freellmapi');
 	const ready = $derived(Boolean(profile.model.trim()) && (keyless || Boolean(credential.trim()) || useConnection));
-	// The fixed price of the next message, shown on the button before it is sent. Null for providers billed elsewhere.
+	// The expected price of the next message, shown on the button before it is sent; a run settles for its real usage. Null for providers billed elsewhere.
 	const price = $derived(kind === 'platform' ? platform?.models.find((model) => model.id === profile.model)?.credits ?? null : null);
-	const cannotAfford = $derived(price !== null && price > 0 && (platform?.balance ?? 0) < price);
-	const sendLabel = $derived(price === null ? 'Send' : price === 0 ? 'Send · Free' : `Send · ${price} credit${price === 1 ? '' : 's'}`);
+	// A paid run needs at least one credit to start; what it really used is taken when it ends.
+	const cannotAfford = $derived(price !== null && price > 0 && (platform?.balance ?? 0) < 1);
+	const sendLabel = $derived(price === null ? 'Send' : price === 0 ? 'Send · Free' : `Send · ~${price} credit${price === 1 ? '' : 's'}`);
 	const modelOptions = $derived.by<(SelectOption | SelectGroup)[]>(() => {
 		const free = openRouterModels.filter((item) => item.free).map((item) => ({ value: item.id, label: `${item.name} · ${item.id}` }));
 		const paid = openRouterModels.filter((item) => !item.free).map((item) => ({ value: item.id, label: `${item.name} · ${item.id}` }));
@@ -269,13 +270,10 @@
 		let steps = 0;
 		try {
 			if (kind === 'platform') {
-				// One message is one paid run: the price is taken here, at the amount the button showed.
-				const started = await fetch('/api/studio/ai/platform/runs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ model: profile.model, expectedCredits: price ?? undefined }), signal: abort.signal });
+				// One message is one run; nothing is charged yet — the run settles for what it really used when it ends.
+				const started = await fetch('/api/studio/ai/platform/runs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ model: profile.model }), signal: abort.signal });
 				const body = await started.json().catch(() => ({}));
-				if (!started.ok) {
-					if (body.code === 'price-changed') void loadPlatform();
-					throw new Error(body.code === 'insufficient' ? 'Not enough credits for this request.' : body.code === 'price-changed' ? `${body.message} Check the button and send again.` : body.message ?? 'Could not start the request.');
-				}
+				if (!started.ok) throw new Error(body.code === 'insufficient' ? 'Not enough credits for this request.' : body.message ?? 'Could not start the request.');
 				runId = body.runId as string;
 				conversation.runId = runId;
 				if (platform) platform.balance = body.balance as number;
@@ -328,12 +326,15 @@
 			const usage = conversation ? { input: conversation.usage.input - usageBefore.input, output: conversation.usage.output - usageBefore.output, cacheRead: conversation.usage.cacheRead - usageBefore.cacheRead } : null;
 			if (usage && (usage.input || usage.output)) lastUsage = `${usage.input.toLocaleString()} tokens in${usage.cacheRead ? ` (${usage.cacheRead.toLocaleString()} cached)` : ''} · ${usage.output.toLocaleString()} out`;
 			if (runId) {
-				// Closes the run for the cost records; a run that never got an answer is refunded by the server.
+				// Closes the run, which settles it for what it really used; a run that never got an answer costs nothing.
 				const closing = fetch(`/api/studio/ai/platform/runs/${runId}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ outcome, steps, tools: toolCounts }) });
 				void closing.then(async (finishedRun) => {
-					// Admins and development builds get the run's real cost instead of the token counts.
-					const result = await finishedRun.json().catch(() => null) as { costUsd?: number | null } | null;
-					if (typeof result?.costUsd === 'number') lastUsage = `Cost ${formatUsd(result.costUsd)}`;
+					// What the run settled for; admins and development builds also get its real cost.
+					const result = await finishedRun.json().catch(() => null) as { settled?: number; costUsd?: number | null } | null;
+					const parts: string[] = [];
+					if (typeof result?.settled === 'number') parts.push(`Charged ${result.settled.toLocaleString()} credit${result.settled === 1 ? '' : 's'}`);
+					if (typeof result?.costUsd === 'number') parts.push(`cost ${formatUsd(result.costUsd)}`);
+					if (parts.length) lastUsage = parts.join(' · ');
 					await loadPlatform();
 				}).catch(() => { /* The server treats a run that was never closed as abandoned. */ });
 			}
@@ -367,7 +368,7 @@
 		{#if kind === 'platform'}
 			<div class="field"><span class="label">Model</span>
 				<Select label="Model" value={profile.model} options={platformModelOptions} disabled={busy} onchange={(next) => updateProfile({ model: next })} />
-				<small>{platform?.free ? 'Free for now. Usage is recorded to set fair prices.' : 'Each message has a fixed price, shown on the Send button, and is refunded if the AI cannot answer.'}</small>
+				<small>{platform?.free ? 'Free for now. Usage is recorded to set fair prices.' : 'Metered: you are charged for what a message actually used when it ends, and the button shows an estimate. Runs that get no answer cost nothing.'}</small>
 			</div>
 			<div class="card ok">
 				<span class="dot on"></span><span class="card-text"><strong>{(platform?.balance ?? 0).toLocaleString()} credits</strong><small>No API key needed.</small></span>
@@ -474,7 +475,7 @@
 		{#if busy && messages.at(-1)?.role !== 'activity'}<p class="muted thinking">Thinking…</p>{:else if !busy && lastUsage}<p class="muted usage">{lastUsage}</p>{/if}
 	</div>
 	{#if error}<p class="error" role="alert">{error}</p>{/if}
-	{#if paused && !busy}<div class="actions paused"><button class="btn sm" type="button" onclick={() => void send('Continue, but try a different approach.')} disabled={cannotAfford}>Continue{price ? ` · ${price} credit${price === 1 ? '' : 's'}` : ''}</button></div>{/if}
+	{#if paused && !busy}<div class="actions paused"><button class="btn sm" type="button" onclick={() => void send('Continue, but try a different approach.')} disabled={cannotAfford}>Continue{price ? ` · ~${price} credit${price === 1 ? '' : 's'}` : ''}</button></div>{/if}
 	<form class="composer" onsubmit={(event) => { event.preventDefault(); void send(); }}>
 		<textarea class="input" bind:this={composer} aria-label="Ask AI" placeholder={ready ? 'Create a grouped pool table…' : 'Set up a provider to start'} bind:value={prompt} disabled={busy}></textarea>
 		<div class="actions"><small class="muted hint">Enter to send · Shift+Enter for a new line</small>{#if busy}<button type="button" class="btn sm" onclick={() => controller?.abort()}>Stop</button>{/if}<button type="submit" class="btn primary sm" disabled={busy || !prompt.trim() || cannotAfford} title={cannotAfford ? 'Not enough credits' : undefined}>{sendLabel}</button></div>

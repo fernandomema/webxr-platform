@@ -53,6 +53,26 @@ export async function applyCredit(tx: LedgerTx, input: { userId: string; amount:
 	return { balance, duplicate: false };
 }
 
+/**
+ * An admin's manual correction in either direction, recorded as kind 'adjustment' with the note in `providerRef`.
+ * Positive amounts follow the balance cap; negative amounts refuse to take the balance below zero.
+ */
+export async function applyAdjustment(tx: LedgerTx, input: { userId: string; amount: number; note: string; idempotencyKey: string }): Promise<LedgerResult> {
+	if (!Number.isInteger(input.amount) || input.amount === 0 || Math.abs(input.amount) > CREDIT_LIMITS.maxPrice * 100) throw new Error('Invalid adjustment amount');
+	const existing = await tx.creditTransaction.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
+	if (existing) return { balance: await currentBalance(tx, input.userId), duplicate: true };
+	await tx.creditAccount.upsert({ where: { userId: input.userId }, create: { userId: input.userId, balance: 0 }, update: {} });
+	const { count } = input.amount > 0
+		? await tx.creditAccount.updateMany({ where: { userId: input.userId, balance: { lte: CREDIT_LIMITS.maxBalance - input.amount } }, data: { balance: { increment: input.amount } } })
+		: await tx.creditAccount.updateMany({ where: { userId: input.userId, balance: { gte: -input.amount } }, data: { balance: { decrement: -input.amount } } });
+	if (count !== 1) throw new CreditError(input.amount > 0 ? 'balance-cap' : 'insufficient', input.amount > 0 ? `An account can hold up to ${CREDIT_LIMITS.maxBalance} credits` : 'That would take the balance below zero');
+	const balance = await currentBalance(tx, input.userId);
+	await tx.creditTransaction.create({
+		data: { userId: input.userId, delta: input.amount, balanceAfter: balance, kind: 'adjustment', provider: 'admin', providerRef: input.note, idempotencyKey: input.idempotencyKey }
+	});
+	return { balance, duplicate: false };
+}
+
 /** Credits leaving: the player agreed to buy `sku` in a published world. */
 export async function applySpend(
 	tx: LedgerTx,
