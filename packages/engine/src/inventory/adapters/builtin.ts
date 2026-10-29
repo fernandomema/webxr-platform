@@ -38,6 +38,7 @@ export const builtinInventoryAdapter: InventoryAdapter = {
 				createdAt: CREATED_AT
 			}));
 		}
+		if (folderId === 'dev' && !showsDev(ctx)) return [];
 		const { entries } = (await getContent().loadStarterKit?.()) ?? { entries: [] };
 		return entries.filter((entry) => entry.folderId === folderId).map((entry) => ({
 			id: `builtin:${entry.id}`,

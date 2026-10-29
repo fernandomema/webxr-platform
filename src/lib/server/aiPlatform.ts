@@ -7,7 +7,7 @@
  * Prices and budgets are a first guess: the `aiRun` / `aiCall` tables record the real usage so they can be calibrated,
  * and `AI_TARIFF_VERSION` changes whenever they do.
  */
-export const AI_TARIFF_VERSION = '2026-10-e';
+export const AI_TARIFF_VERSION = '2026-10-f';
 
 export interface PlatformModel {
 	/** The Workers AI model id. */
@@ -45,7 +45,9 @@ export const DEFAULT_PLATFORM_MODELS: readonly PlatformModel[] = [
 	{ id: 'openai/gpt-6.1-terra', ratesFrom: 'openai/gpt-6.1-terra', label: 'GPT 6.1 Terra', credits: 5, maxCalls: 150, maxInputTokens: 1_500_000, maxOutputTokens: 150_000 },
 	{ id: 'openai/gpt-6.1-sol', ratesFrom: 'openai/gpt-6.1-sol', label: 'GPT 6.1 Sol', credits: 10, maxCalls: 150, maxInputTokens: 1_200_000, maxOutputTokens: 120_000 },
 	{ id: 'openai/gpt-6-luna', ratesFrom: 'openai/gpt-6-luna', label: 'GPT 6 Luna · cheapest', credits: 1, maxCalls: 150, maxInputTokens: 2_000_000, maxOutputTokens: 200_000 },
-	{ id: 'moonshotai/kimi-k3', ratesFrom: 'moonshotai/kimi-k3', label: 'Kimi K3', credits: 5, maxCalls: 150, maxInputTokens: 1_500_000, maxOutputTokens: 150_000 }
+	{ id: 'moonshotai/kimi-k3', ratesFrom: 'moonshotai/kimi-k3', label: 'Kimi K3', credits: 5, maxCalls: 150, maxInputTokens: 1_500_000, maxOutputTokens: 150_000 },
+	{ id: 'google/gemini-4-argon', ratesFrom: 'google/gemini-4-argon', label: 'Gemini 4 Argon · most capable', credits: 20, maxCalls: 150, maxInputTokens: 1_000_000, maxOutputTokens: 100_000 },
+	{ id: 'google/gemini-3.5-flash', ratesFrom: 'google/gemini-3.5-flash', label: 'Gemini 3.5 Flash · fast', credits: 3, maxCalls: 150, maxInputTokens: 2_000_000, maxOutputTokens: 200_000 }
 ];
 
 /** Whether a model id runs on Workers AI directly (otherwise it goes through AI Gateway). */
@@ -130,7 +132,7 @@ export interface PricingPolicy {
 	minSamples: number;
 }
 
-export const DEFAULT_PRICING: PricingPolicy = { feePercent: 0, feeFlatUsd: 1, creditUsd: 0.01, percentile: 0.75, minSamples: 30 };
+export const DEFAULT_PRICING: PricingPolicy = { feePercent: 0, feeFlatUsd: 0.02, creditUsd: 0.01, percentile: 0.75, minSamples: 30 };
 
 /** A typical run (about ten model calls, most of the prompt served from cache), used to estimate the cost before there is data. */
 export const TYPICAL_RUN: RunUsage = { inputTokens: 80_000, cacheReadTokens: 48_000, cacheWriteTokens: 8_000, outputTokens: 3_000 };

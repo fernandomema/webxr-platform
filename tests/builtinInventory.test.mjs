@@ -9,7 +9,7 @@ import { instantiate } from '../packages/engine/src/ecs/serialize.ts';
 
 test('every starter object sits in a folder, has a unique id and builds a well-formed tree', () => {
   assert.equal(new Set(BUILTIN_ENTRIES.map((entry) => entry.id)).size, BUILTIN_ENTRIES.length);
-  const folders = new Set(BUILTIN_FOLDERS.map((folder) => folder.id));
+  const folders = new Set([...BUILTIN_FOLDERS.map((folder) => folder.id), 'dev']);
   for (const entry of BUILTIN_ENTRIES) {
     assert.ok(folders.has(entry.folderId), `${entry.id} is in an unknown folder`);
     const tree = entry.build();
@@ -133,8 +133,10 @@ test('the Dev folder holds the Halloween toys as standalone, working objects', a
   }
 });
 
-test('the Dev items are not part of the kit outside development builds', async () => {
-  const { BUILTIN_FOLDERS, BUILTIN_ENTRIES } = await import('../src/lib/content/starterKit/catalog.ts');
+test('the Dev items are only listed to an administrator outside development builds', async () => {
+  const { builtinInventoryAdapter } = await import('../packages/engine/src/inventory/adapters/builtin.ts');
   assert.equal(BUILTIN_FOLDERS.some((folder) => folder.id === 'dev'), false, 'the engine owns the dev folder');
-  assert.equal(BUILTIN_ENTRIES.some((entry) => entry.folderId === 'dev'), false);
+  assert.deepEqual(await builtinInventoryAdapter.listItems({}, 'dev'), []);
+  assert.deepEqual(await builtinInventoryAdapter.listItems({ isAdmin: false }, 'dev'), []);
+  assert.equal((await builtinInventoryAdapter.listItems({ isAdmin: true }, 'dev')).length, 3);
 });

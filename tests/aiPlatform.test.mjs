@@ -66,19 +66,19 @@ test('a run costs what its tokens cost at each rate, cache reads and writes incl
 test('the price is the cost plus the flat fee, rounded up, at 100 credits per dollar', async () => {
 	const { quoteCredits, DEFAULT_PRICING } = await import('../src/lib/server/aiPlatform.ts');
 	assert.equal(DEFAULT_PRICING.creditUsd, 0.01);
-	assert.equal(DEFAULT_PRICING.feeFlatUsd, 1);
-	// a 0.10 USD estimate + 1 USD fee = 1.10 USD = 110 credits
-	assert.deepEqual(quoteCredits([], 0.1), { credits: 110, calibrated: false });
-	assert.equal(quoteCredits([], 0.101).credits, 111, 'never rounds the fee away');
+	assert.equal(DEFAULT_PRICING.feeFlatUsd, 0.02);
+	// a 0.10 USD estimate + 0.02 USD fee = 0.12 USD = 12 credits
+	assert.deepEqual(quoteCredits([], 0.1), { credits: 12, calibrated: false });
+	assert.equal(quoteCredits([], 0.101).credits, 13, 'never rounds the fee away');
 });
 
 test('a run settles for its real token usage plus the fee, rounded up and capped', async () => {
 	const { settleCredits } = await import('../src/lib/server/aiPlatform.ts');
 	const rates = { input: 3, cachedInput: 0.3, cacheWrite: 3.75, output: 15 };
-	// 0.3M plain input + 0.6M cache reads + 0.1M cache writes + 0.1M output cost 2.955 USD; + 1 USD fee at 100 credits/USD, rounded up
-	assert.equal(settleCredits({ inputTokens: 1_000_000, cacheReadTokens: 600_000, cacheWriteTokens: 100_000, outputTokens: 100_000 }, rates), 396);
+	// 0.3M plain input + 0.6M cache reads + 0.1M cache writes + 0.1M output cost 2.955 USD; + 0.02 USD fee at 100 credits/USD, rounded up
+	assert.equal(settleCredits({ inputTokens: 1_000_000, cacheReadTokens: 600_000, cacheWriteTokens: 100_000, outputTokens: 100_000 }, rates), 298);
 	// a zero-rate run still pays the flat fee; the cap bounds the most expensive possible run
-	assert.equal(settleCredits({ inputTokens: 1, cacheReadTokens: 0, cacheWriteTokens: 0, outputTokens: 0 }, { input: 0, output: 0 }), 100);
+	assert.equal(settleCredits({ inputTokens: 1, cacheReadTokens: 0, cacheWriteTokens: 0, outputTokens: 0 }, { input: 0, output: 0 }), 2);
 	assert.equal(settleCredits({ inputTokens: 100_000_000, cacheReadTokens: 0, cacheWriteTokens: 0, outputTokens: 0 }, { input: 15, output: 0 }), 100_000);
 });
 
