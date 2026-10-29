@@ -89,6 +89,8 @@ export class ProviderConversation {
 		}
 		const data = await response.json() as Record<string, unknown>;
 		const result = adapter.parseReply(data, kind);
+		// A reply with neither text nor tool calls ends the run silently; surface it instead, so an empty answer is never mistaken for success.
+		if (!result.text.trim() && result.calls.length === 0) throw new Error('The model returned an empty response. Send again, or try another model.');
 		this.wire.push(...result.wire);
 		for (const key of Object.keys(this.usage) as (keyof TokenUsage)[]) this.usage[key] += result.usage[key];
 		return { text: result.text, calls: result.calls, usage: result.usage };

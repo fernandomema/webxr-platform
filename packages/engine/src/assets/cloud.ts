@@ -49,6 +49,8 @@ export interface MyCloudAsset {
 	profile?: boolean;
 	/** The hosted worlds behind `usedIn.worlds`. */
 	worlds?: Array<{ id: string; name: string; preview: boolean }>;
+	/** The saved objects and worlds behind `usedIn.items`. */
+	items?: Array<{ id: string; name: string; preview: boolean }>;
 }
 
 export const cloudAssets = {

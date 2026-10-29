@@ -48,7 +48,8 @@ export interface RigHost {
  */
 export class CharacterRig {
 	readonly body: CharacterBody;
-	private started = false;
+	/** Whether the body has been put down yet (until then the next frame puts it at the camera's feet). */
+	started = false;
 	private pending: V3 = [0, 0, 0];
 	/** Where the body was at the end of the last frame, to know how far the camera was moved since by something else. */
 	private lastBody: V3 = [0, 0, 0];

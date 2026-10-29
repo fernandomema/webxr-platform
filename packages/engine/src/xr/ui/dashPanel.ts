@@ -1056,8 +1056,12 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			}
 			if (isWorld) {
 				inventoryToolbar.addControl(actionButton('tb-load', 'Load', THEME.go, 84, async () => {
-					if (!canHoldWorlds(adapter.id)) return;
-					try { await callbacks.onLaunchWorldItem(item, adapter.id); }
+					try {
+						// The Starter Kit's Dev worlds are read-only: they launch as they are, with nothing to save back to.
+						if (adapter.id === 'builtin') await callbacks.onLaunchBuiltinWorld({ id: item.id, name: item.name, description: '', scene: item.slotData });
+						else if (canHoldWorlds(adapter.id)) await callbacks.onLaunchWorldItem(item, adapter.id);
+						else throw new Error('Worlds cannot be loaded from this inventory');
+					}
 					catch (error) { showMessage(error instanceof Error ? error.message : 'Could not load world', 'error'); }
 				}));
 				if (gameState.userId) {

@@ -157,7 +157,8 @@ export function createShepSource(options: ShepOptions = {}): AssetSource {
 
 	return {
 		info: {
-			id: 'shep', name: '3D Asset Server', homepage: 'https://3d.shep.bot', kinds: ['model', 'material', 'texture', 'hdri', 'audio', 'image', 'font', 'pack'],
+			id: 'shep', name: '3D Asset Server', homepage: 'https://3d.shep.bot', // No 'audio': what it lists is ZIP packs (Kenney, itch.io) with no importable file, so Sounds would offer it and always come back empty.
+			kinds: ['model', 'material', 'texture', 'hdri', 'image', 'font', 'pack'],
 			access: 'api', allowedHosts, ...(options.apiKey ? { needsKey: true } : {}), covers: ['polyhaven', 'ambientcg', 'blenderkit', 'kenney', 'polyfork', 'wikimediacommons', 'scenario', 'opengameart', 'texturecan', 'hdrmaps', 'grab3d', 'threedassets'].filter((id) => exclude.has(id))
 		},
 

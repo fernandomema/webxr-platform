@@ -778,6 +778,25 @@ test('seated mode that was on before the headset session is applied when the ses
 	} finally { graph.dispose(); f.dispose(); }
 });
 
+test('a headset session that starts from a fresh origin (after the payment sheet) puts the player back where the body was', () => {
+	const f = fixture();
+	const graph = new SceneGraph(f.scene, {});
+	try {
+		const xr = { baseExperience: { state: WebXRState.NOT_IN_XR, camera: f.camera } };
+		const body = setupPlayerBody(f.scene, graph, xr, f.camera, { x: 0, z: 0 });
+		body.teleport({ position: [5, 0, 3] });
+		body.update(0.02);
+		xr.baseExperience.state = WebXRState.IN_XR;
+		f.camera.position.set(0, 0, 0); // the new session's origin, before any head height is reported
+		f.camera.realWorldHeight = 0;
+		body.update(0.02);
+		f.camera.position.set(0, 1.6, 0);
+		f.camera.realWorldHeight = 1.6;
+		body.update(0.02);
+		assert.ok(Math.abs(f.camera.position.x - 5) < 0.1 && Math.abs(f.camera.position.z - 3) < 0.1, `at the old place (${f.camera.position.x.toFixed(2)}, ${f.camera.position.z.toFixed(2)})`);
+	} finally { graph.dispose(); f.dispose(); }
+});
+
 // --- loaders: objects from outside the world ---
 
 const outsideTable = {

@@ -190,10 +190,13 @@ export async function runStep(user: SessionUser | null, body: Record<string, unk
 	if (!payload || !Array.isArray(payload.messages) || !Array.isArray(payload.tools) || payload.tools.length > 20) throw new BadRequestError('Invalid model or tools.');
 	// One conversation keeps one affinity / cache key across its messages, so a follow-up reads the previous message's cache.
 	const affinity = /^[A-Za-z0-9-]{8,64}$/.test(sessionAffinity) ? sessionAffinity : run.id;
-	// OpenAI's newer models refuse `max_tokens` (they take `max_completion_tokens`), and on /chat/completions they cannot reason and call
-	// tools in the same request, so reasoning is switched off: the agent needs the tools.
+	// Thinking is where the quality comes from, so models that reason keep doing it. The per-call output cap is huge (5M) and is
+	// bounded by what the run's budget has left, so one call can never spend past the model's own limit while a long reasoning
+	// chain or a whole script in one answer always fits. OpenAI's /chat/completions endpoint cannot reason and call tools in the
+	// same request, so its reasoning stays off: the agent needs the tools.
 	const isOpenAi = model.id.startsWith('openai/');
-	const serialized = JSON.stringify({ model: model.id, messages: payload.messages, tools: payload.tools, stream: false, ...(isOpenAi ? { max_completion_tokens: 4096, prompt_cache_key: affinity, reasoning_effort: 'none' } : { max_tokens: 4096 }) });
+	const outputCap = Math.max(1, Math.min(5_000_000, model.maxOutputTokens - run.outputTokens));
+	const serialized = JSON.stringify({ model: model.id, messages: payload.messages, tools: payload.tools, stream: false, ...(isOpenAi ? { max_completion_tokens: outputCap, prompt_cache_key: affinity, reasoning_effort: 'none' } : { max_tokens: outputCap }) });
 	if (serialized.length > MAX_PAYLOAD) throw new BadRequestError('Request is too large.');
 
 	const started = Date.now();

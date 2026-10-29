@@ -31,6 +31,8 @@ export const STUDIO_TOOLS: ToolDefinition[] = [
 	{ name: 'list_scene', description: 'Read a paginated hierarchy summary of the open scene as it is now, including your own earlier edits. Use this before editing unfamiliar objects.', parameters: object({ offset: { type: 'integer' }, limit: { type: 'integer' } }) },
 	{ name: 'read_scene_json', description: 'Read full slot JSON of the open scene in pages, including your own earlier edits. Use offset and limit; reduce limit if the page is too large.', parameters: object({ offset: { type: 'integer' }, limit: { type: 'integer' } }) },
 	{ name: 'inspect_slot', description: 'Read one slot or a bounded subtree of the open scene as it is now, including components, code and your own earlier edits.', parameters: object({ id, subtree: { type: 'boolean' } }, ['id']) },
+	{ name: 'find_slots', description: 'Find slots in the open scene by name substring and/or component type. Much faster than paging through a big scene when looking for specific objects.', parameters: object({ name: { type: 'string', description: 'Case-insensitive substring of the slot name.' }, component: { type: 'string', description: 'A component type, for example "collider" or "codeBlock".' } }, []) },
+	{ name: 'list_assets', description: "List assets the person already owns (uploaded or saved models, sounds, pictures), filterable by type ('model', 'audio', 'image') and name. Check these before searching online libraries: place a model with meshRef {kind:'asset',assetId}, use an audio assetId in audioSource, pass a picture assetId as albedo to stage_set_material.", parameters: object({ kind: { type: 'string' }, query: { type: 'string' } }, []) },
 	{ name: 'get_component_schema', description: 'Read component types, defaults, fields, and the codeBlock context overview.', parameters: object({ type: { type: 'string' } }) },
 	{ name: 'get_script_api', description: 'Read the supported codeBlock handlers and ctx runtime API.', parameters: object({}) },
 	{ name: 'validate_draft', description: 'Validate the whole scene and return diagnostics.', parameters: object({}) },
@@ -78,7 +80,7 @@ function coerceFieldValue(kind: FieldDef['kind'], value: unknown): unknown {
 }
 
 /** Tools the browser runs itself (they fetch and import, so they are asynchronous); `StudioDraft` only handles the ones that edit the scene. */
-const REMOTE_TOOLS = new Set(['search_assets', 'import_asset']);
+const REMOTE_TOOLS = new Set(['search_assets', 'import_asset', 'list_assets']);
 export const isRemoteTool = (name: string): boolean => REMOTE_TOOLS.has(name);
 
 function mapRef(value: unknown, field: string): { kind: 'asset'; assetId: string } | { kind: 'url'; url: string } | null {
@@ -238,6 +240,13 @@ export class StudioDraft {
 			const serialized = JSON.stringify(slots);
 			if (serialized.length > 100_000) throw new Error('Subtree is too large. Inspect smaller slots.');
 			return { changed: false, value: slots };
+		}
+		if (name === 'find_slots') {
+			const byName = typeof args.name === 'string' && args.name.trim() ? args.name.trim().toLowerCase() : null;
+			const byComponent = typeof args.component === 'string' && args.component.trim() ? args.component.trim() : null;
+			if (!byName && !byComponent) throw new Error('Pass name and/or component.');
+			const matches = this.tree.filter((slot) => (!byName || slot.name.toLowerCase().includes(byName)) && (!byComponent || slot.components.some((component) => component.type === byComponent))).slice(0, 50);
+			return { changed: false, value: { total: matches.length, slots: matches.map((slot) => ({ id: slot.id, parentId: slot.parentId, name: slot.name, components: slot.components.map((component) => component.type) })) } };
 		}
 		if (name === 'get_component_schema') {
 			const schema = COMPONENT_SCHEMAS.find((item) => item.type === args.type);

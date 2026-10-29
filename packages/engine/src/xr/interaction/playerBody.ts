@@ -122,6 +122,10 @@ export function setupPlayerBody(
 	const inXr = () => Boolean(xr && xr.baseExperience.state === WebXRState.IN_XR);
 	// How far the whole rig is raised for seated mode. `null` while turned on but not measured yet (no head height reported).
 	let seated = false;
+	// A headset session starts from a fresh origin (the first one, and the one after the store's payment sheet closes the old one), so the body is
+	// carried over to it once the head height is known rather than left behind where the session happens to begin.
+	let wasInXr = false;
+	let placeOnEntry = false;
 	let lift: number | null = 0;
 	/** The floor the body stands on, ignoring the seated lift, so gravity and steps behave the same as when standing. */
 	const feetY = () => {
@@ -231,6 +235,15 @@ export function setupPlayerBody(
 			// Seated mode is measured once a headset reports its height; a new session starts from a fresh origin, so it is measured again.
 			if (inXr()) calibrateSeated();
 			else if (seated) lift = null;
+			const nowInXr = inXr();
+			if (nowInXr && !wasInXr) placeOnEntry = true;
+			if (!nowInXr) placeOnEntry = false;
+			wasInXr = nowInXr;
+			if (placeOnEntry && !rig.started) placeOnEntry = false;
+			if (placeOnEntry && xr!.baseExperience.camera.realWorldHeight > 0.3) {
+				placeOnEntry = false;
+				teleport({ position: [...rig.body.position] });
+			}
 			// A fall out of the world: back to the start.
 			if (rig.body.position[1] < VOID_Y) respawn();
 			rig.update(dt);

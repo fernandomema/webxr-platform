@@ -1,8 +1,34 @@
 import { describeLicense } from '@kithin/engine/library/license';
 import { ASSET_KINDS, type AssetKind } from '@kithin/engine/library/types';
+import { cloudAssets } from '@kithin/engine/assets/cloud';
+import { getLocalAssetStore } from '@kithin/engine/assets/store';
 import { getAssetDetail, searchLibrary } from '../library/client';
 import { browserImportDeps } from '../library/deps';
 import { importFromLibrary, canImportKind } from '../library/importers';
+
+/** The assets the person already owns (uploaded or saved, locally or in the cloud), so the agent reuses them before downloading anything. */
+export async function listOwnAssets(input: { kind?: unknown; query?: unknown }) {
+	const kind = typeof input.kind === 'string' && input.kind.trim() ? input.kind.trim() : null;
+	const query = typeof input.query === 'string' ? input.query.trim().toLowerCase() : '';
+	const [local, cloud] = await Promise.all([getLocalAssetStore().list(), cloudAssets.list().catch(() => [])]);
+	const seen = new Set<string>();
+	const assets: unknown[] = [];
+	for (const manifest of [...local, ...cloud.map((entry) => entry.manifest)]) {
+		if (seen.has(manifest.assetId)) continue;
+		seen.add(manifest.assetId);
+		if (kind && manifest.type !== kind) continue;
+		if (query && !manifest.name.toLowerCase().includes(query)) continue;
+		assets.push({
+			assetId: manifest.assetId,
+			type: manifest.type,
+			name: manifest.name,
+			...(manifest.type === 'model' ? { bounds: manifest.bounds, triangles: manifest.triangles } : {}),
+			...(manifest.type === 'audio' ? { duration: manifest.duration } : {})
+		});
+		if (assets.length >= 40) break;
+	}
+	return { assets };
+}
 
 /** The AI's way to the online libraries: the same search and import the Studio's own browser uses, with answers kept short for the model. */
 export async function searchAssets(input: { kind?: unknown; query?: unknown; source?: unknown }, signal?: AbortSignal) {

@@ -25,7 +25,8 @@
 	let sources = $state<SourceLite[]>([]);
 	let source = $state('all');
 	let query = $state('');
-	let commercialOnly = $state(true);
+	// Music is not CC0 (its license is on each card), so asking for commercial use only would leave Sounds empty.
+	let commercialOnly = $state(kind !== 'audio');
 	// By default only what can be imported here is listed; this also shows what has to be taken from its own site.
 	let showAll = $state(false);
 	// Search results are only read, so they are kept as plain data rather than reactive proxies.

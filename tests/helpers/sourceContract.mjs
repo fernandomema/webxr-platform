@@ -25,7 +25,7 @@ export async function assertSourceContract(source, { queries, minResults = 1 }) 
 		assert.equal(detail.kind, kind);
 		for (const variant of detail.variants) for (const file of variant.files) {
 			const real = /^https:\/\//.test(file.url);
-			if (real && !source.open) assert.ok(source.info.allowedHosts.includes(new URL(file.url).hostname), `${file.url} is on an allowed host`);
+			if (real && !source.open) assert.ok(source.info.allowedHosts.some((allowed) => (allowed.startsWith('*.') ? new URL(file.url).hostname.endsWith(allowed.slice(1)) : allowed === new URL(file.url).hostname)), `${file.url} is on an allowed host`);
 		}
 	}
 }

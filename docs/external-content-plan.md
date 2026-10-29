@@ -46,7 +46,7 @@ Browsers cannot reach most of these services (no CORS, keys, rate limits), and t
 ### Where the code lives
 
 - `packages/engine/src/library/` (generic, no game logic, reusable by a game): the types, `parseAssetRef` / `formatAssetRef`, license helpers, `pickVariant`.
-- `src/lib/server/library/` (the app): the registry, the `createHttpSource` helper, the adapters (`polyhaven.ts`, `shep.ts`), the routes' logic.
+- `src/lib/server/library/` (the app): the registry, the `createHttpSource` helper, the adapters (`polyhaven.ts`, `shep.ts`, `grab3d.ts`, `lazytextures.ts`, `freetouse.ts`), the routes' logic.
 - `src/lib/studio/library/` (the Studio): the importers (they need the Studio's asset stores), the browser components, the Studio state.
 
 ## The contract

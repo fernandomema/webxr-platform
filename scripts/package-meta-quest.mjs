@@ -97,9 +97,12 @@ async function hardenAndroidProject(directory) {
 	const config = JSON.parse(await readFile(configPath, 'utf8'));
 	const appId = await metaAppId();
 	let changed = false;
-	if (config.enableNotifications !== false) {
-		config.enableNotifications = false;
-		changed = true;
+	// The flag is misnamed: it is what enables the app's DelegationService, which the Quest browser binds to for Digital Goods. With it off the browser
+	// logs "Could not find TWAService" and every purchase fails. The notification permission stays removed below.
+	let newVersion = false;
+	if (config.enableNotifications !== true) {
+		config.enableNotifications = true;
+		changed = newVersion = true;
 	}
 	// Horizon Billing is what answers the page's Digital Goods calls from inside the app (without it the store says "Client app unavailable"). Bubblewrap
 	// only adds it with its alpha dependencies on.
@@ -109,17 +112,19 @@ async function hardenAndroidProject(directory) {
 		config.applicationId = appId;
 		config.alphaDependencies = { ...config.alphaDependencies, enabled: true };
 		config.features = { ...config.features, horizonBilling: { enabled: true, horizonOSAppMode: config.horizonOSAppMode } };
-		// The store only accepts a version it has not seen, so a build that changes what the app does is a new version.
+		changed = newVersion = true;
+	}
+	// The store only accepts a version it has not seen, so a build that changes what the app does is a new version.
+	if (newVersion) {
 		config.appVersionCode = Number(config.appVersionCode ?? 0) + 1;
 		config.appVersion = String(config.appVersionCode);
 		config.appVersionName = String(config.appVersionCode);
-		changed = true;
 		console.log(`The Quest app now sells from inside the headset for Meta app ${appId}; its version is ${config.appVersionCode}.`);
 	}
 	if (changed) await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
 	const gradlePath = resolve(directory, 'app/build.gradle');
 	const gradle = await readFile(gradlePath, 'utf8');
-	const updatedGradle = gradle.replace(/enableNotifications:\s*true\b/g, 'enableNotifications: false');
+	const updatedGradle = gradle.replace(/enableNotifications:\s*false\b/g, 'enableNotifications: true');
 	if (updatedGradle !== gradle) await writeFile(gradlePath, updatedGradle);
 	const { path, manifest: generated } = await backupEnabled(directory);
 	// The platform SDK reads the Meta app id from here (a leading backslash keeps it a string).
@@ -129,7 +134,7 @@ async function hardenAndroidProject(directory) {
 	if (!/xmlns:tools=/.test(updated)) updated = updated.replace('<manifest ', '<manifest xmlns:tools="http://schemas.android.com/tools" ');
 	updated = updated.replace(/(<manifest\b[^>]*>)/s, '$1\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" tools:node="remove" />');
 	if (updated !== generated) await writeFile(path, updated);
-	console.log('Notification delegation is disabled and POST_NOTIFICATIONS is excluded.');
+	console.log('The delegation service is enabled and POST_NOTIFICATIONS is excluded.');
 }
 
 async function androidProjectIsHardened(directory) {
@@ -138,9 +143,9 @@ async function androidProjectIsHardened(directory) {
 	const config = JSON.parse(await readFile(resolve(directory, 'twa-manifest.json'), 'utf8'));
 	const gradle = await readFile(resolve(directory, 'app/build.gradle'), 'utf8');
 	const appId = await metaAppId();
-	return application.includes('android:allowBackup="false"') && config.enableNotifications === false
+	return application.includes('android:allowBackup="false"') && config.enableNotifications === true
 		&& config.applicationId === appId && config.features?.horizonBilling?.enabled === true && manifest.includes('org.chromium.intent.action.PAY') && manifest.includes(`\\ ${appId}"`)
-		&& !/enableNotifications:\s*true\b/.test(gradle)
+		&& !/enableNotifications:\s*false\b/.test(gradle)
 		&& permissions.length === 1 && permissions[0].includes('tools:node="remove"');
 }
 

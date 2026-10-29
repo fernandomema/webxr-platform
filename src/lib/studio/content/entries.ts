@@ -66,4 +66,4 @@ export function displayName(entry: ContentEntry): string {
 }
 
 /** The group an entry belongs to when listed by where it is used: the first object or world that uses it. */
-export const groupOf = (entry: ContentEntry): string => entry.usedIn?.[0]?.name ?? (entry.builtin ? 'The app' : 'Not used');
+export const groupOf = (entry: ContentEntry): string => entry.usedIn?.[0]?.name ?? (entry.builtin ? 'The app' : entry.cached || isUnused(entry) ? 'Not used' : 'Used elsewhere');

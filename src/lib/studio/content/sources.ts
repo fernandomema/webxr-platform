@@ -130,6 +130,7 @@ function cloudSource(): ContentSource {
 				profile: asset.profile,
 				usedIn: [
 					...(asset.profile ? [{ label: 'Profile picture (your account)', name: 'Profile picture', href: resolve('/settings') }] : []),
+					...(asset.items ?? []).map((item) => ({ label: `${item.name} (saved in your cloud)`, name: item.name, preview: item.preview })),
 					...(asset.worlds ?? []).map((world) => ({ label: `${world.name} (hosted world)`, name: world.name, href: `${resolve('/play')}?world=${encodeURIComponent(world.id)}`, preview: world.preview }))
 				],
 				usedBy: asset.usedIn

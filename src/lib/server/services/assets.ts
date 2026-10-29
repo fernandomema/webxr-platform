@@ -315,6 +315,8 @@ export interface MyAsset {
 	profile: boolean;
 	/** The hosted worlds counted in `usedIn.worlds`. */
 	worlds: Array<{ id: string; name: string; preview: boolean }>;
+	/** The saved objects and worlds (inventory, hosted worlds' inventories, objects a published world keeps) counted in `usedIn.items`. */
+	items: Array<{ id: string; name: string; preview: boolean }>;
 }
 
 /** A hosted world with no running session whose preview is this asset: the picture stands for nothing now, so it does not count as use. */
@@ -333,6 +335,16 @@ async function referencesOwnedBy(db: Db & Pick<typeof prisma, 'cloudInventoryIte
 	return { items: items + worldItems + playerItems, worlds, publications: revisions + marketplaceRevisions };
 }
 
+/** The saved objects and worlds of this user that use the asset, by name, so a file can be listed under what it belongs to. */
+async function itemsUsing(userId: string, assetId: string): Promise<MyAsset['items']> {
+	const [cloud, world, player] = await Promise.all([
+		prisma.cloudInventoryItem.findMany({ where: { ownerId: userId, assets: { some: { assetId } } }, select: { id: true, name: true, thumbnailAssetId: true } }),
+		prisma.worldInventoryItem.findMany({ where: { world: { hostUserId: userId }, assets: { some: { assetId } } }, select: { id: true, name: true, thumbnailAssetId: true } }),
+		prisma.worldPlayerItem.findMany({ where: { accountId: userId, assets: { some: { assetId } } }, select: { id: true, name: true, thumbnailAssetId: true } })
+	]);
+	return [...cloud, ...world, ...player].map((item) => ({ id: item.id, name: item.name, preview: item.thumbnailAssetId === assetId }));
+}
+
 export async function listMyAssets(user: SessionUser | null): Promise<MyAsset[]> {
 	if (!user) throw new UnauthorizedError();
 	const [owned, account] = await Promise.all([
@@ -349,6 +361,7 @@ export async function listMyAssets(user: SessionUser | null): Promise<MyAsset[]>
 			manifest: row.asset.manifest as unknown as AssetManifest,
 			usedIn: await referencesOwnedBy(prisma, user.id, row.assetId),
 			profile: account?.image === row.assetId,
+			items: await itemsUsing(user.id, row.assetId),
 			worlds: (await prisma.world.findMany({ where: { hostUserId: user.id, assets: { some: { assetId: row.assetId } }, NOT: idlePreviewOf(row.assetId) }, select: { id: true, name: true, thumbnailAssetId: true } })).map((world) => ({ id: world.id, name: world.name, preview: world.thumbnailAssetId === row.assetId }))
 		}))
 	);
