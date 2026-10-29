@@ -144,6 +144,8 @@ export function createMetaPayments(deps: MetaPaymentsDeps) {
 			} catch (error) {
 				const { name, message } = (error ?? {}) as { name?: string; message?: string };
 				console.warn(`[meta-payments] failed at the ${stage}`, error);
+				// The page is not running inside the app the store installed (a browser tab, a sideloaded copy): nothing here can fix that.
+				if (typeof message === 'string' && /client app unavailable/i.test(message)) return { status: 'failed', message: 'Buying only works in the app installed from the Horizon Store, not in a browser tab or a sideloaded copy.' };
 				// The store's own words are the only clue to what it dislikes, so they are shown (shortened).
 				const said = typeof message === 'string' && message ? `: ${message.slice(0, 120)}` : '';
 				return { status: 'failed', message: `The payment failed at the ${stage}${name ? ` (${name})` : ''}${said}${stage === 'store' ? ` [${pack.metaSku}]` : ''}` };

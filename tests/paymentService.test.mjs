@@ -310,3 +310,15 @@ test('packs the store does not have yet are not offered, and the ones it has are
 	assert.deepEqual(atm.state.packs.map((pack) => pack.id), ['credits-500'], 'only the pack the store has');
 	assert.match(atm.state.packs[0].priceLabel, /3\D99/, 'with the store’s price');
 });
+
+test('a store that says the client app is unavailable is explained as not running from the Horizon Store', async () => {
+	const server = receiptServer();
+	const store = metaWindow();
+	const service = await store.win.getDigitalGoodsService('https://quest.meta.com/billing');
+	service.getDetails = async () => { throw Object.assign(new Error('Client app unavailable'), { name: 'OperationError' }); };
+	store.win.getDigitalGoodsService = async () => service;
+	const result = await createMetaPayments({ fetch: server.fetch, win: store.win }).buy(PACKS[0]);
+	assert.equal(result.status, 'failed');
+	assert.match(result.message, /installed from the Horizon Store/);
+	assert.equal(server.sent.length, 0, 'nothing is sent to the server');
+});
