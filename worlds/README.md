@@ -23,8 +23,10 @@ The steps below are cells for the [Runme](https://marketplace.visualstudio.com/i
 ## 1. Choose the pack
 
 ```sh {"name":"pack-id"}
-export PACK=my-world
-export PACK_NAME="My world"
+export PACK=beat-turntable
+export PACK_NAME="Beat Turntable"
+# The id of the world already published from this pack (the part after /play/ in its address). Leave it empty for a new pack.
+export PUBLISHED_ID=cmuzuc55d00000uniy7iqyk70
 echo "pack: $PACK ($PACK_NAME)"
 ```
 
@@ -98,7 +100,7 @@ It signs in with the cookies of a browser session where you are already signed i
 2. Set the site and save the cookie (it is kept in `worlds/.auth.json`, ignored by git). Run this one in a terminal if the cell cannot ask for input; or set `KITHIN_COOKIE` instead and skip the file.
 
 ```sh {"name":"publish-host"}
-export KITHIN_HOST=https://your-site.com
+export KITHIN_HOST=https://kithin.app
 ```
 
 ```sh {"name":"publish-login","interactive":"true"}
@@ -109,10 +111,10 @@ npm run pack -- login $KITHIN_HOST
 npm run pack -- whoami
 ```
 
-3. Publish. It uploads the files the world uses (the ones the platform already has are skipped), then publishes. The first time it creates the world; the id is remembered in `worlds/$PACK/publish.json` and the next runs add a new revision.
+3. Publish. It uploads the files the world uses (the ones the platform already has are skipped), then publishes. The first time it creates the world; the id is remembered in `worlds/$PACK/publish.json` and the next runs add a new revision. A world that was published some other way (or from another machine) has no `publish.json` here, so name it with `--world`: without it the command would create a second, separate world.
 
 ```sh {"name":"publish"}
-npm run pack -- publish $PACK
+npm run pack -- publish $PACK ${PUBLISHED_ID:+--world $PUBLISHED_ID}
 ```
 
 Options: `--host <address>` instead of `KITHIN_HOST`; `--new` to publish as a second, separate world; `--world <id>` to add a revision to a world you published some other way. A session cookie expires: when it says you are not signed in, repeat step 1 and `login`.
