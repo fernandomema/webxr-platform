@@ -135,6 +135,12 @@ export const DEFAULT_PRICING: PricingPolicy = { feePercent: 0, feeFlatUsd: 1, cr
 /** A typical run (about ten model calls, most of the prompt served from cache), used to estimate the cost before there is data. */
 export const TYPICAL_RUN: RunUsage = { inputTokens: 80_000, cacheReadTokens: 48_000, cacheWriteTokens: 8_000, outputTokens: 3_000 };
 
+/** A small run: one question over a small scene, answered in a call or two. The low end of the price range. */
+export const ASK_RUN: RunUsage = { inputTokens: 14_000, cacheReadTokens: 8_000, cacheWriteTokens: 1_500, outputTokens: 900 };
+
+/** A heavy run: many steps over a big scene, still well inside the budget. The high end of the price range. */
+export const HEAVY_RUN: RunUsage = { inputTokens: 450_000, cacheReadTokens: 300_000, cacheWriteTokens: 50_000, outputTokens: 30_000 };
+
 const MAX_CREDITS = 100_000;
 
 /** What a finished run settles for, in credits: its real usage at the provider's current rates plus the fee, rounded up and capped. */

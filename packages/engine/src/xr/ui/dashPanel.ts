@@ -13,7 +13,7 @@ import {
 } from '@babylonjs/gui';
 import { createSlot, type SlotTree } from '../../ecs/types.ts';
 import type { SceneGraph } from '../sceneGraph.ts';
-import { currentUser, platformAuth } from '../platform/auth.ts';
+import { currentUser, isAdminUser, platformAuth } from '../platform/auth.ts';
 import { startDeviceSignIn, type DeviceSignIn } from '../platform/deviceSignIn.ts';
 import { getFeatures } from '../features.ts';
 import { availableInventoryFolders, getInventoryAdapter, isReadOnlyAdapter } from '../../inventory/registry.ts';
@@ -1812,6 +1812,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		const user = await currentUser();
 		gameState.userId = user?.id ?? null;
 		gameState.userName = user?.name ?? null;
+		gameState.isAdmin = isAdminUser(user);
 		signedOutView.isVisible = !user;
 		signedInView.isVisible = Boolean(user);
 		if (user) {

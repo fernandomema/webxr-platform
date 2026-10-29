@@ -94,7 +94,7 @@ import { createPurchasePrompt } from './ui/purchasePrompt.ts';
 import type { PayResult } from './payments/types.ts';
 import { ProximityVoice } from './net/voice.ts';
 import { parseIceServers } from './net/peerConnection.ts';
-import { currentUser } from './platform/auth.ts';
+import { currentUser, isAdminUser } from './platform/auth.ts';
 import { BLANK_WORLD_NAME, buildBlankWorld } from './blankWorld.ts';
 import { gameState, type LoadedWorld, type PublicationContext } from './gameState.ts';
 import type { HostedWorldVisibility } from '../worldVisibility.ts';
@@ -554,6 +554,7 @@ export async function mountGame(
 		const user = await currentUser();
 		gameState.userId = user?.id ?? null;
 		gameState.userName = user?.name ?? null;
+		gameState.isAdmin = isAdminUser(user);
 	}
 	await refreshUser();
 	const localPlayerId = crypto.randomUUID();

@@ -30,6 +30,12 @@ export function platformAuth(): PlatformAuthClient {
 	return client;
 }
 
+/** `role` is a comma-separated list ("admin,moderator"); an account is an administrator when any of its roles is "admin". */
+export function isAdminUser(user: object | null | undefined): boolean {
+	const role = (user as { role?: unknown } | null | undefined)?.role;
+	return typeof role === 'string' && role.split(',').some((role) => role.trim() === 'admin');
+}
+
 /**
  * Who is signed in, or nobody when the platform cannot be reached: a game has to start offline (the platform being down, or a
  * browser refusing its certificate, must not stop anyone from playing), and sign-in is for what needs the platform.

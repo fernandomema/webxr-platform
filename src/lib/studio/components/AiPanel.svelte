@@ -25,7 +25,7 @@
 		{ id: 'messages', label: 'Messages' }
 	]);
 	let profiles = $state<Record<ProviderKind, ProviderProfile>>({ platform: defaultProfile('platform'), openrouter: defaultProfile('openrouter'), openai: defaultProfile('openai'), claude: defaultProfile('claude'), opencode: defaultProfile('opencode'), freellmapi: defaultProfile('freellmapi'), ollama: defaultProfile('ollama'), custom: defaultProfile('custom') });
-	interface PlatformInfo { available: boolean; free: boolean; balance: number; models: { id: string; label: string; credits: number; calibrated?: boolean }[] }
+	interface PlatformInfo { available: boolean; free: boolean; balance: number; models: { id: string; label: string; credits: number; minCredits: number; maxCredits: number; calibrated?: boolean }[] }
 	// The platform's own AI is only offered when the server has it configured and the person is signed in.
 	let platform = $state<PlatformInfo | null>(null);
 	const kinds = $derived(allKinds.filter((id) => id !== 'platform' || platform?.available));
@@ -57,11 +57,11 @@
 	const keyless = $derived(kind === 'ollama' || kind === 'custom' || kind === 'platform');
 	const direct = $derived(kind === 'ollama' || kind === 'custom' || kind === 'freellmapi');
 	const ready = $derived(Boolean(profile.model.trim()) && (keyless || Boolean(credential.trim()) || useConnection));
-	// The expected price of the next message, shown on the button before it is sent; a run settles for its real usage. Null for providers billed elsewhere.
-	const price = $derived(kind === 'platform' ? platform?.models.find((model) => model.id === profile.model)?.credits ?? null : null);
+	// What a run of the chosen model may cost, shown on the button before it is sent; a run settles for its real usage. Null for providers billed elsewhere.
+	const range = $derived(kind === 'platform' ? platform?.models.find((model) => model.id === profile.model) ?? null : null);
 	// A paid run needs at least one credit to start; what it really used is taken when it ends.
-	const cannotAfford = $derived(price !== null && price > 0 && (platform?.balance ?? 0) < 1);
-	const sendLabel = $derived(price === null ? 'Send' : price === 0 ? 'Send · Free' : `Send · ~${price} credit${price === 1 ? '' : 's'}`);
+	const cannotAfford = $derived(range !== null && (platform?.balance ?? 0) < 1);
+	const sendLabel = $derived(range === null ? 'Send' : range.minCredits === 0 && range.maxCredits === 0 ? 'Send · Free' : `Send · ~${range.minCredits}–${range.maxCredits} credits`);
 	const modelOptions = $derived.by<(SelectOption | SelectGroup)[]>(() => {
 		const free = openRouterModels.filter((item) => item.free).map((item) => ({ value: item.id, label: `${item.name} · ${item.id}` }));
 		const paid = openRouterModels.filter((item) => !item.free).map((item) => ({ value: item.id, label: `${item.name} · ${item.id}` }));
@@ -69,7 +69,7 @@
 		return [...(manual.length ? [{ label: 'Current', options: manual }] : []), { label: 'Free', options: free }, { label: 'Paid', options: paid }].filter((group) => group.options.length);
 	});
 	const kindOptions = $derived<SelectOption[]>(kinds.map((id) => ({ value: id, label: labels[id] })));
-	const platformModelOptions = $derived<SelectOption[]>((platform?.models ?? []).map((model) => ({ value: model.id, label: `${model.label} · ${model.credits === 0 ? 'free' : `${model.credits} credits`}` })));
+	const platformModelOptions = $derived<SelectOption[]>((platform?.models ?? []).map((model) => ({ value: model.id, label: `${model.label} · ~${model.minCredits}–${model.maxCredits} credits` })));
 	const suggestions = ['Create a grouped pool table', 'Describe what is in this scene', 'Arrange the selected objects in a circle'];
 	// Only worth serialising the scene while some message has a checkpoint to compare against.
 	const sceneJson = $derived.by(() => (messages.some((message) => message.checkpoint !== undefined) ? JSON.stringify(doc.tree) : ''));
@@ -368,7 +368,7 @@
 		{#if kind === 'platform'}
 			<div class="field"><span class="label">Model</span>
 				<Select label="Model" value={profile.model} options={platformModelOptions} disabled={busy} onchange={(next) => updateProfile({ model: next })} />
-				<small>{platform?.free ? 'Free for now. Usage is recorded to set fair prices.' : 'Metered: you are charged for what a message actually used when it ends, and the button shows an estimate. Runs that get no answer cost nothing.'}</small>
+				<small>{platform?.free ? 'Free for now. Usage is recorded to set fair prices.' : 'Metered: you are charged for what a message actually used when it ends; the button shows a range — a one-line question at the low end, a long multi-step edit at the high one. Runs that get no answer cost nothing.'}</small>
 			</div>
 			<div class="card ok">
 				<span class="dot on"></span><span class="card-text"><strong>{(platform?.balance ?? 0).toLocaleString()} credits</strong><small>No API key needed.</small></span>
@@ -475,7 +475,7 @@
 		{#if busy && messages.at(-1)?.role !== 'activity'}<p class="muted thinking">Thinking…</p>{:else if !busy && lastUsage}<p class="muted usage">{lastUsage}</p>{/if}
 	</div>
 	{#if error}<p class="error" role="alert">{error}</p>{/if}
-	{#if paused && !busy}<div class="actions paused"><button class="btn sm" type="button" onclick={() => void send('Continue, but try a different approach.')} disabled={cannotAfford}>Continue{price ? ` · ~${price} credit${price === 1 ? '' : 's'}` : ''}</button></div>{/if}
+	{#if paused && !busy}<div class="actions paused"><button class="btn sm" type="button" onclick={() => void send('Continue, but try a different approach.')} disabled={cannotAfford}>Continue{range && range.minCredits > 0 ? ` · ~${range.minCredits}–${range.maxCredits} credits` : ''}</button></div>{/if}
 	<form class="composer" onsubmit={(event) => { event.preventDefault(); void send(); }}>
 		<textarea class="input" bind:this={composer} aria-label="Ask AI" placeholder={ready ? 'Create a grouped pool table…' : 'Set up a provider to start'} bind:value={prompt} disabled={busy}></textarea>
 		<div class="actions"><small class="muted hint">Enter to send · Shift+Enter for a new line</small>{#if busy}<button type="button" class="btn sm" onclick={() => controller?.abort()}>Stop</button>{/if}<button type="submit" class="btn primary sm" disabled={busy || !prompt.trim() || cannotAfford} title={cannotAfford ? 'Not enough credits' : undefined}>{sendLabel}</button></div>

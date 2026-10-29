@@ -37,6 +37,8 @@ export interface InventoryItemChanges {
 export interface InventoryContext {
 	worldId: string | null;
 	userId: string | null;
+	/** The signed-in account is an administrator; adapters may show development content to them. */
+	isAdmin?: boolean;
 }
 
 /** How much of an adapter's capacity is in use, for the usage bar. `total` 0 means unlimited. */

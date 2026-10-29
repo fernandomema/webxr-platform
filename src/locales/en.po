@@ -6460,9 +6460,7 @@ msgstr "Send · Free"
 #~ msgid "Send · {0} credit{1}"
 #~ msgstr "Send · {0} credit{1}"
 
-#. 0: model.credits
 #. 0: (platform?.balance ?? 0).toLocaleString()
-#: src/lib/studio/components/AiPanel.svelte
 #: src/lib/studio/components/AiPanel.svelte
 msgid "{0} credits"
 msgstr "{0} credits"
@@ -6503,7 +6501,7 @@ msgstr "Add credits"
 msgid "Continue, but try a different approach."
 msgstr "Continue, but try a different approach."
 
-#. 0: price ? ` · ~${price} credit${price === 1 ? '' \\: 's'}` \\: ''
+#. 0: range && range.minCredits > 0 ? ` · ~${range.minCredits}–${range.maxCredits} credits` \\: ''
 #: src/lib/studio/components/AiPanel.svelte
 msgid "Continue{0}"
 msgstr "Continue{0}"
@@ -7047,16 +7045,27 @@ msgstr "Real cost"
 msgid "{0} cr"
 msgstr "{0} cr"
 
-#. 0: price; 1: price === 1 ? '' \\: 's'
-#: src/lib/studio/components/AiPanel.svelte
-msgid "Send · ~{0} credit{1}"
-msgstr "Send · ~{0} credit{1}"
+#~ msgid "Send · ~{0} credit{1}"
+#~ msgstr "Send · ~{0} credit{1}"
 
 #. 0: result.settled.toLocaleString(); 1: result.settled === 1 ? '' \\: 's'
 #: src/lib/studio/components/AiPanel.svelte
 msgid "Charged {0} credit{1}"
 msgstr "Charged {0} credit{1}"
 
+#~ msgid "Metered: you are charged for what a message actually used when it ends, and the button shows an estimate. Runs that get no answer cost nothing."
+#~ msgstr "Metered: you are charged for what a message actually used when it ends, and the button shows an estimate. Runs that get no answer cost nothing."
+
+#. 0: range.minCredits; 1: range.maxCredits
 #: src/lib/studio/components/AiPanel.svelte
-msgid "Metered: you are charged for what a message actually used when it ends, and the button shows an estimate. Runs that get no answer cost nothing."
-msgstr "Metered: you are charged for what a message actually used when it ends, and the button shows an estimate. Runs that get no answer cost nothing."
+msgid "Send · ~{0}–{1} credits"
+msgstr "Send · ~{0}–{1} credits"
+
+#. 0: model.label; 1: model.minCredits; 2: model.maxCredits
+#: src/lib/studio/components/AiPanel.svelte
+msgid "{0} · ~{1}–{2} credits"
+msgstr "{0} · ~{1}–{2} credits"
+
+#: src/lib/studio/components/AiPanel.svelte
+msgid "Metered: you are charged for what a message actually used when it ends; the button shows a range — a one-line question at the low end, a long multi-step edit at the high one. Runs that get no answer cost nothing."
+msgstr "Metered: you are charged for what a message actually used when it ends; the button shows a range — a one-line question at the low end, a long multi-step edit at the high one. Runs that get no answer cost nothing."

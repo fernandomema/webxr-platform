@@ -1,7 +1,7 @@
 import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
 import { prisma } from '../db';
-import { AI_TARIFF_VERSION, DEFAULT_PRICING, RUN_OUTCOMES, TYPICAL_RUN, budgetExceeded, classifyTask, isWorkersAiModel, parseOpenRouterRates, parsePlatformModels, parseWorkersAiRates, quoteCredits, runCostUsd, settleCredits, type ModelRates, type PricingPolicy, type PlatformModel, type RunOutcome, type RunUsage } from '../aiPlatform';
+import { AI_TARIFF_VERSION, ASK_RUN, DEFAULT_PRICING, HEAVY_RUN, RUN_OUTCOMES, TYPICAL_RUN, budgetExceeded, classifyTask, isWorkersAiModel, parseOpenRouterRates, parsePlatformModels, parseWorkersAiRates, quoteCredits, runCostUsd, settleCredits, type ModelRates, type PricingPolicy, type PlatformModel, type RunOutcome, type RunUsage } from '../aiPlatform';
 import { AiBudgetError, BadRequestError, ConflictError, CreditError, NotFoundError, TooManyRequestsError, UnauthorizedError } from '../errors';
 import { takeRateToken } from '../rateLimit';
 import { applyCharge, type LedgerTx } from './creditLedger';
@@ -96,13 +96,33 @@ async function priceOf(model: PlatformModel): Promise<{ credits: number; calibra
 /** Nothing is charged in development or while the free calibration phase is on, but usage is recorded either way. */
 const isFree = () => dev || env.PLATFORM_AI_FREE === 'true';
 
+const estimates = new Map<string, { at: number; min: number; max: number }>();
+
+/**
+ * What a run of `model` may cost, as a range: a metered run can be anything from a one-line question to a long multi-step
+ * edit, so the button shows both ends priced at this model's own rates (plus the fee). Runs are bounded by the model's budget,
+ * so even the high end cannot lose money on a single run. When the price list cannot be read, the catalog's rough guess spans
+ * small edits to heavy creations. Cached as long as the quotes so the button stays stable.
+ */
+async function estimateRange(model: PlatformModel): Promise<{ min: number; max: number }> {
+	const cached = estimates.get(model.id);
+	if (cached && Date.now() - cached.at < PRICE_TTL_MS) return cached;
+	const pricing = policy();
+	const rates = await ratesOf(model);
+	const range = rates
+		? { min: settleCredits(ASK_RUN, rates, pricing), max: settleCredits(HEAVY_RUN, rates, pricing) }
+		: { min: Math.max(1, Math.round(model.credits / 2)), max: model.credits * 3 };
+	estimates.set(model.id, { at: Date.now(), ...range });
+	return range;
+}
+
 function modelOrThrow(id: unknown): PlatformModel {
 	const model = models().find((candidate) => candidate.id === id);
 	if (!model) throw new BadRequestError('Unknown model');
 	return model;
 }
 
-/** What the panel shows before anything is sent: the models, the estimated price of a run of each, and the balance. */
+/** What the panel shows before anything is sent: the models, what a run of each may cost (a range, since the run is metered), and the balance. */
 export async function getPlatformInfo(user: SessionUser | null) {
 	if (!user) throw new UnauthorizedError();
 	const free = isFree();
@@ -113,7 +133,8 @@ export async function getPlatformInfo(user: SessionUser | null) {
 		balance: account?.balance ?? 0,
 		models: await Promise.all(models().map(async (model) => {
 			const quote = await priceOf(model);
-			return { id: model.id, label: model.label, credits: free ? 0 : quote.credits, calibrated: quote.calibrated };
+			const range = await estimateRange(model);
+			return { id: model.id, label: model.label, credits: free ? 0 : quote.credits, minCredits: free ? 0 : range.min, maxCredits: free ? 0 : range.max, calibrated: quote.calibrated };
 		}))
 	};
 }
