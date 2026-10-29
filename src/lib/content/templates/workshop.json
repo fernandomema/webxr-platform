@@ -8315,24 +8315,24 @@
 				"type": "equippable",
 				"left": {
 					"position": [
-						0,
-						0,
+						0.04,
+						0.02,
 						0.04
 					],
 					"rotation": [
-						15,
+						95,
 						0,
 						0
 					]
 				},
 				"right": {
 					"position": [
-						0,
-						0,
+						-0.04,
+						0.02,
 						0.04
 					],
 					"rotation": [
-						15,
+						95,
 						0,
 						0
 					]

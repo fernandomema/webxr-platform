@@ -459,7 +459,7 @@ function toolProduct(tool) {
 		name: tool.name,
 		// Lying along the shelf, its working end to the shopper's left.
 		rotation: yaw(Math.PI / 2),
-		components: [{ type: 'container' }, { type: 'grabbable', scalable: false }, toolEquippable(), { type: 'codeBlock', code: tool.code }],
+		components: [{ type: 'container' }, { type: 'grabbable', scalable: false }, toolEquippable(tool), { type: 'codeBlock', code: tool.code }],
 		parts: tool.parts.map((p) => ({ name: p.name, mesh: p.mesh, color: p.color, position: p.position, rotation: p.rotation, scale: p.scale, collider: p.collider, textDisplay: p.textDisplay }))
 	};
 }

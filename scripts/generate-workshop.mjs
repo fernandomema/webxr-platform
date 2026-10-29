@@ -217,7 +217,7 @@ for (const bay of BAYS) {
 		const id = `workshop-tool-${tool.id}`;
 		slot(id, tool.name, g, {
 			position: [at(benchDepth / 2), benchHeight + 0.025 + (tool.lift ?? 0), z],
-			components: [{ type: 'container' }, { type: 'grabbable', scalable: false }, toolEquippable(), { type: 'codeBlock', code: tool.code }]
+			components: [{ type: 'container' }, { type: 'grabbable', scalable: false }, toolEquippable(tool), { type: 'codeBlock', code: tool.code }]
 		});
 		for (const [j, piece] of tool.parts.entries()) {
 			slot(`${id}-part-${j}`, piece.name, id, {

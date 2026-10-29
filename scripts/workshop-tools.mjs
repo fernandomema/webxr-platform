@@ -951,6 +951,11 @@ export const TOOLS = [
 		name: 'Drill',
 		// Its battery hangs below the grip: raised on the bench so that it stands on it.
 		lift: 0.09,
+		// Held with the barrel pointing forward, not like a wand: the grip is mirrored for each hand.
+		grip: {
+			left: { position: [0.04, 0.02, 0.04], rotation: [95, 0, 0] },
+			right: { position: [-0.04, 0.02, 0.04], rotation: [95, 0, 0] }
+		},
 		parts: [
 			{ name: 'Grip', mesh: 'box', position: [0, -0.01, -0.005], rotation: tilt(-0.25), scale: [0.032, 0.1, 0.045], color: '#1f2937', collider: true },
 			{ name: 'Body', mesh: 'box', position: [0, DRILL_AXIS, 0.02], scale: [0.05, 0.06, 0.17], color: '#f59e0b', collider: true },
@@ -986,8 +991,13 @@ export const TOOLS = [
 	...HOME_TOOLS.map(({ body, ...tool }) => ({ ...tool, code: script(`${HOME_PRELUDE}\n${body}`) }))
 ];
 
-/** How every tool is held: in the fist like a wand, the fingers closing round its handle. */
-export const toolEquippable = () => ({ type: 'equippable', left: WAND_GRIP, right: WAND_GRIP, autoGrip: true });
+/** How a tool is held: in the fist like a wand by default, or with its own `grip` per hand. */
+export const toolEquippable = (tool) => ({
+	type: 'equippable',
+	left: tool?.grip?.left ?? WAND_GRIP,
+	right: tool?.grip?.right ?? WAND_GRIP,
+	autoGrip: true
+});
 
 /** The general tip at the entrance: how any tool is picked up and used. */
 export const TOOL_BASICS = { title: 'Using tools', lines: ['Grip: pick a tool up', 'B, Y or stick click: its menu', 'Menu > Equip: keep it in hand', 'Trigger: use it'] };
