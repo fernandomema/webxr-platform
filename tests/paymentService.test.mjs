@@ -295,3 +295,18 @@ test('buying at the ATM shows the progress, then the new balance; backing out sa
 	assert.equal(reopened.state.message, 'Credits from an earlier purchase were added.');
 	assert.equal(reopened.state.balance, 600);
 });
+
+test('packs the store does not have yet are not offered, and the ones it has are still found when it refuses a list with a missing item', async () => {
+	const server = atmServer();
+	const strict = metaWindow({ listed: ['credits_500'] });
+	// Like Meta: asking for a list that has an item it does not know is refused outright.
+	const service = await strict.win.getDigitalGoodsService('https://quest.meta.com/billing');
+	const ask = service.getDetails;
+	service.getDetails = async (skus) => { if (skus.some((sku) => !['credits_500'].includes(sku))) throw Object.assign(new Error('unknown item'), { name: 'OperationError' }); return ask(skus); };
+	strict.win.getDigitalGoodsService = async () => service;
+	const atm = createAtmController({ fetch: server.fetch, isSignedIn: server.isSignedIn, meta: createMetaPayments({ fetch: server.fetch, win: strict.win }) });
+	await atm.open();
+	assert.equal(atm.state.canBuyHere, true);
+	assert.deepEqual(atm.state.packs.map((pack) => pack.id), ['credits-500'], 'only the pack the store has');
+	assert.match(atm.state.packs[0].priceLabel, /3\D99/, 'with the store’s price');
+});

@@ -82,6 +82,8 @@ export function createAtmController(deps: AtmDeps) {
 			}
 			details = await deps.meta.details(summary.packs.map((pack) => pack.metaSku));
 		}
+		// Packs the store does not have yet (not created in its dashboard) are not offered. If it listed none, it did not answer: all are shown.
+		const offered = canBuyHere && details.size > 0 ? summary.packs.filter((pack) => details.has(pack.metaSku)) : summary.packs;
 		set({
 			phase: 'ready',
 			balance: summary.balance,
@@ -89,7 +91,7 @@ export function createAtmController(deps: AtmDeps) {
 			cannotBuyBecause,
 			message,
 			busy: null,
-			packs: summary.packs.map((pack) => ({ id: pack.id, credits: pack.credits, metaSku: pack.metaSku, priceLabel: (canBuyHere && details.get(pack.metaSku)?.price) || money(pack.priceCents, pack.currency) }))
+			packs: offered.map((pack) => ({ id: pack.id, credits: pack.credits, metaSku: pack.metaSku, priceLabel: (canBuyHere && details.get(pack.metaSku)?.price) || money(pack.priceCents, pack.currency) }))
 		});
 	}
 

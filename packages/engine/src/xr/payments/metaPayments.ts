@@ -95,9 +95,15 @@ export function createMetaPayments(deps: MetaPaymentsDeps) {
 			const found = new Map<string, StoreDetail>();
 			const opened = await api.open();
 			if (!opened || skus.length === 0) return found;
+			const add = (items: Awaited<ReturnType<DigitalGoodsServiceLike['getDetails']>>) => { for (const item of items) found.set(item.itemId, { title: item.title ?? item.itemId, price: formatPrice(item.price) }); };
 			try {
-				for (const item of await opened.getDetails(skus)) found.set(item.itemId, { title: item.title ?? item.itemId, price: formatPrice(item.price) });
-			} catch { /* the store did not answer: the caller shows its own prices */ }
+				add(await opened.getDetails(skus));
+			} catch {
+				// The store may refuse the whole list because one item is not in it (not created yet): ask for each, so the ones it has are still found.
+				for (const sku of skus) {
+					try { add(await opened.getDetails([sku])); } catch { /* not in the store */ }
+				}
+			}
 			return found;
 		},
 
