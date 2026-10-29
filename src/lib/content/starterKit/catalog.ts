@@ -142,7 +142,12 @@ const ENTRIES: BuiltinEntry[] = [
 			slot('camera', 'Camera', [
 				{ type: 'container' },
 				{ type: 'grabbable', scalable: false },
-				{ type: 'equippable', left: { position: [0, 0, 0.04], rotation: [0, 0, 0] }, right: { position: [0, 0, 0.04], rotation: [0, 0, 0] } }
+				{
+					type: 'equippable',
+					left: { position: [0.11, 0, 0], rotation: [90, 0, 0] },
+					right: { position: [-0.11, 0, 0], rotation: [90, 0, 0] },
+					autoGrip: true
+				}
 			]),
 			slot('camera-body', 'Camera Body', [
 				{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'box' }, color: '#1f2937' },
