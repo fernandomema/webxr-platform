@@ -105,19 +105,26 @@ export function createMetaPayments(deps: MetaPaymentsDeps) {
 		async buy(pack: MetaPackInfo): Promise<MetaBuyResult> {
 			const opened = await api.open();
 			if (!opened || !win.PaymentRequest) return { status: 'failed', message: 'Meta payments are not available here.' };
+			// Where it stopped, for the message and the console: the store's errors say little by themselves.
+			let stage = 'account';
 			try {
 				// The player's Meta id first: nothing is charged that the server could not verify afterwards.
 				const metaUserId = cleanUserId(await opened.getLoggedInUserId?.());
 				if (!metaUserId) return { status: 'failed', message: 'Allow this app to see your Meta account to buy credits.' };
+				stage = 'store';
 				if (!(await opened.getDetails([pack.metaSku])).some((item) => item.itemId === pack.metaSku)) return { status: 'failed', message: 'The store does not list this item.' };
+				stage = 'payment sheet';
 				const request = new win.PaymentRequest([{ supportedMethods: BILLING_URL, data: { sku: pack.metaSku } }], { total: { label: 'Total', amount: { currency: 'USD', value: '0' } } });
 				let response: PaymentResponseLike;
 				try {
 					response = await request.show();
 				} catch (error) {
 					const name = (error as { name?: string } | null)?.name;
-					return name === 'AbortError' || name === 'NotAllowedError' ? { status: 'cancelled' } : { status: 'failed', message: 'The payment could not be started.' };
+					if (name === 'AbortError' || name === 'NotAllowedError') return { status: 'cancelled' };
+					console.warn('[meta-payments] the payment sheet failed', error);
+					return { status: 'failed', message: `The payment could not be started${name ? ` (${name})` : ''}.` };
 				}
+				stage = 'receipt';
 				const purchaseToken = response.details.purchaseToken;
 				if (!purchaseToken) {
 					await response.complete('fail');
@@ -128,8 +135,10 @@ export function createMetaPayments(deps: MetaPaymentsDeps) {
 				return (await postReceipt(pack.metaSku, purchaseToken, metaUserId))
 					? { status: 'credited' }
 					: { status: 'failed', message: 'Your payment went through. The credits will arrive the next time you use the ATM.' };
-			} catch {
-				return { status: 'failed', message: 'The payment failed.' };
+			} catch (error) {
+				const name = (error as { name?: string } | null)?.name;
+				console.warn(`[meta-payments] failed at the ${stage}`, error);
+				return { status: 'failed', message: `The payment failed at the ${stage}${name ? ` (${name})` : ''}.` };
 			}
 		},
 
