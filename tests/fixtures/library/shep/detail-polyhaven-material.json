@@ -1,0 +1,305 @@
+{
+ "provider": "polyhaven",
+ "nativeId": "red_brick",
+ "title": "Red Brick",
+ "description": "Free 16K texture of red brick wall with rough, weathered surfaces, varied warm tones and recessed grey mortar, strong surface detail and subtle chipped edges.",
+ "type": "material",
+ "tags": [
+  "brick",
+  "bricks",
+  "wall",
+  "red brick",
+  "brick wall",
+  "rough",
+  "exterior"
+ ],
+ "categories": [
+  "wall",
+  "brick",
+  "man made"
+ ],
+ "url": "https://polyhaven.com/a/red_brick",
+ "thumbnailUrl": "https://cdn.polyhaven.com/asset_img/thumbs/red_brick.png?width=512&height=512",
+ "author": "Rob Tuytel",
+ "license": {
+  "name": "CC0",
+  "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "commercialUse": true,
+  "attributionRequired": false
+ },
+ "price": {
+  "free": true
+ },
+ "formats": [
+  "jpg",
+  "png",
+  "exr",
+  "blend",
+  "gltf"
+ ],
+ "resolutions": [
+  "1k",
+  "2k",
+  "4k",
+  "8k",
+  "16k"
+ ],
+ "downloadable": true,
+ "createdAt": "2024-10-17T00:00:00.000Z",
+ "id": "polyhaven:red_brick",
+ "files": [
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/red_brick/red_brick_diff_2k.jpg",
+   "filename": "red_brick_diff_2k.jpg",
+   "format": "jpg",
+   "resolution": "2k",
+   "mapType": "diffuse",
+   "sizeBytes": 3169072,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/red_brick/red_brick_diff_2k.png",
+   "filename": "red_brick_diff_2k.png",
+   "format": "png",
+   "resolution": "2k",
+   "mapType": "diffuse",
+   "sizeBytes": 22217598,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/red_brick/red_brick_diff_1k.jpg",
+   "filename": "red_brick_diff_1k.jpg",
+   "format": "jpg",
+   "resolution": "1k",
+   "mapType": "diffuse",
+   "sizeBytes": 766044,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/red_brick/red_brick_diff_1k.png",
+   "filename": "red_brick_diff_1k.png",
+   "format": "png",
+   "resolution": "1k",
+   "mapType": "diffuse",
+   "sizeBytes": 5485318,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/red_brick/red_brick_nor_dx_2k.jpg",
+   "filename": "red_brick_nor_dx_2k.jpg",
+   "format": "jpg",
+   "resolution": "2k",
+   "mapType": "nor_dx",
+   "sizeBytes": 4326408,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/red_brick/red_brick_nor_dx_2k.png",
+   "filename": "red_brick_nor_dx_2k.png",
+   "format": "png",
+   "resolution": "2k",
+   "mapType": "nor_dx",
+   "sizeBytes": 8905934,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/red_brick/red_brick_nor_dx_1k.jpg",
+   "filename": "red_brick_nor_dx_1k.jpg",
+   "format": "jpg",
+   "resolution": "1k",
+   "mapType": "nor_dx",
+   "sizeBytes": 1051636,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/red_brick/red_brick_nor_dx_1k.png",
+   "filename": "red_brick_nor_dx_1k.png",
+   "format": "png",
+   "resolution": "1k",
+   "mapType": "nor_dx",
+   "sizeBytes": 2235944,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/red_brick/red_brick_nor_gl_2k.jpg",
+   "filename": "red_brick_nor_gl_2k.jpg",
+   "format": "jpg",
+   "resolution": "2k",
+   "mapType": "nor_gl",
+   "sizeBytes": 4327452,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/red_brick/red_brick_nor_gl_2k.png",
+   "filename": "red_brick_nor_gl_2k.png",
+   "format": "png",
+   "resolution": "2k",
+   "mapType": "nor_gl",
+   "sizeBytes": 8907641,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/red_brick/red_brick_nor_gl_1k.jpg",
+   "filename": "red_brick_nor_gl_1k.jpg",
+   "format": "jpg",
+   "resolution": "1k",
+   "mapType": "nor_gl",
+   "sizeBytes": 1052038,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/red_brick/red_brick_nor_gl_1k.png",
+   "filename": "red_brick_nor_gl_1k.png",
+   "format": "png",
+   "resolution": "1k",
+   "mapType": "nor_gl",
+   "sizeBytes": 2236680,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/red_brick/red_brick_arm_2k.jpg",
+   "filename": "red_brick_arm_2k.jpg",
+   "format": "jpg",
+   "resolution": "2k",
+   "mapType": "arm",
+   "sizeBytes": 2800082,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/red_brick/red_brick_arm_2k.png",
+   "filename": "red_brick_arm_2k.png",
+   "format": "png",
+   "resolution": "2k",
+   "mapType": "arm",
+   "sizeBytes": 15276151,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/red_brick/red_brick_arm_1k.jpg",
+   "filename": "red_brick_arm_1k.jpg",
+   "format": "jpg",
+   "resolution": "1k",
+   "mapType": "arm",
+   "sizeBytes": 701031,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/red_brick/red_brick_arm_1k.png",
+   "filename": "red_brick_arm_1k.png",
+   "format": "png",
+   "resolution": "1k",
+   "mapType": "arm",
+   "sizeBytes": 3945075,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/red_brick/red_brick_ao_2k.jpg",
+   "filename": "red_brick_ao_2k.jpg",
+   "format": "jpg",
+   "resolution": "2k",
+   "mapType": "ao",
+   "sizeBytes": 2989135,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/red_brick/red_brick_ao_2k.png",
+   "filename": "red_brick_ao_2k.png",
+   "format": "png",
+   "resolution": "2k",
+   "mapType": "ao",
+   "sizeBytes": 7535227,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/red_brick/red_brick_ao_1k.jpg",
+   "filename": "red_brick_ao_1k.jpg",
+   "format": "jpg",
+   "resolution": "1k",
+   "mapType": "ao",
+   "sizeBytes": 749544,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/red_brick/red_brick_ao_1k.png",
+   "filename": "red_brick_ao_1k.png",
+   "format": "png",
+   "resolution": "1k",
+   "mapType": "ao",
+   "sizeBytes": 1900523,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/red_brick/red_brick_disp_2k.jpg",
+   "filename": "red_brick_disp_2k.jpg",
+   "format": "jpg",
+   "resolution": "2k",
+   "mapType": "displacement",
+   "sizeBytes": 1005806,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/red_brick/red_brick_disp_2k.png",
+   "filename": "red_brick_disp_2k.png",
+   "format": "png",
+   "resolution": "2k",
+   "mapType": "displacement",
+   "sizeBytes": 6312343,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/red_brick/red_brick_disp_1k.jpg",
+   "filename": "red_brick_disp_1k.jpg",
+   "format": "jpg",
+   "resolution": "1k",
+   "mapType": "displacement",
+   "sizeBytes": 325000,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/red_brick/red_brick_disp_1k.png",
+   "filename": "red_brick_disp_1k.png",
+   "format": "png",
+   "resolution": "1k",
+   "mapType": "displacement",
+   "sizeBytes": 1646752,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/red_brick/red_brick_rough_2k.jpg",
+   "filename": "red_brick_rough_2k.jpg",
+   "format": "jpg",
+   "resolution": "2k",
+   "mapType": "rough",
+   "sizeBytes": 552848,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/red_brick/red_brick_rough_2k.png",
+   "filename": "red_brick_rough_2k.png",
+   "format": "png",
+   "resolution": "2k",
+   "mapType": "rough",
+   "sizeBytes": 5487715,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/red_brick/red_brick_rough_1k.jpg",
+   "filename": "red_brick_rough_1k.jpg",
+   "format": "jpg",
+   "resolution": "1k",
+   "mapType": "rough",
+   "sizeBytes": 178614,
+   "group": "maps"
+  },
+  {
+   "url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/red_brick/red_brick_rough_1k.png",
+   "filename": "red_brick_rough_1k.png",
+   "format": "png",
+   "resolution": "1k",
+   "mapType": "rough",
+   "sizeBytes": 1475706,
+   "group": "maps"
+  }
+ ],
+ "shareUrl": "https://3d.shep.bot/search?asset=polyhaven%3Ared_brick"
+}

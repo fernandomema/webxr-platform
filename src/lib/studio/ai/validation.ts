@@ -77,6 +77,13 @@ export function validateAiScene(tree: SlotTree): SceneDiagnostic[] {
 						valid = isBuiltinMeshId(value) || (typeof value === 'object' && value !== null && normalizeMeshRef(value).kind === (value as { kind?: unknown }).kind && (((value as { kind?: unknown }).kind === 'builtin') || isAssetId((value as { assetId?: unknown }).assetId)));
 						expected = `{ kind: 'builtin', id } with id one of ${BUILTIN_MESH_IDS.join(', ')}, or { kind: 'asset', assetId } naming an asset already in the scene`;
 						break;
+					case 'asset': {
+						// A reference to a stored asset or to a picture/sound at an https address (a bare string is the older form of the same).
+						const ref = value as { kind?: unknown; assetId?: unknown; url?: unknown } | null;
+						valid = typeof value === 'string' || (typeof ref === 'object' && ref !== null && ((ref.kind === 'asset' && isAssetId(ref.assetId)) || (ref.kind === 'url' && typeof ref.url === 'string' && ref.url.startsWith('https://'))));
+						expected = "{ kind: 'asset', assetId } naming an asset, or { kind: 'url', url } with an https address";
+						break;
+					}
 					case 'json': valid = value !== undefined; expected = 'any JSON value'; break;
 					default: valid = typeof value === 'string'; expected = 'a string';
 				}

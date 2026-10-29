@@ -24,6 +24,16 @@ export interface InventoryItem {
 	createdAt: string;
 }
 
+export interface InventoryFolderChanges {
+	name?: string;
+	parentId?: string | null;
+}
+
+export interface InventoryItemChanges {
+	name?: string;
+	folderId?: string | null;
+}
+
 export interface InventoryContext {
 	worldId: string | null;
 	userId: string | null;
@@ -48,10 +58,14 @@ export interface InventoryAdapter {
 	listFolders(ctx: InventoryContext, parentId: string | null): Promise<InventoryFolder[]>;
 	createFolder?(ctx: InventoryContext, parentId: string | null, name: string): Promise<InventoryFolder>;
 	deleteFolder?(ctx: InventoryContext, folderId: string): Promise<void>;
+	/** Renames a folder and/or moves it under another one (`parentId` null is the root). Left-out fields stay as they are. */
+	updateFolder?(ctx: InventoryContext, folderId: string, changes: InventoryFolderChanges): Promise<InventoryFolder>;
 	listItems(ctx: InventoryContext, folderId: string | null): Promise<InventoryItem[]>;
 	saveItem?(ctx: InventoryContext, folderId: string | null, name: string, slotData: SlotTree, kind?: InventoryKind, worldLineageId?: string, thumbnailAssetId?: AssetId | null): Promise<InventoryItem>;
 	/** `thumbnailAssetId` left out keeps the item's current preview; `null` removes it. */
 	updateItem?(ctx: InventoryContext, itemId: string, folderId: string | null, name: string, slotData: SlotTree, thumbnailAssetId?: AssetId | null): Promise<InventoryItem>;
+	/** Renames an item and/or moves it to another folder without touching its contents, so it also works on world revisions. */
+	updateItemInfo?(ctx: InventoryContext, itemId: string, changes: InventoryItemChanges): Promise<InventoryItem>;
 	setMarketplaceItemId?(ctx: InventoryContext, itemId: string, marketplaceItemId: string): Promise<void>;
 	deleteItem?(ctx: InventoryContext, itemId: string): Promise<void>;
 	/** Optional: report storage use (e.g. cloud quota). */

@@ -13,7 +13,8 @@ export function createRadialView(
 	scene: Scene,
 	id: string,
 	getCamera: () => Camera,
-	options: { pointerSelectable: boolean; size: number; offset?: Vector3 }
+	/** `towardCamera`: metres the menu is pulled towards the viewer, so it never sits inside (and under the picks of) a big thing it is anchored to. */
+	options: { pointerSelectable: boolean; size: number; offset?: Vector3; towardCamera?: number }
 ) {
 	const plane = MeshBuilder.CreatePlane(`radial-${id}`, { size: options.size }, scene);
 	const material = new StandardMaterial(`radial-material-${id}`, scene);
@@ -88,8 +89,18 @@ export function createRadialView(
 		if (!anchor || !plane.isEnabled()) return;
 		plane.position.copyFrom(anchor.absolutePosition.add(options.offset ?? Vector3.Zero()));
 		const camera = getCamera();
-		const dx = camera.globalPosition.x - plane.position.x;
-		const dz = camera.globalPosition.z - plane.position.z;
+		let dx = camera.globalPosition.x - plane.position.x;
+		let dz = camera.globalPosition.z - plane.position.z;
+		const pull = options.towardCamera ?? 0;
+		const distance = Math.hypot(dx, dz);
+		if (pull > 0 && distance > 0.001) {
+			// Never past the viewer: a menu this close to the eye would be unreadable.
+			const step = Math.min(pull, distance * 0.5) / distance;
+			plane.position.x += dx * step;
+			plane.position.z += dz * step;
+			dx = camera.globalPosition.x - plane.position.x;
+			dz = camera.globalPosition.z - plane.position.z;
+		}
 		// +Math.PI: the plane's GUI-textured face is on its -Z side, so without it the menu is seen from behind (mirrored text).
 		plane.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.atan2(dx, dz) + Math.PI, 0);
 		highlight();

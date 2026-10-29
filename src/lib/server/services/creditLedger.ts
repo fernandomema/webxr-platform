@@ -83,3 +83,20 @@ export async function applySpend(
 	await tx.productEntitlement.upsert({ where: key, create: { userId: input.userId, publicationId: input.publicationId, sku: input.sku, quantity: 1 }, update: { quantity: { increment: 1 } } });
 	return { balance, duplicate: false };
 }
+
+/**
+ * Credits leaving for something that is not a purchase in a world (a run of the platform's AI). It does not count toward the
+ * per-world daily spending limits, which only apply to `spend`; the run's own budget is what bounds what a run can cost.
+ */
+export async function applyCharge(tx: LedgerTx, input: { userId: string; amount: number; kind: 'ai'; providerRef: string; idempotencyKey: string }): Promise<LedgerResult> {
+	if (!Number.isInteger(input.amount) || input.amount < 1) throw new Error('Invalid charge');
+	const existing = await tx.creditTransaction.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
+	if (existing) return { balance: await currentBalance(tx, input.userId), duplicate: true };
+	const { count } = await tx.creditAccount.updateMany({ where: { userId: input.userId, balance: { gte: input.amount } }, data: { balance: { decrement: input.amount } } });
+	if (count !== 1) throw new CreditError('insufficient', 'Not enough credits');
+	const balance = await currentBalance(tx, input.userId);
+	await tx.creditTransaction.create({
+		data: { userId: input.userId, delta: -input.amount, balanceAfter: balance, kind: input.kind, provider: input.kind, providerRef: input.providerRef, idempotencyKey: input.idempotencyKey }
+	});
+	return { balance, duplicate: false };
+}

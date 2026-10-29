@@ -26,6 +26,7 @@
 		"db:studio": "prisma studio",
 		"i18n": "npx wuchale",
 		"icons": "node scripts/gen-icons.mjs",
+		"pack": "node --experimental-transform-types scripts/world-pack.mjs",
 		"bake": "node --experimental-transform-types scripts/bake-world.mjs"
 	},
 	"devDependencies": {

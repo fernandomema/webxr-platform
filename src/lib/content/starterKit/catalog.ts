@@ -7,10 +7,15 @@ import type { Component, Slot, SlotTree } from '@kithin/engine/ecs/types';
 import lobby from '../templates/lobby.json' with { type: 'json' };
 import { buildDisc } from '../templates/recordDisc.ts';
 import { buildAtm } from '../templates/atm.ts';
+import { buildHalloweenToy } from '../templates/halloweenGathering.ts';
+import { HALLOWEEN } from '../templates/halloweenGatheringConfig.ts';
 import { PROP_ENTRIES, PROP_FOLDERS } from './props.ts';
 import { TOOLS, toolEquippable } from '../../../../scripts/workshop-tools.mjs';
 
 import type { StarterKit, StarterKitEntry as BuiltinEntry, StarterKitFolder as BuiltinFolder } from '@kithin/engine/xr/content/registry';
+
+// `import.meta.env` does not exist where the tests run this file with plain Node.
+const includeDev = Boolean((import.meta as { env?: { DEV?: boolean } }).env?.DEV);
 
 export const BUILTIN_FOLDERS: BuiltinFolder[] = [
 	{ id: 'basics', name: 'Basics' },
@@ -159,6 +164,15 @@ const ENTRIES: BuiltinEntry[] = [
 	...TOOLS.map((tool) => ({ id: tool.id, folderId: tool.bay.startsWith('home') ? 'home-builder' : 'tools', name: tool.name, build: () => workshopTool(tool) }))
 ];
 
+/**
+ * Objects we have made but do not offer to players: pieces lifted out of worlds (the toys of the Lantern Night) to try, test and
+ * reuse. They live in the `dev` folder, which the Starter Kit inventory only lists on a development server (see
+ * `builtinInventoryAdapter`), and are left out of the kit altogether in a release.
+ */
+export const DEV_FOLDER_ID = 'dev';
+export const DEV_ENTRIES: BuiltinEntry[] = (Object.keys(HALLOWEEN.seeds) as (keyof typeof HALLOWEEN.seeds)[]).map((kind) => ({
+	id: `dev-${HALLOWEEN.seeds[kind].id}`, folderId: DEV_FOLDER_ID, name: HALLOWEEN.seeds[kind].name, build: () => buildHalloweenToy(kind)
+}));
 /** Whatever is spawned from the kit can be picked up and moved by its root, so an object made of parts (a record player) is grabbed as one. */
 function withGrabbableRoot(tree: SlotTree): SlotTree {
 	const [root, ...rest] = tree;
@@ -166,7 +180,7 @@ function withGrabbableRoot(tree: SlotTree): SlotTree {
 	return [{ ...root, components: [...root.components, { type: 'grabbable', scalable: true }] }, ...rest];
 }
 
-export const BUILTIN_ENTRIES: BuiltinEntry[] = ENTRIES.map((entry) => ({ ...entry, build: () => withGrabbableRoot(entry.build()) }));
+export const BUILTIN_ENTRIES: BuiltinEntry[] = [...ENTRIES, ...(includeDev ? DEV_ENTRIES : [])].map((entry) => ({ ...entry, build: () => withGrabbableRoot(entry.build()) }));
 
 /** What the engine's starter kit inventory lists (see `registerContent`). */
 export const starterKit: StarterKit = { folders: BUILTIN_FOLDERS, entries: BUILTIN_ENTRIES };

@@ -220,6 +220,19 @@ export const filesystemInventoryAdapter: InventoryAdapter = {
 		return updated;
 	},
 
+	async updateItemInfo(_ctx, itemId, changes) {
+		assertDevelopment();
+		const existing = await readItem(itemId);
+		const folderId = changes.folderId === undefined ? existing.folderId : changes.folderId;
+		const name = changes.name ?? existing.name;
+		// A move is a new file in the other folder; a rename only changes the name inside the file.
+		const id = folderId === existing.folderId ? itemId : childId(folderId, newFileName(name));
+		const updated: InventoryItem = { ...existing, id, folderId, name };
+		await writeItem(updated);
+		if (id !== itemId) await (await directory(existing.folderId)).removeEntry(fileName(itemId));
+		return updated;
+	},
+
 	async setMarketplaceItemId(_ctx, itemId, marketplaceItemId) {
 		assertDevelopment();
 		await writeItem({ ...await readItem(itemId), marketplaceItemId });

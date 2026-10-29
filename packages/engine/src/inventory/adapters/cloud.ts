@@ -44,6 +44,16 @@ export const cloudInventoryAdapter: InventoryAdapter = {
 		return (await res.json()) as InventoryFolder;
 	},
 
+	async updateFolder(_ctx, folderId, changes) {
+		const res = await platformFetch(`/api/inventory/folders/${folderId}`, {
+			method: 'PATCH',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify(changes)
+		});
+		if (!res.ok) throw new Error(`Failed to update folder (${res.status})`);
+		return (await res.json()) as InventoryFolder;
+	},
+
 	async deleteFolder(_ctx, folderId) {
 		await platformFetch(`/api/inventory/folders/${folderId}`, { method: 'DELETE' });
 	},
@@ -75,6 +85,16 @@ export const cloudInventoryAdapter: InventoryAdapter = {
 			body: JSON.stringify({ folderId, name, slotData, thumbnailAssetId })
 		});
 		if (!res.ok) throw await saveFailure(res, 'Failed to update cloud item');
+		return (await res.json()) as InventoryItem;
+	},
+
+	async updateItemInfo(_ctx, itemId, changes) {
+		const res = await platformFetch(`/api/inventory/${itemId}`, {
+			method: 'PATCH',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify(changes)
+		});
+		if (!res.ok) throw new Error(`Failed to update cloud item (${res.status})`);
 		return (await res.json()) as InventoryItem;
 	},
 

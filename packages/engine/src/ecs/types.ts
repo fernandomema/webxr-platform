@@ -44,16 +44,30 @@ export interface MaterialComponent {
 	roughness?: number;
 	/** Multiplies the metallic of `arm` (1 by default), or is the metallic itself without it (0). 0-1. */
 	metallic?: number;
-	/** How many times the maps repeat across the mesh (1 by default). Used when `mapping` is not `world`. */
+	/** How many times the maps repeat across the mesh (1 by default). Used by `mesh` mapping. */
 	tiling?: number;
 	/**
-	 * How the maps are laid on the mesh. `mesh` (the default) stretches them over each face, repeated `tiling` times: right for a
+	 * How the maps are laid on the mesh. `mesh` (the default, so older materials keep their look) stretches them over each face, repeated `tiling` times: right for a
 	 * ball that shows the material. `world` lays them by real size, `size` metres per repeat, however the object is scaled, so a
-	 * wall and a cube show the same grain at the same scale (the mesh's coordinates are generated from its size).
+	 * wall and a cube show the same grain at the same scale (the mesh's coordinates are generated from its size). `wrap` is `world` for a box with the picture folded over it: each side
+	 * continues the top, so the pattern runs across the top edges unbroken. `around` lays a box's sides out as one strip going round it, so the vertical edges are unbroken (and the top edges are cut). `triplanarWorld` and `triplanarLocal` project the maps along the three axes (`size` metres per
+	 * repeat) instead of using the mesh's coordinates, so they keep their scale on turned objects, curved shapes and models: the first
+	 * fixed in the scene (the pattern stays put as the object moves), the second fixed to the object.
 	 */
-	mapping?: 'mesh' | 'world';
-	/** The real size, in metres, that one repeat of the maps covers. Read when `mapping` is `world` (1 by default). */
+	mapping?: 'mesh' | 'world' | 'wrap' | 'around' | 'triplanarWorld' | 'triplanarLocal';
+	/** The real size, in metres, that one repeat of the maps covers. Read by every mapping but `mesh` (1 by default). */
 	size?: number;
+	/**
+	 * Whether `world` mapping (and `triplanarLocal`) rounds the repeats along each side to a whole number, so the picture starts and ends on a whole
+	 * tile at every edge instead of being cut off (on by default; the picture is stretched by less than half a tile at most).
+	 */
+	fit?: boolean;
+	/**
+	 * How many cells the picture has along one side (2 for a 2 by 2 checker). Read by `triplanarLocal` with `fit`: the picture starts
+	 * half a cell in, so the edges of the object cross the middle of the cells and a pattern runs on round them. Left out, the
+	 * cells are found from the picture itself, which is what to want unless it has none to find.
+	 */
+	cells?: number;
 	/** What this material is, for people (a library's name for it). */
 	label?: string;
 }
@@ -112,13 +126,13 @@ export interface WorldPortalComponent {
 }
 
 /**
- * A doorway to one of the worlds that ship with the app, or to a new empty world to build in. Pointing at the slot and pressing opens
+ * A doorway to one of the worlds that ship with the app, to a published world, or to a new empty world to build in. Pointing at the slot and pressing opens
  * a small radial menu that offers to go there; nothing is loaded until it is chosen. `label` names the destination in the menu (the
  * world's name when empty).
  */
 export interface WorldLinkComponent {
 	type: 'worldLink';
-	target: { kind: 'builtin'; id: string } | { kind: 'new' };
+	target: { kind: 'builtin'; id: string } | { kind: 'published'; worldId: string } | { kind: 'new' };
 	label?: string;
 }
 

@@ -69,3 +69,76 @@ test('semantic reparenting rejects cycles', () => {
   draft.call('stage_reparent_slot', { id: 'child', parentId: null });
   assert.equal(draft.tree[1].parentId, null);
 });
+
+const mesh = (id, color) => ({ ...slot(id, null, id), components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'box' }, color }] });
+
+test('one batch call recolours many components, and the call counts as a single edit', () => {
+  const draft = new StudioDraft([mesh('a', '#111111'), mesh('b', '#222222'), mesh('c', '#333333')], null);
+  const result = draft.call('stage_set_component_fields', { edits: ['a', 'b', 'c'].map((id) => ({ id, index: 0, field: 'color', value: '#ff0000' })) });
+  assert.equal(result.changed, true);
+  assert.deepEqual(draft.tree.map((item) => item.components[0].color), ['#ff0000', '#ff0000', '#ff0000']);
+});
+
+test('a batch with one bad edit stages nothing and says which one failed', () => {
+  const draft = new StudioDraft([mesh('a', '#111111'), mesh('b', '#222222')], null);
+  assert.throws(() => draft.call('stage_set_component_fields', { edits: [{ id: 'a', index: 0, field: 'color', value: '#ff0000' }, { id: 'missing', index: 0, field: 'color', value: '#ff0000' }] }), /edits\[1\].*Nothing was changed/);
+  assert.equal(draft.changed, false);
+});
+
+test('a batch of slot patches applies together or not at all', () => {
+  const draft = new StudioDraft([mesh('a', '#111111'), mesh('b', '#222222')], null);
+  draft.call('stage_update_slots', { updates: [{ id: 'a', patch: { name: 'First' } }, { id: 'b', patch: { scale: [2, 2, 2] } }] });
+  assert.deepEqual(draft.tree.map((item) => item.name), ['First', 'b']);
+  assert.throws(() => draft.call('stage_update_slots', { updates: [{ id: 'a', patch: { name: 'X' } }, { id: 'nope', patch: { name: 'Y' } }] }), /updates\[1\]/);
+  assert.equal(draft.tree[0].name, 'First');
+});
+
+test('edits continue from the scene as it is now, so a change the person made between steps is kept', () => {
+  const draft = new StudioDraft([mesh('a', '#111111')], null);
+  draft.call('stage_set_component_field', { id: 'a', index: 0, field: 'color', value: '#ff0000' });
+  const edited = draft.tree.map((item) => ({ ...item, name: 'Renamed by the person' }));
+  draft.sync(edited);
+  draft.call('stage_set_component_field', { id: 'a', index: 0, field: 'color', value: '#00ff00' });
+  assert.equal(draft.tree[0].name, 'Renamed by the person');
+  assert.equal(draft.tree[0].components[0].color, '#00ff00');
+});
+
+test('tool results say the edit was applied, not staged for later', () => {
+  const draft = new StudioDraft([mesh('a', '#111111')], null);
+  const value = draft.call('stage_set_component_field', { id: 'a', index: 0, field: 'color', value: '#ff0000' }).value;
+  assert.equal(value.applied, true);
+  assert.equal(JSON.stringify(draft.call('list_scene', {}).value).includes('Apply'), false);
+});
+
+const ASSET = `sha256:${'a'.repeat(64)}`;
+
+test('a material is added to a built-in shape with the maps as references, and a second call updates it', () => {
+  const draft = new StudioDraft([mesh('wall', '#ffffff')], null);
+  draft.call('stage_set_material', { id: 'wall', albedo: ASSET, normal: 'https://example.com/n.jpg', mapping: 'world', size: 2 });
+  const material = draft.tree[0].components.find((component) => component.type === 'material');
+  assert.deepEqual(material.albedo, { kind: 'asset', assetId: ASSET });
+  assert.deepEqual(material.normal, { kind: 'url', url: 'https://example.com/n.jpg' });
+  assert.equal(material.mapping, 'world');
+  draft.call('stage_set_material', { id: 'wall', roughness: 0.4, normal: null });
+  const after = draft.tree[0].components.filter((component) => component.type === 'material');
+  assert.equal(after.length, 1, 'one material, updated in place');
+  assert.equal(after[0].roughness, 0.4);
+  assert.equal('normal' in after[0], false);
+  assert.deepEqual(after[0].albedo, { kind: 'asset', assetId: ASSET }, 'what was not mentioned is kept');
+});
+
+test('a material refuses what it can not apply to, with a reason the agent can act on', () => {
+  const draft = new StudioDraft([mesh('wall', '#ffffff'), slot('empty', null, 'Empty')], null);
+  assert.throws(() => draft.call('stage_set_material', { id: 'empty', albedo: ASSET }), /meshRenderer/);
+  assert.throws(() => draft.call('stage_set_material', { id: 'wall', albedo: 'not a picture' }), /asset id/);
+  assert.throws(() => draft.call('stage_set_material', { id: 'wall', albedo: 'http://insecure.example/x.jpg' }), /asset id/);
+  assert.throws(() => draft.call('stage_set_material', { id: 'wall', roughness: 3 }), /roughness/);
+  assert.throws(() => draft.call('stage_set_material', { id: 'wall', mapping: 'sideways' }), /mapping/);
+  assert.equal(draft.changed, false);
+});
+
+test('the texture tools that fetch are the browser\'s to run, the material tool is the draft\'s', async () => {
+  const { isRemoteTool, STUDIO_TOOLS } = await import('../src/lib/studio/ai/tools.ts');
+  assert.deepEqual(['search_assets', 'import_asset', 'stage_set_material'].map(isRemoteTool), [true, true, false]);
+  for (const name of ['search_assets', 'import_asset', 'stage_set_material']) assert.ok(STUDIO_TOOLS.some((tool) => tool.name === name), name);
+});

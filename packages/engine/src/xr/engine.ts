@@ -31,6 +31,10 @@ import { CloudResolver } from '../assets/cloud.ts';
 import { PeerResolver } from '../assets/p2p.ts';
 import { getLocalAssetStore } from '../assets/store.ts';
 import { importGlb } from '../assets/importGlb.ts';
+import { parseAssetRef } from '../library/ref.ts';
+import { pickVariant } from '../library/variants.ts';
+import type { AssetProvenance } from '../library/provenance.ts';
+import type { AssetDetail } from '../library/types.ts';
 import { BlobAssetLibrary } from './blobAssetLibrary.ts';
 import { createScriptAudio } from './scriptAudio.ts';
 import { ModelLibrary } from './modelLibrary.ts';
@@ -257,16 +261,23 @@ export async function mountGame(
 			else if (sceneGraph.dispatchUIEvent(event) && event.type !== 'change') hostAuthority?.broadcastSnapshot();
 		},
 		isHost: () => gameState.role !== 'guest',
-		onImportPolyHavenModel: async (id, name) => {
+		onImportLibraryAsset: async (ref, name) => {
 			if (gameState.role === 'guest') throw new Error('Only the host can import models into this world.');
-			if (!/^[A-Za-z0-9_]{1,90}$/.test(id)) throw new Error('Invalid Poly Haven model ID.');
-			const response = await platformFetch(`/api/polyhaven/models/${id}/glb`);
+			if (!parseAssetRef(ref)) throw new Error('Invalid library reference.');
+			const detailResponse = await platformFetch(`/api/library/assets/${encodeURIComponent(ref)}`);
+			const detail = await detailResponse.json().catch(() => null) as AssetDetail | { message?: string } | null;
+			if (!detailResponse.ok || !detail || !('variants' in detail)) throw new Error((detail as { message?: string } | null)?.message ?? 'Could not read this asset.');
+			if (detail.kind !== 'model') throw new Error('Only models can be imported into a world from a script.');
+			const variant = pickVariant(detail.variants, { formats: ['glb', 'gltf'] });
+			if (!variant) throw new Error(detail.variants.find((candidate) => candidate.unsupported)?.unsupported ?? 'There is no version of this model that can be imported.');
+			const response = await platformFetch(`/api/library/assets/${encodeURIComponent(ref)}/file?${new URLSearchParams({ variant: variant.id, role: 'model' })}`);
 			if (!response.ok) {
 				const body = await response.json().catch(() => null) as { message?: string } | null;
 				throw new Error(body?.message ?? 'Could not download this model.');
 			}
-			const objectName = (name.trim().slice(0, 80) || id);
-			const { manifest } = await importGlb(new Uint8Array(await response.arrayBuffer()), `${objectName}.glb`, getLocalAssetStore());
+			const objectName = (name.trim().slice(0, 80) || detail.title);
+			const provenance: AssetProvenance = { source: parseAssetRef(ref)!.source, ref, sourceUrl: detail.sourceUrl, ...(detail.author ? { author: detail.author } : {}), license: detail.license, importedAt: Date.now() };
+			const { manifest } = await importGlb(new Uint8Array(await response.arrayBuffer()), `${objectName}.glb`, getLocalAssetStore(), undefined, provenance);
 			const adapter = getInventoryAdapter('local');
 			if (!adapter?.saveItem) throw new Error('Local inventory is unavailable.');
 			await saveWithPreview(adapter, getInventoryContext(), null, objectName, [createSlot({
@@ -897,6 +908,10 @@ export async function mountGame(
 		const world = await findBuiltinWorld(id);
 		if (!world) throw new Error(`There is no built-in world "${id}"`);
 		await launchScene(world.name, copyScene(world.scene), 'solo');
+	}, async (worldId) => {
+		const response = await platformFetch(`/api/published-worlds/${encodeURIComponent(worldId)}`);
+		if (!response.ok) throw new Error('Could not load the published world');
+		await launchWorldPackage((await response.json()) as WorldPackage, 'solo');
 	}, () => launchScene(BLANK_WORLD_NAME, buildBlankWorld(), 'solo'));
 	/** Pointing at a slot of the game's own menus and pressing: a cash machine opens the credits window, a world orb or link its menu. */
 	function openSlotMenu(slotId: string): void {

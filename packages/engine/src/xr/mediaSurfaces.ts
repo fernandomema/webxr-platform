@@ -101,6 +101,11 @@ export function setupAudioPlayerSurface(
 	const actionManager = callbacks.interactive === false ? null : installMediaControl(scene, mesh, callbacks);
 	mesh.metadata = { ...(mesh.metadata ?? {}), specialSurface: 'audio-player' };
 
+	// Follows the mesh's world position every frame instead of attachToMesh: a sound is created before its slot has its parent
+	// (a guest builds the scene from a snapshot and parents afterwards), and attachToMesh only updates when the world matrix does.
+	const place = (target: Sound) => target.setPosition(mesh.getAbsolutePosition());
+	const follow = scene.onBeforeRenderObservable.add(() => { if (sound) place(sound); });
+
 	const createSound = () => {
 		// Without an audio engine (e.g. the Studio preview) a Sound has no backend and throws when used.
 		if (!sourceUrl || !AbstractEngine.audioEngine) return null;
@@ -117,10 +122,14 @@ export function setupAudioPlayerSurface(
 				volume: clampVolume(component.volume),
 				spatialSound: true,
 				maxDistance: 12,
-				refDistance: 1
+				refDistance: 1,
+				distanceModel: 'inverse',
+				rolloffFactor: 1
 			}
 		);
-		next.attachToMesh(mesh);
+		// Babylon defaults to plain left/right panning, which cannot tell front from behind; HRTF can.
+		next.switchPanningModelToHRTF();
+		place(next);
 		next.onEndedObservable.add(() => {
 			if (!next.loop) {
 				component.playing = false;
@@ -169,6 +178,7 @@ export function setupAudioPlayerSurface(
 
 	return {
 		dispose() {
+			scene.onBeforeRenderObservable.remove(follow);
 			actionManager?.dispose();
 			sound?.dispose();
 			lease?.release();

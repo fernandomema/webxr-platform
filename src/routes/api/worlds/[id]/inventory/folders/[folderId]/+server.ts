@@ -1,6 +1,15 @@
 import type { RequestHandler } from './$types';
-import { deleteWorldFolder } from '$lib/server/services/worldInventory';
+import { json } from '@sveltejs/kit';
+import { deleteWorldFolder, updateWorldFolder } from '$lib/server/services/worldInventory';
 import { toHttpError } from '$lib/server/apiError';
+
+export const PATCH: RequestHandler = async ({ locals, params, request }) => {
+	try {
+		return json(await updateWorldFolder(locals.user, params.id, params.folderId, await request.json()));
+	} catch (err) {
+		toHttpError(err);
+	}
+};
 
 export const DELETE: RequestHandler = async ({ locals, params }) => {
 	try {

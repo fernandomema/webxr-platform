@@ -2,6 +2,7 @@ import { assetIdOf } from './hash.ts';
 import { AssetImportError, formatOf, getAssetKind, sniffAssetKind, type AssetKindDef } from './kinds/index.ts';
 import type { AssetManifest } from './manifest.ts';
 import type { AssetOrigin, AssetStore } from './store.ts';
+import type { AssetProvenance } from '../library/provenance.ts';
 
 export interface ImportResult {
 	manifest: AssetManifest;
@@ -22,6 +23,8 @@ export interface ImportOptions {
 	limits?: unknown;
 	/** Where the bytes came from, when it was not the user. */
 	origin?: AssetOrigin;
+	/** Where the file was found, when it came from an external library. Recorded beside the bytes (the asset id does not depend on it). */
+	provenance?: AssetProvenance;
 }
 
 /**
@@ -44,6 +47,7 @@ export async function importAsset(bytes: Uint8Array, fileName: string, store: As
 	const existing = await store.getManifest(assetId);
 	if (existing) {
 		if (options.origin === 'app' && (existing as { origin?: string }).origin !== 'app') await store.setOrigin(assetId, 'app');
+		if (options.provenance && !existing.provenance) await store.setProvenance(assetId, options.provenance);
 		return { manifest: existing, alreadyStored: true };
 	}
 
@@ -55,7 +59,8 @@ export async function importAsset(bytes: Uint8Array, fileName: string, store: As
 		type: kind.type,
 		mimeType: format.mimeType,
 		byteSize: bytes.byteLength,
-		name: assetNameFromFile(fileName, kind.defaultName)
+		name: assetNameFromFile(fileName, kind.defaultName),
+		...(options.provenance ? { provenance: options.provenance } : {})
 	} as AssetManifest;
 	await store.put(manifest, bytes, options.origin);
 	return { manifest, alreadyStored: false };

@@ -2,6 +2,8 @@ import { AssetImportError } from '@kithin/engine/assets/kinds/index';
 import { acceptedExtensions, assetKindForFileName } from '@kithin/engine/assets/kinds/index';
 import { cloudAssets } from '@kithin/engine/assets/cloud';
 import { importAsset, importAssetFile } from '@kithin/engine/assets/importAsset';
+import type { AssetManifest } from '@kithin/engine/assets/manifest';
+import type { AssetProvenance } from '@kithin/engine/library/provenance';
 import type { AssetId } from '@kithin/engine/assets/ref';
 import { getLocalAssetStore, MemoryAssetStore, type AssetListing } from '@kithin/engine/assets/store';
 import { toasts } from './toasts.svelte';
@@ -56,6 +58,13 @@ class StudioAssets {
 			this.importing = false;
 		}
 		return imported;
+	}
+
+	/** Imports bytes that are not a file the person picked (something the Studio fetched and converted), silently; throws the import's own error. */
+	async importBytes(bytes: Uint8Array, fileName: string, type: string, provenance?: AssetProvenance): Promise<AssetManifest> {
+		const { manifest } = await importAsset(bytes, fileName, getLocalAssetStore(), { type, ...(provenance ? { provenance } : {}) });
+		await this.refresh();
+		return manifest;
 	}
 
 	/** Uploads each file to the cloud without keeping a copy on this device; a bad file reports its own reason. Returns the ids that are now in the cloud. */

@@ -1,0 +1,180 @@
+{
+ "query": "brick",
+ "types": [
+  "material"
+ ],
+ "results": [
+  {
+   "provider": "polyhaven",
+   "nativeId": "red_brick",
+   "title": "Red Brick",
+   "description": "Free 16K texture of red brick wall with rough, weathered surfaces, varied warm tones and recessed grey mortar, strong surface detail and subtle chipped edges.",
+   "type": "material",
+   "tags": [
+    "brick",
+    "bricks",
+    "wall",
+    "red brick",
+    "brick wall",
+    "rough",
+    "exterior"
+   ],
+   "categories": [
+    "wall",
+    "brick",
+    "man made"
+   ],
+   "url": "https://polyhaven.com/a/red_brick",
+   "thumbnailUrl": "https://cdn.polyhaven.com/asset_img/thumbs/red_brick.png?width=512&height=512",
+   "author": "Rob Tuytel",
+   "license": {
+    "name": "CC0",
+    "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "commercialUse": true,
+    "attributionRequired": false
+   },
+   "price": {
+    "free": true
+   },
+   "formats": [
+    "jpg",
+    "png",
+    "exr",
+    "blend",
+    "gltf"
+   ],
+   "resolutions": [
+    "1k",
+    "2k",
+    "4k",
+    "8k",
+    "16k"
+   ],
+   "downloadable": true,
+   "createdAt": "2024-10-17T00:00:00.000Z",
+   "id": "polyhaven:red_brick",
+   "score": 1
+  },
+  {
+   "provider": "blenderkit",
+   "nativeId": "919a309f-552f-4b1e-80fb-2108c27337e4",
+   "title": "Brick Building Wall",
+   "description": "Red bricks building wall.",
+   "type": "material",
+   "tags": [
+    "bricks",
+    "brick",
+    "wall",
+    "building",
+    "facade",
+    "clay",
+    "exterior"
+   ],
+   "categories": [
+    "material",
+    "bricks"
+   ],
+   "url": "https://www.blendkit.com/asset-gallery-detail/919a309f-552f-4b1e-80fb-2108c27337e4/",
+   "thumbnailUrl": "https://public.blenderkit.com/thumbnails/assets/5f4ff54f2b9547a7ae40e3ca5433b44f/files/thumbnail_035c3121-0816-4619-b789-58a220b60d12.png.512x512_q85_crop-%2C.png",
+   "author": "Julio Sillet",
+   "license": {
+    "name": "Royalty Free",
+    "url": "https://www.blendkit.com/docs/licenses/",
+    "commercialUse": true,
+    "attributionRequired": false
+   },
+   "price": {
+    "free": true
+   },
+   "formats": [
+    "blend"
+   ],
+   "resolutions": [
+    "0.5k",
+    "1k",
+    "2k"
+   ],
+   "downloadable": true,
+   "createdAt": "2026-09-10T13:29:28.176516+02:00",
+   "id": "blenderkit:919a309f-552f-4b1e-80fb-2108c27337e4",
+   "score": 1
+  },
+  {
+   "provider": "ambientcg",
+   "nativeId": "Bricks097",
+   "title": "Bricks 097",
+   "type": "material",
+   "tags": [
+    "97",
+    "brick",
+    "bricks",
+    "brown",
+    "damaged",
+    "dirty",
+    "factory",
+    "industrial",
+    "old",
+    "red",
+    "stone",
+    "stones",
+    "wall"
+   ],
+   "categories": [
+    "material"
+   ],
+   "url": "https://ambientcg.com/a/Bricks097",
+   "thumbnailUrl": "https://acg-media.struffelproductions.com/file/ambientCG-Web/media/thumbnail/256-JPG-242424/Bricks097.jpg",
+   "license": {
+    "name": "CC0",
+    "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "commercialUse": true,
+    "attributionRequired": false
+   },
+   "price": {
+    "free": true
+   },
+   "formats": [
+    "jpg",
+    "png"
+   ],
+   "resolutions": [
+    "1k",
+    "2k",
+    "4k",
+    "8k"
+   ],
+   "downloadable": true,
+   "createdAt": "2024-11-22",
+   "id": "ambientcg:Bricks097",
+   "score": 0.954
+  }
+ ],
+ "providers": [
+  {
+   "provider": "polyhaven",
+   "name": "Poly Haven",
+   "count": 3,
+   "status": "ok",
+   "total": 125,
+   "searchUrl": "https://polyhaven.com/textures?s=brick",
+   "tookMs": 517
+  },
+  {
+   "provider": "ambientcg",
+   "name": "ambientCG",
+   "count": 3,
+   "status": "ok",
+   "total": 36,
+   "searchUrl": "https://ambientcg.com/list?q=brick&type=material&sort=popular",
+   "tookMs": 1086
+  },
+  {
+   "provider": "cgbookcase",
+   "name": "cgbookcase",
+   "count": 0,
+   "status": "skipped",
+   "error": "no direct downloads",
+   "tookMs": 0
+  }
+ ]
+}

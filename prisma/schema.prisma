@@ -39,6 +39,7 @@ model user {
   feedbackInteractions feedbackInteraction[]
   feedbackMoodResponses feedbackMoodResponse[]
   worldVisits worldVisit[]
+  aiRuns aiRun[]
   creditAccount creditAccount?
   creditTransactions creditTransaction[]
   productEntitlements productEntitlement[]
@@ -587,4 +588,61 @@ model paymentIdentity {
 
   @@id([provider, externalId])
   @@index([userId])
+}
+
+// --- platform AI -----------------------------------------------------------
+// One aiRun per request a person sends to the platform's own AI, one aiCall per model call inside it. They hold usage numbers
+// only (never prompts or answers), so real costs can be studied before prices are set. `tariffVersion` says which price list and
+// budget applied, so old runs can be re-priced later.
+
+model aiRun {
+  id              String    @id
+  userId          String
+  user            user      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  model           String
+  /// running | completed | stopped | loop | budget | error. A run that stays 'running' was abandoned (tab closed).
+  status          String    @default("running")
+  /// ask | edit | create | complex, derived from the tools the agent used.
+  task            String?
+  /// True when nothing was charged (development, or the free calibration phase).
+  free            Boolean
+  credits         Int       @default(0)
+  refunded        Boolean   @default(false)
+  tariffVersion   String
+  calls           Int       @default(0)
+  okCalls         Int       @default(0)
+  steps           Int?
+  toolCalls       Int?
+  inputTokens     Int       @default(0)
+  outputTokens    Int       @default(0)
+  cacheReadTokens Int       @default(0)
+  cacheWriteTokens Int      @default(0)
+  durationMs      Int?
+  createdAt       DateTime  @default(now())
+  finishedAt      DateTime?
+  aiCalls         aiCall[]
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+  @@index([model, createdAt])
+}
+
+model aiCall {
+  id              String   @id @default(cuid())
+  runId           String
+  run             aiRun    @relation(fields: [runId], references: [id], onDelete: Cascade)
+  provider        String
+  model           String
+  inputTokens     Int      @default(0)
+  outputTokens    Int      @default(0)
+  cacheReadTokens Int      @default(0)
+  cacheWriteTokens Int     @default(0)
+  latencyMs       Int
+  /// HTTP status the provider answered with (0 when it could not be reached).
+  status          Int
+  error           String?
+  createdAt       DateTime @default(now())
+
+  @@index([runId])
+  @@index([createdAt])
 }

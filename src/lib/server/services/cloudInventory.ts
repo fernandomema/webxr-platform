@@ -7,6 +7,29 @@ import { assertAssetsReady, assertInventoryQuota, linkSceneAssets, resolveThumbn
 import type { SlotTree } from '@kithin/engine/ecs/types';
 import type { SessionUser } from './worlds';
 
+/** The name and parent a rename/move request may set; anything left out is not touched. */
+export function cleanChanges(changes: { name?: unknown } & Record<string, unknown>, parentKey: 'parentId' | 'folderId') {
+	const data: { name?: string; parentId?: string | null; folderId?: string | null } = {};
+	if (changes.name !== undefined) {
+		if (typeof changes.name !== 'string' || !changes.name.trim() || changes.name.length > 120) throw new BadRequestError('Invalid name');
+		data.name = changes.name.trim();
+	}
+	const parent = changes[parentKey];
+	if (parent !== undefined) {
+		if (parent !== null && typeof parent !== 'string') throw new BadRequestError('Invalid folder');
+		data[parentKey] = parent;
+	}
+	return data;
+}
+
+/** A folder cannot be moved under itself or any of its own subfolders. */
+export function assertNotInside(folderId: string, targetId: string, folders: { id: string; parentId: string | null }[]) {
+	const parentOf = new Map(folders.map((entry) => [entry.id, entry.parentId]));
+	for (let at: string | null | undefined = targetId; at; at = parentOf.get(at)) {
+		if (at === folderId) throw new BadRequestError('A folder cannot go inside itself');
+	}
+}
+
 const sceneBytes = (scene: unknown) => Buffer.byteLength(JSON.stringify(scene));
 
 export async function listCloudFolders(user: SessionUser | null, parentId: string | null) {
@@ -22,6 +45,19 @@ export async function createCloudFolder(user: SessionUser | null, parentId: stri
 	return prisma.cloudInventoryFolder.create({
 		data: { ownerId: user.id, parentId, name }
 	});
+}
+
+export async function updateCloudFolder(user: SessionUser | null, folderId: string, changes: { name?: unknown; parentId?: unknown }) {
+	if (!user) throw new UnauthorizedError();
+	const folder = await prisma.cloudInventoryFolder.findUnique({ where: { id: folderId } });
+	if (!folder) throw new NotFoundError();
+	if (folder.ownerId !== user.id) throw new ForbiddenError();
+	const data = cleanChanges(changes, 'parentId');
+	if (data.parentId) {
+		const parents = await prisma.cloudInventoryFolder.findMany({ where: { ownerId: user.id }, select: { id: true, parentId: true } });
+		assertNotInside(folderId, data.parentId, parents);
+	}
+	return prisma.cloudInventoryFolder.update({ where: { id: folderId }, data });
 }
 
 export async function deleteCloudFolder(user: SessionUser | null, folderId: string) {
@@ -88,6 +124,19 @@ export async function deleteCloudItem(user: SessionUser | null, itemId: string) 
 	if (!item) throw new NotFoundError();
 	if (item.ownerId !== user.id) throw new ForbiddenError();
 	await prisma.cloudInventoryItem.delete({ where: { id: itemId } });
+}
+
+export async function updateCloudItemInfo(user: SessionUser | null, itemId: string, changes: { name?: unknown; folderId?: unknown }) {
+	if (!user) throw new UnauthorizedError();
+	const item = await prisma.cloudInventoryItem.findUnique({ where: { id: itemId } });
+	if (!item) throw new NotFoundError();
+	if (item.ownerId !== user.id) throw new ForbiddenError();
+	const data = cleanChanges(changes, 'folderId');
+	if (data.folderId) {
+		const target = await prisma.cloudInventoryFolder.findUnique({ where: { id: data.folderId } });
+		if (!target || target.ownerId !== user.id) throw new NotFoundError();
+	}
+	return prisma.cloudInventoryItem.update({ where: { id: itemId }, data });
 }
 
 export async function updateCloudItem(user: SessionUser | null, itemId: string, folderId: string | null, name: string, slotData: SlotTree, thumbnailAssetId?: unknown) {

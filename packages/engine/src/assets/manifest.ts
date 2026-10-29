@@ -1,6 +1,7 @@
 import type { Vec3 } from '../ecs/types.ts';
 import { getAssetKind } from './kinds/index.ts';
 import type { AssetId } from './ref.ts';
+import { sanitizeProvenance, type AssetProvenance } from '../library/provenance.ts';
 
 export { ASSET_LIMITS } from './limits.ts';
 
@@ -13,6 +14,8 @@ export interface AssetManifestBase {
 	mimeType: string;
 	byteSize: number;
 	name: string;
+	/** Where it came from, when it was brought in from an external library. Beside the bytes, so the id does not depend on it. */
+	provenance?: AssetProvenance;
 }
 
 /** What is known about a model without loading it. Computed at import and stored beside the bytes. */
@@ -108,6 +111,10 @@ export function validateManifest(value: unknown): AssetManifest {
 	if ((m.byteSize as number) > kind.maxBytes) throw new Error('The asset is too large');
 	if (typeof m.name !== 'string' || m.name.length === 0 || m.name.length > 120) throw new Error('Invalid asset name');
 	kind.validate(m);
+	// Provenance is rebuilt from known fields: a client can not store anything else through it.
+	const provenance = sanitizeProvenance((m as { provenance?: unknown }).provenance);
+	if (provenance) (m as AssetManifestBase).provenance = provenance;
+	else delete (m as { provenance?: unknown }).provenance;
 	return m as AssetManifest;
 }
 

@@ -1,0 +1,42 @@
+{
+ "provider": "scenario",
+ "nativeId": "scenario_asset_4tjXgQMGuqmPBWoBpRxNkwo2",
+ "title": "A wooden chair with a curved backrest and woven seat stands beside a\u2026",
+ "description": "A wooden chair with a curved backrest and woven seat stands beside a small table with a potted plant.",
+ "type": "model",
+ "tags": [
+  "ai-generated",
+  "image-to-3d",
+  "meta-sam-3d-objects"
+ ],
+ "categories": [
+  "Image-to-3D"
+ ],
+ "url": "https://huggingface.co/datasets/scenario-labs/3d-collection/tree/main/assets/scenario_asset_4tjXgQMGuqmPBWoBpRxNkwo2",
+ "thumbnailUrl": "https://huggingface.co/datasets/scenario-labs/3d-collection/resolve/main/assets/scenario_asset_4tjXgQMGuqmPBWoBpRxNkwo2/preview.jpg",
+ "author": "Scenario",
+ "license": {
+  "name": "CC-BY-4.0",
+  "url": "https://creativecommons.org/licenses/by/4.0/",
+  "commercialUse": true,
+  "attributionRequired": true
+ },
+ "price": {
+  "free": true
+ },
+ "formats": [
+  "glb"
+ ],
+ "downloadable": true,
+ "id": "scenario:scenario_asset_4tjXgQMGuqmPBWoBpRxNkwo2",
+ "files": [
+  {
+   "url": "https://huggingface.co/datasets/scenario-labs/3d-collection/resolve/main/assets/scenario_asset_4tjXgQMGuqmPBWoBpRxNkwo2/output.glb",
+   "filename": "output.glb",
+   "format": "glb",
+   "group": "glb",
+   "sizeBytes": 5014164
+  }
+ ],
+ "shareUrl": "https://3d.shep.bot/search?asset=scenario%3Ascenario_asset_4tjXgQMGuqmPBWoBpRxNkwo2"
+}

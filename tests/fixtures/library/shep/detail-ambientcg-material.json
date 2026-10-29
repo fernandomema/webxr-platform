@@ -1,0 +1,83 @@
+{
+ "provider": "ambientcg",
+ "nativeId": "Bricks097",
+ "title": "Bricks 097",
+ "type": "material",
+ "tags": [
+  "97",
+  "brick",
+  "bricks",
+  "brown",
+  "damaged",
+  "dirty",
+  "factory",
+  "industrial",
+  "old",
+  "red",
+  "stone",
+  "stones",
+  "wall"
+ ],
+ "categories": [
+  "material"
+ ],
+ "url": "https://ambientcg.com/a/Bricks097",
+ "thumbnailUrl": "https://acg-media.struffelproductions.com/file/ambientCG-Web/media/thumbnail/256-JPG-242424/Bricks097.jpg",
+ "license": {
+  "name": "CC0",
+  "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "commercialUse": true,
+  "attributionRequired": false
+ },
+ "price": {
+  "free": true
+ },
+ "formats": [
+  "jpg",
+  "png"
+ ],
+ "resolutions": [
+  "1k",
+  "2k",
+  "4k",
+  "8k"
+ ],
+ "downloadable": true,
+ "createdAt": "2024-11-22",
+ "id": "ambientcg:Bricks097",
+ "files": [
+  {
+   "url": "https://ambientcg.com/get?file=Bricks097_1K-JPG.zip",
+   "filename": "Bricks097_1K-JPG.zip",
+   "format": "zip",
+   "resolution": "1k",
+   "sizeBytes": 5172084,
+   "group": "jpg"
+  },
+  {
+   "url": "https://ambientcg.com/get?file=Bricks097_2K-JPG.zip",
+   "filename": "Bricks097_2K-JPG.zip",
+   "format": "zip",
+   "resolution": "2k",
+   "sizeBytes": 15930202,
+   "group": "jpg"
+  },
+  {
+   "url": "https://ambientcg.com/get?file=Bricks097_1K-PNG.zip",
+   "filename": "Bricks097_1K-PNG.zip",
+   "format": "zip",
+   "resolution": "1k",
+   "sizeBytes": 9529516,
+   "group": "png"
+  },
+  {
+   "url": "https://ambientcg.com/get?file=Bricks097_2K-PNG.zip",
+   "filename": "Bricks097_2K-PNG.zip",
+   "format": "zip",
+   "resolution": "2k",
+   "sizeBytes": 33543887,
+   "group": "png"
+  }
+ ],
+ "shareUrl": "https://3d.shep.bot/search?asset=ambientcg%3ABricks097"
+}

@@ -210,12 +210,15 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 			{ key: 'arm', label: 'AO / roughness / metallic map', kind: 'asset', assetType: 'image', optional: true, help: 'Occupancy in red, roughness in green and metallic in blue.' },
 			{ key: 'roughness', label: 'Roughness', kind: 'number', min: 0, max: 1, step: 0.05, optional: true },
 			{ key: 'metallic', label: 'Metallic', kind: 'number', min: 0, max: 1, step: 0.05, optional: true },
-			{ key: 'mapping', label: 'Mapping', kind: 'enum', options: [{ value: 'mesh', label: 'Stretch over the mesh' }, { value: 'world', label: 'By real size' }], optional: true, default: 'mesh', help: 'By real size lays the maps out at the same scale on any object, however it is scaled.' },
+			{ key: 'mapping', label: 'Mapping', kind: 'enum', options: [{ value: 'mesh', label: 'Stretch over the mesh' }, { value: 'world', label: 'By real size' }, { value: 'wrap', label: 'By real size, wrapped over the top edges' }, { value: 'around', label: 'By real size, wrapped round the sides' }, { value: 'triplanarWorld', label: 'Triplanar, fixed in the world' }, { value: 'triplanarLocal', label: 'Triplanar, fixed to the object' }], optional: true, default: 'mesh', help: 'By real size lays the maps out at the same scale on any object, however it is scaled. Wrapped also folds the picture over a box, so the pattern continues across its top edges.' },
 			{ key: 'tiling', label: 'Tiling', kind: 'number', min: 0.1, max: 50, step: 0.1, optional: true, default: 1, help: 'How many times the maps repeat across the mesh (stretch mapping).' },
 			{ key: 'size', label: 'Size of one repeat', kind: 'number', min: 0.01, max: 100, step: 0.05, unit: 'm', optional: true, default: 1, help: 'Real size one repeat of the maps covers (by-real-size mapping).' },
+			{ key: 'fit', label: 'Fit to edges', kind: 'bool', optional: true, default: true, help: 'Rounds the repeats along each side to a whole number so no tile is cut off at the borders (by-real-size and triplanar-to-the-object mapping).' },
+			{ key: 'cells', label: 'Cells per repeat', kind: 'number', min: 1, max: 32, step: 1, optional: true, help: 'Cells across one repeat of the picture (2 for a 2 by 2 checker). Found from the picture when left empty. Triplanar fixed to the object starts half a cell in, so a checker continues round the edges of a box.' },
 			{ key: 'label', label: 'Name', kind: 'text', optional: true, default: '' }
 		],
-		create: () => ({ type: 'material' })
+		// A new material is laid out by real size and fitted to the object; one that has no `mapping` (an older one) stays stretched.
+		create: () => ({ type: 'material', mapping: 'triplanarLocal' })
 	},
 	{
 		type: 'textDisplay',
@@ -729,7 +732,7 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		glyph: '➜',
 		advanced: true,
 		fields: [
-			{ key: 'target', label: 'Destination', kind: 'json', advanced: true, help: '{ "kind": "builtin", "id": "beat-turntable" }, or { "kind": "new" } for a new empty world' },
+			{ key: 'target', label: 'Destination', kind: 'json', advanced: true, help: '{ "kind": "builtin", "id": "pulse" }, { "kind": "published", "worldId": "<published world id>" }, or { "kind": "new" } for a new empty world' },
 			{ key: 'label', label: 'Name in the menu', kind: 'text', optional: true, default: '' }
 		],
 		create: () => ({ type: 'worldLink', target: { kind: 'builtin', id: 'lobby' } })

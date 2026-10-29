@@ -28,6 +28,7 @@ import { dashboardEditorOrder, dashboardItemLabel, moveDashboardItem, toggleDash
 import { saveWithPreview } from '../inventorySave.ts';
 import { captureItemThumbnail } from '../thumbnail/capture.ts';
 import { typeWithKeyboard } from '../keyboard/guiInput.ts';
+import { requestTextInput } from '../keyboard/service.ts';
 import { getLayout, layoutIds } from '../keyboard/layouts/index.ts';
 import type { BuiltinWorld } from '../content/registry.ts';
 import { createWorldsBrowser } from './worldsBrowser.ts';
@@ -822,6 +823,8 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		| { type: 'folder'; id: string; name: string; folder: InventoryFolder }
 		| { type: 'item'; id: string; name: string; item: InventoryItem };
 	let selected: Entry | null = null;
+	/** The entry being moved: the player browses to the destination folder and presses "Move here". */
+	let moving: { entry: Entry; fromFolderId: string | null } | null = null;
 	const cellByKey = new Map<string, Rectangle>();
 	let lastClick = { key: '', at: 0 };
 
@@ -854,6 +857,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			gameState.currentInventoryFolderId = entry.id;
 			selected = null;
 			refreshPath();
+			refreshToolbar();
 			refreshList();
 		} else if (entry.item.kind === 'world') {
 			if (isReadOnlyAdapter(adapter.id)) return;
@@ -894,6 +898,87 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		refreshToolbar();
 	}
 
+	/** Asks for a new name with the in-world keyboard (the browser's own prompt outside a headset). */
+	function askName(current: string): Promise<string | null> {
+		return new Promise((resolve) => {
+			let answered = false;
+			const finish = (text: string | null) => {
+				if (answered) return;
+				answered = true;
+				resolve(text !== null && text.trim() && text.trim() !== current ? text.trim() : null);
+			};
+			const session = requestTextInput(
+				{ title: 'Name', initial: current, near: mesh },
+				{ onSubmit: (text) => finish(text), onClose: () => finish(null) }
+			);
+			if (!session) askNameOnPage(current).then(finish);
+		});
+	}
+
+	/** Outside a headset session there is no in-world keyboard: a small field over the page takes the name (`prompt()` is missing in some browsers). */
+	function askNameOnPage(current: string): Promise<string | null> {
+		return new Promise((resolve) => {
+			if (typeof document === 'undefined') { resolve(null); return; }
+			const form = document.createElement('form');
+			form.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0008;z-index:2147483647';
+			const input = document.createElement('input');
+			input.value = current;
+			input.maxLength = 120;
+			input.style.cssText = `width:min(420px,80vw);padding:12px 14px;font:20px sans-serif;border-radius:10px;border:2px solid ${INV.accentBorder};background:${INV.bg};color:${INV.text}`;
+			form.append(input);
+			const done = (value: string | null) => { form.remove(); resolve(value); };
+			form.addEventListener('submit', (event) => { event.preventDefault(); done(input.value); });
+			form.addEventListener('keydown', (event) => { if (event.key === 'Escape') done(null); });
+			form.addEventListener('pointerdown', (event) => { if (event.target === form) done(null); });
+			document.body.append(form);
+			input.focus();
+			input.select();
+		});
+	}
+
+	async function renameEntry(entry: Entry) {
+		const adapter = activeAdapter;
+		if (!adapter) return;
+		const name = await askName(entry.name);
+		if (!name || adapter !== activeAdapter) return;
+		try {
+			if (entry.type === 'folder') await adapter.updateFolder!(getInventoryContext(), entry.id, { name });
+			else await adapter.updateItemInfo!(getInventoryContext(), entry.id, { name });
+			select(null);
+			void refreshList();
+		} catch (error) { showMessage(error instanceof Error ? error.message : 'Could not rename', 'error'); }
+	}
+
+	function startMove(entry: Entry) {
+		moving = { entry, fromFolderId: currentFolderId() };
+		select(null);
+		showMessage(`Open the destination folder, then press Move here`, 'info');
+	}
+
+	/** Why the entry being moved cannot go to the folder on screen, or null when it can. */
+	function moveBlocked(): string | null {
+		if (!moving) return null;
+		const target = currentFolderId();
+		if (target === moving.fromFolderId) return 'Already here';
+		if (moving.entry.type === 'folder' && path.some((crumb) => crumb.id === moving!.entry.id)) return 'Cannot go inside itself';
+		return null;
+	}
+
+	async function finishMove() {
+		const adapter = activeAdapter;
+		const current = moving;
+		if (!adapter || !current || moveBlocked()) return;
+		const target = currentFolderId();
+		try {
+			if (current.entry.type === 'folder') await adapter.updateFolder!(getInventoryContext(), current.entry.id, { parentId: target });
+			else await adapter.updateItemInfo!(getInventoryContext(), current.entry.id, { folderId: target });
+			moving = null;
+			showMessage(`Moved “${current.entry.name}”`, 'ok');
+			select(null);
+			void refreshList();
+		} catch (error) { showMessage(error instanceof Error ? error.message : 'Could not move', 'error'); }
+	}
+
 	function refreshToolbar() {
 		for (const child of [...inventoryToolbar.children]) inventoryToolbar.removeControl(child);
 		const adapter = activeAdapter;
@@ -903,6 +988,15 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			try { await adapter.connect!(true); path = [{ id: null, name: adapter.label }]; select(null); refreshPath(); await refreshList(); }
 			catch (error) { if (!(error instanceof DOMException && error.name === 'AbortError')) showMessage(error instanceof Error ? error.message : 'Could not open folder', 'error'); }
 		}));
+		if (moving) {
+			const blocked = moveBlocked();
+			const hint = new TextBlock('tb-move-hint', blocked ?? `Move “${moving.entry.name.length > 14 ? `${moving.entry.name.slice(0, 13)}…` : moving.entry.name}” here`);
+			hint.width = '300px'; hint.height = '36px'; hint.fontSize = 16; hint.color = INV.muted;
+			inventoryToolbar.addControl(hint);
+			if (!blocked) inventoryToolbar.addControl(actionButton('tb-move-here', 'Move here', INV.accent, 130, () => void finishMove()));
+			inventoryToolbar.addControl(actionButton('tb-move-cancel', 'Cancel', INV.surface, 100, () => { moving = null; refreshToolbar(); }));
+			return;
+		}
 		if (!entry) {
 			if (adapter.createFolder) inventoryToolbar.addControl(newFolderBtn);
 			return;
@@ -910,6 +1004,10 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 
 		if (entry.type === 'folder') {
 			inventoryToolbar.addControl(actionButton('tb-open', 'Open', INV.accent, 90, () => activate(entry)));
+			if (adapter.updateFolder) {
+				inventoryToolbar.addControl(actionButton('tb-rename', 'Rename', INV.surface, 100, () => void renameEntry(entry)));
+				inventoryToolbar.addControl(actionButton('tb-move', 'Move', INV.surface, 84, () => startMove(entry)));
+			}
 			if (adapter.deleteFolder) inventoryToolbar.addControl(actionButton('tb-delete', 'Delete', INV.danger, 100, async () => {
 				await adapter.deleteFolder!(getInventoryContext(), entry.id);
 				select(null);
@@ -964,15 +1062,9 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 					}));
 				}
 			}
-			if (adapter.updateItem && path.length > 1 && !isWorld) {
-				const parentId = path[path.length - 2].id;
-				inventoryToolbar.addControl(actionButton('tb-move', 'Move up', INV.surface, 100, async () => {
-					try {
-						await adapter.updateItem!(getInventoryContext(), item.id, parentId, item.name, item.slotData);
-						select(null);
-						refreshList();
-					} catch (error) { showMessage(error instanceof Error ? error.message : 'Could not move item', 'error'); }
-				}));
+			if (adapter.updateItemInfo) {
+				inventoryToolbar.addControl(actionButton('tb-rename', 'Rename', INV.surface, 100, () => void renameEntry(entry)));
+				inventoryToolbar.addControl(actionButton('tb-move', 'Move', INV.surface, 84, () => startMove(entry)));
 			}
 			if (adapter.deleteItem) inventoryToolbar.addControl(actionButton('tb-delete', 'Delete', INV.danger, 90, async () => {
 				await adapter.deleteItem!(getInventoryContext(), item.id);
@@ -1043,6 +1135,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 				gameState.currentInventoryFolderId = crumb.id;
 				selected = null;
 				refreshPath();
+				refreshToolbar();
 				refreshList();
 			});
 			inventoryPath.addControl(btn);
@@ -1245,6 +1338,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		gameState.currentInventoryFolderId = null;
 		path = [{ id: null, name: adapter.label }];
 		selected = null;
+		moving = null;
 		refreshRoots();
 		refreshPath();
 		refreshList();

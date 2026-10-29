@@ -1,6 +1,6 @@
 # Content optimization plan (`/studio/content`)
 
-Status: planned, not started.
+Status: in progress. The optimizers for pictures, for the pictures inside a model (`glbOptimize.ts`) and for WAV audio (`audioOptimize.ts`) exist and are used by the Explore window's **Add optimized**; the `/studio/content` actions, MP3/Opus audio (needs an encoder; `lamejs` is LGPL, which is a licensing decision) and meshopt geometry (needs a decoder in the engine) are still to do. The image step exists as a reusable helper (`src/lib/studio/content/imageOptimize.ts`: `optimizeImage`, `fitWithin`, `TEXTURE_PRESETS`) and the Studio AI already uses it to turn the textures it imports into WebP. The `/studio/content` actions, `ContentSource.add`, audio and models are still to do.
 
 ## Goal
 
@@ -39,6 +39,8 @@ When a file is selected in `/studio/content`, the detail panel offers actions th
 - Heavy work goes in a Web Worker so the studio stays responsive.
 
 ### 2. Images
+
+_Done as a helper (the page actions are not wired yet): `optimizeImage` decodes with no colour conversion, scales to a cap and encodes WebP; `studioAssets.importBytes` stores the result. Normals use a higher quality than colour maps._
 
 - Decode with `createImageBitmap`, draw on an `OffscreenCanvas`, encode with `convertToBlob`.
 - **Convert to WebP:** PNG to lossy WebP (quality about 0.85). Keep alpha. Offer only for PNG.

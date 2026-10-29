@@ -6,7 +6,6 @@ import { createCodeBlockHandlers } from './helpers/codeBlockRuntimeModule.mjs';
 import { buildBistro } from '../src/lib/content/templates/bistro.ts';
 import { buildDeadDrop } from '../src/lib/content/templates/deadDrop.ts';
 import { buildArcade } from '../src/lib/content/templates/arcade.ts';
-import { buildBeatTurntable } from '../src/lib/content/templates/beatTurntable.ts';
 import { buildArchiveJukebox } from '../src/lib/content/templates/archiveJukebox.ts';
 import { buildPolyHeavenMaterials } from '../src/lib/content/templates/polyHeavenMaterials.ts';
 import { buildWishEngine } from '../src/lib/content/templates/wishEngine.ts';
@@ -14,7 +13,7 @@ import { buildWishEngine } from '../src/lib/content/templates/wishEngine.ts';
 const json = async (name) => JSON.parse(await readFile(new URL(name === 'keyboard' ? '../packages/engine/src/xr/keyboard/frame.json' : `../src/lib/content/templates/${name}.json`, import.meta.url), 'utf8'));
 const worlds = {
 	lobby: await json('lobby'), workshop: await json('workshop'), pulse: await json('pulse'), 'pop-up-store': await json('popUpStore'), keyboard: await json('keyboard'), avatarShowcase: await json('avatarShowcase'),
-	bistro: buildBistro(), 'dead-drop': buildDeadDrop(), arcade: buildArcade(), 'beat-turntable': buildBeatTurntable(), 'archive-jukebox': buildArchiveJukebox(), 'polyheaven-materials': buildPolyHeavenMaterials(), 'wish-engine': buildWishEngine()
+	bistro: buildBistro(), 'dead-drop': buildDeadDrop(), arcade: buildArcade(), 'archive-jukebox': buildArchiveJukebox(), 'polyheaven-materials': buildPolyHeavenMaterials(), 'wish-engine': buildWishEngine()
 };
 
 /** What a script that needs an engine we do not have here can legitimately hit; anything else means the sandbox lacks something scripts use. */

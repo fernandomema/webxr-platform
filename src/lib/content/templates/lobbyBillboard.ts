@@ -1,16 +1,20 @@
 import type { Slot, SlotTree } from '@kithin/engine/ecs/types';
 import { createSlot } from '@kithin/engine/ecs/types';
+import type { WorldLinkComponent } from '@kithin/engine/ecs/types';
 
-/** A world a lobby banner advertises: the picture, the built-in world it leads to and its name in the menu. */
+/** A world a lobby banner advertises: the picture, the world it leads to (built in or published) and its name in the menu. */
 export interface LobbyBanner {
 	image: string;
-	world: string;
+	target: WorldLinkComponent['target'];
 	label: string;
 }
 
+/** Beat Turntable lives in production as a published world, no longer as a built-in one. */
+const BEAT_TURNTABLE_WORLD_ID = 'cmuzuc55d00000uniy7iqyk70';
+
 export const LOBBY_BANNERS: readonly LobbyBanner[] = [
-	{ image: '/assets/images/world-banners/beat-turntable.png', world: 'beat-turntable', label: 'Beat Turntable' },
-	{ image: '/assets/images/world-banners/feedback.png', world: 'pulse', label: 'Feedback Center' }
+	{ image: '/assets/images/world-banners/beat-turntable.png', target: { kind: 'published', worldId: BEAT_TURNTABLE_WORLD_ID }, label: 'Beat Turntable' },
+	{ image: '/assets/images/world-banners/feedback.png', target: { kind: 'builtin', id: 'pulse' }, label: 'Feedback Center' }
 ];
 
 /** Seconds each banner stays up before the next one takes its place. */
@@ -47,7 +51,7 @@ return {
 		index = (index + 1) % banners.length;
 		const banner = banners[index];
 		ctx.world.setComponentField('${IMAGE}', 'uiElement', 'src', banner.image);
-		ctx.world.setComponent('${PANEL}', { type: 'worldLink', target: { kind: 'builtin', id: banner.world }, label: banner.label });
+		ctx.world.setComponent('${PANEL}', { type: 'worldLink', target: banner.target, label: banner.label });
 	}
 };`;
 }
@@ -87,7 +91,7 @@ export function buildLobbyBillboard(banners: readonly LobbyBanner[] = LOBBY_BANN
 			position: [0, centerY, 0],
 			components: [
 				{ type: 'uiPanel', width: PX_WIDTH, height: PX_HEIGHT, worldWidth: WIDTH, background: '#000000' },
-				{ type: 'worldLink', target: { kind: 'builtin', id: first.world }, label: first.label }
+				{ type: 'worldLink', target: first.target, label: first.label }
 			]
 		}),
 		createSlot({ id: `${ROOT}-picture`, parentId: PANEL, name: 'Billboard Picture Frame', components: [{ type: 'uiElement', kind: 'container', width: IMAGE_WIDTH, height: IMAGE_HEIGHT }] }),

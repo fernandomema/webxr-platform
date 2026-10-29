@@ -1,5 +1,6 @@
 import type { AssetManifest } from './manifest.ts';
 import type { AssetId } from './ref.ts';
+import type { AssetProvenance } from '../library/provenance.ts';
 
 /** Fires `put` whenever new bytes reach any store on this page, so things waiting for a model can look again at once. */
 export const assetStoreChanges = new EventTarget();
@@ -32,6 +33,8 @@ export interface AssetStore {
 	list(): Promise<AssetListing[]>;
 	/** Records where an already stored file came from, for files stored before origins existed. */
 	setOrigin(id: AssetId, origin: AssetOrigin): Promise<void>;
+	/** Records where an already stored file came from, when it was stored before (or without) saying so. */
+	setProvenance(id: AssetId, provenance: AssetProvenance): Promise<void>;
 	delete(id: AssetId): Promise<void>;
 	usage(): Promise<{ count: number; bytes: number }>;
 }
@@ -63,6 +66,11 @@ export class MemoryAssetStore implements AssetStore {
 
 	async list() {
 		return [...this.records.values()].map((record) => ({ ...record.listing }));
+	}
+
+	async setProvenance(id: AssetId, provenance: AssetProvenance) {
+		const record = this.records.get(id);
+		if (record) (record.listing as { provenance?: AssetProvenance }).provenance = provenance;
 	}
 
 	async setOrigin(id: AssetId, origin: AssetOrigin) {
@@ -180,6 +188,16 @@ export class IndexedDbAssetStore implements AssetStore {
 			const request = store.get(id);
 			request.onsuccess = () => {
 				if (request.result) store.put({ ...request.result, origin });
+			};
+		});
+	}
+
+	async setProvenance(id: AssetId, provenance: AssetProvenance) {
+		await this.run([MANIFESTS], 'readwrite', (tx) => {
+			const store = tx.objectStore(MANIFESTS);
+			const request = store.get(id);
+			request.onsuccess = () => {
+				if (request.result) store.put({ ...request.result, provenance });
 			};
 		});
 	}

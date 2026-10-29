@@ -6,6 +6,7 @@
 	import AddComponentMenu from './AddComponentMenu.svelte';
 	import ComponentCard from './ComponentCard.svelte';
 	import PreviewCameraTools from './PreviewCameraTools.svelte';
+	import NodeWeight from './NodeWeight.svelte';
 	import BakeLightingDialog from './BakeLightingDialog.svelte';
 	import WorldPreviewDialog from './WorldPreviewDialog.svelte';
 	import NumberInput from './NumberInput.svelte';
@@ -133,6 +134,8 @@
 				</div>
 			{/each}
 		</div>
+
+		<NodeWeight {slot} tree={doc.tree} />
 
 		<div class="section grow">
 			<div class="head">

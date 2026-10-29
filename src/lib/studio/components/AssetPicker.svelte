@@ -32,7 +32,7 @@
 	let open = $state(false);
 	let query = $state('');
 	let storage = $state<'device' | 'cloud'>('device');
-	let limit = $state(PAGE);
+	let page = $state(0);
 	let cloud = $state<Choice[] | null>(null);
 	let cloudError = $state<string | null>(null);
 
@@ -65,7 +65,7 @@
 
 	function chooseStorage(next: 'device' | 'cloud') {
 		storage = next;
-		limit = PAGE;
+		page = 0;
 		if (next === 'cloud' && cloud === null) void loadCloud();
 	}
 
@@ -74,7 +74,10 @@
 		const list = (storage === 'device' ? device : cloud ?? []).filter((choice) => !needle || choice.name.toLowerCase().includes(needle));
 		return [...list].sort((a, b) => b.addedAt - a.addedAt);
 	});
-	const shown = $derived(matches.slice(0, limit));
+	const pageCount = $derived(Math.max(1, Math.ceil(matches.length / PAGE)));
+	// A page that no longer exists (the list got shorter) falls back to the last one.
+	const current_page = $derived(Math.min(page, pageCount - 1));
+	const shown = $derived(matches.slice(current_page * PAGE, (current_page + 1) * PAGE));
 
 	// What the field shows now: a file from either storage, or a note that it is not here.
 	const current = $derived(source.kind === 'asset' ? (device.find((choice) => choice.assetId === source.assetId) ?? cloud?.find((choice) => choice.assetId === source.assetId)) : undefined);
@@ -103,13 +106,13 @@
 </script>
 
 <div class="picker">
-	<button {id} class="current" aria-expanded={open} aria-label={`${label}: ${currentLabel}`} onclick={() => { open = !open; query = ''; limit = PAGE; }}>
+	<button {id} class="current" aria-expanded={open} aria-label={`${label}: ${currentLabel}`} onclick={() => { open = !open; query = ''; page = 0; }}>
 		<Icon name={icon} size={14} /><span class="name">{currentLabel}</span><Icon name="chevron-down" size={12} />
 	</button>
 
 	{#if open}
 		<div class="panel">
-			<input class="input" type="search" placeholder={`Search ${kindLabel}`} aria-label={`Search ${kindLabel}`} bind:value={query} oninput={() => (limit = PAGE)} />
+			<input class="input" type="search" placeholder={`Search ${kindLabel}`} aria-label={`Search ${kindLabel}`} bind:value={query} oninput={() => (page = 0)} />
 			{#if studioSession.userId}
 				<div class="tabs" role="tablist" aria-label="Storage">
 					<button class="tab" role="tab" aria-selected={storage === 'device'} onclick={() => chooseStorage('device')}><Icon name="device" size={14} /><span class="name">This device ({device.length})</span></button>
@@ -125,10 +128,14 @@
 				{:else}
 					<p class="empty muted">{storage === 'cloud' && cloud === null ? 'Loading…' : cloudError ?? (query ? 'No matches.' : `No ${kindLabel} here yet.`)}</p>
 				{/each}
-				{#if matches.length > shown.length}
-					<button class="row more" onclick={() => (limit += PAGE)}>Show more ({matches.length - shown.length} left — or search)</button>
-				{/if}
 			</div>
+			{#if pageCount > 1}
+				<nav class="pager" aria-label="Pages">
+					<button class="btn sm" disabled={current_page === 0} onclick={() => (page = current_page - 1)}><Icon name="chevron-left" size={12} />Previous</button>
+					<span class="muted">Page {current_page + 1} of {pageCount}</span>
+					<button class="btn sm" disabled={current_page >= pageCount - 1} onclick={() => (page = current_page + 1)}>Next<Icon name="chevron-right" size={12} /></button>
+				</nav>
+			{/if}
 
 			<div class="foot">
 				<button class="btn sm" onclick={importFile}><Icon name="upload" size={12} />Import a file…</button>
@@ -152,7 +159,7 @@
 	.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: var(--row-h, 30px); padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: var(--text); font: 13px var(--font); text-align: left; cursor: pointer; }
 	.row:hover, .row[data-xr-hover] { background: var(--panel-3); }
 	.row[aria-selected='true'] { background: var(--accent-soft); }
-	.row.more { justify-content: center; color: var(--muted); }
+	.pager { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 	.meta { flex: none; color: var(--muted); font-size: 12px; }
 	.empty { margin: 0; padding: 12px 8px; text-align: center; }
 	.foot { display: flex; flex-wrap: wrap; gap: 6px; }

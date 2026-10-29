@@ -115,7 +115,8 @@ export interface SceneGraphOptions {
 	/** Routes UI interactions (button press, input change/submit) through the host-authoritative world channel. */
 	onUIEvent?: (event: UIEvent) => void;
 	/** Imports a Poly Haven model for a world codeBlock. */
-	onImportPolyHavenModel?: (id: string, name: string) => Promise<string>;
+	/** Brings an asset of an external library (`source:id`) into the device's assets and local inventory. Host/solo only. */
+	onImportLibraryAsset?: (ref: string, name: string) => Promise<string>;
 	/** codeBlock's `world.spawn`/`deleteSelf`/`deleteSlot` — route through the host-authoritative sync pipeline (see engine.ts, mirrors onMediaControl). */
 	onSpawnRequest?: (slot: Slot, options?: { ephemeral?: boolean }) => void;
 	onDeleteRequest?: (slotId: string) => void;
@@ -1009,9 +1010,9 @@ export class SceneGraph {
 			getUIMedia: (slotId) => this.getUIMedia(slotId),
 			getUIInputText: (slotId) => this.getUIInputText(slotId),
 			openDash: (tab, options) => this.options.openDash?.(tab, options),
-			importPolyHavenModel: (id, name) => {
-				if (!(this.options.isHost?.() ?? true) || !this.options.onImportPolyHavenModel) throw new Error('Model importing is unavailable here.');
-				return this.options.onImportPolyHavenModel(id, name);
+			importLibraryAsset: (ref, name) => {
+				if (!(this.options.isHost?.() ?? true) || !this.options.onImportLibraryAsset) throw new Error('Importing is unavailable here.');
+				return this.options.onImportLibraryAsset(ref, name);
 			}
 		};
 	}

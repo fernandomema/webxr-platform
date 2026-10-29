@@ -1,5 +1,5 @@
-import { PROTOCOL_ADAPTERS } from './adapters';
-export type ProviderKind = 'openai' | 'claude' | 'opencode' | 'openrouter' | 'freellmapi' | 'ollama' | 'custom';
+import { EMPTY_USAGE, PROTOCOL_ADAPTERS, type TokenUsage } from './adapters';
+export type ProviderKind = 'platform' | 'openai' | 'claude' | 'opencode' | 'openrouter' | 'freellmapi' | 'ollama' | 'custom';
 export type ProviderProtocol = 'responses' | 'messages' | 'chat';
 
 const PROTOCOL_PATHS: Record<ProviderProtocol, string> = { chat: 'chat/completions', responses: 'responses', messages: 'messages' };
@@ -30,9 +30,21 @@ export class FreeLLMAPIConnectionError extends Error {
 	}
 }
 
+/** The provider refused a step because the run's fixed budget is spent (the platform's own AI). */
+export class RunBudgetError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = 'RunBudgetError';
+	}
+}
+
 export class ProviderConversation {
 	private wire: unknown[] = [];
 	private readonly sessionId = crypto.randomUUID();
+	/** Everything this conversation has consumed so far. */
+	readonly usage: TokenUsage = { ...EMPTY_USAGE };
+	/** Set by the platform provider: the paid run every step belongs to. */
+	runId: string | null = null;
 
 	constructor(readonly profile: ProviderProfile, readonly instructions: string) {}
 
@@ -44,11 +56,11 @@ export class ProviderConversation {
 		this.wire.push(...PROTOCOL_ADAPTERS[this.profile.protocol].toolResults(results));
 	}
 
-	async step(credential: string, tools: AgentTool[], signal: AbortSignal, useConnection = false): Promise<{ text: string; calls: AgentCall[] }> {
+	async step(credential: string, tools: AgentTool[], signal: AbortSignal, useConnection = false): Promise<{ text: string; calls: AgentCall[]; usage: TokenUsage }> {
 		if (!this.profile.model.trim()) throw new Error('Choose a model first.');
 		const protocol = this.profile.protocol;
 		const adapter = PROTOCOL_ADAPTERS[protocol];
-		const payload = adapter.buildPayload(this.profile.model, this.instructions, this.wire, tools);
+		const payload = adapter.buildPayload(this.profile.model, this.instructions, this.wire, tools, { key: this.sessionId });
 
 		const kind = this.profile.kind;
 		let response: Response;
@@ -68,19 +80,25 @@ export class ProviderConversation {
 				throw new FreeLLMAPIConnectionError();
 			}
 		} else {
-			response = await fetch('/api/studio/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-studio-session': this.sessionId }, body: JSON.stringify({ kind, protocol, credential: useConnection ? '' : credential, useConnection, payload }), signal });
+			response = await fetch('/api/studio/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-studio-session': this.sessionId }, body: JSON.stringify({ kind, protocol, credential: useConnection ? '' : credential, useConnection, runId: this.runId, payload }), signal });
 		}
 		if (!response.ok) {
 			const message = await response.text();
+			if (kind === 'platform' && response.status === 402) throw new RunBudgetError(parsePlatformMessage(message));
 			throw new Error(`Provider error ${response.status}: ${message.slice(0, 600)}`);
 		}
 		const data = await response.json() as Record<string, unknown>;
 		const result = adapter.parseReply(data, kind);
 		this.wire.push(...result.wire);
-		return { text: result.text, calls: result.calls };
+		for (const key of Object.keys(this.usage) as (keyof TokenUsage)[]) this.usage[key] += result.usage[key];
+		return { text: result.text, calls: result.calls, usage: result.usage };
 	}
 }
 
+
+function parsePlatformMessage(raw: string): string {
+	try { return String((JSON.parse(raw) as { message?: unknown }).message ?? raw); } catch { return raw.slice(0, 300); }
+}
 
 export function defaultProfile(kind: ProviderKind): ProviderProfile {
 	return {

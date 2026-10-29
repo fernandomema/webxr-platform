@@ -14,6 +14,11 @@
 	import Combobox from '../ui/Combobox.svelte';
 	import Tooltip from '../ui/Tooltip.svelte';
 	import type { HumanoidMap } from '@kithin/engine/xr/avatar/humanoid';
+	import type { AssetKind } from '@kithin/engine/library/types';
+	import { explore } from '../state/explore.svelte';
+	import { toasts } from '../state/toasts.svelte';
+
+	const MATERIAL_MAPS = ['albedo', 'normal', 'arm'];
 
 	interface Props {
 		field: FieldDef;
@@ -34,6 +39,25 @@
 	let jsonError = $state('');
 
 	const unset = $derived(value === undefined);
+
+	/** What the online libraries can offer for this field: a model for a mesh, a material map for a texture, a sound, a picture. */
+	const browseKind = $derived.by((): AssetKind | null => {
+		if (field.kind === 'mesh') return 'model';
+		if (field.kind !== 'asset' || field.action) return null;
+		if (field.assetType === 'model') return 'model';
+		if (field.assetType === 'audio') return 'audio';
+		if (field.assetType === 'image') return MATERIAL_MAPS.includes(field.key) ? 'material' : 'image';
+		return null;
+	});
+
+	async function browse() {
+		if (!browseKind) return;
+		const result = await explore.pick({ kind: browseKind, title: browseKind === 'material' ? 'Materials' : browseKind === 'model' ? 'Models' : browseKind === 'audio' ? 'Sounds' : 'Pictures', actionLabel: browseKind === 'material' ? 'Use this material' : 'Use this', ...(browseKind === 'material' ? {} : { optimizedLabel: 'Use optimized' }) });
+		if (!result) return;
+		if (result.kind === 'model' && field.kind === 'mesh') onchange(assetMesh(result.assetId));
+		else if (result.kind === 'material') { const map = result[field.key as 'albedo' | 'normal' | 'arm']; if (map) onchange(assetSource(map)); else toasts.push('error', `“${result.name}” has no ${field.label.toLowerCase()}.`); }
+		else if ('assetId' in result && field.kind === 'asset') onchange(assetSource(result.assetId));
+	}
 	const fallback = $derived.by(() => {
 		switch (field.kind) {
 			case 'number': return field.default ?? field.min ?? 0;
@@ -204,6 +228,9 @@
 			<textarea class="input" {id} rows="4" aria-invalid={jsonError ? 'true' : undefined} value={jsonDraft ?? JSON.stringify(value ?? null, null, 2)} oninput={(event) => commitJson(event.currentTarget.value)} onblur={() => { if (!jsonError) jsonDraft = null; }}></textarea>
 		{/if}
 
+		{#if browseKind}
+			<button class="icon-btn" type="button" aria-label={`Browse ${field.label} online`} onclick={() => void browse()}><Icon name="search" size={12} /></button>
+		{/if}
 		{#if field.kind === 'asset' && field.action && onaction && !unset}
 			<button class="btn sm" onclick={() => onaction(field.action!)}>Edit…</button>
 		{/if}

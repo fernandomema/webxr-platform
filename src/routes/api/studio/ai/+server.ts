@@ -1,6 +1,9 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getOpenRouterKey } from '$lib/server/openrouterConnection';
+import { runStep } from '$lib/server/services/aiPlatform';
+import { AiBudgetError } from '$lib/server/errors';
+import { creditsError } from '$lib/server/creditsApi';
 
 const endpoints: Record<string, Record<string, string>> = {
 	openai: { responses: 'https://api.openai.com/v1/responses' },
@@ -33,6 +36,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	try { body = JSON.parse(Buffer.concat(chunks).toString('utf8')); }
 	catch { return json({ message: 'Invalid JSON.' }, { status: 400 }); }
 	const kind = String(body.kind ?? '');
+	// The platform's own AI: the server holds the key, fixes the model and enforces the run's budget.
+	if (kind === 'platform') {
+		try { return await runStep(locals.user, body, String(request.headers.get('x-studio-session') ?? ''), request.signal); }
+		catch (err) {
+			if (err instanceof AiBudgetError) return json({ message: err.message }, { status: 402, headers: { 'cache-control': 'no-store' } });
+			return creditsError(err);
+		}
+	}
 	const protocol = String(body.protocol ?? '');
 	const endpoint = endpoints[kind]?.[protocol];
 	let credential = body.credential;

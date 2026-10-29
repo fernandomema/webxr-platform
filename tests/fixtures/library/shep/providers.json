@@ -1,0 +1,126 @@
+{
+ "providers": [
+  {
+   "id": "polyhaven",
+   "name": "Poly Haven",
+   "homepage": "https://polyhaven.com",
+   "description": "Free CC0 HDRIs, PBR textures and photoscanned 3D models with a public API.",
+   "assetTypes": [
+    "hdri",
+    "material",
+    "texture",
+    "model"
+   ],
+   "access": "api",
+   "pricing": "free",
+   "license": {
+    "name": "CC0",
+    "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "commercialUse": true,
+    "attributionRequired": false
+   },
+   "supportsDownload": true,
+   "enabled": true
+  },
+  {
+   "id": "ambientcg",
+   "name": "ambientCG",
+   "homepage": "https://ambientcg.com",
+   "description": "Free CC0 PBR materials, HDRIs, decals and atlases (1K-16K) with a public JSON API and direct downloads.",
+   "assetTypes": [
+    "material",
+    "texture",
+    "hdri",
+    "model"
+   ],
+   "access": "api",
+   "pricing": "free",
+   "license": {
+    "name": "CC0",
+    "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "commercialUse": true,
+    "attributionRequired": false
+   },
+   "supportsDownload": true,
+   "enabled": true
+  },
+  {
+   "id": "blenderkit",
+   "name": "BlenderKit",
+   "homepage": "https://www.blendkit.com",
+   "description": "Blender-native models, materials, HDRIs, scenes and brushes (free + Full Plan) with a public search API; free assets download as .blend/.glb.",
+   "assetTypes": [
+    "model",
+    "material",
+    "hdri",
+    "other"
+   ],
+   "access": "api",
+   "pricing": "freemium",
+   "apiKeyEnv": "BLENDERKIT_API_KEY",
+   "supportsDownload": true,
+   "enabled": true
+  },
+  {
+   "id": "fab",
+   "name": "Fab",
+   "homepage": "https://www.fab.com",
+   "description": "Epic's marketplace (formerly Unreal Marketplace, Sketchfab Store, Quixel): game-ready models, environments, characters, materials.",
+   "assetTypes": [
+    "model",
+    "material",
+    "texture",
+    "pack",
+    "audio"
+   ],
+   "access": "link",
+   "pricing": "freemium",
+   "supportsDownload": false,
+   "enabled": true
+  },
+  {
+   "id": "kenney",
+   "name": "Kenney",
+   "homepage": "https://kenney.nl/assets",
+   "description": "Hundreds of CC0 game asset packs (low-poly 3D kits, 2D sprites, UI, audio, fonts) by Kenney.",
+   "assetTypes": [
+    "model",
+    "sprite",
+    "ui",
+    "audio",
+    "font",
+    "texture",
+    "other"
+   ],
+   "access": "scrape",
+   "pricing": "free",
+   "license": {
+    "name": "CC0",
+    "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "commercialUse": true,
+    "attributionRequired": false
+   },
+   "supportsDownload": true,
+   "enabled": true
+  },
+  {
+   "id": "scenario",
+   "name": "Scenario 3D Collection",
+   "homepage": "https://huggingface.co/datasets/scenario-labs/3d-collection",
+   "description": "About 1,300 AI-generated 3D models (GLB, Blend, FBX, voxels, Gaussian splats) from Scenario, published on Hugging Face under CC BY 4.0.",
+   "assetTypes": [
+    "model"
+   ],
+   "access": "api",
+   "pricing": "free",
+   "license": {
+    "name": "CC-BY-4.0",
+    "url": "https://creativecommons.org/licenses/by/4.0/",
+    "commercialUse": true,
+    "attributionRequired": true
+   },
+   "supportsDownload": true,
+   "enabled": true
+  }
+ ]
+}

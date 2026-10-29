@@ -125,6 +125,9 @@
 
 		camera = new FreeCamera('studio-camera', new Vector3(2.3, 2.7, -5.5), scene);
 		camera.setTarget(new Vector3(0, 0.6, 0));
+		// Babylon's default near plane is 1 m, which slices anything closer than that; 2 cm lets the camera get right up to an object.
+		camera.minZ = 0.02;
+		camera.maxZ = 2000;
 		camera.inputs.removeByType('FreeCameraKeyboardMoveInput');
 		camera.attachControl(canvas, true);
 		const mouseInput = camera.inputs.attached.mouse as { buttons?: number[] } | undefined;

@@ -115,3 +115,26 @@ test('the home-building tools sit in a Home Builder folder inside Tools', async 
   const loose = (await builtinInventoryAdapter.listItems({}, 'tools')).map((item) => item.name);
   assert.ok(!loose.includes('Wall Tool') && loose.includes('Drill') && loose.includes('Camera'));
 });
+
+test('the Dev folder holds the Halloween toys as standalone, working objects', async () => {
+  const { DEV_ENTRIES, DEV_FOLDER_ID } = await import('../src/lib/content/starterKit/catalog.ts');
+  assert.deepEqual(DEV_ENTRIES.map((entry) => entry.name).sort(), ['Pumpkin Music Box', 'Spirit Jar', 'Witchlight Brush']);
+  for (const entry of DEV_ENTRIES) {
+    assert.equal(entry.folderId, DEV_FOLDER_ID);
+    const tree = entry.build();
+    const roots = tree.filter((slot) => !slot.parentId);
+    assert.equal(roots.length, 1, `${entry.name} is one object`);
+    assert.notEqual(roots[0].disabled, true, `${entry.name} is switched on`);
+    assert.deepEqual(roots[0].position, [0, 0, 0]);
+    assert.ok(roots[0].components.some((component) => component.type === 'codeBlock'), `${entry.name} keeps its script`);
+    const ids = new Set(tree.map((slot) => slot.id));
+    assert.equal(ids.size, tree.length, 'unique ids');
+    for (const slot of tree) assert.ok(!slot.parentId || ids.has(slot.parentId), `${slot.id} hangs from a part of the same object`);
+  }
+});
+
+test('the Dev items are not part of the kit outside development builds', async () => {
+  const { BUILTIN_FOLDERS, BUILTIN_ENTRIES } = await import('../src/lib/content/starterKit/catalog.ts');
+  assert.equal(BUILTIN_FOLDERS.some((folder) => folder.id === 'dev'), false, 'the engine owns the dev folder');
+  assert.equal(BUILTIN_ENTRIES.some((entry) => entry.folderId === 'dev'), false);
+});

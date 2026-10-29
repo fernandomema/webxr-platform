@@ -590,7 +590,7 @@ export class TestWorld {
 			},
 			audio: this.audio,
 			storage: this.storage,
-			importPolyHavenModel: () => Promise.reject(new Error('Not available in a test world'))
+			importLibraryAsset: () => Promise.reject(new Error('Not available in a test world'))
 		};
 	}
 }

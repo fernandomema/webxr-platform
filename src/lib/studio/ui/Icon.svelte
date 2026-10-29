@@ -1,7 +1,7 @@
 <script lang="ts" module>
 	export type IconName =
 		| 'back' | 'plus' | 'undo' | 'redo' | 'save' | 'play' | 'publish' | 'trash' | 'copy' | 'folder'
-		| 'cube' | 'world' | 'search' | 'chevron-right' | 'chevron-down' | 'code' | 'json' | 'close'
+		| 'cube' | 'world' | 'search' | 'chevron-right' | 'chevron-left' | 'chevron-down' | 'code' | 'json' | 'close'
 		| 'check' | 'cloud' | 'device' | 'warning' | 'user' | 'layers' | 'sliders' | 'command' | 'folder-plus'
 		| 'home' | 'download' | 'upload' | 'music' | 'image' | 'clock';
 </script>
@@ -30,6 +30,7 @@
 		world: 'M12 3a9 9 0 100 18 9 9 0 000-18zM3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18',
 		search: 'M11 4a7 7 0 100 14 7 7 0 000-14zM21 21l-5-5',
 		'chevron-right': 'M9 6l6 6-6 6',
+		'chevron-left': 'M15 6l-6 6 6 6',
 		'chevron-down': 'M6 9l6 6 6-6',
 		code: 'M8 8l-5 4 5 4M16 8l5 4-5 4M14 5l-4 14',
 		json: 'M9 4C6 4 7 8 5 9c2 1 1 5 4 5M15 4c3 0 2 4 4 5-2 1-1 5-4 5',

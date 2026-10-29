@@ -6,6 +6,7 @@ import { WORLD_VISIBILITY_INFO } from '../../worldVisibility.ts';
 import { createRadialView } from './radialView.ts';
 import { sourceLabel, validateWorldPackage } from '../../worlds/package.ts';
 import type { WorldPackage } from '../../worlds/types.ts';
+import type { WorldLinkComponent } from '../../ecs/types.ts';
 import { yawFacing } from './panelFacing.ts';
 import { THEME } from './theme.ts';
 
@@ -19,12 +20,15 @@ export function createWorldPortalMenu(
   launch: (world: WorldPackage, visibility: HostedWorldVisibility | 'solo') => Promise<void>,
   saveCopy: (world: WorldPackage) => Promise<void>,
   launchBuiltin: (id: string) => Promise<void>,
+  launchPublished: (worldId: string) => Promise<void>,
   createWorld: () => Promise<void>
 ) {
   const radial = createRadialView(scene, 'world-portal', getCamera, {
     pointerSelectable: true,
     size: 0.9,
-    offset: new Vector3(0, 0.36, 0)
+    offset: new Vector3(0, 0.36, 0),
+    // A link can sit on a big panel (the lobby's billboard): the menu comes out in front of it so a press reaches the menu, not the panel.
+    towardCamera: 0.5
   });
   const panel = MeshBuilder.CreatePlane('world-session-settings', { width: 0.9, height: 0.8 }, scene);
   const material = new StandardMaterial('world-session-settings-material', scene);
@@ -130,15 +134,16 @@ export function createWorldPortalMenu(
     keepOpen(slotId);
   }
 
-  /** A link to a built-in world offers to go there, and to stay. */
-  function openLink(slotId: string, node: TransformNode, target: { kind: 'builtin'; id: string } | { kind: 'new' }, label?: string) {
+  /** A link to a built-in or published world offers to go there, and to stay. */
+  function openLink(slotId: string, node: TransformNode, target: WorldLinkComponent['target'], label?: string) {
     panel.setEnabled(false);
     const isNew = target.kind === 'new';
+    const destination = target.kind === 'builtin' ? target.id : target.kind === 'published' ? target.worldId : '';
     radial.open(node, [
       {
-        label: isNew ? 'Create a new world' : `Go to ${label || target.id}`,
+        label: isNew ? 'Create a new world' : `Go to ${label || destination}`,
         isEnabled: () => true,
-        onSelect: () => void (isNew ? createWorld() : launchBuiltin(target.id)).catch((error) => console.error('Could not open the world', error))
+        onSelect: () => void (target.kind === 'new' ? createWorld() : target.kind === 'published' ? launchPublished(target.worldId) : launchBuiltin(target.id)).catch((error) => console.error('Could not open the world', error))
       },
       { label: isNew ? 'Not now' : 'Stay here', isEnabled: () => true, onSelect: () => {} }
     ]);

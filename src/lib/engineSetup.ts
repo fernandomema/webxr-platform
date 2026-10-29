@@ -20,7 +20,9 @@ const feedbackCode = new Set((pulse as SlotTree).flatMap((slot) => slot.componen
 registerContent({
 	loadWorlds: async () => {
 		const { BUILTIN_WORLDS, DEV_WORLD_IDS } = await import('$lib/content/templates/builtinWorlds');
-		return { worlds: BUILTIN_WORLDS, devWorldIds: DEV_WORLD_IDS };
+		// The local packs of worlds/ (dev server only) are development worlds too.
+		const packs = await (await import('$lib/content/worldPacks')).loadPackWorlds();
+		return { worlds: [...BUILTIN_WORLDS, ...packs], devWorldIds: [...DEV_WORLD_IDS, ...packs.map((world) => world.id)] };
 	},
 	loadHome: async () => {
 		const [{ default: lobby }, { buildLobbyExtras }] = await Promise.all([import('$lib/content/templates/lobby.json'), import('$lib/content/templates/lobbyExtras')]);

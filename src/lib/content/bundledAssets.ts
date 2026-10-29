@@ -1,8 +1,11 @@
 import type { AssetId } from '@kithin/engine/assets/ref';
+import { packAssets } from 'virtual:world-packs';
 import { BUNDLED_LIGHTING } from '$lib/content/bundledLighting';
 
 /** Files that ship with the app, addressed by their actual content hash. */
 export const BUNDLED_ASSETS: Partial<Record<AssetId, string>> = {
+	// The files of the local world packs (worlds/), served by the dev server; none in a build.
+	...packAssets,
 	'sha256:0b58c2d00e6638b752d540cceefb526e133a7602fefbd8e0b264ccd242874a8b': '/worlds/polygon-quest/room.glb',
 	'sha256:97aaaaa731371ce2c0803dbdae500d8ab249e65a846bb26e9c73a03388e14b94': '/worlds/polygon-quest/room-v1.glb',
 	'sha256:f2458dbd8140f541eb184124e05ce606383f83ac44b128c7d03b1d24a6946585': '/worlds/polygon-quest/probe/face-0.png',

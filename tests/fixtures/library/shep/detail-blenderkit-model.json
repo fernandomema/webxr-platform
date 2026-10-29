@@ -1,0 +1,106 @@
+{
+ "provider": "blenderkit",
+ "nativeId": "7bea2b93-30ac-4ee2-8414-c5e1f712911e",
+ "title": "Dining table and chairs set",
+ "description": "Elevate your interior scenes with this sophisticated dining set, designed for modern elegance and comfort. This asset features a sleek round table with a distinctive, sturdy conical base, surrounded by four matching curved armchairs. The design showcases a beautiful sage green wood grain finish paired with soft beige upholstery, offering a perfect blend of contemporary minimalism and organic shapes.",
+ "type": "model",
+ "tags": [
+  "table",
+  "chair",
+  "dining",
+  "archviz",
+  "minimalist",
+  "scandinavian",
+  "wood",
+  "green",
+  "sage",
+  "interior"
+ ],
+ "categories": [
+  "model",
+  "table"
+ ],
+ "url": "https://www.blendkit.com/asset-gallery-detail/7bea2b93-30ac-4ee2-8414-c5e1f712911e/",
+ "thumbnailUrl": "https://public.blenderkit.com/thumbnails/assets/8c2e3c079b2740348a466bf501b8a5f6/files/thumbnail_2fa6891f-27bc-4104-86a2-6f246b0be5d4.jpg.512x512_q85_crop-%2C.jpg",
+ "author": "dleon3D Le\u00f3n",
+ "license": {
+  "name": "Royalty Free",
+  "url": "https://www.blendkit.com/docs/licenses/",
+  "commercialUse": true,
+  "attributionRequired": false
+ },
+ "price": {
+  "free": true
+ },
+ "formats": [
+  "blend",
+  "glb"
+ ],
+ "resolutions": [
+  "0.5k",
+  "1k",
+  "2k",
+  "4k"
+ ],
+ "polyCount": 20384,
+ "rigged": false,
+ "downloadable": true,
+ "createdAt": "2026-06-17T21:36:41.311304+02:00",
+ "id": "blenderkit:7bea2b93-30ac-4ee2-8414-c5e1f712911e",
+ "files": [
+  {
+   "url": "https://assets.blenderkit.com/assets/8c2e3c079b2740348a466bf501b8a5f6/files/blend_2073fe8f-0cd5-4f0b-b51d-510373ce87c7.blend?verify=1793273585-Me4F1SAAK90UoE3Y5BH4PyucJqPu27C6VE%2BMw3TM6CU%3D",
+   "filename": "dining-table-and-chairs-set_blend.blend",
+   "format": "blend",
+   "sizeBytes": 56588863,
+   "group": "blend"
+  },
+  {
+   "url": "https://assets.blenderkit.com/assets/8c2e3c079b2740348a466bf501b8a5f6/files/gltf_61d0348a-d071-4623-979a-f2fead75ca9a.glb?verify=1793273585-GzCx4o%2F9PkkXouNRtXmu04jK%2FlUp9OHDUE04mh5%2BoDw%3D",
+   "filename": "dining-table-and-chairs-set_gltf.glb",
+   "format": "glb",
+   "sizeBytes": 885140,
+   "group": "gltf"
+  },
+  {
+   "url": "https://assets.blenderkit.com/assets/8c2e3c079b2740348a466bf501b8a5f6/files/gltf_godot_17a549c8-db54-4af6-a5f0-8962e60a9010.glb?verify=1793273585-8ideyjORjAL6EClMtJKDSg9dz3%2FiUaPOdFLZKiP80Qk%3D",
+   "filename": "dining-table-and-chairs-set_gltf_godot.glb",
+   "format": "glb",
+   "sizeBytes": 2038264,
+   "group": "gltf_godot"
+  },
+  {
+   "url": "https://assets.blenderkit.com/assets/8c2e3c079b2740348a466bf501b8a5f6/files/resolution_0_5K_b325fbab-f7b2-46c9-9ac1-ae5625e6d2b8.blend?verify=1793273586-MBmq%2BU%2B7Vej%2BBdJU9FAPWFefnc5LCCOB6enpkgjOqt4%3D",
+   "filename": "dining-table-and-chairs-set_resolution_0_5K.blend",
+   "format": "blend",
+   "resolution": "0.5k",
+   "sizeBytes": 889870,
+   "group": "resolutions"
+  },
+  {
+   "url": "https://assets.blenderkit.com/assets/8c2e3c079b2740348a466bf501b8a5f6/files/resolution_1K_f50131d4-86e6-4ba5-975e-bbfdcf8be5df.blend?verify=1793273585-Gb1pWzzm3WkMnQErSJ6jxNQ47Oi95EcI1dgWXO%2Fkijk%3D",
+   "filename": "dining-table-and-chairs-set_resolution_1K.blend",
+   "format": "blend",
+   "resolution": "1k",
+   "sizeBytes": 1465477,
+   "group": "resolutions"
+  },
+  {
+   "url": "https://assets.blenderkit.com/assets/8c2e3c079b2740348a466bf501b8a5f6/files/resolution_2K_656a2f8e-fd5b-418b-8937-c5ef2fe55f63.blend?verify=1793273586-PVow6cDDV1PJl0rMg965Ukgv6N1nop2SwHZ9rCfxobs%3D",
+   "filename": "dining-table-and-chairs-set_resolution_2K.blend",
+   "format": "blend",
+   "resolution": "2k",
+   "sizeBytes": 5191684,
+   "group": "resolutions"
+  },
+  {
+   "url": "https://assets.blenderkit.com/assets/8c2e3c079b2740348a466bf501b8a5f6/files/resolution_4K_51a3cf02-3cc0-48e7-a1e8-3cce1f4e0e33.blend?verify=1793273586-pjpAujGHdKaENJCG3mwvUHXXjCk2XhPY%2F8B85ofarX8%3D",
+   "filename": "dining-table-and-chairs-set_resolution_4K.blend",
+   "format": "blend",
+   "resolution": "4k",
+   "sizeBytes": 18534535,
+   "group": "resolutions"
+  }
+ ],
+ "shareUrl": "https://3d.shep.bot/search?asset=blenderkit%3A7bea2b93-30ac-4ee2-8414-c5e1f712911e"
+}

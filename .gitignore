@@ -10,6 +10,11 @@ node_modules
 /meta-quest-package/
 /meta-quest-package-dev/
 
+# Local world packs are versioned with the project; only what is generated or secret stays out (see worlds/README.md)
+/worlds/.auth.json
+/worlds/*/assets.ts
+/worlds/*/dist/
+
 # OS
 .DS_Store
 Thumbs.db

@@ -44,6 +44,17 @@ export const worldInventoryAdapter: InventoryAdapter = {
 		return (await res.json()) as InventoryFolder;
 	},
 
+	async updateFolder(ctx, folderId, changes) {
+		if (!ctx.worldId) throw new Error('No active world');
+		const res = await platformFetch(`/api/worlds/${ctx.worldId}/inventory/folders/${folderId}`, {
+			method: 'PATCH',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify(changes)
+		});
+		if (!res.ok) throw new Error(`Failed to update folder (${res.status})`);
+		return (await res.json()) as InventoryFolder;
+	},
+
 	async deleteFolder(ctx, folderId) {
 		if (!ctx.worldId) return;
 		await platformFetch(`/api/worlds/${ctx.worldId}/inventory/folders/${folderId}`, { method: 'DELETE' });
@@ -76,6 +87,17 @@ export const worldInventoryAdapter: InventoryAdapter = {
 			method: 'PUT',
 			headers: { 'content-type': 'application/json' },
 			body: JSON.stringify({ folderId, name, slotData, thumbnailAssetId: preview })
+		});
+		if (!res.ok) throw new Error(`Failed to update world item (${res.status})`);
+		return (await res.json()) as InventoryItem;
+	},
+
+	async updateItemInfo(ctx, itemId, changes) {
+		if (!ctx.worldId) throw new Error('No active world');
+		const res = await platformFetch(`/api/worlds/${ctx.worldId}/inventory/${itemId}`, {
+			method: 'PATCH',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify(changes)
 		});
 		if (!res.ok) throw new Error(`Failed to update world item (${res.status})`);
 		return (await res.json()) as InventoryItem;

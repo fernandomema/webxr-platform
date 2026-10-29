@@ -5,6 +5,7 @@ import { validateWorldScene } from '@kithin/engine/worlds/package';
 import { migrateSlotTree } from '@kithin/engine/assets/ref';
 import { linkSceneAssets, readyAssetIds, resolveThumbnail, withThumbnail } from './assets';
 import type { SlotTree } from '@kithin/engine/ecs/types';
+import { assertNotInside, cleanChanges } from './cloudInventory';
 import type { SessionUser } from './worlds';
 
 async function assertHost(user: SessionUser | null, worldId: string) {
@@ -30,6 +31,18 @@ export async function createWorldFolder(
 ) {
 	await assertHost(user, worldId);
 	return prisma.worldInventoryFolder.create({ data: { worldId, parentId, name } });
+}
+
+export async function updateWorldFolder(user: SessionUser | null, worldId: string, folderId: string, changes: { name?: unknown; parentId?: unknown }) {
+	await assertHost(user, worldId);
+	const folder = await prisma.worldInventoryFolder.findUnique({ where: { id: folderId } });
+	if (!folder || folder.worldId !== worldId) throw new NotFoundError();
+	const data = cleanChanges(changes, 'parentId');
+	if (data.parentId) {
+		const folders = await prisma.worldInventoryFolder.findMany({ where: { worldId }, select: { id: true, parentId: true } });
+		assertNotInside(folderId, data.parentId, folders);
+	}
+	return prisma.worldInventoryFolder.update({ where: { id: folderId }, data });
 }
 
 export async function deleteWorldFolder(user: SessionUser | null, worldId: string, folderId: string) {
@@ -84,6 +97,18 @@ export async function saveWorldItem(
 export async function deleteWorldItem(user: SessionUser | null, worldId: string, itemId: string) {
 	await assertHost(user, worldId);
 	await prisma.worldInventoryItem.delete({ where: { id: itemId } });
+}
+
+export async function updateWorldItemInfo(user: SessionUser | null, worldId: string, itemId: string, changes: { name?: unknown; folderId?: unknown }) {
+	await assertHost(user, worldId);
+	const item = await prisma.worldInventoryItem.findUnique({ where: { id: itemId } });
+	if (!item || item.worldId !== worldId) throw new NotFoundError();
+	const data = cleanChanges(changes, 'folderId');
+	if (data.folderId) {
+		const target = await prisma.worldInventoryFolder.findUnique({ where: { id: data.folderId } });
+		if (!target || target.worldId !== worldId) throw new NotFoundError();
+	}
+	return prisma.worldInventoryItem.update({ where: { id: itemId }, data });
 }
 
 export async function updateWorldItem(user: SessionUser | null, worldId: string, itemId: string, folderId: string | null, name: string, slotData: SlotTree, thumbnailAssetId?: unknown) {

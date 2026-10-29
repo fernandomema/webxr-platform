@@ -17,6 +17,8 @@
 	import { quatToEuler, roundDisplay } from '@kithin/engine/math/euler';
 	import Inspector from '$lib/studio/components/Inspector.svelte';
 	import AiPanel from '$lib/studio/components/AiPanel.svelte';
+	import ExplorePanel from '$lib/studio/components/ExplorePanel.svelte';
+	import ExploreDialog from '$lib/studio/components/ExploreDialog.svelte';
 	import MarketplacePanel from '$lib/studio/components/MarketplacePanel.svelte';
 	import AssetsPanel from '$lib/studio/components/AssetsPanel.svelte';
 	import AddObjectMenu, { type ObjectPreset } from '$lib/studio/components/AddObjectMenu.svelte';
@@ -34,7 +36,9 @@
 	let advanced = $state(false);
 	let centerView = $state<'scene' | 'code' | 'json'>('scene');
 	let leftTab = $state<'hierarchy' | 'assets'>('hierarchy');
-	let rightTab = $state<'inspector' | 'ai' | 'marketplace'>('inspector');
+	let rightTab = $state<'inspector' | 'ai' | 'explore' | 'marketplace'>('inspector');
+	// The online libraries are only asked once the tab has been opened.
+	let exploreOpened = $state(false);
 	let mobilePanel = $state<'left' | 'center' | 'right'>('center');
 	let dialog = $state<'save' | 'palette' | null>(null);
 	let showAddObject = $state(false);
@@ -374,6 +378,7 @@
 				<div class="tabs" role="tablist">
 					<button class="tab" role="tab" aria-selected={rightTab === 'inspector'} onclick={() => (rightTab = 'inspector')}><Icon name="sliders" size={14} />Inspector</button>
 					<button class="tab" role="tab" aria-selected={rightTab === 'ai'} onclick={() => (rightTab = 'ai')}>AI</button>
+					<button class="tab" role="tab" aria-selected={rightTab === 'explore'} onclick={() => { rightTab = 'explore'; exploreOpened = true; }}><Icon name="search" size={14} />Explore</button>
 					{#if doc.kind === 'world' || !isReadOnlyAdapter(project.adapterId)}
 						<button class="tab" role="tab" aria-selected={rightTab === 'marketplace'} onclick={openMarketplace}><Icon name="publish" size={14} />Marketplace</button>
 					{/if}
@@ -381,6 +386,7 @@
 				<div class="right-body">
 					<div class="right-view" hidden={rightTab !== 'inspector'}><Inspector {doc} {advanced} onExportNode={(id) => void exportFile(id)} onOpenCode={openCode} onGenerateProbe={generateProbe} getViewPose={() => preview?.getViewPose() ?? null} /></div>
 					<div class="right-view" hidden={rightTab !== 'ai'}><AiPanel {doc} projectKey={project.key} /></div>
+					<div class="right-view" hidden={rightTab !== 'explore'}>{#if exploreOpened}<ExplorePanel {doc} />{/if}</div>
 					{#if doc.kind === 'world' || !isReadOnlyAdapter(project.adapterId)}
 						<div class="right-view" hidden={rightTab !== 'marketplace'}>
 							{#if doc.kind === 'world'}

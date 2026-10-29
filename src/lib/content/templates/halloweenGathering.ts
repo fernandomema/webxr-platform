@@ -224,6 +224,17 @@ function seeds(): Slot[] {
 	];
 }
 
+/**
+ * One of the gifts as an object of its own, out of the world: the model every copy in the world is made from, switched on and
+ * standing on the origin. Their scripts only use their own id, so they work anywhere.
+ */
+export function buildHalloweenToy(kind: keyof typeof HALLOWEEN.seeds): SlotTree {
+	const id = HALLOWEEN.seeds[kind].id;
+	return seeds()
+		.filter((slot) => slot.id === id || slot.id.startsWith(`${id}-`))
+		.map((slot) => (slot.id === id ? { ...slot, disabled: undefined, position: [0, 0, 0] as Vec3 } : slot));
+}
+
 /** The signs of the square: how it works, what has been left lately, and how awake the Great Pumpkin is. */
 function signs(): Slot[] {
 	const board = (id: string, name: string, at: Vec3, size: [number, number], title: string, lines: string[], scale: number): Slot =>

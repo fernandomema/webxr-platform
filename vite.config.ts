@@ -6,12 +6,13 @@ import { resolve } from 'node:path';
 import { mdsvex } from 'mdsvex';
 import { wuchale } from 'wuchale/vite';
 import basicSsl from '@vitejs/plugin-basic-ssl';
+import { worldPacksPlugin } from './src/lib/server/worldPacksPlugin.ts';
 import { signalingDevPlugin } from './src/lib/server/wsDevPlugin.ts';
 
 export default defineConfig({
 	// SvelteKit only lets the dev server serve src/ and node_modules/. The engine's source is in packages/ (see the alias below), so it
 	// has to be allowed too, or the browser gets a 404 for every file of it.
-	server: { fs: { allow: [resolve('packages'), resolve('scripts')] } },
+	server: { fs: { allow: [resolve('packages'), resolve('scripts'), resolve('worlds')] } },
 	plugins: [
 		wuchale(),
 		tailwindcss(),
@@ -21,6 +22,7 @@ export default defineConfig({
 		// click through; only applies to `vite dev`/`preview`, not the build.
 		basicSsl(),
 		signalingDevPlugin(),
+		worldPacksPlugin(),
 		sveltekit({
 			// Wiki pages are .md/.mdx files compiled as Svelte components (see src/content/wiki).
 			extensions: ['.svelte', '.md', '.mdx'],

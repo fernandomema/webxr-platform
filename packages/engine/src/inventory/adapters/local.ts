@@ -78,6 +78,24 @@ export const localInventoryAdapter: InventoryAdapter = {
 		return folder;
 	},
 
+	async updateFolder(_ctx, folderId, changes) {
+		const all = await withStore<InventoryFolder[]>(FOLDERS_STORE, 'readonly', (store) => store.getAll());
+		const folder = all.find((entry) => entry.id === folderId);
+		if (!folder) throw new Error('Folder not found');
+		if (changes.parentId !== undefined) {
+			for (let at = changes.parentId; at; at = all.find((entry) => entry.id === at)?.parentId ?? null) {
+				if (at === folderId) throw new Error('A folder cannot go inside itself');
+			}
+		}
+		const updated: InventoryFolder = {
+			...folder,
+			...(changes.name === undefined ? {} : { name: changes.name }),
+			...(changes.parentId === undefined ? {} : { parentId: changes.parentId })
+		};
+		await withStore(FOLDERS_STORE, 'readwrite', (store) => store.put(updated));
+		return updated;
+	},
+
 	async deleteFolder(ctx, folderId) {
 		// move any subfolders/items back to root, matching the server adapters' onDelete:SetNull behaviour
 		const [folders, items] = await Promise.all([this.listFolders(ctx, folderId), this.listItems(ctx, folderId)]);
@@ -118,6 +136,19 @@ export const localInventoryAdapter: InventoryAdapter = {
 		const updated: InventoryItem = { ...existing, folderId, name, slotData, ...(thumbnailAssetId === undefined ? {} : { thumbnailAssetId }) };
 		await withStore(ITEMS_STORE, 'readwrite', (store) => store.put(updated));
 		if (existing.thumbnailAssetId !== updated.thumbnailAssetId) await dropPreviewIfUnused(existing.thumbnailAssetId, items.filter((item) => item.id !== itemId));
+		return updated;
+	},
+
+	async updateItemInfo(_ctx, itemId, changes) {
+		const items = await withStore<InventoryItem[]>(ITEMS_STORE, 'readonly', (store) => store.getAll());
+		const existing = items.find((item) => item.id === itemId);
+		if (!existing) throw new Error('Inventory item not found');
+		const updated: InventoryItem = {
+			...existing,
+			...(changes.name === undefined ? {} : { name: changes.name }),
+			...(changes.folderId === undefined ? {} : { folderId: changes.folderId })
+		};
+		await withStore(ITEMS_STORE, 'readwrite', (store) => store.put(updated));
 		return updated;
 	},
 

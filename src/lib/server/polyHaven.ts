@@ -1,4 +1,6 @@
 import { ASSET_LIMITS } from '@kithin/engine/assets/limits';
+import { loadPolyHavenLogic } from '$lib/content/templates/polyHeavenMaterials';
+import { isTextureId } from './polyHavenTextures';
 
 const API = 'https://api.polyhaven.com';
 const USER_AGENT = 'Kithin-WebXR/0.1';
@@ -22,7 +24,25 @@ interface GltfDocument {
 	buffers?: Array<{ uri?: string; byteLength: number }>;
 	bufferViews?: Array<{ buffer: number; byteOffset?: number; byteLength: number }>;
 	images?: Array<{ uri?: string; bufferView?: number; mimeType?: string }>;
+	materials?: Array<{ alphaMode?: string; pbrMetallicRoughness?: { baseColorFactor?: number[] } }>;
 	[key: string]: unknown;
+}
+
+/** How much of the scene a glass surface hides: a faint tint, since the picture it takes its colour from has no transparency to give. */
+export const GLASS_OPACITY = 0.1;
+
+/**
+ * Poly Haven's glass is a blended material that reads its colour from the model's one picture, a JPEG, which cannot hold
+ * transparency: the glass comes out as an opaque patch of whatever it points at (black, for a clock's face). Its opacity is set
+ * here instead, so what is behind it can be seen.
+ */
+export function seeThroughGlass(gltf: GltfDocument): void {
+	for (const material of gltf.materials ?? []) {
+		if (material.alphaMode !== 'BLEND') continue;
+		const pbr = (material.pbrMetallicRoughness ??= {});
+		const factor = pbr.baseColorFactor ?? [1, 1, 1, 1];
+		if ((factor[3] ?? 1) >= 1) pbr.baseColorFactor = [factor[0] ?? 1, factor[1] ?? 1, factor[2] ?? 1, GLASS_OPACITY];
+	}
 }
 
 let modelCache: { until: number; models: Record<string, ApiModel> } | null = null;
@@ -66,7 +86,7 @@ async function allModels(): Promise<Record<string, ApiModel>> {
 	return models;
 }
 
-export async function searchPolyHaven(query: string, page: number) {
+export async function searchPolyHaven(query: string, page: number, size = 5) {
 	const words = query.toLowerCase().trim().slice(0, 80).split(/\s+/).filter(Boolean);
 	const models = await allModels();
 	const matches = Object.entries(models)
@@ -76,15 +96,16 @@ export async function searchPolyHaven(query: string, page: number) {
 			return words.every((word) => haystack.includes(word));
 		})
 		.sort((a, b) => a[1].name?.localeCompare(b[1].name ?? '') ?? 0);
-	const offset = Math.max(0, Math.min(page, 1000)) * 5;
+	const offset = Math.max(0, Math.min(page, 1000)) * size;
 	return {
 		total: matches.length,
-		page: Math.floor(offset / 5),
-		results: matches.slice(offset, offset + 5).map(([id, model]) => ({
+		page: Math.floor(offset / size),
+		results: matches.slice(offset, offset + size).map(([id, model]) => ({
 			id,
 			name: model.name ?? id,
 			thumbnail: model.thumbnail_url ?? '',
 			category: model.category ?? '',
+			tags: model.tags ?? [],
 			polycount: model.polycount ?? 0
 		}))
 	};
@@ -168,6 +189,7 @@ export async function polyHavenGlb(id: string): Promise<Uint8Array> {
 		gltf.bufferViews.push({ buffer: 0, byteOffset: append(bytes), byteLength: bytes.byteLength });
 		delete image.uri;
 	}
+	seeThroughGlass(gltf);
 	gltf.buffers = [{ byteLength }];
 	const encoded = Buffer.from(JSON.stringify(gltf));
 	const jsonLength = (encoded.byteLength + 3) & ~3;
@@ -190,4 +212,51 @@ export async function polyHavenGlb(id: string): Promise<Uint8Array> {
 		cursor += (chunk.byteLength + 3) & ~3;
 	}
 	return glb;
+}
+
+// --- textures --------------------------------------------------------------
+
+let textureCache: { until: number; assets: Record<string, unknown> } | null = null;
+
+async function allTextures(): Promise<Record<string, unknown>> {
+	if (textureCache && textureCache.until > Date.now()) return textureCache.assets;
+	const assets = await apiJson<Record<string, unknown>>(loadPolyHavenLogic().assetsUrl().replace(API, ''));
+	textureCache = { until: Date.now() + CACHE_MS, assets };
+	return assets;
+}
+
+/** Textures matching a search, best match first, in pages of eight. The rules for reading the library are the ones of the in-world material shop. */
+export async function searchPolyHavenTextures(query: string, page: number, size = 8) {
+	const logic = loadPolyHavenLogic();
+	const text = query.trim().slice(0, 80);
+	const assets = await allTextures();
+	const details = new Map(logic.parseAssets(assets).map((texture) => [texture.id, texture]));
+	let ids: string[];
+	if (text) ids = logic.parseSearch(await apiJson<unknown>(logic.searchUrl(text).replace(API, ''))).filter((id) => details.has(id));
+	else ids = [...details.keys()];
+	const offset = Math.max(0, Math.min(page, 1000)) * size;
+	return {
+		total: ids.length,
+		page: Math.floor(offset / size),
+		results: ids.slice(offset, offset + size).map((id) => {
+			const texture = details.get(id)!;
+			return { id, name: texture.name, category: texture.category, size: texture.size, thumbnail: texture.thumb };
+		})
+	};
+}
+
+/** A model's listing entry, or null when the id is not a model. */
+export async function polyHavenModelInfo(id: string) {
+	if (!isTextureId(id)) bad('Invalid model ID.');
+	const model = (await allModels())[id];
+	if (!model || model.type !== 2) return null;
+	return { id, name: model.name ?? id, description: model.description ?? '', category: model.category ?? '', tags: model.tags ?? [], thumbnail: model.thumbnail_url ?? '', polycount: model.polycount ?? 0 };
+}
+
+/** A texture's listing entry and its raw file list (every size and format), or null when the id is not a texture. */
+export async function polyHavenTextureFiles(id: string) {
+	if (!isTextureId(id)) bad('Invalid texture ID.');
+	const texture = loadPolyHavenLogic().parseAssets(await allTextures()).find((entry) => entry.id === id);
+	if (!texture) return null;
+	return { id, name: texture.name, category: texture.category, size: texture.size, thumbnail: texture.thumb, files: await apiJson<unknown>(`/files/${id}`) };
 }

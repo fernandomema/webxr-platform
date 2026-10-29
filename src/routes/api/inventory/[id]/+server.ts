@@ -1,11 +1,22 @@
 import type { RequestHandler } from './$types';
-import { deleteCloudItem, updateCloudItem } from '$lib/server/services/cloudInventory';
+import { deleteCloudItem, updateCloudItem, updateCloudItemInfo } from '$lib/server/services/cloudInventory';
 import { toHttpError } from '$lib/server/apiError';
 
 export const PUT: RequestHandler = async ({ locals, params, request }) => {
 	try {
 		const body = await request.json();
 		return new Response(JSON.stringify(await updateCloudItem(locals.user, params.id, body.folderId ?? null, body.name, body.slotData, body.thumbnailAssetId)), {
+			status: 200,
+			headers: { 'content-type': 'application/json' }
+		});
+	} catch (err) {
+		toHttpError(err);
+	}
+};
+
+export const PATCH: RequestHandler = async ({ locals, params, request }) => {
+	try {
+		return new Response(JSON.stringify(await updateCloudItemInfo(locals.user, params.id, await request.json())), {
 			status: 200,
 			headers: { 'content-type': 'application/json' }
 		});

@@ -3,6 +3,8 @@
 	import { componentSchema } from '@kithin/engine/document/components';
 	import FieldEditor from './FieldEditor.svelte';
 	import Icon from '../ui/Icon.svelte';
+	import { explore } from '../state/explore.svelte';
+	import { materialFields } from '../library/apply';
 
 	interface Props {
 		component: Component;
@@ -21,6 +23,13 @@
 	let open = $state(true);
 	const schema = $derived(componentSchema(component.type));
 	const fields = $derived(schema.fields.filter((field) => advanced || !field.advanced));
+
+	/** A whole material from the online libraries: its maps, the real size of one repeat and by-size mapping, in one go. */
+	async function browseMaterials() {
+		const result = await explore.pick({ kind: 'material', title: 'Materials', actionLabel: 'Use this material' });
+		if (result?.kind !== 'material') return;
+		for (const [key, value] of Object.entries(materialFields(result))) onfield(key, value);
+	}
 </script>
 
 <section class="card">
@@ -37,6 +46,9 @@
 			{#if fields.length === 0}
 				<p class="muted">{schema.description}</p>
 			{/if}
+			{#if component.type === 'material'}
+				<button class="btn sm browse" type="button" onclick={() => void browseMaterials()}><Icon name="search" size={12} />Browse online…</button>
+			{/if}
 			{#each fields as field (field.key)}
 				<FieldEditor {field} value={(component as unknown as Record<string, unknown>)[field.key]} onchange={(value) => onfield(field.key, value)} {onOpenCode} {joints} {onaction} />
 			{/each}
@@ -51,4 +63,5 @@
 	.glyph { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 5px; background: var(--accent-soft); color: var(--accent); font-size: 11px; }
 	.body { display: grid; gap: 8px; padding: 4px 10px 12px; }
 	.body p { margin: 0; font-size: 12px; }
+	.browse { justify-self: start; }
 </style>

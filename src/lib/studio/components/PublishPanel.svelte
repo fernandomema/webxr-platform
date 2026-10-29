@@ -2,6 +2,10 @@
 	import { onMount } from 'svelte';
 	import type { PublicationSummary, PublishResult, StudioProject } from '../state/project.svelte';
 	import { studioSession } from '../state/session.svelte';
+	import { collectAssetIds } from '@kithin/engine/assets/ref';
+	import { getLocalAssetStore } from '@kithin/engine/assets/store';
+	import { creditsFor, creditsText, type CreditEntry } from '@kithin/engine/library/provenance';
+	import { toasts } from '../state/toasts.svelte';
 
 	interface Props {
 		project: StudioProject;
@@ -16,6 +20,21 @@
 	let target = $state('');
 	let publishing = $state(false);
 	let error = $state('');
+
+	// Assets brought in from the online libraries whose license asks for credit. Publishing is not blocked: this is what to credit.
+	let credits = $state<CreditEntry[]>([]);
+	$effect(() => {
+		const used = collectAssetIds(project.doc.tree);
+		let current = true;
+		void getLocalAssetStore().list().then((listings) => {
+			if (current) credits = creditsFor(listings.filter((listing) => used.has(listing.assetId)));
+		}).catch(() => { /* Without the device's assets there is nothing to list. */ });
+		return () => { current = false; };
+	});
+	async function copyCredits() {
+		try { await navigator.clipboard.writeText(creditsText(credits)); toasts.success('Credits copied'); }
+		catch { toasts.push('error', 'Could not copy the credits'); }
+	}
 
 	const signedIn = $derived(Boolean(studioSession.userId));
 	const chosen = $derived(publications.find((publication) => publication.id === target));
@@ -89,6 +108,14 @@
 				</label>
 				{#if mode === 'revision' && chosen}<p class="note">This will create revision {chosen.latestRevision + 1}.</p>{/if}
 			{/if}
+			{#if credits.length}
+				<details class="credits">
+					<summary>Credits owed ({credits.length})</summary>
+					<p class="muted">These assets ask the author to be credited. Put them in the world's description or on a sign.</p>
+					<ul>{#each credits as entry (entry.ref)}<li><a href={entry.sourceUrl} target="_blank" rel="noopener noreferrer">{entry.title}</a>{entry.author ? ` by ${entry.author}` : ''} · {entry.license}</li>{/each}</ul>
+					<button class="btn sm" type="button" onclick={() => void copyCredits()}>Copy credits</button>
+				</details>
+			{/if}
 			{#if error}<p class="error" role="alert">{error}</p>{/if}
 			<div class="actions">
 				<button class="btn primary" disabled={publishing || loading || (mode === 'revision' && !target)} onclick={publish}>
@@ -110,4 +137,8 @@
 	.note { margin: 6px 0 0; font-size: 12px; }
 	.error { margin: 10px 0 0; color: var(--danger); }
 	a.btn { text-decoration: none; }
+	.credits { margin-top: 10px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; }
+	.credits summary { cursor: pointer; font-weight: 600; }
+	.credits ul { margin: 6px 0; padding-left: 18px; }
+	.credits li { margin: 3px 0; overflow-wrap: anywhere; }
 </style>

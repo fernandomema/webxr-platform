@@ -1,12 +1,20 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { deleteWorldItem, updateWorldItem } from '$lib/server/services/worldInventory';
+import { deleteWorldItem, updateWorldItem, updateWorldItemInfo } from '$lib/server/services/worldInventory';
 import { toHttpError } from '$lib/server/apiError';
 
 export const PUT: RequestHandler = async ({ locals, params, request }) => {
 	try {
 		const body = await request.json();
 		return json(await updateWorldItem(locals.user, params.id, params.itemId, body.folderId ?? null, body.name, body.slotData, body.thumbnailAssetId));
+	} catch (err) {
+		toHttpError(err);
+	}
+};
+
+export const PATCH: RequestHandler = async ({ locals, params, request }) => {
+	try {
+		return json(await updateWorldItemInfo(locals.user, params.id, params.itemId, await request.json()));
 	} catch (err) {
 		toHttpError(err);
 	}

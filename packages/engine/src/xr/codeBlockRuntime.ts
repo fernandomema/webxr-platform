@@ -83,8 +83,8 @@ export interface CodeBlockHost {
 	sameOriginPathsFor?(code: string): readonly string[];
 	/** Paying for the products a published world sells. Absent where credits cannot be spent (an unpublished world, a guest that is not the host). */
 	payments?: ScriptPayments;
-	/** Imports a Poly Haven model into this device's asset store and local inventory. Host/solo only. */
-	importPolyHavenModel(id: string, name: string): Promise<string>;
+	/** Imports an asset of an external library (`source:id`) into this device's asset store and local inventory. Host/solo only. */
+	importLibraryAsset(ref: string, name: string): Promise<string>;
 }
 
 /** A ray's hit against the live scene, resolved back to the Slot it belongs to — see `CodeBlockHost.raycast`. */
@@ -678,8 +678,10 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 			}
 		},
 		assets: {
-			/** Imports a Poly Haven model as a reusable local object and returns its content-addressed asset id. */
-			importPolyHavenModel: (id: string, name: string) => host.importPolyHavenModel(id, name)
+			/** Imports a model of an external library (`'polyhaven:chair_01'`) as a reusable local object and returns its content-addressed asset id. */
+			importFromLibrary: (ref: string, name: string) => host.importLibraryAsset(ref, name),
+			/** The older name of `importFromLibrary` for Poly Haven models; kept so existing worlds keep working. */
+			importPolyHavenModel: (id: string, name: string) => host.importLibraryAsset(`polyhaven:${id}`, name)
 		},
 		ui: {
 			/** Playback state of a `video` uiElement on this peer (position, duration, paused, ended...). Write `playing`/`src`/`currentTime` with `world.setComponentField` to control it. */
