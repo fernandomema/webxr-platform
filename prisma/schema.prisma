@@ -604,8 +604,11 @@ model aiRun {
   status          String    @default("running")
   /// ask | edit | create | complex, derived from the tools the agent used.
   task            String?
-  /// True when nothing was charged (development, or the free calibration phase).
+  /// True when nothing is charged (development, or the free calibration phase).
   free            Boolean
+  /// What the run was expected to cost when it started (the button's estimate); the fallback charge when rates cannot be read at settle time.
+  quotedCredits   Int       @default(0)
+  /// What the run actually charged when it settled (0 for free runs and unanswered ones).
   credits         Int       @default(0)
   refunded        Boolean   @default(false)
   tariffVersion   String
