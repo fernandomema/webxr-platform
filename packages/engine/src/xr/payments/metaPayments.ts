@@ -136,9 +136,11 @@ export function createMetaPayments(deps: MetaPaymentsDeps) {
 					? { status: 'credited' }
 					: { status: 'failed', message: 'Your payment went through. The credits will arrive the next time you use the ATM.' };
 			} catch (error) {
-				const name = (error as { name?: string } | null)?.name;
+				const { name, message } = (error ?? {}) as { name?: string; message?: string };
 				console.warn(`[meta-payments] failed at the ${stage}`, error);
-				return { status: 'failed', message: `The payment failed at the ${stage}${name ? ` (${name})` : ''}.` };
+				// The store's own words are the only clue to what it dislikes, so they are shown (shortened).
+				const said = typeof message === 'string' && message ? `: ${message.slice(0, 120)}` : '';
+				return { status: 'failed', message: `The payment failed at the ${stage}${name ? ` (${name})` : ''}${said}${stage === 'store' ? ` [${pack.metaSku}]` : ''}` };
 			}
 		},
 
