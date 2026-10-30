@@ -579,6 +579,11 @@ export async function mountGame(
 	let refreshWorldsTab = () => {};
 
 	async function ensureLocalAudio() {
+		// Quest cannot show the mic prompt inside VR: it pulls the player out of the session. Joining without voice is better.
+		if (!localAudio && xr?.baseExperience.state === WebXRState.IN_XR && (await voice.micPermission()) === 'prompt') {
+			console.warn('[voice] microphone not allowed yet; joining without voice');
+			return undefined;
+		}
 		if (!localAudio) localAudio = await voice.getLocalMicTrack();
 		return localAudio ?? undefined;
 	}
@@ -1123,7 +1128,18 @@ export async function mountGame(
 		xrSupported,
 		enterVR: async () => {
 			if (!xr) return;
-			await xr.baseExperience.enterXRAsync('immersive-vr', 'local-floor', xr.renderTarget);
+			const state = xr.baseExperience.state;
+			if (state === WebXRState.IN_XR || state === WebXRState.ENTERING_XR) return;
+			// Voice needs the mic once the player hosts or joins; asking inside VR would end the session (see ensureLocalAudio).
+			const askedForMic = (await voice.micPermission()) === 'prompt';
+			if (askedForMic) await voice.askMicPermission();
+			try {
+				await xr.baseExperience.enterXRAsync('immersive-vr', 'local-floor', xr.renderTarget);
+			} catch (error) {
+				// The prompt can use up the click that VR needs to start: a second tap no longer shows it.
+				if (askedForMic) throw new Error('Microphone set up. Tap Enter VR again.');
+				throw error;
+			}
 		},
 		captureMouse: () => fps.requestLock(),
 		dispose() {

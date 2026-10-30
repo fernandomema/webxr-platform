@@ -28,6 +28,22 @@ export class ProximityVoice {
 		}
 	}
 
+	/** Whether the browser would show a prompt for the mic ('prompt'), or 'unknown' when it cannot say. */
+	async micPermission(): Promise<PermissionState | 'unknown'> {
+		try {
+			const status = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+			return status.state;
+		} catch {
+			return 'unknown';
+		}
+	}
+
+	/** Shows the mic prompt now, so it is answered before it could interrupt a VR session. Leaves the mic closed. */
+	async askMicPermission(): Promise<void> {
+		const mic = await this.getLocalMicTrack();
+		for (const track of mic?.stream.getTracks() ?? []) track.stop();
+	}
+
 	addPeer(id: string, stream: MediaStream, targetNode: TransformNode): void {
 		const ctx = this.getContext();
 		const source = ctx.createMediaStreamSource(stream);
