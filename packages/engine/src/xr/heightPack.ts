@@ -4,12 +4,13 @@ export const PACK_MAX_SIDE = 1024;
 /**
  * Babylon's parallax reads the height from the alpha of the normal map, so the two maps are drawn together: the normal's red, green
  * and blue with the height map's red as alpha. Both are RGBA pixels of the same size; without a normal map a flat one stands in.
+ * The red is flipped: the material reads the packed map without `invertNormalMapX`, which would also turn parallax round.
  */
 export function packNormalHeight(normal: ArrayLike<number> | null, height: ArrayLike<number>, pixels: number): Uint8Array {
 	const packed = new Uint8Array(pixels * 4);
 	for (let i = 0; i < pixels; i++) {
 		const at = i * 4;
-		packed[at] = normal ? normal[at] : 128;
+		packed[at] = normal ? 255 - normal[at] : 128;
 		packed[at + 1] = normal ? normal[at + 1] : 128;
 		packed[at + 2] = normal ? normal[at + 2] : 255;
 		packed[at + 3] = height[at];

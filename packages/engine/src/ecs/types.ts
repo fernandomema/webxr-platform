@@ -44,8 +44,7 @@ export interface MaterialComponent {
 	/** Height map (white is high), for `parallax`. Any channel works: the red one is read. */
 	height?: SourceRef;
 	/**
-	 * Parallax depth: how far the `height` map seems to sink into the surface, in the map's own units (0.02 to 0.08 is usual). Off when
-	 * left out or 0. Needs a `height` map and a mapping that uses the mesh's coordinates (not the triplanar ones). The normal map and
+	 * Parallax depth: how far the `height` map seems to sink into the surface, in the map's own units (0.02 to 0.08 is usual). 0.05 when left out (with a `height` map), and 0 turns it off. Needs a `height` map and a mapping that uses the mesh's coordinates (not the triplanar ones). The normal map and
 	 * the height map are drawn together at up to 1024 pixels a side.
 	 */
 	parallax?: number;

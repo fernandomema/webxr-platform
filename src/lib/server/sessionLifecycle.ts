@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../generated/prisma/client.js';
+import { PrismaClient } from '../generated/prisma/client.ts';
 
 const globalForSessionCleanup = globalThis as unknown as { sessionCleanupPrisma?: PrismaClient };
 const databaseUrl = process.env.DATABASE_URL;

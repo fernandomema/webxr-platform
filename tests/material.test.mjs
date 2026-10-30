@@ -56,10 +56,10 @@ test('the height map is collected for upload like the other maps', () => {
 	assert.deepEqual(materialSources({ type: 'material', height: url('https://a.test/h.png') }), { height: url('https://a.test/h.png') });
 });
 
-test('the normal and height maps are packed with the height in the alpha', () => {
+test('the normal and height maps are packed with the height in the alpha and the red flipped', () => {
 	const normal = [10, 20, 30, 255, 40, 50, 60, 255];
 	const height = [200, 0, 0, 255, 7, 0, 0, 255];
-	assert.deepEqual([...packNormalHeight(normal, height, 2)], [10, 20, 30, 200, 40, 50, 60, 7]);
+	assert.deepEqual([...packNormalHeight(normal, height, 2)], [245, 20, 30, 200, 215, 50, 60, 7]);
 	assert.deepEqual([...packNormalHeight(null, height, 2)], [128, 128, 255, 200, 128, 128, 255, 7], 'a flat normal stands in when there is none');
 });
 

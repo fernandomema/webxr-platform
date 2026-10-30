@@ -224,7 +224,7 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 			{ key: 'normal', label: 'Normal map', kind: 'asset', assetType: 'image', optional: true, help: 'OpenGL convention (green up).' },
 			{ key: 'arm', label: 'AO / roughness / metallic map', kind: 'asset', assetType: 'image', optional: true, help: 'Occupancy in red, roughness in green and metallic in blue.' },
 			{ key: 'height', label: 'Height map', kind: 'asset', assetType: 'image', optional: true, help: 'White is high. Used by Parallax depth.' },
-			{ key: 'parallax', label: 'Parallax depth', kind: 'number', min: 0, max: 0.2, step: 0.005, optional: true, help: 'How deep the height map seems to sink into the surface (0.02 to 0.08 is usual; 0 is off). Needs a height map, and does not work with the triplanar mappings.' },
+			{ key: 'parallax', label: 'Parallax depth', kind: 'number', min: 0, max: 0.2, step: 0.005, optional: true, help: 'How deep the height map seems to sink into the surface (0.02 to 0.08 is usual; 0.05 when left empty; 0 is off). Needs a height map, and does not work with the triplanar mappings.' },
 			{ key: 'parallaxOcclusion', label: 'Parallax occlusion', kind: 'bool', optional: true, default: false, help: 'Near parts of the surface hide far ones. Looks better at a slant and costs more to draw.' },
 			{ key: 'roughness', label: 'Roughness', kind: 'number', min: 0, max: 1, step: 0.05, optional: true },
 			{ key: 'metallic', label: 'Metallic', kind: 'number', min: 0, max: 1, step: 0.05, optional: true },

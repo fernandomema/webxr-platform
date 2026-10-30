@@ -76,6 +76,9 @@ function pixelsOf(image: HTMLImageElement, width: number, height: number): Uint8
 	return context.getImageData(0, 0, width, height).data;
 }
 
+/** The parallax depth of a material that has a height map and does not say how deep. */
+const DEFAULT_PARALLAX = 0.05;
+
 const UV_SHAPES = new Set<string>(['box', 'plane', 'ground', 'disc', 'sphere', 'cylinder']);
 
 /**
@@ -117,7 +120,7 @@ export class MaterialSurfaces {
 		this.syncUvs(surface, mesh, component, shape);
 		this.syncTriplanar(surface, mesh, component);
 
-		surface.parallax = { depth: component.parallax && component.parallax > 0 ? component.parallax : 0, occlusion: component.parallaxOcclusion === true };
+		surface.parallax = { depth: component.parallax === undefined ? DEFAULT_PARALLAX : Math.max(0, component.parallax), occlusion: component.parallaxOcclusion === true };
 
 		// Tiling belongs to the texture, so slots that repeat the same picture a different number of times each get their own.
 		const tiling = component.tiling && component.tiling > 0 ? component.tiling : 1;
@@ -275,6 +278,7 @@ export class MaterialSurfaces {
 			material.useParallax = false;
 			material.useParallaxOcclusion = false;
 			material.bumpTexture = projected ? null : normal;
+			material.invertNormalMapX = true;
 			surface.packed?.dispose();
 			surface.packed = undefined;
 			return;
@@ -288,6 +292,9 @@ export class MaterialSurfaces {
 		}
 		const ready = !!surface.packed;
 		material.bumpTexture = surface.packed ?? normal;
+		// Babylon turns its tangent round to flip a normal map's X, and parallax walks along that same tangent: flipped, the
+		// picture would slide the wrong way along U. The packed map has its red flipped instead, so the tangent can stay as it is.
+		material.invertNormalMapX = !surface.packed;
 		material.useParallax = ready;
 		material.useParallaxOcclusion = ready && occlusion;
 		material.parallaxScaleBias = depth;
