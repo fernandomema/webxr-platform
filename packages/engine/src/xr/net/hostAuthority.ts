@@ -6,7 +6,7 @@ import { isEquipHand } from '../interaction/equipmentRegistry.ts';
 import { SignalingClient, type SignalingMessage } from './signalingClient.ts';
 import { PeerLink } from './peerConnection.ts';
 import type { PlayerApiCall, PlayerApiResult } from '../../worldStorage/ops.ts';
-import { PROTOCOL_VERSION, type PlayerInfo, type SlotTransform, type WorldStateMessage, type WorldSyncMessage } from './protocol.ts';
+import { PROTOCOL_VERSION, type PlayerInfo, type RemoteRadialItem, type SlotTransform, type WorldStateMessage, type WorldSyncMessage } from './protocol.ts';
 import type { Slot } from '../../ecs/types.ts';
 import { createGhostRig, type GhostRig, type TransformPose } from '../avatar/defaultAvatar.ts';
 import { validateWorldPackage, MAX_SHARED_SCENE_BYTES } from '../../worlds/package.ts';
@@ -384,6 +384,26 @@ export class HostAuthority {
 		}
 	}
 
+	/** A guest's radial menu for an object in its hand: the host's scripts describe their options and run the one picked. */
+	private async answerRadialRequest(guestId: string, msg: Extract<WorldSyncMessage, { kind: 'radial-items-request' | 'radial-select-request' }>): Promise<void> {
+		if (!isEquipHand(msg.hand) || typeof msg.slotId !== 'string' || typeof msg.requestId !== 'string') return;
+		// Only an object this guest has equipped or holds in that hand, like its trigger.
+		const options = () => this.equipment.getUsableSlot(guestId, msg.hand, msg.slotId) === msg.slotId
+			? this.sceneGraph.getRadialExtrasForSubtree(msg.slotId, 'host')
+			: [];
+		if (msg.kind === 'radial-select-request') {
+			const item = Number.isInteger(msg.index) ? options()[msg.index] : undefined;
+			if (item && item.label === msg.label && item.isEnabled()) {
+				try {
+					await item.onSelect();
+				} catch (error) {
+					console.warn('[host] a guest radial option failed', error);
+				}
+			}
+		}
+		this.guests.get(guestId)?.link.send({ kind: 'radial-items', requestId: msg.requestId, slotId: msg.slotId, items: describeRadialItems(options()) });
+	}
+
 	private handleData(guestId: string, data: unknown, channel: 'reliable' | 'state'): void {
 		if (channel === 'state') {
 			const msg = data as WorldStateMessage;
@@ -482,6 +502,10 @@ export class HostAuthority {
 				this.equipment.dispatchTrigger(guestId, msg.hand, msg.phase, value, msg.slotId);
 				break;
 			}
+			case 'radial-items-request':
+			case 'radial-select-request':
+				void this.answerRadialRequest(guestId, msg);
+				break;
 			case 'hold-move': {
 				if (!isEquipHand(msg.grabberId)) break;
 				const grabberId = `${guestId}:${msg.grabberId}`;
@@ -628,6 +652,15 @@ export class HostAuthority {
 		this.keyboards.dispose();
 		this.signaling.close();
 	}
+}
+
+/** What a guest's radial menu shows of the host's options (a few, with short labels: the guest only draws them). */
+function describeRadialItems(items: { label: string; isEnabled(): boolean }[]): RemoteRadialItem[] {
+	return items.slice(0, 16).map((item) => {
+		let enabled = false;
+		try { enabled = Boolean(item.isEnabled()); } catch { /* a failing check leaves the option off */ }
+		return { label: String(item.label).slice(0, 80), enabled };
+	});
 }
 
 function isFinitePose(value: unknown, length: number): value is number[] {

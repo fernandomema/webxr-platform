@@ -10,6 +10,9 @@ import { lockHand, unlockHand, type Hand } from '../interaction/handLock.ts';
 import { createRadialView, type RadialItem } from './radialView.ts';
 import { forInventory } from '../avatar/build.ts';
 import { saveWithPreview } from '../inventorySave.ts';
+import type { RemoteRadial } from './remoteRadial.ts';
+
+export { createRemoteRadial, type RemoteRadial, type RadialRelay } from './remoteRadial.ts';
 
 export interface RadialMenuNetworkHooks {
 	onDelete?(slotId: string): void;
@@ -17,6 +20,31 @@ export interface RadialMenuNetworkHooks {
 	onUnequip?(hand: Hand, slotId: string): void;
 	getInspectTarget?(hand: Hand): string | null;
 	onInspect?(slotId: string): void;
+	/** A guest: what scripts offer in the menu comes from the host, which runs their trigger and keeps their state. */
+	remoteRadial?: RemoteRadial;
+}
+
+/**
+ * The options scripts add for the object. A guest shows the host's: the host runs the object's trigger, so a choice made
+ * on the guest's own copy of the script (a brush colour, a size) would never reach what the trigger does. Parts handled on
+ * the device holding them (a camera) keep their own options.
+ */
+function scriptItems(sceneGraph: SceneGraph, hand: Hand, slotId: string, remote: RemoteRadial | undefined): RadialItem[] {
+	const hostItems = remote?.active() ? remote.cached(slotId) : undefined;
+	if (!remote || !hostItems) return sceneGraph.getRadialExtrasForSubtree(slotId);
+	return [
+		...hostItems.map((item, index): RadialItem => ({
+			label: item.label,
+			isEnabled: () => item.enabled,
+			onSelect: () => remote.select(hand, slotId, index, item.label)
+		})),
+		...sceneGraph.getRadialExtrasForSubtree(slotId, 'device')
+	];
+}
+
+/** Whether a guest's menu for this object should ask the host for its options. */
+export function wantsRemoteRadial(sceneGraph: SceneGraph, slotId: string | null, network?: RadialMenuNetworkHooks): slotId is string {
+	return Boolean(slotId && network?.remoteRadial?.active() && sceneGraph.getSubtree(slotId).some((entry) => entry.runtime?.getRadialItems && !entry.runtime.localUse));
 }
 
 export interface RadialContext {
@@ -62,7 +90,8 @@ export function buildRadialItems(
 				}]
 				: [];
 		items.push(
-			...sceneGraph.getRadialExtrasForSubtree(slotId),
+			// The host only answers for an object in this hand (as for its trigger).
+			...scriptItems(sceneGraph, hand, slotId, isEquipped || grabSystem.getHeldSlot(hand) === slotId ? network?.remoteRadial : undefined),
 			...equipItems,
 			{
 				label: 'Save',
@@ -149,13 +178,21 @@ export function setupRadialMenuForHand(
 		const slotId = equippedSlotId ?? grabSystem.getHeldSlot(hand);
 		const inspectTarget = network?.onInspect ? network.getInspectTarget?.(hand) ?? null : null;
 		if (!slotId && !inspectTarget) return;
-		const items = buildRadialItems({ sceneGraph, grabSystem, equipment, localPlayerId, network }, hand, controller.grip ?? controller.pointer, { slotId, inspectTarget });
+		const node = controller.grip ?? controller.pointer;
+		const build = () => buildRadialItems({ sceneGraph, grabSystem, equipment, localPlayerId, network }, hand, node, { slotId, inspectTarget });
 		selectedIndex = 0;
-		view.open(controller.grip ?? controller.pointer, items);
+		view.open(node, build());
 		menuSlotId = slotId;
 		inspectTargetId = inspectTarget;
 		releasing = false;
 		lockHand(hand);
+		// A guest: the host's options replace this device's ones as soon as they arrive, if the menu is still open on that object.
+		const remote = network?.remoteRadial;
+		if (remote && wantsRemoteRadial(sceneGraph, slotId, network)) {
+			void remote.refresh(hand, slotId).then((changed) => {
+				if (changed && view.isOpen && menuSlotId === slotId) view.open(node, build());
+			});
+		}
 	}
 
 	xr.input.onControllerAddedObservable.add((controller) => {

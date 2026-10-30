@@ -936,6 +936,34 @@ test('a guest hears what the host decided, from where it is by then, and nothing
 	assert.equal(world.audio.played.length, 1, 'it does not start it again');
 });
 
+test('a guest who pulls out the record that plays hears it stop at once, while still holding it', async () => {
+	const records = [buildDisc({ id: 'disc-0', title: 'Song 0', author: 'Band', labelColor: '#6366f1', source: { kind: 'url', url: '/song-0.mp3' } })].flat();
+	const world = createTestWorld([...treeWithJukebox, ...records], { isHost: false });
+	world.run(JUKEBOX_PANEL);
+	const socket = world.component(J(jukeboxSlotId(0)), 'socket');
+	socket.occupantId = 'disc-0';
+	world.component(JUKEBOX_PANEL, 'scriptState').data = { cur: 0, discId: 'disc-0', startedAt: Date.now(), key: '1:disc-0', title: 'Song 0', author: 'Band' };
+	world.tick(0.5);
+	await settle();
+	assert.equal(world.audio.played.length, 1);
+	const track = world.audio.played[0].handle;
+	// This guest's hand takes it: the host has not answered yet, so the record still plays in its state and sits in its socket here.
+	world.grabbers.set('disc-0', ['right']);
+	world.tick(0.1);
+	assert.equal(track.stopped, true, 'silent as soon as it is in a hand');
+	// The host takes it out of the socket; it is still held and the host's state has not moved on.
+	delete socket.occupantId;
+	world.tick(0.5);
+	await settle();
+	assert.equal(world.audio.played.length, 1, 'it does not start again while held');
+	// Put back without the host moving on: it plays again, from where the song is by now.
+	world.grabbers.delete('disc-0');
+	socket.occupantId = 'disc-0';
+	world.tick(0.5);
+	await settle();
+	assert.equal(world.audio.played.length, 2, 'back in the jukebox, it plays again');
+});
+
 test('the record that plays is moved to the turntable and turns there, on its own axis, and goes back to its place when the next one starts', async () => {
 	const { world, insert, remove, socketOf, finish } = jukeboxWorld(2);
 	insert(0, 0); insert(1, 1);

@@ -6,7 +6,7 @@ import type { EquipmentSystem } from '../equipmentSystem.ts';
 import type { EquipHand } from '../equipmentRegistry.ts';
 import type { PointerControllerNetworkHooks } from '../pointerController.ts';
 import { PUSH_RANGE } from '../pushPull.ts';
-import { buildRadialItems, type RadialMenuNetworkHooks } from '../../ui/radialMenu.ts';
+import { buildRadialItems, wantsRemoteRadial, type RadialMenuNetworkHooks } from '../../ui/radialMenu.ts';
 import type { RadialItem } from '../../ui/radialView.ts';
 import type { FpsController } from './fpsController.ts';
 import { desktopHud, type AimKind } from './desktopHud.svelte.ts';
@@ -277,17 +277,30 @@ export function setupDesktopHand(options: DesktopHandOptions): DesktopHand {
 		const slotId = carriedSlotId ?? aim.grabTarget;
 		inspectTarget = carriedSlotId ?? aim.slotId;
 		if (inspectTarget && !isWorldSlot(inspectTarget)) inspectTarget = null;
-		let items = buildRadialItems(
-			{ sceneGraph, grabSystem, equipment, localPlayerId: player, network: { ...options.radial, getInspectTarget: () => inspectTarget } },
+		const network = { ...options.radial, getInspectTarget: () => inspectTarget };
+		const build = () => buildRadialItems(
+			{ sceneGraph, grabSystem, equipment, localPlayerId: player, network },
 			HAND,
 			handNode,
 			{ slotId, inspectTarget: options.radial.onInspect ? inspectTarget : null }
 		);
+		let items = build();
 		if (!slotId && !inspectTarget) items = options.globalItems();
 		if (items.length === 0) return;
-		radial = { items, pointer: { x: 0, y: 0 }, hovered: -1, sticky: false, openedAt: performance.now(), moved: false, carriedSlotId };
+		const opened: OpenRadial = { items, pointer: { x: 0, y: 0 }, hovered: -1, sticky: false, openedAt: performance.now(), moved: false, carriedSlotId };
+		radial = opened;
 		fps.lookSuspended = true;
 		syncRadial();
+		// A guest carrying the object: the host's options replace this device's ones once they arrive (see radialMenu.ts).
+		const remote = network.remoteRadial;
+		if (remote && carriedSlotId && wantsRemoteRadial(sceneGraph, carriedSlotId, network)) {
+			void remote.refresh(HAND, carriedSlotId).then((changed) => {
+				if (!changed || radial !== opened) return;
+				opened.items = build();
+				if (opened.hovered >= opened.items.length) opened.hovered = -1;
+				syncRadial();
+			});
+		}
 	}
 
 	function syncRadial(): void {

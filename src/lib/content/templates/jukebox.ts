@@ -280,16 +280,22 @@ function hostPlaylist() {
   paintNow(list, playing);
 }
 
-/** Every player: if the record that is playing is not the one heard here, stop this one and start that, from where it is by now. */
+/**
+ * Every player: if the record that is playing is not the one heard here, stop this one and start that, from where it is by now. A record
+ * in a hand or out of the jukebox is silent on every device straight away, without waiting for the host to move on: a guest who pulls it
+ * out hears it stop as it comes out.
+ */
 function playHere() {
   const state = stateOf();
-  const key = state.key || '';
+  const discId = state.cur >= 0 ? state.discId : '';
+  const away = !!discId && (ctx.grab.isSlotHeld(discId) || !DATA.sockets.some((_, i) => occupantOf(i) === discId));
+  const key = (away ? 'away:' : '') + (state.key || '');
   if (key === local.key) return;
   if (local.handle) { try { local.handle.stop(); } catch (error) { /* already over */ } }
   local.handle = null;
   local.key = key;
   const token = ++local.token;
-  if (!(state.cur >= 0) || !state.discId) return;
+  if (away || !(state.cur >= 0) || !state.discId) return;
   const record = recordOf(state.discId);
   if (!record) return;
   const offset = Math.max(0, (Date.now() - state.startedAt) / 1000);

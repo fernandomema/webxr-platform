@@ -1370,9 +1370,15 @@ export class SceneGraph {
 		}
 	}
 
-	/** Radial items contributed by the slot and all of its descendants (a gun's scripts may live on child slots). */
-	getRadialExtrasForSubtree(rootId: string): RadialItemDef[] {
-		return this.getSubtree(rootId).flatMap((entry) => this.getRadialExtras(entry.slot.id));
+	/**
+	 * Radial items contributed by the slot and all of its descendants (a gun's scripts may live on child slots). `scope`
+	 * 'host' keeps the items of parts whose trigger runs on the host (scripts), 'device' those handled on the device holding
+	 * the object (a camera, see `localUse`): a guest asks the host for the first kind and builds the second itself.
+	 */
+	getRadialExtrasForSubtree(rootId: string, scope: 'all' | 'host' | 'device' = 'all'): RadialItemDef[] {
+		return this.getSubtree(rootId)
+			.filter((entry) => scope === 'all' || (scope === 'device') === Boolean(entry.runtime?.localUse))
+			.flatMap((entry) => this.getRadialExtras(entry.slot.id));
 	}
 
 	/** Recent errors/log lines from a slot's codeBlock (compile + every hook) — surfaced in the Inspector for in-game debugging. Empty for a slot with no codeBlock. */

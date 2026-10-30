@@ -67,7 +67,7 @@ import { createDashPanel } from './ui/dashPanel.ts';
 import { createInspectorHost } from './ui/inspectorHost.ts';
 import { createDropZoneOutline } from './ui/dropZoneOutline.ts';
 import { forwardKeyTo } from './keyForwarding.ts';
-import { setupRadialMenuForHand } from './ui/radialMenu.ts';
+import { createRemoteRadial, setupRadialMenuForHand } from './ui/radialMenu.ts';
 import { KeyboardSystem } from './keyboard/keyboardSystem.ts';
 import { setTextInputProvider } from './keyboard/service.ts';
 import { createPerformanceOverlay } from './ui/performanceOverlay.ts';
@@ -1005,7 +1005,8 @@ export async function mountGame(
 				sceneGraph.removeSlot(slotId);
 				hostAuthority?.broadcastSnapshot();
 			}
-		}
+		},
+		remoteRadial: createRemoteRadial(() => (gameState.role === 'guest' ? guestSync : null))
 	};
 	if (xr) {
 		setupRadialMenuForHand(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, 'left', /y-button/i, radialNetwork);
@@ -1041,6 +1042,7 @@ export async function mountGame(
 			onEquip: radialNetwork.onEquip,
 			onUnequip: radialNetwork.onUnequip,
 			onDelete: radialNetwork.onDelete,
+			remoteRadial: radialNetwork.remoteRadial,
 			onInspect: (slotId) => {
 				if (!inspector) return;
 				openPanel(inspector.root);

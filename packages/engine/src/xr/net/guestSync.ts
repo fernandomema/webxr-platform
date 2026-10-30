@@ -6,7 +6,7 @@ import type { MediaControlAction, Slot, UIEvent } from '../../ecs/types.ts';
 import { SignalingClient, type SignalingMessage } from './signalingClient.ts';
 import { PeerLink } from './peerConnection.ts';
 import type { PlayerApiResult } from '../../worldStorage/ops.ts';
-import { PROTOCOL_VERSION, type PlayerInfo, type WorldStateMessage, type WorldSyncMessage } from './protocol.ts';
+import { PROTOCOL_VERSION, type PlayerInfo, type RemoteRadialItem, type WorldStateMessage, type WorldSyncMessage } from './protocol.ts';
 import { migrateSlotTree } from '../../assets/ref.ts';
 import { createGhostRig, type GhostRig, type TransformPose } from '../avatar/defaultAvatar.ts';
 import type { AvatarHooks } from '../avatar/avatarHooks.ts';
@@ -23,6 +23,8 @@ import type { PayResult } from '../payments/types.ts';
 
 const PRESENCE_INTERVAL_MS = 50;
 const HOLD_MOVE_INTERVAL_MS = 50;
+/** How long a guest's radial menu waits for the host's options before it uses its own. */
+const RADIAL_TIMEOUT_MS = 1500;
 
 /** Applies host-authoritative world state and renders every remote participant. */
 export class GuestSync {
@@ -39,6 +41,8 @@ export class GuestSync {
 	private transformRevision = -1;
 	private latestTransforms: Extract<WorldStateMessage, { kind: 'scene-state' }> | null = null;
 	private disposed = false;
+	/** Radial requests waiting for the host's answer, by request id. */
+	private radialWaiters = new Map<string, (items: RemoteRadialItem[] | null) => void>();
 	private avatars: AvatarHooks | null = null;
 	private storageHooks: { onPublication(publicationId: string | null): void; handlePlayerApi(publicationId: string, call: unknown): Promise<PlayerApiResult> } | null = null;
 	private assetPeer: AssetPeer | null = null;
@@ -300,6 +304,13 @@ export class GuestSync {
 					.then((result) => this.link?.send({ kind: 'pay-response', requestId, result }));
 				break;
 			}
+			case 'radial-items': {
+				const resolve = this.radialWaiters.get(msg.requestId);
+				if (!resolve) break;
+				this.radialWaiters.delete(msg.requestId);
+				resolve(Array.isArray(msg.items) ? msg.items.map((item) => ({ label: String(item.label), enabled: Boolean(item.enabled) })) : []);
+				break;
+			}
 			case 'interaction-result':
 				if (!msg.accepted && msg.slotId) {
 					this.locallyGrabbed.delete(msg.slotId);
@@ -375,6 +386,35 @@ export class GuestSync {
 		this.link?.send({ kind: 'use-request', slotId, hand, phase, value });
 	}
 
+	/**
+	 * The radial options the host's scripts offer for the object in `hand` (they share their state with its trigger, which
+	 * runs on the host). `null` when the host does not answer: an engine from before this message, or a lost connection.
+	 */
+	requestRadialItems(slotId: string, hand: 'left' | 'right'): Promise<RemoteRadialItem[] | null> {
+		return this.askRadial((requestId) => ({ kind: 'radial-items-request', requestId, slotId, hand }));
+	}
+
+	/** Has the host run option `index` of that menu; resolves with the options as they are after it. */
+	selectRadialItem(slotId: string, hand: 'left' | 'right', index: number, label: string): Promise<RemoteRadialItem[] | null> {
+		return this.askRadial((requestId) => ({ kind: 'radial-select-request', requestId, slotId, hand, index, label }));
+	}
+
+	private askRadial(message: (requestId: string) => WorldSyncMessage): Promise<RemoteRadialItem[] | null> {
+		if (!this.link || this.disposed) return Promise.resolve(null);
+		const requestId = crypto.randomUUID();
+		return new Promise((resolve) => {
+			const timer = setTimeout(() => {
+				this.radialWaiters.delete(requestId);
+				resolve(null);
+			}, RADIAL_TIMEOUT_MS);
+			this.radialWaiters.set(requestId, (items) => {
+				clearTimeout(timer);
+				resolve(items);
+			});
+			this.link?.send(message(requestId));
+		});
+	}
+
 	requestSpawn(slot: Slot): void {
 		this.link?.send({ kind: 'spawn-request', requestId: crypto.randomUUID(), slot });
 	}
@@ -395,6 +435,8 @@ export class GuestSync {
 		if (this.disposed) return;
 		this.disposed = true;
 		if (this.presenceTimer) clearInterval(this.presenceTimer);
+		for (const resolve of this.radialWaiters.values()) resolve(null);
+		this.radialWaiters.clear();
 		this.equipment.releaseAll(); // nothing stays equipped once the session is gone
 		this.assetPeer?.close();
 		this.link?.close();

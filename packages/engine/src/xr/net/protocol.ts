@@ -16,6 +16,9 @@ export type EquippedEntry = { slotId: string; playerId: string; hand: 'left' | '
  */
 export const PROTOCOL_VERSION = 3;
 
+/** A radial option as the host describes it to a guest: the host keeps what picking it does. */
+export type RemoteRadialItem = { label: string; enabled: boolean };
+
 export type PlayerInfo = {
 	playerId: string;
 	displayName: string;
@@ -47,6 +50,12 @@ export type WorldSyncMessage =
 	| { kind: 'unequip-request'; requestId: string; hand: 'left' | 'right' }
 	/** A trigger event for the object equipped in `hand`. The host validates it and runs the object's actions once. */
 	| { kind: 'use-request'; slotId: string; hand: 'left' | 'right'; phase: 'press' | 'release' | 'value'; value: number }
+	/** The radial options the host's scripts offer for the object a guest holds in `hand`: they share their state with its trigger. */
+	| { kind: 'radial-items-request'; requestId: string; slotId: string; hand: 'left' | 'right' }
+	/** A guest picked option `index`; `label` is checked too, so a list that changed meanwhile is not applied to the wrong one. */
+	| { kind: 'radial-select-request'; requestId: string; slotId: string; hand: 'left' | 'right'; index: number; label: string }
+	/** Host to guest: the options, after a request or a pick. Empty when that object is not in that guest's hand. */
+	| { kind: 'radial-items'; requestId: string; slotId: string; items: RemoteRadialItem[] }
 	| { kind: 'spawn-request'; requestId: string; slot: Slot }
 	| { kind: 'delete-request'; requestId: string; slotId: string }
 	| { kind: 'media-control-request'; requestId: string; slotId: string; action: MediaControlAction }
