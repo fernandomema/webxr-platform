@@ -249,6 +249,7 @@ msgstr "Code"
 #~ msgid "New"
 #~ msgstr "New"
 
+#: src/routes/(admin)/admin/errors/+page.svelte
 #: src/routes/(admin)/admin/feedback/+page.svelte
 #: src/routes/settings/apps/+page.svelte
 #: src/routes/studio/edit/+page.svelte
@@ -5386,6 +5387,7 @@ msgstr "Feedback entry not found"
 msgid "Ideas and bugs from players, most voted first. Change the status to move an item through the roadmap."
 msgstr "Ideas and bugs from players, most voted first. Change the status to move an item through the roadmap."
 
+#: src/routes/(admin)/admin/errors/+page.svelte
 #: src/routes/(admin)/admin/feedback/+page.svelte
 #: src/routes/studio/content/+page.svelte
 msgid "All"
@@ -7142,3 +7144,96 @@ msgstr "No warnings"
 #: src/lib/studio/components/WarningsPanel.svelte
 msgid "Nothing wrong was found in the data of this {0}."
 msgstr "Nothing wrong was found in the data of this {0}."
+
+#: src/routes/(admin)/+layout.svelte
+#: src/routes/(admin)/admin/errors/+page.svelte
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Errors"
+msgstr "Errors"
+
+#: src/routes/(admin)/admin/errors/+page.server.ts
+msgid "Error report not found"
+msgstr "Error report not found"
+
+#. 0: data.open
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Errors players' browsers reported, grouped by what they say. {0} open. Players can turn reporting off in their settings, so counts are a floor."
+msgstr "Errors players' browsers reported, grouped by what they say. {0} open. Players can turn reporting off in their settings, so counts are a floor."
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Hide resolved"
+msgstr "Hide resolved"
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Show resolved"
+msgstr "Show resolved"
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Delete resolved"
+msgstr "Delete resolved"
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Connection warnings"
+msgstr "Connection warnings"
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Times"
+msgstr "Times"
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Message"
+msgstr "Message"
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Page"
+msgstr "Page"
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Devices"
+msgstr "Devices"
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Last seen"
+msgstr "Last seen"
+
+#. 0: entry.userAgent ?? 'unknown browser'; 1: new Date(entry.firstSeenAt).toLocaleString()
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "{0} · first seen {1}"
+msgstr "{0} · first seen {1}"
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Reopen"
+msgstr "Reopen"
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Resolve"
+msgstr "Resolve"
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "No error reports."
+msgstr "No error reports."
+
+#: src/lib/studio/ScenePreview.svelte
+#: src/lib/studio/ScenePreview.svelte
+msgid "Stretch along the three axes"
+msgstr "Stretch along the three axes"
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Drag a corner to scale while the opposite corner stays put. Alt keeps proportions."
+msgstr "Drag a corner to scale while the opposite corner stays put. Alt keeps proportions."
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Corners"
+msgstr "Corners"
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Scale mode"
+msgstr "Scale mode"
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Mode"
+msgstr "Mode"
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Axes"
+msgstr "Axes"

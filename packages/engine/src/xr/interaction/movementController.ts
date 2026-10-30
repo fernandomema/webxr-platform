@@ -1,6 +1,6 @@
 import { Vector3, WebXRControllerComponent, type Scene, type WebXRDefaultExperience } from '@babylonjs/core';
 import { xrSettings } from '../settings.ts';
-import { isHandLocked, isStickYClaimed } from './handLock.ts';
+import { isHandLocked, isStickXClaimed, isStickYClaimed } from './handLock.ts';
 import type { PlayerBody } from './playerBody.ts';
 
 const DEADZONE = 0.15;
@@ -62,7 +62,9 @@ export function setupMovementController(scene: Scene, xr: WebXRDefaultExperience
 		if (xrSettings.movementMode !== 'smooth' || isHandLocked('left')) return;
 		// A stick pushing a laser-held object away or closer is not also walking or running.
 		const walkY = isStickYClaimed('left') ? 0 : moveY;
-		if (Math.abs(moveX) < DEADZONE && Math.abs(walkY) < DEADZONE) return;
+		// A stick scrolling a panel is not also stepping sideways.
+		const walkX = isStickXClaimed('left') ? 0 : moveX;
+		if (Math.abs(walkX) < DEADZONE && Math.abs(walkY) < DEADZONE) return;
 
 		const camera = xr.baseExperience.camera;
 		const rawForward = camera.getForwardRay().direction;
@@ -76,7 +78,7 @@ export function setupMovementController(scene: Scene, xr: WebXRDefaultExperience
 		const running = walkY < -RUN_PUSH && runY < -RUN_PUSH && !isHandLocked('right') && !isStickYClaimed('right');
 		const speeds = body?.speeds();
 		const speed = running ? speeds?.run ?? RUN_SPEED : speeds?.walk ?? WALK_SPEED;
-		const delta = forward.scale(-walkY * speed * dt).add(right.scale(moveX * speed * dt));
+		const delta = forward.scale(-walkY * speed * dt).add(right.scale(walkX * speed * dt));
 		camera.position.addInPlace(body ? body.constrainMove(delta) : delta);
 	});
 }

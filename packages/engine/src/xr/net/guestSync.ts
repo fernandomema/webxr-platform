@@ -25,6 +25,25 @@ const PRESENCE_INTERVAL_MS = 50;
 const HOLD_MOVE_INTERVAL_MS = 50;
 /** How long a guest's radial menu waits for the host's options before it uses its own. */
 const RADIAL_TIMEOUT_MS = 1500;
+/** The host sends something many times a second; this long with nothing from it and the link is called unstable. */
+const UNSTABLE_AFTER_MS = 3_000;
+/** This long with nothing from the host and the link is taken for lost: a new one is asked for. */
+const LOST_AFTER_MS = 10_000;
+/** How often a new link is asked for while the last one has not come up. */
+const RESTART_EVERY_MS = 8_000;
+/** Trying to get the link back for this long without success, the session ends. */
+const GIVE_UP_AFTER_MS = 60_000;
+/** A first join that has not reached the host by then fails. */
+const JOIN_TIMEOUT_MS = 45_000;
+const WATCHDOG_MS = 1_000;
+
+/** How a guest's link to the host is doing, for the player to be told. */
+export type GuestConnectionStatus = 'connecting' | 'connected' | 'unstable' | 'reconnecting';
+/**
+ * Why a guest's session ended: it left, the host ended it, the link was lost and could not be made again, the host could
+ * not be reached in the first place, the host does not let this player in, or runs an engine this one cannot talk to.
+ */
+export type GuestEndReason = 'left' | 'host-left' | 'lost' | 'unreachable' | 'refused' | 'incompatible';
 
 /** Applies host-authoritative world state and renders every remote participant. */
 export class GuestSync {
@@ -41,6 +60,19 @@ export class GuestSync {
 	private transformRevision = -1;
 	private latestTransforms: Extract<WorldStateMessage, { kind: 'scene-state' }> | null = null;
 	private disposed = false;
+	/** This guest's own id and secret in the room: they keep its place, and what the host knows of it, across new connections. */
+	private readonly peer = { id: crypto.randomUUID(), key: crypto.randomUUID() };
+	private everConnected = false;
+	private readonly createdAt = Date.now();
+	/** The current link closed or failed: a new one is needed. */
+	private linkBroken = false;
+	/** Since when the link has been lost (0: it is fine). */
+	private lostSince = 0;
+	private lastRestartAt = 0;
+	private lastWatchdogAt = Date.now();
+	private watchdog: ReturnType<typeof setInterval>;
+	private status: GuestConnectionStatus = 'connecting';
+	private statusHandler: ((status: GuestConnectionStatus) => void) | null = null;
 	/** Radial requests waiting for the host's answer, by request id. */
 	private radialWaiters = new Map<string, (items: RemoteRadialItem[] | null) => void>();
 	private avatars: AvatarHooks | null = null;
@@ -68,15 +100,73 @@ export class GuestSync {
 			localTrack?: { track: MediaStreamTrack; stream: MediaStream };
 			onRemoteStream?(stream: MediaStream, targetNode: TransformNode): void;
 		},
-		private onSessionEnded?: () => void,
+		private onSessionEnded?: (reason: GuestEndReason) => void,
 		private onSceneChanged?: () => void,
 		private onConnected?: () => void
 	) {
 		this.hostProxy = new TransformNode('host-proxy', scene);
 		this.keyboards = new RemoteKeyboards(scene);
-		this.signaling = new SignalingClient(roomCode, 'join');
+		this.signaling = new SignalingClient(roomCode, 'join', { peer: this.peer });
 		this.signaling.onMessage((msg) => this.handleSignaling(msg));
 		this.presenceTimer = setInterval(() => this.sendPresence(), PRESENCE_INTERVAL_MS);
+		this.watchdog = setInterval(() => this.checkLink(), WATCHDOG_MS);
+	}
+
+	/** Told whenever the link to the host gets better or worse (see `GuestConnectionStatus`). */
+	setStatusHandler(handler: (status: GuestConnectionStatus) => void): void {
+		this.statusHandler = handler;
+		handler(this.status);
+	}
+
+	private setStatus(status: GuestConnectionStatus): void {
+		if (this.status === status) return;
+		this.status = status;
+		this.statusHandler?.(status);
+	}
+
+	/**
+	 * Watches the link to the host: the host sends its presence many times a second, so silence means trouble. A link that
+	 * is lost (silent too long, failed or closed) is asked again through the server, every few seconds, until it is back or
+	 * it is time to give up.
+	 */
+	private checkLink(): void {
+		if (this.disposed) return;
+		const now = Date.now();
+		const gap = now - this.lastWatchdogAt;
+		this.lastWatchdogAt = now;
+		// This page was asleep (a hidden tab, a headset taken off): what was not heard meanwhile says nothing about the link yet.
+		if (gap > WATCHDOG_MS * 3) {
+			if (this.link) this.link.lastReceivedAt = now;
+			return;
+		}
+		if (!this.everConnected) {
+			if (now - this.createdAt > JOIN_TIMEOUT_MS) {
+				console.warn('[net] could not reach the host of this session');
+				this.endSession('unreachable');
+			}
+			return;
+		}
+		const silentFor = this.link ? now - this.link.lastReceivedAt : Infinity;
+		if (!this.linkBroken && silentFor <= LOST_AFTER_MS) {
+			if (this.lostSince) console.warn(`[net] the link to the host is back after ${Math.round((now - this.lostSince) / 1000)} s`);
+			this.lostSince = 0;
+			this.setStatus(silentFor > UNSTABLE_AFTER_MS ? 'unstable' : 'connected');
+			return;
+		}
+		if (!this.lostSince) {
+			this.lostSince = now;
+			console.warn(`[net] lost the link to the host (${this.linkBroken ? `link ${this.link?.pc.connectionState ?? 'gone'}` : `nothing for ${Math.round(silentFor / 1000)} s`}, signaling ${this.signaling.status}); reconnecting`);
+		}
+		this.setStatus('reconnecting');
+		if (now - this.lostSince > GIVE_UP_AFTER_MS) {
+			console.warn('[net] could not get the link to the host back; leaving the session');
+			this.endSession('lost');
+			return;
+		}
+		if (now - this.lastRestartAt >= RESTART_EVERY_MS) {
+			this.lastRestartAt = now;
+			this.signaling.requestRestart();
+		}
 	}
 
 	private handleSignaling(msg: SignalingMessage): void {
@@ -85,16 +175,19 @@ export class GuestSync {
 			if (this.link) void this.link.addIceCandidate(msg.payload as RTCIceCandidateInit);
 			else this.pendingIceCandidates.push(msg.payload as RTCIceCandidateInit);
 		} else if (msg.type === 'error') {
-			this.endSession();
+			// Joining: the host cannot be reached or will not let this player in. Coming back after a drop: the room may
+			// just not be there again yet (the server restarted and the host has not returned): the watchdog keeps trying.
+			if (!this.everConnected) this.endSession(msg.message === 'friends-only' ? 'refused' : 'unreachable');
+			else console.warn(`[net] the server refused to put this guest back in the room (${msg.message})`);
 		} else if (msg.type === 'host-left') {
-			this.endSession();
+			this.endSession('host-left');
 		}
 	}
 
-	private endSession(): void {
+	private endSession(reason: GuestEndReason): void {
 		if (this.disposed) return;
 		this.dispose();
-		this.onSessionEnded?.();
+		this.onSessionEnded?.(reason);
 	}
 
 	/** The host as a source of assets, once the link to it is up. */
@@ -103,6 +196,14 @@ export class GuestSync {
 	}
 
 	private async acceptOffer(offer: RTCSessionDescriptionInit): Promise<void> {
+		if (this.disposed) return;
+		// A new offer is the host making the link again (it lost this guest, or this guest asked): the old one is done.
+		if (this.link) {
+			this.assetPeer?.close();
+			this.link.close();
+			this.link = null;
+		}
+		this.linkBroken = false;
 		this.assetPeer = new AssetPeer((data) => this.link?.sendBinary(data) ?? Promise.resolve(), getLocalAssetStore(), 'host');
 		this.link = new PeerLink(
 			{
@@ -111,11 +212,15 @@ export class GuestSync {
 				onBinary: (data) => this.assetPeer?.handle(data),
 				onAssetChannelOpen: announceAssetSourcesChanged,
 				onOpen: () => {
+					this.everConnected = true;
 					this.link?.send({ kind: 'player-hello', player: this.localPlayer, protocol: PROTOCOL_VERSION });
 					this.onConnected?.();
 				},
 				onConnectionStateChange: (state) => {
-					if (state === 'failed' || state === 'closed') this.endSession();
+					if (state === 'failed') this.linkBroken = true;
+				},
+				onClose: () => {
+					this.linkBroken = true;
 				},
 				onRemoteTrack: (_track, streams) => {
 					if (streams[0]) this.voice?.onRemoteStream?.(streams[0], this.hostProxy);
@@ -234,7 +339,7 @@ export class GuestSync {
 		switch (msg.kind) {
 			case 'session-rejected':
 				console.error(`[net] the host runs an incompatible version of the engine (protocol ${msg.protocol}, this one speaks ${PROTOCOL_VERSION})`);
-				this.endSession();
+				this.endSession('incompatible');
 				break;
 			case 'scene-snapshot':
 				if (msg.revision < this.snapshotRevision) break;
@@ -435,6 +540,7 @@ export class GuestSync {
 		if (this.disposed) return;
 		this.disposed = true;
 		if (this.presenceTimer) clearInterval(this.presenceTimer);
+		clearInterval(this.watchdog);
 		for (const resolve of this.radialWaiters.values()) resolve(null);
 		this.radialWaiters.clear();
 		this.equipment.releaseAll(); // nothing stays equipped once the session is gone

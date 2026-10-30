@@ -68,6 +68,7 @@ export function validateAiScene(tree: SlotTree): SceneDiagnostic[] {
 					case 'bool': valid = typeof value === 'boolean'; expected = 'true or false'; break;
 					case 'vec3': valid = Array.isArray(value) && value.length === 3 && value.every((n) => typeof n === 'number' && Number.isFinite(n)); expected = 'a flat array of 3 finite numbers, [x, y, z]'; break;
 					case 'enum': valid = typeof value === 'string' && field.options.some((option) => option.value === value); expected = `one of: ${field.options.map((option) => option.value).join(', ')}`; break;
+					case 'flags': valid = Array.isArray(value) && value.every((item) => typeof item === 'string' && field.options.some((option) => option.value === item)); expected = `an array of any of: ${field.options.map((option) => option.value).join(', ')}`; break;
 					case 'lines': valid = Array.isArray(value) && value.every((line) => typeof line === 'string'); expected = 'an array of strings'; break;
 					case 'pose':
 						valid = typeof value === 'object' && value !== null && ['position', 'rotation'].every((key) => Array.isArray((value as Record<string, unknown>)[key]) && ((value as Record<string, unknown>)[key] as unknown[]).length === 3 && ((value as Record<string, unknown>)[key] as unknown[]).every((n) => typeof n === 'number' && Number.isFinite(n)));

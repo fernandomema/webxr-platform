@@ -27,6 +27,10 @@ export interface MeshRendererComponent {
 	 * scale sizes it; `'native'` shows it as authored, in the file's own metres and around the file's own origin, so a scale of 1 is its real size.
 	 */
 	modelScale?: 'fit' | 'native';
+	/** Box only: how round its edges are, in metres (0 or absent is a sharp box). Kept the same on every side whatever the scale. */
+	cornerRadius?: number;
+	/** Box only: which edges are rounded (see `BOX_EDGES`); all of them when absent. */
+	roundedEdges?: string[];
 }
 
 /**
@@ -560,7 +564,7 @@ export interface UIPanelComponent {
 /** A renderable UI control attached to a normal Slot in the scene hierarchy. */
 export interface UIElementComponent {
 	type: 'uiElement';
-	kind: 'container' | 'text' | 'button' | 'input' | 'image' | 'video' | 'slider';
+	kind: 'container' | 'text' | 'button' | 'input' | 'image' | 'video' | 'slider' | 'grid';
 	visible?: boolean;
 	width?: number;
 	height?: number;
@@ -600,6 +604,11 @@ export interface UIElementComponent {
 	currentTime?: number;
 	/** `container`: anchor this control panel over the bottom of its parent instead of in normal flow. */
 	overlayBottom?: boolean;
+	/**
+	 * `grid`: names what the grid keeps. A grid is where a player puts pieces of UI (let go of a panel over it while it is being edited)
+	 * and they stay, on their device, in every world; the same id is the same grid wherever it is. Defaults to this slot's id. `text` is its title.
+	 */
+	gridId?: string;
 	/** `slider`: displayed value and range. A submit UI event includes the final value after dragging. */
 	value?: number;
 	minValue?: number;

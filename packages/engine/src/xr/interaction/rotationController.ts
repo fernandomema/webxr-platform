@@ -1,6 +1,6 @@
 import { Quaternion, WebXRControllerComponent, type Scene, type WebXRDefaultExperience } from '@babylonjs/core';
 import { xrSettings } from '../settings.ts';
-import { isHandLocked } from './handLock.ts';
+import { isHandLocked, isStickXClaimed } from './handLock.ts';
 
 const AXIS_DEADZONE = 0.15;
 const SNAP_THRESHOLD = 0.7;
@@ -44,7 +44,8 @@ export function setupRotationController(scene: Scene, xr: WebXRDefaultExperience
 	}
 
 	scene.onBeforeRenderObservable.add(() => {
-		if (isHandLocked('right')) return;
+		// The radial menu, or a panel being scrolled, has the stick.
+		if (isHandLocked('right') || isStickXClaimed('right')) return;
 		const sign = scene.useRightHandedSystem ? -1 : 1;
 
 		if (Math.abs(axisX) < AXIS_DEADZONE) {

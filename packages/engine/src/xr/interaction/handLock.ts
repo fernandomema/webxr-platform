@@ -38,3 +38,21 @@ export function releaseStickY(hand: Hand): void {
 export function isStickYClaimed(hand: Hand): boolean {
 	return stickYClaimed.has(hand);
 }
+
+/**
+ * While a hand's stick scrolls a panel its laser points at (see stickScroll.ts), its sideways is taken too: stepping
+ * (left) and turning (right) wait until the stick is let go.
+ */
+const stickXClaimed = new Set<Hand>();
+
+export function claimStickX(hand: Hand): void {
+	stickXClaimed.add(hand);
+}
+
+export function releaseStickX(hand: Hand): void {
+	stickXClaimed.delete(hand);
+}
+
+export function isStickXClaimed(hand: Hand): boolean {
+	return stickXClaimed.has(hand);
+}

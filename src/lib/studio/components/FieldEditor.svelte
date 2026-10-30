@@ -66,6 +66,7 @@
 			case 'color': return field.default ?? '#ffffff';
 			case 'enum': return field.default ?? field.options[0]?.value;
 			case 'vec3': return field.default ?? [0, 0, 0];
+			case 'flags': return field.default ?? [];
 			default: return undefined;
 		}
 	});
@@ -131,7 +132,7 @@
 	}
 </script>
 
-<div class="field" class:wide={field.kind === 'pose' || field.kind === 'asset' || field.kind === 'boneMap'}>
+<div class="field" class:wide={field.kind === 'pose' || field.kind === 'flags' || field.kind === 'asset' || field.kind === 'boneMap'}>
 	<label class="label" for={id}>
 		{field.label}
 		{#if field.help}<Tooltip text={field.help} />{/if}
@@ -167,6 +168,16 @@
 			<div class="vec">
 				{#each ['X', 'Y', 'Z'] as axis, index (axis)}
 					<NumberInput prefix={axis} label={`${field.label} ${axis}`} step={field.step ?? 0.1} value={Array.isArray(value) ? Number(value[index] ?? 0) : 0} onchange={(next) => vec(index, next)} />
+				{/each}
+			</div>
+		{:else if field.kind === 'flags'}
+			{@const chosen = Array.isArray(value) ? (value as string[]) : []}
+			<div class="flags">
+				{#each field.options as option (option.value)}
+					<div class="flag">
+						<Checkbox id={`${id}-${option.value}`} label={option.label} checked={chosen.includes(option.value)} onchange={(on) => onchange(on ? [...chosen, option.value] : chosen.filter((item) => item !== option.value))} />
+						<span class="unit">{option.label}</span>
+					</div>
 				{/each}
 			</div>
 		{:else if field.kind === 'mesh'}
@@ -248,6 +259,8 @@
 	.label { display: flex; align-items: center; gap: 4px; min-height: var(--control-h, 30px); color: var(--muted); font-size: 12px; }
 	.control { display: flex; align-items: center; gap: 6px; min-width: 0; }
 	.control > :global(textarea) { flex: 1; }
+	.flags { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 8px; width: 100%; }
+	.flag { display: flex; align-items: center; gap: 6px; min-width: 0; }
 	.vec { display: flex; gap: 4px; width: 100%; }
 	.pose { display: grid; gap: 6px; width: 100%; }
 	.pose-row { display: grid; grid-template-columns: 42px 1fr; align-items: center; gap: 4px; }

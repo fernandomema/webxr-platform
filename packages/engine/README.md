@@ -85,6 +85,7 @@ for every field):
 | `ctx.audio.playAt`, `rate` | 3D sound from an asset at a point (HRTF), with a little pitch variety |
 | `textDisplay` | `background` (transparent too), `titleColor`, `lineColor`, `lineColors[]`, `lineSizes[]` and `billboard` (`'y'` / `'full'`) |
 | `meshRenderer.modelScale` | `'fit'` (the default: the model's largest side is made 1) or `'native'` (its own size, in metres); `assets/glbBounds.ts` reads a GLB's box without loading it |
+| `meshRenderer.cornerRadius`, `roundedEdges` | a box with rounded edges: the radius in metres (the same on every side whatever the scale) and which of the 12 edges (`top-front`, `front-left`…; all when absent) |
 | `ctx.world.flush()` | sends what scripts wrote quietly (`broadcast: false`) as one difference |
 | `ctx.hierarchy.getSlotHash(id)` | a stable SHA-256 of an object and its descendants, for recognizing an inventory copy with fresh ids or a moved root; geometry, local child transforms and authored components count, session state does not |
 

@@ -14,6 +14,8 @@ export interface TabSpec {
 
 export const DEFAULT_TAB_ORDER = 1000;
 
+import { applyTabOrder } from './tabOrder.ts';
+
 export class TabRegistry<T extends TabSpec = TabSpec> {
 	private tabs: T[] = [];
 	private listeners = new Set<() => void>();
@@ -45,12 +47,25 @@ export class TabRegistry<T extends TabSpec = TabSpec> {
 		return this.tabs.some((tab) => tab.id === id);
 	}
 
-	/** The tabs in the order they are shown. */
+	/** The tabs in the order they are shown: the one the player chose (see `setUserOrder`), else the one the tabs ask for. */
 	list(): T[] {
-		return this.tabs
+		const asked = this.tabs
 			.map((tab, index) => ({ tab, index }))
 			.sort((a, b) => (a.tab.order ?? DEFAULT_TAB_ORDER) - (b.tab.order ?? DEFAULT_TAB_ORDER) || a.index - b.index)
 			.map(({ tab }) => tab);
+		return applyTabOrder(asked, this.userOrder);
+	}
+
+	private userOrder: string[] = [];
+
+	/** The order the player wants (by tab id): those tabs come first, in it; any other goes after, as it asked. Empty goes back to what the tabs ask for. */
+	setUserOrder(ids: readonly string[]): void {
+		this.userOrder = [...ids];
+		this.changed();
+	}
+
+	getUserOrder(): readonly string[] {
+		return this.userOrder;
 	}
 
 	/** Calls `listener` whenever tabs are added, replaced or removed. Returns a function that stops it. */
@@ -78,4 +93,25 @@ export function tabBarLayout(count: number, available: number, options: { gap?: 
 	const fair = Math.floor((available - gap * (count - 1)) / count);
 	const width = Math.max(minWidth, Math.min(maxWidth, fair));
 	return { width, showLabels: width >= labelWidth };
+}
+
+export interface TabBarPaging {
+	/** Tabs shown at once. */
+	perPage: number;
+	pages: number;
+	/** Whether the bar needs its previous/next buttons (more tabs than fit). */
+	paged: boolean;
+}
+
+/**
+ * How many tabs fit the bar with their labels, and so how many pages the bar has when there are more (an app or a user can
+ * add tabs without limit). With room for all, there is a single page and no buttons; otherwise the previous/next buttons
+ * (`arrowWidth` each) take their room and the tabs are split between pages.
+ */
+export function tabBarPaging(count: number, available: number, options: { gap?: number; minWidth?: number; arrowWidth?: number } = {}): TabBarPaging {
+	const { gap = 8, minWidth = 96, arrowWidth = 56 } = options;
+	const fit = (room: number) => Math.max(1, Math.floor((room + gap) / (minWidth + gap)));
+	if (count <= fit(available)) return { perPage: Math.max(1, count), pages: 1, paged: false };
+	const perPage = fit(available - 2 * (arrowWidth + gap));
+	return { perPage, pages: Math.ceil(count / perPage), paged: true };
 }

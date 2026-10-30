@@ -12,7 +12,7 @@ import { THEME } from './theme.ts';
  */
 
 /** The size of a tab's page in the dash. */
-export const PAGE_WIDTH = 1024;
+export const PAGE_WIDTH = 1280;
 export const PAGE_HEIGHT = 520;
 
 const SIDE_MARGIN = 24;

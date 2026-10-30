@@ -31,7 +31,7 @@ export interface UiLayout {
 	issues: UiLayoutIssue[];
 }
 
-const DEFAULT_HEIGHTS: Partial<Record<UIElementComponent['kind'], number>> = { button: 44, text: 36, input: 48, image: 120, video: 360, slider: 24 };
+const DEFAULT_HEIGHTS: Partial<Record<UIElementComponent['kind'], number>> = { button: 44, text: 36, input: 48, image: 120, video: 360, slider: 24, grid: 300 };
 
 const isRow = (component: UIElementComponent) => component.flexDirection === 'row';
 const marginOf = (component: UIElementComponent) => Math.max(0, component.margin ?? 0);

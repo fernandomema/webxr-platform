@@ -17,8 +17,9 @@ import type { SceneGraph } from '../sceneGraph.ts';
 import type { GrabSystem } from './grabSystem.ts';
 import type { EquipmentSystem } from './equipmentSystem.ts';
 import type { EquipHand } from './equipmentRegistry.ts';
-import { claimStickY, isHandLocked, releaseStickY } from './handLock.ts';
+import { claimStickX, claimStickY, isHandLocked, releaseStickX, releaseStickY } from './handLock.ts';
 import { PUSH_RANGE, STICK_DEADZONE, pushedDistance } from './pushPull.ts';
+import { stepStickScroll, stickScrollSpeed, stickScrollTargetFor, type StickScrollState } from './stickScroll.ts';
 import { isEquippable, opensWorldMenu } from '../../ecs/types.ts';
 
 const HAND_GRAB_RADIUS = 0.15;
@@ -163,9 +164,16 @@ export function setupPointerAndGrabControllers(
 	const lastValueAt = new Map<string, number>();
 	/** How each hand's current grab began: only an object held by the HAND (not the laser) gets the trigger. */
 	const grabMode = new Map<string, 'hand' | 'laser'>();
-	/** Each controller's stick forward/back, and the hands whose stick is pushing a laser-held object. */
+	/** Each controller's stick, and the hands whose stick is pushing a laser-held object. */
+	const stickX = new Map<string, number>();
 	const stickY = new Map<string, number>();
 	const pushing = new Set<EquipHand>();
+	/** Each hand's stick scrolling a panel (see stickScroll.ts), and the pixels of scroll not yet applied. */
+	const scrollState = new Map<EquipHand, { state: StickScrollState; claimX: boolean; claimY: boolean; carry: number }>();
+	/** The stick claims each hand holds now (pushing and scrolling share them), and the pointer id Babylon gives each controller. */
+	const claimedY = new Set<EquipHand>();
+	const claimedX = new Set<EquipHand>();
+	const pointerIds = new Map<string, number>();
 	const pushRay = new Ray(Vector3.Zero(), Vector3.Forward());
 	const pushPosition = Vector3.Zero();
 	const pushDelta = Vector3.Zero();
@@ -179,7 +187,9 @@ export function setupPointerAndGrabControllers(
 		const pointerId = (info.event as PointerEvent).pointerId;
 		if (typeof pointerId !== 'number') return;
 		const controller = pointerSelection.getXRControllerByPointerId(pointerId);
-		if (controller) pointerPicks.set(grabberIdFor(controller), info.originalPickingInfo);
+		if (!controller) return;
+		pointerPicks.set(grabberIdFor(controller), info.originalPickingInfo);
+		pointerIds.set(grabberIdFor(controller), pointerId);
 	}, PointerEventTypes.POINTERMOVE);
 	// Results are valid for this render only. A detached/near-only pointer falls back to our raycast next frame.
 	scene.onAfterRenderObservable.add(() => pointerPicks.clear());
@@ -195,17 +205,10 @@ export function setupPointerAndGrabControllers(
 		const slotId = grabSystem.getHeldSlot(grabberId);
 		const holding = Boolean(slotId && grabMode.get(grabberId) === 'laser' && grabSystem.getGrabbersForSlot(slotId).length === 1);
 		if (!holding) {
-			if (pushing.delete(hand)) {
-				releaseStickY(hand);
-				setControllerTeleportEnabled(xr, controller, true);
-			}
+			pushing.delete(hand);
 			return;
 		}
-		if (!pushing.has(hand)) {
-			pushing.add(hand);
-			claimStickY(hand);
-			setControllerTeleportEnabled(xr, controller, false);
-		}
+		pushing.add(hand);
 		const y = stickY.get(grabberId) ?? 0;
 		// The radial menu uses the stick while it is open.
 		if (isHandLocked(hand) || Math.abs(y) < STICK_DEADZONE) return;
@@ -226,6 +229,58 @@ export function setupPointerAndGrabControllers(
 			if (!equipment.equip(localPlayerId(), hand, controller.grip ?? controller.pointer, slotId)) return;
 			grabMode.delete(grabberId);
 			network?.onEquip?.(hand, slotId);
+		}
+	}
+
+	/**
+	 * While a hand's laser points at something that scrolls (a list in a panel), its stick scrolls it instead of walking
+	 * or turning. A hand pushing a laser-held object, or driving the radial menu, keeps its stick for that.
+	 */
+	function scrollWithStick(grabberId: string, hit: PickingInfo | null, dt: number): void {
+		const hand = handOf(grabberId);
+		if (!hand) return;
+		const pointerId = pointerIds.get(grabberId);
+		const busy = pushing.has(hand) || isHandLocked(hand);
+		const target = hit && !busy ? stickScrollTargetFor(hit.pickedMesh) : null;
+		const over = Boolean(hit && target?.canScroll(hit, pointerId));
+		const y = stickY.get(grabberId) ?? 0;
+		const previous = scrollState.get(hand);
+		const step = busy ? { state: 'free' as const, claimX: false, claimY: false } : stepStickScroll(previous?.state ?? 'idle', stickX.get(grabberId) ?? 0, y, over);
+		const current = { ...step, carry: step.state === 'scrolling' ? (previous?.carry ?? 0) : 0 };
+		scrollState.set(hand, current);
+		if (current.state !== 'scrolling' || !hit || !target || !over) return;
+		// Whole pixels only: a page rounds a fraction away, so a light push would never move it.
+		current.carry += stickScrollSpeed(y) * dt;
+		const pixels = Math.trunc(current.carry);
+		if (pixels === 0) return;
+		current.carry -= pixels;
+		target.scrollBy(hit, pointerId, pixels);
+	}
+
+	/** Takes a hand's stick from walking, turning and teleporting while pushing or scrolling needs it, and gives it back after. */
+	function syncStickClaims(controller: WebXRInputSource, hand: EquipHand): void {
+		const scroll = scrollState.get(hand);
+		const wantY = pushing.has(hand) || Boolean(scroll?.claimY);
+		const wantX = Boolean(scroll?.claimX);
+		if (wantY !== claimedY.has(hand)) {
+			if (wantY) {
+				claimedY.add(hand);
+				claimStickY(hand);
+			} else {
+				claimedY.delete(hand);
+				releaseStickY(hand);
+			}
+			// In teleport mode the stick's forward would otherwise also aim a teleport.
+			setControllerTeleportEnabled(xr, controller, !wantY);
+		}
+		if (wantX !== claimedX.has(hand)) {
+			if (wantX) {
+				claimedX.add(hand);
+				claimStickX(hand);
+			} else {
+				claimedX.delete(hand);
+				releaseStickX(hand);
+			}
 		}
 	}
 
@@ -300,6 +355,7 @@ export function setupPointerAndGrabControllers(
 			const visual = createLaserVisual(scene, controller.pointer);
 			visuals.set(grabberId, visual);
 			motionController.getComponentOfType(WebXRControllerComponent.THUMBSTICK_TYPE)?.onAxisValueChangedObservable.add((axes) => {
+				stickX.set(grabberId, axes.x);
 				stickY.set(grabberId, axes.y);
 			});
 
@@ -370,8 +426,15 @@ export function setupPointerAndGrabControllers(
 			}
 			controllers.delete(grabberId);
 			pointerDetached.delete(grabberId);
+			stickX.delete(grabberId);
 			stickY.delete(grabberId);
-			if (hand && pushing.delete(hand)) releaseStickY(hand);
+			pointerIds.delete(grabberId);
+			if (hand) {
+				pushing.delete(hand);
+				scrollState.delete(hand);
+				if (claimedY.delete(hand)) releaseStickY(hand);
+				if (claimedX.delete(hand)) releaseStickX(hand);
+			}
 			laserBeforeSuppress.delete(grabberId);
 			grabMode.delete(grabberId);
 			const releasedSlotId = grabSystem.getHeldSlot(grabberId) ?? undefined;
@@ -391,45 +454,54 @@ export function setupPointerAndGrabControllers(
 		for (const controller of xr.input.controllers) {
 			const grabberId = grabberIdFor(controller);
 			pushOrPull(controller, grabberId, dt);
-			const visual = visuals.get(grabberId);
-			if (!visual) continue;
-
-			const active = laserActive.get(grabberId) ?? true;
-			if (!active) {
-				visual.targetSlotId = null;
-				visual.beam.setEnabled(false);
-				visual.dot.setEnabled(false);
-				continue;
-			}
-
-			controller.getWorldPointerRayToRef(visual.ray);
-			visual.ray.length = LASER_MAX_LENGTH;
-			// A custom predicate REPLACES pickWithRay's default "enabled + visible +
-			// pickable" eligibility check rather than adding to it — without the
-			// explicit isEnabled()/isVisible checks here, the laser kept hitting a
-			// hidden (setEnabled(false)) panel as if it were still there.
-			const pick = pointerPicks.get(grabberId) ?? scene.pickWithRay(visual.ray, pickable);
-			const hit = pick?.hit && pick.distance <= LASER_MAX_LENGTH && pick.pickedMesh && pickable(pick.pickedMesh) ? pick : null;
-
-			const hitSlotId = sceneGraph.getSlotIdForNode(hit?.pickedMesh);
-			visual.targetSlotId = hitSlotId;
-			const canGrab = Boolean(hitSlotId && sceneGraph.resolveGrabTarget(hitSlotId));
-			visual.beamMaterial.emissiveColor.copyFrom(canGrab ? LASER_GRAB_COLOR : LASER_COLOR);
-			visual.dotMaterial.emissiveColor.copyFrom(canGrab ? DOT_GRAB_COLOR : DOT_COLOR);
-
-			const length = hit?.pickedPoint ? Vector3.Distance(visual.ray.origin, hit.pickedPoint) : LASER_MAX_LENGTH;
-			visual.beam.setEnabled(true);
-			visual.beam.scaling.y = length;
-			visual.beam.position.z = length / 2;
-
-			if (hit?.pickedPoint) {
-				visual.dot.setEnabled(true);
-				visual.dot.position.copyFrom(hit.pickedPoint);
-			} else {
-				visual.dot.setEnabled(false);
-			}
+			const hit = updateLaser(controller, grabberId);
+			scrollWithStick(grabberId, hit, dt);
+			const hand = handOf(grabberId);
+			if (hand) syncStickClaims(controller, hand);
 		}
 	});
+
+	/** Draws a hand's laser up to what it hits, and returns that hit (null with the laser off or hitting nothing). */
+	function updateLaser(controller: WebXRInputSource, grabberId: string): PickingInfo | null {
+		const visual = visuals.get(grabberId);
+		if (!visual) return null;
+
+		const active = laserActive.get(grabberId) ?? true;
+		if (!active) {
+			visual.targetSlotId = null;
+			visual.beam.setEnabled(false);
+			visual.dot.setEnabled(false);
+			return null;
+		}
+
+		controller.getWorldPointerRayToRef(visual.ray);
+		visual.ray.length = LASER_MAX_LENGTH;
+		// A custom predicate REPLACES pickWithRay's default "enabled + visible +
+		// pickable" eligibility check rather than adding to it — without the
+		// explicit isEnabled()/isVisible checks here, the laser kept hitting a
+		// hidden (setEnabled(false)) panel as if it were still there.
+		const pick = pointerPicks.get(grabberId) ?? scene.pickWithRay(visual.ray, pickable);
+		const hit = pick?.hit && pick.distance <= LASER_MAX_LENGTH && pick.pickedMesh && pickable(pick.pickedMesh) ? pick : null;
+
+		const hitSlotId = sceneGraph.getSlotIdForNode(hit?.pickedMesh);
+		visual.targetSlotId = hitSlotId;
+		const canGrab = Boolean(hitSlotId && sceneGraph.resolveGrabTarget(hitSlotId));
+		visual.beamMaterial.emissiveColor.copyFrom(canGrab ? LASER_GRAB_COLOR : LASER_COLOR);
+		visual.dotMaterial.emissiveColor.copyFrom(canGrab ? DOT_GRAB_COLOR : DOT_COLOR);
+
+		const length = hit?.pickedPoint ? Vector3.Distance(visual.ray.origin, hit.pickedPoint) : LASER_MAX_LENGTH;
+		visual.beam.setEnabled(true);
+		visual.beam.scaling.y = length;
+		visual.beam.position.z = length / 2;
+
+		if (hit?.pickedPoint) {
+			visual.dot.setEnabled(true);
+			visual.dot.position.copyFrom(hit.pickedPoint);
+		} else {
+			visual.dot.setEnabled(false);
+		}
+		return hit;
+	}
 
 	return {
 		getLaserTarget(hand) {

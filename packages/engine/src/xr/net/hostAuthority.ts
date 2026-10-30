@@ -3,7 +3,7 @@ import type { SceneGraph } from '../sceneGraph.ts';
 import type { GrabSystem } from '../interaction/grabSystem.ts';
 import type { EquipmentSystem } from '../interaction/equipmentSystem.ts';
 import { isEquipHand } from '../interaction/equipmentRegistry.ts';
-import { SignalingClient, type SignalingMessage } from './signalingClient.ts';
+import { SignalingClient, type SignalingMessage, type SignalingStatus } from './signalingClient.ts';
 import { PeerLink } from './peerConnection.ts';
 import type { PlayerApiCall, PlayerApiResult } from '../../worldStorage/ops.ts';
 import { PROTOCOL_VERSION, type PlayerInfo, type RemoteRadialItem, type SlotTransform, type WorldStateMessage, type WorldSyncMessage } from './protocol.ts';
@@ -29,6 +29,17 @@ const STATE_INTERVAL_MS = 50;
 /** Full snapshots go out at most this often: a script that spawns or switches things several times a frame costs one, not one each. */
 const SNAPSHOT_MIN_INTERVAL_MS = 100;
 const DELTA_MIN_INTERVAL_MS = 50;
+/** A guest sends its presence many times a second; this long with nothing from it and its link is taken for lost. */
+const GUEST_LOST_AFTER_MS = 10_000;
+/** A lost guest is waited for this long (it is trying to make the link again, see GuestSync) before it is removed. */
+const GUEST_GRACE_MS = 70_000;
+const WATCHDOG_MS = 1_000;
+
+/** What the host's player is told about the session's connections. `name` is the guest's display name. */
+export type HostConnectionEvent =
+	| { kind: 'guest-lost' | 'guest-back' | 'guest-dropped'; name: string }
+	/** The host's own connection to the signaling server: while it is down new players cannot join (those here stay). */
+	| { kind: 'signaling'; status: SignalingStatus };
 
 interface GuestEntry {
 	link: PeerLink;
@@ -41,6 +52,12 @@ interface GuestEntry {
 	lastAvatarAt: number;
 	/** This guest as a source of assets, and a customer for ours. */
 	assets: AssetPeer;
+	/** Its link closed or failed: it is waited for (see GUEST_GRACE_MS). */
+	linkBroken: boolean;
+	/** Since when its link has been lost (0: it is fine). */
+	lostSince: number;
+	/** It has said hello once: a hello on a new link is the same player coming back, not a new one. */
+	greeted: boolean;
 }
 
 /**
@@ -50,7 +67,12 @@ interface GuestEntry {
  */
 export class HostAuthority {
 	private signaling: SignalingClient;
+	/** Only this host's client knows it: what lets it take its room back after its connection to the server dropped. */
+	private readonly hostKey = crypto.randomUUID();
 	private guests = new Map<string, GuestEntry>();
+	private watchdog: ReturnType<typeof setInterval>;
+	private lastWatchdogAt = Date.now();
+	private statusHandler: ((event: HostConnectionEvent) => void) | null = null;
 	private presenceTimer: ReturnType<typeof setInterval>;
 	private stateTimer: ReturnType<typeof setInterval>;
 	private correctionTimer: ReturnType<typeof setInterval>;
@@ -86,8 +108,13 @@ export class HostAuthority {
 		}
 	) {
 		this.keyboards = new RemoteKeyboards(scene);
-		this.signaling = new SignalingClient(roomCode, 'host');
+		this.signaling = new SignalingClient(roomCode, 'host', { hostKey: this.hostKey });
 		this.signaling.onMessage((msg) => this.handleSignaling(msg));
+		this.signaling.onStatus((status) => {
+			if (status === 'reconnecting') console.warn('[net] the host lost its connection to the signaling server; reconnecting');
+			this.statusHandler?.({ kind: 'signaling', status });
+		});
+		this.watchdog = setInterval(() => this.checkGuests(), WATCHDOG_MS);
 		this.presenceTimer = setInterval(() => this.broadcastOwnPresence(), PRESENCE_INTERVAL_MS);
 		this.stateTimer = setInterval(() => this.broadcastStateIfChanged(), STATE_INTERVAL_MS);
 		this.correctionTimer = setInterval(() => this.sendCorrections(), 1_000);
@@ -95,6 +122,48 @@ export class HostAuthority {
 
 	setAvatarHooks(hooks: AvatarHooks): void {
 		this.avatars = hooks;
+	}
+
+	/** Told when a guest's link is lost, comes back or is given up on, and about this host's own link to the server. */
+	setStatusHandler(handler: (event: HostConnectionEvent) => void): void {
+		this.statusHandler = handler;
+	}
+
+	/**
+	 * Watches each guest's link: silence, or a link that closed or failed, makes it lost. A lost guest keeps its place (what it
+	 * holds, its avatar) while it tries to come back; after GUEST_GRACE_MS it is removed.
+	 */
+	private checkGuests(): void {
+		const now = Date.now();
+		const gap = now - this.lastWatchdogAt;
+		this.lastWatchdogAt = now;
+		// This page was asleep: what was not heard meanwhile says nothing about the guests' links yet.
+		if (gap > WATCHDOG_MS * 3) {
+			for (const entry of this.guests.values()) entry.link.lastReceivedAt = now;
+			return;
+		}
+		for (const [guestId, entry] of [...this.guests]) {
+			const silentFor = now - entry.link.lastReceivedAt;
+			if (!entry.linkBroken && silentFor <= GUEST_LOST_AFTER_MS) {
+				if (entry.lostSince) {
+					console.warn(`[net] guest ${guestId.slice(0, 8)} is back after ${Math.round((now - entry.lostSince) / 1000)} s`);
+					if (entry.greeted) this.statusHandler?.({ kind: 'guest-back', name: entry.player.displayName });
+				}
+				entry.lostSince = 0;
+				continue;
+			}
+			if (!entry.lostSince) {
+				entry.lostSince = now;
+				console.warn(`[net] lost the link to guest ${guestId.slice(0, 8)} (${entry.linkBroken ? `link ${entry.link.pc.connectionState}` : `nothing for ${Math.round(silentFor / 1000)} s`}); waiting for it`);
+				if (entry.greeted) this.statusHandler?.({ kind: 'guest-lost', name: entry.player.displayName });
+			}
+			if (now - entry.lostSince > GUEST_GRACE_MS) {
+				console.warn(`[net] guest ${guestId.slice(0, 8)} did not come back; removing it`);
+				const { greeted, player } = entry;
+				this.removeGuest(guestId);
+				if (greeted) this.statusHandler?.({ kind: 'guest-dropped', name: player.displayName });
+			}
+		}
 	}
 
 	setStorageHooks(hooks: { getPublicationId(): string | null; onPlayerReady(player: PlayerInfo): void; onPlayerLeft?(player: PlayerInfo): void }): void {
@@ -261,8 +330,21 @@ export class HostAuthority {
 	}
 
 	private handleSignaling(msg: SignalingMessage): void {
-		if (msg.type === 'guest-joined') void this.addGuest(msg.guestId);
-		else if (msg.type === 'guest-left') this.removeGuest(msg.guestId);
+		if (msg.type === 'guest-joined') {
+			const entry = this.guests.get(msg.guestId);
+			if (!entry) void this.addGuest(msg.guestId);
+			// A guest back on a new connection to the server, whose own link still works, needs nothing; one whose link is
+			// lost, or that asks, gets a new one, keeping its place.
+			else if (msg.restart || entry.linkBroken || entry.lostSince || !entry.link.isOpen) void this.connectGuest(msg.guestId, entry);
+		} else if (msg.type === 'guest-left') {
+			const entry = this.guests.get(msg.guestId);
+			// Its connection to the server timed out but the link between us works: it is still here.
+			if (entry && msg.reason === 'timeout' && !entry.linkBroken && !entry.lostSince && entry.link.isOpen) {
+				console.warn(`[net] guest ${msg.guestId.slice(0, 8)} lost the server, but its link to this host still works`);
+				return;
+			}
+			this.removeGuest(msg.guestId);
+		}
 		else if (msg.type === 'answer' && 'fromId' in msg && msg.fromId) {
 			void this.guests.get(msg.fromId)?.link.acceptAnswer(msg.payload as RTCSessionDescriptionInit);
 		} else if (msg.type === 'ice-candidate' && 'fromId' in msg && msg.fromId) {
@@ -274,33 +356,46 @@ export class HostAuthority {
 		const ghost = createGhostRig(this.scene);
 		const headProxy = new TransformNode(`guest-${guestId}-head`, this.scene);
 		const player: PlayerInfo = { playerId: guestId, displayName: 'Guest', role: 'guest' };
+		await this.connectGuest(guestId, { headProxy, handProxies: new Map(), ghost, player, lastPresenceSequence: 0, lastTriggerValueAt: 0, lastAvatarAt: 0, linkBroken: false, lostSince: 0, greeted: false });
+	}
 
+	/** Makes the link to a guest, or makes it again in place of one that stopped working: the guest keeps everything else. */
+	private async connectGuest(guestId: string, entry: Omit<GuestEntry, 'link' | 'assets'> & Partial<Pick<GuestEntry, 'link' | 'assets'>>): Promise<void> {
+		entry.assets?.close();
+		entry.link?.close();
 		const assets = new AssetPeer((data) => link.sendBinary(data), getLocalAssetStore(), `guest ${guestId.slice(0, 6)}`);
-		const link = new PeerLink(
+		const link: PeerLink = new PeerLink(
 			{
 				iceServers: this.iceServers,
-				onData: (data, channel) => this.handleData(guestId, data, channel),
+				onData: (data, channel) => { if (entry.link === link) this.handleData(guestId, data, channel); },
 				onBinary: (data) => assets.handle(data),
 				onAssetChannelOpen: announceAssetSourcesChanged,
 				onOpen: () => {
-					this.sendSnapshotToGuest(guestId);
+					if (entry.link === link) this.sendSnapshotToGuest(guestId);
 				},
 				onConnectionStateChange: (state) => {
-					if (state === 'failed' || state === 'closed') this.removeGuest(guestId);
+					if (state === 'failed' && entry.link === link) entry.linkBroken = true;
+				},
+				onClose: () => {
+					if (entry.link === link) entry.linkBroken = true;
 				},
 				onRemoteTrack: (_track, streams) => {
-					if (streams[0]) this.voice?.onRemoteStream?.(guestId, streams[0], headProxy);
+					if (streams[0] && entry.link === link) this.voice?.onRemoteStream?.(guestId, streams[0], entry.headProxy);
 				}
 			},
 			true
 		);
+		entry.link = link;
+		entry.assets = assets;
+		entry.linkBroken = false;
 		link.onIceCandidate((candidate) => {
-			this.signaling.send({ type: 'ice-candidate', roomCode: this.roomCode, targetId: guestId, payload: candidate });
+			if (entry.link === link) this.signaling.send({ type: 'ice-candidate', roomCode: this.roomCode, targetId: guestId, payload: candidate });
 		});
 		if (this.voice?.localTrack) link.addLocalAudioTrack(this.voice.localTrack.track, this.voice.localTrack.stream);
 
-		this.guests.set(guestId, { link, headProxy, handProxies: new Map(), ghost, player, lastPresenceSequence: 0, lastTriggerValueAt: 0, lastAvatarAt: 0, assets });
+		this.guests.set(guestId, entry as GuestEntry);
 		const offer = await link.createOffer();
+		if (this.guests.get(guestId) !== entry || entry.link !== link) return; // gone, or made again, meanwhile
 		this.signaling.send({ type: 'offer', roomCode: this.roomCode, targetId: guestId, payload: offer });
 	}
 
@@ -424,7 +519,9 @@ export class HostAuthority {
 				// A player id is what owns an avatar, so one that is already taken cannot be claimed.
 				const taken = msg.player.playerId === this.localPlayer.playerId || [...this.guests.entries()].some(([id, other]) => id !== guestId && other.player.playerId === msg.player.playerId);
 				entry.player = { ...msg.player, playerId: taken ? guestId : msg.player.playerId, role: 'guest' };
-				this.storageHooks?.onPlayerReady(entry.player);
+				// The same player on a new link (it lost the old one) is not a new arrival for the world's scripts.
+				if (!entry.greeted) this.storageHooks?.onPlayerReady(entry.player);
+				entry.greeted = true;
 				this.sendSnapshotToGuest(guestId);
 				this.broadcastSnapshot();
 				break;
@@ -643,6 +740,7 @@ export class HostAuthority {
 	}
 
 	dispose(): void {
+		clearInterval(this.watchdog);
 		clearInterval(this.presenceTimer);
 		clearInterval(this.stateTimer);
 		clearInterval(this.correctionTimer);

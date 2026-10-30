@@ -10,6 +10,20 @@
 	let error = $state('');
 	const CONFIRM_WORD = 'DELETE';
 
+	// Same switch as the in-game Settings tab (Privacy): both read and write the settings the game keeps on this device.
+	const SETTINGS_KEY = 'webxr-platform-settings';
+	let shareErrors = $state(true);
+	$effect(() => {
+		try { shareErrors = (JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? '{}') as { shareErrorReports?: boolean }).shareErrorReports !== false; } catch { /* keep the default */ }
+	});
+	function setShareErrors(value: boolean) {
+		shareErrors = value;
+		try {
+			const settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? '{}') as Record<string, unknown>;
+			localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...settings, shareErrorReports: value }));
+		} catch { /* storage unavailable */ }
+	}
+
 	$effect(() => {
 		authClient.listAccounts().then(({ data }) => { hasPassword = !!data?.some((account) => account.providerId === 'credential'); });
 	});
@@ -30,6 +44,15 @@
 		<h2 class="text-lg font-medium">Export your data</h2>
 		<p class="mt-1 text-sm text-bone/60">Download a JSON file with your profile, worlds, inventory, published worlds, marketplace activity, model list, feedback, and your credits (balance, purchases and the store accounts linked to you). Passwords and access tokens are never included, and model files are listed by id rather than bundled.</p>
 		<a class="mt-4 inline-block rounded-full bg-bone px-4 py-2 text-sm font-medium text-ink hover:bg-glow" href="/api/account/export" download>Download my data</a>
+	</section>
+
+	<section>
+		<h2 class="text-lg font-medium">Error reports</h2>
+		<p class="mt-1 text-sm text-bone/60">When something breaks in your browser, {PLATFORM_NAME} can receive the error message and the page it happened on (not the address after the page name, your chats, your voice or what you do), so it can be fixed. This is stored without your name. It is a setting of this device.</p>
+		<label class="mt-4 flex items-center gap-3 text-sm">
+			<input type="checkbox" checked={shareErrors} onchange={(event) => setShareErrors(event.currentTarget.checked)} />
+			Share error reports from this device
+		</label>
 	</section>
 
 	<section>

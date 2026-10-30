@@ -29,7 +29,7 @@
 	import { DEFAULT_PREVIEW_FOV_DEG, lookRotation } from '@kithin/engine/xr/thumbnail/cameraPose';
 	import { EDITOR_ONLY, PreviewCameraHelper, type GizmoMode } from './previewCameraHelper';
 	import { DropZoneHelper, type ZoneGizmoMode } from './dropZoneHelper';
-	import { SelectionTransformHelper, type TransformMode } from './selectionTransformHelper';
+	import { SelectionTransformHelper, type ScaleStyle, type TransformMode } from './selectionTransformHelper';
 	import { ColliderBoxHelper, drawnBox, type ColliderGizmoMode } from './colliderBoxHelper';
 	import { colliderEdit } from './state/colliderEdit.svelte';
 	import { SNAP_PRECISIONS, type SnapPrecision } from './transformSnapping';
@@ -75,6 +75,7 @@
 	let colliderEditing = $state(false);
 	let snapPrecision = $state<SnapPrecision>('medium');
 	let transformMode = $state<TransformMode>('move');
+	let scaleStyle = $state<ScaleStyle>('axes');
 	let transformSelected = $state(false);
 	let zoneMode = $state<ZoneGizmoMode>('move');
 	/** A Drop zone is selected: its handles are showing. */
@@ -390,11 +391,12 @@
 		void rebuilds;
 		const slot = tree.find((candidate) => candidate.id === selectedId);
 		const mode = transformMode;
+		const style = scaleStyle;
 		const specialised = slot?.components.some((component) => component.type === 'previewCamera' || component.type === 'dropZone');
 		const handPose = Boolean(handPreview.hand && slot?.components.some((component) => component.type === 'equippable'));
 		if (!ready || !transformHelper) return;
 		const id = slot && !specialised && !handPose && colliderEdit.slotId !== slot.id ? slot.id : null;
-		transformHelper.update(id, mode);
+		transformHelper.update(id, mode, style);
 		transformSelected = Boolean(id);
 	});
 
@@ -489,7 +491,14 @@
 		<div class="camera-tools" role="toolbar" aria-label="Object transform handles">
 			<button class="btn sm" aria-pressed={transformMode === 'move'} onclick={() => (transformMode = 'move')}>Move</button>
 			<button class="btn sm" aria-pressed={transformMode === 'rotate'} onclick={() => (transformMode = 'rotate')}>Rotate</button>
-			<button class="btn sm" aria-pressed={transformMode === 'scale'} onclick={() => (transformMode = 'scale')}>Scale</button>
+			<button class="btn sm" aria-pressed={transformMode === 'scale'} onclick={() => (transformMode = 'scale')} title="Stretch along the three axes">Scale</button>
+			{#if transformMode === 'scale'}
+				<div class="snap-tools" role="group" aria-label="Scale mode">
+					<span class="snap-label">Mode</span>
+					<button class="btn sm" aria-pressed={scaleStyle === 'axes'} title="Stretch along the three axes" onclick={() => (scaleStyle = 'axes')}>Axes</button>
+					<button class="btn sm" aria-pressed={scaleStyle === 'corners'} title="Drag a corner to scale while the opposite corner stays put. Alt keeps proportions." onclick={() => (scaleStyle = 'corners')}>Corners</button>
+				</div>
+			{/if}
 			{@render snapOptions(transformMode)}
 		</div>
 	{/if}

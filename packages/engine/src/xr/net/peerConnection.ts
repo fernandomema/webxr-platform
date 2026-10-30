@@ -13,6 +13,8 @@ export interface PeerLinkOptions {
 	/** The binary channel finished opening; transfers can start. */
 	onAssetChannelOpen?(): void;
 	onConnectionStateChange?(state: RTCPeerConnectionState): void;
+	/** The reliable channel closed: the other side closed the link, or it broke. Not called for `close()`. */
+	onClose?(): void;
 	onRemoteTrack?(track: MediaStreamTrack, streams: readonly MediaStream[]): void;
 }
 
@@ -31,6 +33,9 @@ export class PeerLink {
 	private receivedChunks = new Map<string, { parts: string[]; count: number; createdAt: number }>();
 	private pendingIceCandidates: RTCIceCandidateInit[] = [];
 	private remoteDescriptionReady = false;
+	private closedByUs = false;
+	/** When anything last arrived from the other side, on any channel (`Date.now()`); when the link was made until then. */
+	lastReceivedAt = Date.now();
 
 	constructor(
 		private opts: PeerLinkOptions,
@@ -59,6 +64,7 @@ export class PeerLink {
 			this.opts.onAssetChannelOpen?.();
 		};
 		channel.onmessage = (event) => {
+			this.lastReceivedAt = Date.now();
 			if (event.data instanceof ArrayBuffer) this.opts.onBinary?.(new Uint8Array(event.data));
 		};
 	}
@@ -71,6 +77,11 @@ export class PeerLink {
 			channel.send(next.data as unknown as ArrayBuffer);
 			next.sent();
 		}
+	}
+
+	/** Whether the reliable channel is open: messages can be sent and arrive. */
+	get isOpen(): boolean {
+		return this.channel?.readyState === 'open';
 	}
 
 	get assetChannelOpen(): boolean {
@@ -106,11 +117,16 @@ export class PeerLink {
 			channel.bufferedAmountLowThreshold = 64_000;
 			channel.onbufferedamountlow = () => this.flushReliable();
 			channel.onopen = () => {
+				this.lastReceivedAt = Date.now();
 				this.flushReliable();
 				this.opts.onOpen?.();
 			};
+			channel.onclose = () => {
+				if (!this.closedByUs) this.opts.onClose?.();
+			};
 		}
 		channel.onmessage = (event) => {
+			this.lastReceivedAt = Date.now();
 			try {
 				const frame = JSON.parse(event.data);
 				if (!isStateChannel && frame?.__chunk === 1) this.receiveChunk(frame);
@@ -220,6 +236,7 @@ export class PeerLink {
 	}
 
 	close(): void {
+		this.closedByUs = true;
 		this.pendingReliable = [];
 		this.receivedChunks.clear();
 		// Nobody is waiting for these frames any more; release anything awaiting them.

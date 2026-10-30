@@ -300,7 +300,7 @@ A UI is a slot tree:
 
 | Field | Applies to | Meaning |
 |---|---|---|
-| `kind` **(req)** | all | `"container"`, `"text"`, `"button"`, `"input"`, `"image"`, `"video"`, `"slider"` |
+| `kind` **(req)** | all | `"container"`, `"text"`, `"button"`, `"input"`, `"image"`, `"video"`, `"slider"`, `"grid"` |
 | `width`, `height` | all | pixels. Give every element an explicit width and height. |
 | `visible` | all | boolean |
 | `text` | text, button | the label |
@@ -316,6 +316,7 @@ A UI is a slot tree:
 | `src` | image, video | https URL (video MP4/WebM) |
 | `playing`, `loop`, `muted`, `volume`, `currentTime` | video | playback (shared by everyone) |
 | `value`, `minValue`, `maxValue`, `step` | slider | range |
+| `gridId`, `width`, `height`, `text` | grid | a place the PLAYER fills with pieces of UI: in edit mode (its Edit button) they let go of any UI panel over it and a copy stays on their device, in every world. `gridId` names what it keeps (the same id is the same grid anywhere; default: the slot id); `width`/`height` decide how many cells it has (about 104 px each); `text` is its title. Give it a `height` that fits the panel |
 
 **Events.** When someone uses the UI, the host runs, in this order: the pressed button's own `onPress()` (if that button slot has a code block), then `onUIEvent(event)` on the element **and every ancestor**. So the usual pattern is **one `codeBlock` on the panel root** that handles everything:
 
@@ -463,6 +464,15 @@ ctx.ui
   .getInputText(inputSlotId)            text typed in an input element
   .openDash(tab, { invite? })           opens the game's menu on this device at a tab ('session', 'home', 'worlds', 'inventory', 'settings', 'account'); `invite: true` shows the choices of who can join (hosts the session) in the Session tab
   .getMedia(videoSlotId)                playback state of a video element
+
+ctx.dash / ctx.system                   ONLY in scripts of the player's own menu (a UI panel kept on the Home grid, e.g. the starter kit's Facets); in a world `ctx.dash.available` is false and every call answers null/false
+  ctx.dash.addTab({ id, label, icon?, order?, ui: [panelSlot, ...elementSlots] }) -> { slots } | null   adds a tab to the menu; its page is UI nodes written like a world's panel (`uiPanel` first, then `uiElement`s tied with parentId; they may carry code blocks). `slots` maps each id you gave to the id it really got, for `world.setComponentField`. Same id again replaces the tab; it goes away with the piece of UI that added it. `icon`: house users globe backpack settings user folder box
+  ctx.dash.showTab(id) .removeTab(id)   open or take away a tab this script added
+  ctx.dash.instanceId() -> string | null   a name for this piece of UI that stays the same each time it starts: key what a tab keeps with it (e.g. the `gridId` of a `grid` element on the tab's page, so each copy has a grid of its own)
+  ctx.dash.settings.get('masterVolume') / .set('masterVolume', 0..1)   the only setting a script may touch
+  ctx.system.stats() -> { fps, frameMs, drawCalls, meshes, kilotriangles }
+  ctx.system.session() -> { role: 'solo' | 'host' | 'guest', roomCode, worldName }
+  These scripts run in a scene of their own: they see only their own slots (and `world.getPlayers()`), `world.spawn` does nothing, and find their elements by name under `ctx.self.id` (ids change with every copy kept).
 
 ctx.net
   .fetchJson(url) -> Promise            HTTPS GET returning JSON (CORS must allow it)

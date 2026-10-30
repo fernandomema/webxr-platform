@@ -1,6 +1,7 @@
 import { AbstractEngine } from '@babylonjs/core';
 import { normalizeSourceRef } from '../assets/ref.ts';
 import { analyzeAudio, type AudioAnalysis } from '../audio/analysis.ts';
+import { preferredPanningModel } from './audioPanning.ts';
 import type { BlobAssetLibrary } from './blobAssetLibrary.ts';
 
 /** A track started with `ctx.audio.playTrack`. `time()` follows the audio hardware clock, so it is the one to sync to. */
@@ -155,7 +156,7 @@ export function createScriptAudio(assets?: BlobAssetLibrary): ScriptAudio {
 		async playAt(source, position, options = {}) {
 			const audioContext = context();
 			const panner = audioContext.createPanner();
-			panner.panningModel = 'HRTF';
+			panner.panningModel = preferredPanningModel();
 			panner.distanceModel = 'inverse';
 			panner.refDistance = Math.max(0.1, options.refDistance ?? 1);
 			panner.maxDistance = Math.max(panner.refDistance, options.maxDistance ?? 60);

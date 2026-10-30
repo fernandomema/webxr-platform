@@ -7,6 +7,7 @@ import {
 	type Scene
 } from '@babylonjs/core';
 import { normalizeSourceRef } from '../assets/ref.ts';
+import { HEADSET_BROWSER } from './audioPanning.ts';
 import type { BlobAssetLibrary, BlobLease } from './blobAssetLibrary.ts';
 import {
 	findComponent,
@@ -39,8 +40,6 @@ function resolveMediaUrl(url: string): string {
 	return '';
 }
 
-/** HRTF is the better 3D sound but costly: a standalone headset's browser pans left and right only, which it plays without cuts. */
-const HEADSET_BROWSER = typeof navigator !== 'undefined' && /OculusBrowser|Quest/i.test(navigator.userAgent);
 
 function clampVolume(volume: number | undefined): number {
 	return Math.min(1, Math.max(0, volume ?? 1));

@@ -37,6 +37,12 @@
 				.then((m) => m.initDevConsoleRelay())
 				.catch((err) => console.error('failed to load devConsoleRelay', err));
 		}
+		// Production: errors go to the admin's list, unless the player turned that off (see clientErrorReporter.ts).
+		if (!import.meta.env.DEV && window.self === window.top) {
+			import('$lib/clientErrorReporter')
+				.then((m) => m.initClientErrorReporter())
+				.catch(() => {});
+		}
 	});
 </script>
 

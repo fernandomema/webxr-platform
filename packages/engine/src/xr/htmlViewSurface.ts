@@ -16,6 +16,7 @@ import {
 import { findComponent, type HtmlViewComponent, type Slot } from '../ecs/types.ts';
 import { requestTextInput, type TextInputSession } from './keyboard/service.ts';
 import { forwardKeyTo, isEditable } from './keyForwarding.ts';
+import { registerStickScrollTarget } from './interaction/stickScroll.ts';
 
 export interface HtmlViewBinding {
 	dispose(): void;
@@ -638,8 +639,32 @@ function forwardPointerToFrame(
 		}
 	});
 
+	/** What scrolls vertically under the laser's hit, as the page's own wheel handling would find it. */
+	const verticalScrollerAt = (pick: PickingInfo, dy: number): { scroller: Element; view: FrameWindow } | null => {
+		const doc = frameDocument(frame);
+		const view = doc?.defaultView;
+		const hit = hitOf(pick);
+		if (!doc || !view || !hit) return null;
+		const target = doc.elementFromPoint(hit.x, hit.y) ?? doc.body;
+		const scroller = dy ? scrollableAncestor(target, view, 0, dy) : (scrollableAncestor(target, view, 0, 1) ?? scrollableAncestor(target, view, 0, -1));
+		return scroller ? { scroller, view } : null;
+	};
+	// A hand's stick scrolls the page while its laser points at it (see interaction/stickScroll.ts).
+	const stopStickScroll = registerStickScrollTarget(mesh, {
+		canScroll: (pick) => verticalScrollerAt(pick, 0) !== null,
+		scrollBy(pick, _pointerId, dy) {
+			const found = verticalScrollerAt(pick, dy);
+			if (!found) return;
+			found.scroller.scrollBy(0, dy);
+			notifyScrolled(found.scroller, found.view);
+			onScroll(found.scroller);
+			onActivity();
+		}
+	});
+
 	return {
 		stop: () => {
+			stopStickScroll();
 			scene.onPointerObservable.remove(observer);
 			textSession?.close();
 			clearHover();

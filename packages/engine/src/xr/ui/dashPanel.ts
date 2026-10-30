@@ -1,5 +1,5 @@
 import { getPlatformConfig, platformFetch } from '../platform/config.ts';
-import type { Scene, TransformNode, Mesh } from '@babylonjs/core';
+import { PointerEventTypes, type Scene, type TransformNode, type Mesh } from '@babylonjs/core';
 import {
 	AdvancedDynamicTexture,
 	Rectangle,
@@ -23,8 +23,7 @@ import { ensureCloudAssets } from '../../assets/cloudSync.ts';
 import { getLocalAssetStore } from '../../assets/store.ts';
 import type { WorldPackage } from '../../worlds/types.ts';
 import { gameState, getInventoryContext } from '../gameState.ts';
-import { xrSettings, saveSettings, DESKTOP_FOVS, MOUSE_SENSITIVITIES, type FoveationLevel, type MovementMode, type RotationMode } from '../settings.ts';
-import { dashboardEditorOrder, dashboardItemLabel, moveDashboardItem, toggleDashboardItem, type DashboardItemId } from '../dashboardLayout.ts';
+import { xrSettings, saveSettings, DASH_DISTANCES, DESKTOP_FOVS, MOUSE_SENSITIVITIES, type FoveationLevel, type MovementMode, type RotationMode } from '../settings.ts';
 import { saveWithPreview } from '../inventorySave.ts';
 import { captureItemThumbnail } from '../thumbnail/capture.ts';
 import { typeWithKeyboard } from '../keyboard/guiInput.ts';
@@ -36,9 +35,18 @@ import { thumbnailUrl } from '../../assets/thumbnails.ts';
 import type { AssetId } from '../../assets/ref.ts';
 import { WORLD_VISIBILITY_INFO, type HostedWorldVisibility } from '../../worldVisibility.ts';
 import { THEME } from './theme.ts';
-import { TabRegistry, tabBarLayout, type TabSpec } from './dashTabs.ts';
+import { DASH_CURVES, curvePanelMesh } from './curvedPanel.ts';
+import { TabRegistry, tabBarLayout, tabBarPaging, type TabSpec } from './dashTabs.ts';
+import { loadTabOrder, mergeShownOrder, moveTab, orderToKeep, saveTabOrder } from './tabOrder.ts';
 import { iconUri } from './icons.ts';
-import { createScrollColumn, createCard, placeText } from './layout.ts';
+import { createScrollColumn, createCard, placeText, PAGE_HEIGHT, PAGE_WIDTH } from './layout.ts';
+import { createGridView } from './gridView.ts';
+import { setGridService } from './gridService.ts';
+import { setPanelSurfaceInfo } from './panelSurface.ts';
+import { createWidgetRuntime } from './dashWidgetHost.ts';
+import { createScriptSystem } from './scriptSystem.ts';
+import type { PlayerSummary } from '../playerPoses.ts';
+import type { UiContext } from '../uiLocale.ts';
 import { createFriendsTab } from './friendsTab.ts';
 
 /** A tab of the dash. Built-in ones are registered the same way, so anything can add its own with `DashPanelHandle.addTab`. */
@@ -81,6 +89,10 @@ export interface DashPanelCallbacks {
 	onDesktopSettingsChanged(): void;
 	/** The master audio volume changed (`xrSettings.masterVolume` already holds the new value). */
 	onAudioSettingsChanged(): void;
+	/** The language and device a piece of UI pinned to the Home reads for (see `SceneGraphOptions.getUiContext`). */
+	getUiContext?(): UiContext;
+	/** Everyone in the world, for the scripts of the pieces of UI pinned to the Home. */
+	getPlayers?(): PlayerSummary[];
 	/** The display refresh rates the headset offers (empty until a headset session has started). */
 	frameRates(): number[];
 }
@@ -93,9 +105,19 @@ export interface DashPanelHandle {
 	removeTab(id: string): void;
 	/** Opens a tab by its id. */
 	showTab(id: string): void;
+	/** The size (px) of a tab's page, which is what `DashTab.build` fills. */
+	readonly pageSize: { width: number; height: number };
 	/** Shows the choices of who can join (the Session tab's invitation), when the player is not in a session yet. */
 	openInvite(): void;
 }
+
+/** The dash's texture (px): the pages' panel, a gap, and the tabs' own bar below it. */
+const MAIN_HEIGHT = PAGE_HEIGHT + 40;
+const TABS_HEIGHT = 124;
+const DASH_WIDTH = PAGE_WIDTH;
+const DASH_HEIGHT = MAIN_HEIGHT + 16 + TABS_HEIGHT;
+const TAB_HEIGHT = 104;
+const TAB_ICON_SIZE = 56;
 
 export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks: DashPanelCallbacks): DashPanelHandle {
 	const features = getFeatures();
@@ -110,38 +132,66 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	});
 	const node = sceneGraph.addSlot(slot, { system: true });
 	const mesh = node as Mesh;
-	mesh.scaling.set(1.2, 0.75, 1);
+	// The texture is DASH_WIDTH x DASH_HEIGHT px, drawn at the same pixel size the dash always had (1.2 m for 1024 px).
+	mesh.scaling.set((DASH_WIDTH * 1.2) / 1024, (DASH_HEIGHT * 1.2) / 1024, 1);
 	mesh.metadata = { ...(mesh.metadata ?? {}), interactive: true };
 	mesh.setEnabled(false);
 
-	const texture = AdvancedDynamicTexture.CreateForMesh(mesh, 1024, 640, true);
+	const applyCurve = () => curvePanelMesh(mesh, xrSettings.dashCurve);
+	applyCurve();
 
+	const texture = AdvancedDynamicTexture.CreateForMesh(mesh, DASH_WIDTH, DASH_HEIGHT, true);
+
+	// Two separate panels in one texture: the pages on top, the tabs in a bar of their own below (the rest is see-through).
 	const background = new Rectangle('dash-bg');
 	background.width = 1;
-	background.height = 1;
+	background.height = `${MAIN_HEIGHT}px`;
+	background.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
 	background.background = THEME.panel;
+	background.cornerRadius = 24;
 	background.thickness = 0;
 	texture.addControl(background);
 
+	const tabsPanel = new Rectangle('dash-tabs-panel');
+	tabsPanel.width = 1;
+	tabsPanel.height = `${TABS_HEIGHT}px`;
+	tabsPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+	tabsPanel.background = THEME.panel;
+	tabsPanel.cornerRadius = 24;
+	tabsPanel.thickness = 0;
+	texture.addControl(tabsPanel);
+
 	const tabsBar = new StackPanel('dash-tabs');
 	tabsBar.isVertical = false;
-	tabsBar.height = '72px';
-	tabsBar.top = '-284px';
-	background.addControl(tabsBar);
+	tabsBar.height = `${TAB_HEIGHT}px`;
+	tabsPanel.addControl(tabsBar);
 
 	// --- The tabs: a registry the bar and the pages follow, so tabs can be added or removed at any time ---
 	const tabs = new TabRegistry<DashTab>();
+	// The order the player put the tabs in (see the drag below); applied as they are added.
+	tabs.setUserOrder(loadTabOrder());
 	const contentByTab: Record<string, Rectangle> = {};
 	const tabButtons = new Map<string, Button>();
 	let activeTab = '';
 	let ready = false;
-	const TAB_BAR_WIDTH = 980;
+	/** The page of tabs the bar shows, when there are more tabs than fit. */
+	let tabPage = 0;
+	const TAB_GAP = 10;
+	const ARROW_WIDTH = 56;
+	const TAB_BAR_WIDTH = DASH_WIDTH - 60;
 
 	function showTab(id: string) {
 		const tab = tabs.get(id);
 		if (!tab) return;
 		if (activeTab && activeTab !== id) tabs.get(activeTab)?.onHide?.();
 		activeTab = id;
+		// A tab opened from elsewhere (a shortcut, the code) is brought into view on the bar.
+		const paging = tabBarPaging(tabs.list().length, TAB_BAR_WIDTH, { gap: TAB_GAP, arrowWidth: ARROW_WIDTH });
+		const wanted = Math.floor(tabs.list().findIndex((other) => other.id === id) / paging.perPage);
+		if (paging.paged && wanted !== tabPage) {
+			tabPage = wanted;
+			rebuildTabBar();
+		}
 		for (const other of tabs.list()) contentByTab[other.id].isVisible = other.id === id;
 		for (const other of tabs.list()) styleTabButton(other.id);
 		tab.onShow?.();
@@ -157,7 +207,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		const color = on ? THEME.text : THEME.muted;
 		button.background = on ? THEME.accent : THEME.surface;
 		parts.label.color = color;
-		if (parts.image && parts.icon) parts.image.source = iconUri(parts.icon, color, 52) ?? '';
+		if (parts.image && parts.icon) parts.image.source = iconUri(parts.icon, color, TAB_ICON_SIZE * 2) ?? '';
 	}
 
 	/** Lays the buttons out again: all of them share the bar, narrowing (and at last keeping only their icons) as tabs are added. */
@@ -168,49 +218,76 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		}
 		tabButtons.clear();
 		tabParts.clear();
-		const list = tabs.list();
-		const { width, showLabels } = tabBarLayout(list.length, TAB_BAR_WIDTH);
+		const all = tabs.list();
+		const paging = tabBarPaging(all.length, TAB_BAR_WIDTH, { gap: TAB_GAP, arrowWidth: ARROW_WIDTH });
+		tabPage = Math.min(Math.max(0, tabPage), paging.pages - 1);
+		const list = paging.paged ? all.slice(tabPage * paging.perPage, (tabPage + 1) * paging.perPage) : all;
+		const room = paging.paged ? TAB_BAR_WIDTH - 2 * (ARROW_WIDTH + TAB_GAP) : TAB_BAR_WIDTH;
+		const { width, showLabels } = tabBarLayout(list.length, room, { gap: TAB_GAP, maxWidth: 150, minWidth: 64, labelWidth: 96 });
+		const arrow = (name: string, text: string, step: number) => {
+			const btn = Button.CreateSimpleButton(name, text);
+			btn.width = `${ARROW_WIDTH}px`;
+			btn.height = `${TAB_HEIGHT}px`;
+			btn.cornerRadius = 16;
+			btn.thickness = 0;
+			btn.fontSize = 34;
+			btn.color = THEME.text;
+			btn.background = THEME.raised;
+			btn.paddingLeft = btn.paddingRight = '4px';
+			btn.onPointerClickObservable.add(() => {
+				tabPage = (tabPage + step + paging.pages) % paging.pages;
+				rebuildTabBar();
+			});
+			tabsBar.addControl(btn);
+		};
+		if (paging.paged) arrow('tabs-previous', '‹', -1);
 		for (const tab of list) {
 			const btn = new Button(`tab-${tab.id}`);
 			btn.width = `${width}px`;
-			btn.height = '60px';
-			btn.cornerRadius = 10;
+			btn.height = `${TAB_HEIGHT}px`;
+			btn.cornerRadius = 16;
 			btn.thickness = 0;
 			btn.paddingLeft = '4px';
 			btn.paddingRight = '4px';
-			btn.onPointerClickObservable.add(() => showTab(tab.id));
+			btn.onPointerClickObservable.add(() => {
+				// A tab let go of after being dragged to a new place is not also opened.
+				if (tabDrag?.moved) return;
+				showTab(tab.id);
+			});
+			btn.onPointerDownObservable.add((at) => {
+				tabDrag = { id: tab.id, startX: at.x, pointerId: null, moved: false, to: 0 };
+			});
 
-			// An icon, then the label; with no room for labels, the icon alone (or the label's start, for a tab without one).
+			// A big icon with the label under it; with no room for labels, the icon alone (or the label's start, for a tab without one).
 			const hasIcon = tab.icon !== undefined && iconUri(tab.icon, '#000') !== undefined;
-			const row = new StackPanel(`tab-${tab.id}-row`);
-			row.isVertical = false;
-			row.adaptWidthToChildren = true;
-			row.height = '36px';
-			row.isHitTestVisible = false;
+			const column = new StackPanel(`tab-${tab.id}-column`);
+			column.isVertical = true;
+			column.adaptHeightToChildren = true;
+			column.isHitTestVisible = false;
 			let image: Image | null = null;
 			if (hasIcon) {
 				image = new Image(`tab-${tab.id}-icon`, '');
-				image.width = '26px'; image.height = '26px';
+				image.width = `${TAB_ICON_SIZE}px`; image.height = `${TAB_ICON_SIZE}px`;
 				image.stretch = Image.STRETCH_UNIFORM;
-				image.paddingRight = showLabels ? '9px' : '0px';
 				image.isHitTestVisible = false;
-				row.addControl(image);
+				column.addControl(image);
 			}
 			const text = showLabels || !hasIcon ? (showLabels ? tab.label : tab.label.slice(0, 2)) : '';
 			const label = new TextBlock(`tab-${tab.id}-label`, text);
 			label.fontSize = 20;
-			label.height = '36px';
-			label.width = text ? `${Math.ceil(text.length * 11.5) + 4}px` : '0px';
-			label.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+			label.height = text ? '28px' : '0px';
+			label.textWrapping = false;
+			label.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
 			label.isHitTestVisible = false;
-			row.addControl(label);
-			btn.addControl(row);
+			column.addControl(label);
+			btn.addControl(column);
 
 			tabsBar.addControl(btn);
 			tabButtons.set(tab.id, btn);
 			tabParts.set(tab.id, { icon: tab.icon, image, label });
 			styleTabButton(tab.id);
 		}
+		if (paging.paged) arrow('tabs-next', '›', 1);
 	}
 
 	function addTab(tab: DashTab): () => void {
@@ -221,8 +298,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		}
 		const page = new Rectangle(`panel-${tab.id}`);
 		page.width = 1;
-		page.height = '520px';
-		page.top = '40px';
+		page.height = `${PAGE_HEIGHT}px`;
 		page.thickness = 0;
 		page.isVisible = false;
 		background.addControl(page);
@@ -254,6 +330,68 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 
 	tabs.onChange(rebuildTabBar);
 
+	// --- Putting the tabs in the order wanted: press a tab and drag it along the bar ---
+	interface TabDrag { id: string; startX: number; pointerId: number | null; moved: boolean; to: number }
+	let tabDrag: TabDrag | null = null;
+	const TAB_DRAG_THRESHOLD = 28;
+	/** Where the dragged tab would be put: a thin bar between the tabs. */
+	const tabMarker = new Rectangle('dash-tab-marker');
+	tabMarker.width = '6px';
+	tabMarker.height = `${TAB_HEIGHT}px`;
+	tabMarker.background = THEME.glow;
+	tabMarker.thickness = 0;
+	tabMarker.cornerRadius = 3;
+	tabMarker.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+	tabMarker.isHitTestVisible = false;
+	tabMarker.isVisible = false;
+	tabsPanel.addControl(tabMarker);
+
+	function finishTabDrag(commit: boolean): void {
+		const done = tabDrag;
+		tabDrag = null;
+		tabMarker.isVisible = false;
+		if (!done) return;
+		const button = tabButtons.get(done.id);
+		if (button) button.left = '0px';
+		if (!done.moved || !commit) return;
+		const shown = [...tabButtons.keys()];
+		const all = tabs.list().map((tab) => tab.id);
+		const merged = mergeShownOrder(all, shown, moveTab(shown, done.id, done.to));
+		const order = orderToKeep(merged, tabs.getUserOrder());
+		saveTabOrder(order);
+		tabs.setUserOrder(order);
+	}
+	scene.onPointerObservable.add((info) => {
+		if (!tabDrag) return;
+		const pointerId = (info.event as PointerEvent).pointerId;
+		if (info.type === PointerEventTypes.POINTERDOWN) {
+			if (tabDrag.pointerId === null) tabDrag.pointerId = pointerId;
+			return;
+		}
+		if (tabDrag.pointerId !== null && pointerId !== tabDrag.pointerId) return;
+		if (info.type === PointerEventTypes.POINTERUP) {
+			// The menu has already seen the release (and ignored the click on a tab that was dragged); this is the end of the drag.
+			finishTabDrag(true);
+			return;
+		}
+		if (info.type !== PointerEventTypes.POINTERMOVE || !info.pickInfo?.hit || info.pickInfo.pickedMesh !== mesh) return;
+		const uv = info.pickInfo.getTextureCoordinates();
+		if (!uv) return;
+		const x = uv.x * DASH_WIDTH;
+		if (!tabDrag.moved && Math.abs(x - tabDrag.startX) < TAB_DRAG_THRESHOLD) return;
+		tabDrag.moved = true;
+		const dragged = tabButtons.get(tabDrag.id);
+		if (!dragged) return;
+		dragged.left = `${x - tabDrag.startX}px`;
+		// Among the other tabs, where it would go: after as many of them as are left of the pointer.
+		const others = [...tabButtons].filter(([id]) => id !== tabDrag!.id).map(([, button]) => button);
+		const before = others.filter((button) => button.centerX < x).length;
+		tabDrag.to = before;
+		const edge = before === 0 ? (others[0]?.centerX ?? x) - (others[0]?._currentMeasure.width ?? 0) / 2 - 4 : others[before - 1].centerX + others[before - 1]._currentMeasure.width / 2 + 4;
+		tabMarker.left = `${edge - 3}px`;
+		tabMarker.isVisible = true;
+	});
+
 	// The built-in tabs. Each builds its page below, where the rest of its code lives; `onShow` refreshes it.
 	const BUILTIN_TABS: Array<Omit<DashTab, 'build'>> = [
 		{ id: 'home', label: 'Home', icon: 'house', order: 0, onShow: () => refreshHomeTab() },
@@ -275,13 +413,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		else contentByTab[tab.id] = new Rectangle(`panel-${tab.id}-off`);
 	}
 
-	// --- Home tab: the player's own shortcuts ---
-	const homePanel = new StackPanel('home-panel');
-	homePanel.width = 0.85;
-	homePanel.top = '10px';
-	contentByTab.home.addControl(homePanel);
-	let customisingHome = false;
-
+	// --- Home tab: a grid of shortcuts and pieces of UI the player took out of worlds ---
 	function setSeatedMode(enabled: boolean) {
 		xrSettings.seatedMode = enabled;
 		saveSettings();
@@ -290,84 +422,53 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		refreshSettingsTab();
 	}
 
-	function homeText(text: string, color: string, fontSize: number, height: number): TextBlock {
-		const block = new TextBlock(`home-${text.slice(0, 12)}`, text);
-		block.color = color;
-		block.fontSize = fontSize;
-		block.height = `${height}px`;
-		block.textWrapping = true;
-		return block;
-	}
-
-	function homeButton(key: string, text: string, background: string, width: number, onClick: () => void): Button {
-		const btn = Button.CreateSimpleButton(key, text);
-		btn.width = `${width}px`;
-		btn.height = '56px';
-		btn.color = THEME.text;
-		btn.fontSize = 22;
-		btn.cornerRadius = 8;
-		btn.background = background;
-		btn.paddingBottom = '8px';
-		btn.onPointerClickObservable.add(onClick);
-		return btn;
-	}
-
-	/** What each shortcut looks like and does. Adding one is a new id in `dashboardLayout.ts` plus an entry here. */
-	const HOME_ACTIONS: Record<DashboardItemId, () => { text: string; background: string; run: () => void }> = {
-		seated: () => ({
-			text: `Seated mode: ${xrSettings.seatedMode ? 'On' : 'Off'}`,
-			background: xrSettings.seatedMode ? THEME.accent : THEME.raised,
-			run: () => setSeatedMode(!xrSettings.seatedMode)
-		}),
-		inspector: () => ({ text: 'Inspector', background: THEME.raised, run: () => callbacks.onToggleInspector?.() }),
-		'exit-vr': () => ({ text: 'Exit VR', background: THEME.danger, run: () => void callbacks.onExitVr() })
-	};
-
-	function setHomeLayout(layout: DashboardItemId[]) {
-		xrSettings.dashboardLayout = layout;
-		saveSettings();
-		refreshHomeTab();
-	}
-
+	const scriptSystem = createScriptSystem(scene, () => ({ role: gameState.role, roomCode: gameState.roomCode, worldName: gameState.worldName }));
+	// The pieces of UI run in a scene graph of their own and are drawn in the dash's picture (see dashWidgetHost.ts).
+	const widgets = createWidgetRuntime(scene, {
+		graph: { getUiContext: callbacks.getUiContext, getPlayers: callbacks.getPlayers, openDash: (tab) => showTab(tab) },
+		system: scriptSystem,
+		settings: {
+			get: (key) => (key === 'masterVolume' ? xrSettings.masterVolume : null),
+			set(key, value) {
+				if (key !== 'masterVolume') return false;
+				xrSettings.masterVolume = Math.min(1, Math.max(0, value));
+				saveSettings();
+				callbacks.onAudioSettingsChanged();
+				refreshSettingsTab();
+				return true;
+			}
+		},
+		tabs: {
+			add: (id, spec) => {
+				const remove = addTab({ id, label: spec.label, icon: spec.icon, order: spec.order ?? 100, build: () => {} });
+				return { page: contentByTab[id], remove };
+			},
+			show: (id) => showTab(id)
+		},
+		pageSize: { width: PAGE_WIDTH, height: PAGE_HEIGHT },
+		pageNear: () => mesh
+	});
+	// Any UI panel may hold a grid (a `grid` element): the same machinery, wherever it is.
+	setGridService({ mount: (options) => { const view = createGridView({ ...options, runtime: widgets }); return { dispose: () => view.dispose() }; } });
+	// Home is the first of them: its grid is the game's shortcuts and whatever the player has put there.
+	const homeGrid = createGridView({
+		container: contentByTab.home,
+		size: { width: PAGE_WIDTH, height: PAGE_HEIGHT },
+		gridId: 'home',
+		title: 'Home',
+		runtime: widgets,
+		actions: {
+			seatedOn: () => xrSettings.seatedMode,
+			toggleSeated: () => setSeatedMode(!xrSettings.seatedMode),
+			toggleInspector: callbacks.onToggleInspector ? () => callbacks.onToggleInspector?.() : undefined,
+			exitVr: () => void callbacks.onExitVr()
+		}
+	});
 	function refreshHomeTab() {
-		for (const child of [...homePanel.children]) homePanel.removeControl(child);
-		homePanel.addControl(homeText('Home', THEME.text, 26, 44));
-
-		if (!customisingHome) {
-			const layout = xrSettings.dashboardLayout;
-			if (layout.length === 0) homePanel.addControl(homeText('Nothing here yet. Use Customise to add your shortcuts.', THEME.muted, 20, 60));
-			for (const id of layout) {
-				if (id === 'inspector' && !callbacks.onToggleInspector) continue;
-				const action = HOME_ACTIONS[id]();
-				homePanel.addControl(homeButton(`home-${id}`, action.text, action.background, 420, action.run));
-			}
-			homePanel.addControl(homeButton('home-customise', 'Customise', THEME.surface, 220, () => { customisingHome = true; refreshHomeTab(); }));
-			if (import.meta.env.DEV) {
-				homePanel.addControl(homeButton('home-reload', 'Reload', THEME.surface, 220, () => window.location.reload()));
-			}
-			return;
-		}
-
-		homePanel.addControl(homeText('Choose the shortcuts you want here, and their order.', THEME.muted, 20, 40));
-		const layout = xrSettings.dashboardLayout;
-		for (const { id, shown } of dashboardEditorOrder(layout).filter((entry) => entry.id !== 'inspector' || callbacks.onToggleInspector)) {
-			const row = new StackPanel(`home-edit-${id}`);
-			row.isVertical = false;
-			row.height = '60px';
-			const name = homeText(dashboardItemLabel(id), shown ? THEME.text : THEME.dim, 22, 52);
-			name.width = '260px';
-			name.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-			row.addControl(name);
-			row.addControl(homeButton(`home-toggle-${id}`, shown ? 'Shown' : 'Hidden', shown ? THEME.accent : THEME.raised, 130, () => setHomeLayout(toggleDashboardItem(layout, id))));
-			if (shown) {
-				row.addControl(homeButton(`home-up-${id}`, '▲', THEME.raised, 60, () => setHomeLayout(moveDashboardItem(layout, id, -1))));
-				row.addControl(homeButton(`home-down-${id}`, '▼', THEME.raised, 60, () => setHomeLayout(moveDashboardItem(layout, id, 1))));
-			}
-			homePanel.addControl(row);
-		}
-		homePanel.addControl(homeButton('home-done', 'Done', THEME.go, 200, () => { customisingHome = false; refreshHomeTab(); }));
+		homeGrid.refresh();
 	}
-	refreshHomeTab();
+	// The menu is a unit plane scaled to size that may be bent: how its picture is read from a point of the world.
+	setPanelSurfaceInfo(mesh, { unit: true, curve: () => (xrSettings.dashCurve * Math.PI) / 180 });
 
 	// --- Session tab (current session / hosting) ---
 	const sessionColumn = createScrollColumn('session', { top: 10, height: 500 });
@@ -686,9 +787,11 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	const TILE = CELL_W - CELL_GAP;
 	const LABEL_H = 38;
 	const CELL_H = TILE + 6 + LABEL_H;
-	const GRID_COLUMNS = 6;
+	const SIDE_MARGIN_PX = 20;
+	/** As many columns as the page holds, so the grid fills the page it is on. */
+	const GRID_COLUMNS = Math.max(1, Math.floor((PAGE_WIDTH - 2 * SIDE_MARGIN_PX - 16) / (CELL_W + CELL_GAP)));
 	const DOUBLE_CLICK_MS = 400;
-	const SIDE_MARGIN = 20;
+	const SIDE_MARGIN = SIDE_MARGIN_PX;
 
 	function place<T extends Control>(control: T, top: number, side: 'left' | 'right'): T {
 		control.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
@@ -1529,6 +1632,19 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		{ label: 'Seated', active: () => xrSettings.seatedMode, select: () => setSeatedMode(true) }
 	]);
 
+	settingRow('tabOrder', 'Tab order', 'Press a tab and drag it along the bar to put the tabs in the order you want; it is kept. Default goes back to the order the tabs ask for.', () => [
+		{ label: 'Default', active: () => tabs.getUserOrder().length === 0, select: () => { saveTabOrder([]); tabs.setUserOrder([]); } },
+		{ label: 'Your order', active: () => tabs.getUserOrder().length > 0, select: () => {} }
+	]);
+	settingRow('dashCurve', 'Menu shape', 'How much this menu bends around you. Flat is a straight panel; the others wrap it round you, which keeps its edges within reach.', () =>
+		DASH_CURVES.map(({ degrees, label }) => pick('dashCurve', degrees as number, label, applyCurve))
+	);
+
+	settingRow('dashDistance', 'Menu distance', 'How far in front of you this menu opens, in metres. Closer is easier to read; further keeps it out of the way. It opens at this distance the next time you open it.', () => {
+		const names: Record<number, string> = { 0.6: 'Closest', 0.8: 'Close', 1: 'Normal', 1.3: 'Far', 1.7: 'Farthest' };
+		return DASH_DISTANCES.map((value) => pick('dashDistance', value as number, names[value]));
+	});
+
 	settingsSection('Desktop');
 	settingRow('mouse', 'Mouse speed', 'How fast the view turns with the mouse. Applies when playing with mouse and keyboard.', () => {
 		const names: Record<number, string> = { 0.5: 'Slow', 1: 'Normal', 1.6: 'Fast', 2.5: 'Fastest' };
@@ -1547,6 +1663,12 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	settingRow('volume', 'Master volume', 'Controls the volume of music, sound effects and other world audio.', () =>
 		([0, 0.25, 0.5, 0.75, 1] as const).map((value) => pick('masterVolume', value, `${Math.round(value * 100)}%`, () => callbacks.onAudioSettingsChanged()))
 	);
+
+	settingsSection('Privacy');
+	settingRow('errorReports', 'Share error reports', 'Sends the errors this device runs into (the message and the page, never your chats, voice or what you do) so that they can be fixed.', () => [
+		pick('shareErrorReports', true, 'On'),
+		pick('shareErrorReports', false, 'Off')
+	]);
 
 	settingsSection('World storage');
 	settingRow('worldStorage', 'Saved objects', 'Where the objects a published world saves for you when you host it (records on a shelf, things you build) are kept. On this device costs no cloud space and works without an account, but is lost if the browser\u2019s data is cleared and is not on your other devices. In the cloud they count in your storage. Objects saved in the other place are still found.', () => [
@@ -1863,6 +1985,7 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		addTab,
 		removeTab,
 		showTab,
+		pageSize: { width: PAGE_WIDTH, height: PAGE_HEIGHT },
 		openInvite() {
 			inviteOpen = true;
 			setSessionNotice('');

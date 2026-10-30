@@ -114,7 +114,7 @@ export function lintWorld(source: SlotTree, options: LintOptions = {}): LintFind
 			}
 		}
 
-		const interactive = !!panel && tree.some((child) => child.parentId === slot.id && child.components.some((c) => c.type === 'uiElement' && ['button', 'input', 'slider'].includes((c as { kind?: string }).kind ?? '')));
+		const interactive = !!panel && tree.some((child) => child.parentId === slot.id && child.components.some((c) => c.type === 'uiElement' && ['button', 'input', 'slider', 'grid'].includes((c as { kind?: string }).kind ?? '')));
 		if (interactive) {
 			const floor = floorUnder(center);
 			if (floor === null) findings.push({ rule: 'panel-out-of-reach', severity: 'error', slotId: slot.id, message: `The panel "${slot.name}" has buttons but nothing to stand on under it: a player cannot get to it.` });

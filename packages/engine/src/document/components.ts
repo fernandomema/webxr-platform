@@ -1,5 +1,6 @@
 import type { Component } from '../ecs/types.ts';
 import { BUILTIN_MESH_IDS, urlSource } from '../assets/ref.ts';
+import { BOX_EDGES } from '../xr/roundedBox.ts';
 
 export type ComponentType = Component['type'];
 export type ComponentGroup = 'Render' | 'Interaction' | 'Logic' | 'Media' | 'World';
@@ -29,6 +30,8 @@ export type FieldDef = FieldBase &
 		/** A direct URL, or an asset of `assetType` (local, cloud or shared). Stored as a `SourceRef`. */
 		| { kind: 'asset'; assetType: string; /** Setting it opens this editor action (a dialog) instead of just picking a file. */ action?: string }
 		| { kind: 'pose' }
+		/** Any number of the options, stored as the list of the chosen values. */
+		| { kind: 'flags'; options: { value: string; label: string }[]; default?: string[] }
 		| { kind: 'lines' }
 		| { kind: 'code' }
 		| { kind: 'json' }
@@ -209,7 +212,9 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 			{ key: 'meshRef', label: 'Mesh', kind: 'mesh', help: `A built-in shape (${BUILTIN_MESH_IDS.join(', ')}) or a model already imported into this project. Models cannot be loaded from a URL.` },
 			{ key: 'color', label: 'Color', kind: 'color', optional: true, default: '#8b7cf6' },
 			{ key: 'unlit', label: 'Self-lit', kind: 'bool', optional: true, default: false, help: 'Draw a primitive at its own color, independent of scene lighting.' },
-			{ key: 'modelScale', label: 'Model size', kind: 'enum', options: [{ value: 'fit', label: 'Fit: largest side 1, centred' }, { value: 'native', label: 'Native: as authored' }], optional: true, default: 'fit', help: 'Fit lets the slot\u2019s scale size the model like a primitive. Native keeps the file\u2019s own metres and origin: a scale of 1 is its real size.' }
+			{ key: 'modelScale', label: 'Model size', kind: 'enum', options: [{ value: 'fit', label: 'Fit: largest side 1, centred' }, { value: 'native', label: 'Native: as authored' }], optional: true, default: 'fit', help: 'Fit lets the slot\u2019s scale size the model like a primitive. Native keeps the file\u2019s own metres and origin: a scale of 1 is its real size.' },
+			{ key: 'cornerRadius', label: 'Round edges', kind: 'number', min: 0, max: 5, step: 0.01, unit: 'm', optional: true, default: 0, help: 'Box only: rounds its edges by this much, the same on every side however the box is scaled. 0 is a sharp box. A rounded box is drawn as a mesh of its own, not an instance.' },
+			{ key: 'roundedEdges', label: 'Rounded edges', kind: 'flags', optional: true, default: [...BOX_EDGES], options: BOX_EDGES.map((edge) => ({ value: edge, label: edge })), help: 'Box only: which edges get the radius. All of them when not set. Two rounded edges that meet a sharp one make an approximate corner.' }
 		],
 		create: () => ({ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'box' }, color: '#8b7cf6' })
 	},
@@ -276,7 +281,7 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		type: 'uiElement',
 		label: 'UI Element',
 		group: 'Render',
-		description: 'Render this node as a container, text, button, text input, image or video. Add a Code Block with onPress / onUIEvent for behavior.',
+		description: 'Render this node as a container, text, button, text input, image, video, slider or grid (a place the player fills with pieces of UI). Add a Code Block with onPress / onUIEvent for behavior.',
 		glyph: '▱',
 		fields: [
 			{ key: 'kind', label: 'Element type', kind: 'enum', options: [
@@ -286,7 +291,8 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 				{ value: 'input', label: 'Text input' },
 				{ value: 'image', label: 'Image' },
 				{ value: 'video', label: 'Video' },
-				{ value: 'slider', label: 'Slider' }
+				{ value: 'slider', label: 'Slider' },
+				{ value: 'grid', label: 'Grid' }
 			] },
 			{ key: 'visible', label: 'Visible', kind: 'bool', optional: true, default: true },
 			{ key: 'width', label: 'Width', kind: 'number', min: 1, step: 1, optional: true, default: 240, unit: 'px' },
@@ -312,6 +318,7 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 			{ key: 'loop', label: 'Loop', kind: 'bool', optional: true, default: false },
 			{ key: 'muted', label: 'Muted', kind: 'bool', optional: true, default: false },
 			{ key: 'volume', label: 'Volume', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 1 },
+			{ key: 'gridId', label: 'Grid id', kind: 'text', optional: true, default: '', help: 'Grid only. Names what the grid keeps: the pieces of UI a player puts in it stay on their device, and the same id is the same grid anywhere. Defaults to the node’s own id.' },
 			{ key: 'value', label: 'Slider value', kind: 'number', optional: true, default: 0 },
 			{ key: 'minValue', label: 'Slider minimum', kind: 'number', optional: true, default: 0 },
 			{ key: 'maxValue', label: 'Slider maximum', kind: 'number', optional: true, default: 100 },

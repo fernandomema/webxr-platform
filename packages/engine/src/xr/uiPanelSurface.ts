@@ -1,7 +1,8 @@
-import { Texture, type AbstractMesh, type Observer, type Scene } from '@babylonjs/core';
+import { Texture, type AbstractMesh, type Observer, type Scene, type TransformNode } from '@babylonjs/core';
 import {
 	AdvancedDynamicTexture,
 	Button,
+	Container,
 	Control,
 	Image,
 	InputText,
@@ -19,6 +20,7 @@ import { plainUiText, uiText, type UiContext } from './uiLocale.ts';
 import { hasIcons, layoutRichText, parseRichText } from './richText.ts';
 import { inputIconUrl } from './inputHints.ts';
 import { layoutUiTree, type UiLayout } from './uiLayout.ts';
+import { getGridService, type GridMount } from './ui/gridService.ts';
 
 /** Playback state of a `video` element on this peer, as read by `ctx.ui.getMedia`. */
 export interface UIMediaState {
@@ -49,6 +51,8 @@ interface Entry {
 	/** `input`: the last `component.text` pushed into the field, so a script can reset it without a keystroke being overwritten. */
 	appliedText?: string;
 	dragging?: boolean;
+	/** `grid`: the grid drawn in this element. */
+	grid?: GridMount;
 }
 
 interface MarginSpacers {
@@ -107,6 +111,8 @@ function defaultHeight(component: UIElementComponent): string {
 			return '360px';
 		case 'slider':
 			return '24px';
+		case 'grid':
+			return '300px';
 		default:
 			return '100%';
 	}
@@ -235,14 +241,25 @@ function createRichText(name: string): RichText {
 	};
 }
 
-/** Renders a normal Slot subtree as Babylon GUI controls on a mesh surface. */
+/**
+ * Where a panel draws when it is not on a surface of its own: inside a control of another GUI (the pieces of UI kept on the
+ * personal menu are part of the menu's own picture, so they bend, scale and take the pointer with it). `near` is what the
+ * in-world keyboard comes up beside.
+ */
+export interface UIPanelContainer {
+	container: Container;
+	near(): TransformNode | null;
+}
+
+/** Renders a normal Slot subtree as Babylon GUI controls on a mesh surface, or inside a control of another GUI (`into`). */
 export function setupUIPanel(
 	scene: Scene,
 	mesh: AbstractMesh,
 	panel: UIPanelComponent,
 	getSubtree: () => Slot[],
 	onEvent: (event: UIEvent) => void,
-	getContext?: () => UiContext
+	getContext?: () => UiContext,
+	into?: UIPanelContainer
 ): UIPanelBinding {
 	/** What an element says to whoever is looking, in their language and with the controls of their device: its slot's name when it has no text at all. */
 	const textOf = (component: UIElementComponent, slot: Slot): string => plainUiText(component, getContext?.()) ?? slot.name;
@@ -250,9 +267,9 @@ export function setupUIPanel(
 	const richTextOf = (component: UIElementComponent, slot: Slot): string => uiText(component, getContext?.()) ?? slot.name;
 	// The XR trigger handler uses this marker to distinguish a UI click from
 	// an empty-space laser toggle (see interaction/pointerController.ts).
-	mesh.metadata = { ...(mesh.metadata ?? {}), interactive: true, uiPanel: true };
-	const texture = AdvancedDynamicTexture.CreateForMesh(mesh, panel.width, panel.height, true);
-	if (panel.mirrorX) {
+	if (!into) mesh.metadata = { ...(mesh.metadata ?? {}), interactive: true, uiPanel: true };
+	const texture = into ? null : AdvancedDynamicTexture.CreateForMesh(mesh, panel.width, panel.height, true);
+	if (texture && panel.mirrorX) {
 		// Babylon applies this texture matrix to GUI picking as well as rendering.
 		texture.uScale = -1;
 		texture.uOffset = 1;
@@ -263,8 +280,8 @@ export function setupUIPanel(
 	background.height = 1;
 	background.thickness = 0;
 	background.background = panel.background ?? '#111827';
-	texture.addControl(background);
-	setSurfaceLit(mesh, texture, panel.lit === true);
+	(texture ?? into!.container).addControl(background);
+	if (texture) setSurfaceLit(mesh, texture, panel.lit === true);
 
 
 	/** The widths the elements really get (see uiLayout.ts); worked out again whenever the panel is built or synced. */
@@ -412,7 +429,7 @@ export function setupUIPanel(
 		input.placeholderColor = '#9ca3af';
 		input.disableMobilePrompt = true;
 		// In a headset the field is typed with the in-world keyboard, brought up in front of this panel.
-		typeWithKeyboard(input, { near: () => mesh, onSubmit: () => flush('submit') });
+		typeWithKeyboard(input, { near: () => (into ? into.near() : mesh), onSubmit: () => flush('submit') });
 
 		const flush = (type: UIEvent['type']) => {
 			const pending = changeTimers.get(slot.id);
@@ -460,6 +477,7 @@ export function setupUIPanel(
 		let stack: StackPanel | undefined;
 		let rich: RichText | undefined;
 		let appliedText: string | undefined;
+		let grid: GridMount | undefined;
 		if (component.kind === 'container') {
 			const box = new Rectangle(`ui-${slot.id}`);
 			// Keep the full rectangle as the background surface and inset only its children.
@@ -559,6 +577,20 @@ export function setupUIPanel(
 			});
 			control = slider;
 			setSize(control, component, layout.widths.get(slot.id));
+		} else if (component.kind === 'grid') {
+			// A grid the player fills with pieces of UI (see ui/gridView.ts): an empty box where the menu is not there to run one.
+			const box = new Rectangle(`ui-${slot.id}`);
+			box.thickness = 0;
+			box.background = component.background ?? 'transparent';
+			box.cornerRadius = Math.max(0, component.cornerRadius ?? 0);
+			control = box;
+			setSize(control, component, layout.widths.get(slot.id));
+			grid = getGridService()?.mount({
+				container: box,
+				size: { width: layout.widths.get(slot.id) ?? component.width ?? 600, height: component.height ?? 300 },
+				gridId: component.gridId || slot.id,
+				title: component.text || undefined
+			});
 		} else if (hasIcons(richTextOf(component, slot))) {
 			rich = createRichText(`ui-${slot.id}`);
 			rich.render(richTextOf(component, slot), component, layout.widths.get(slot.id));
@@ -575,7 +607,7 @@ export function setupUIPanel(
 			setSize(control, component, layout.widths.get(slot.id));
 		}
 
-		entries.set(slot.id, { slot, component, control, kind: component.kind, stack, appliedText, rich });
+		entries.set(slot.id, { slot, component, control, kind: component.kind, stack, appliedText, rich, grid });
 		return control;
 	}
 
@@ -586,11 +618,12 @@ export function setupUIPanel(
 			rootStack = null;
 		}
 		for (const runtime of videos.values()) runtime.image = null;
+		for (const entry of entries.values()) entry.grid?.dispose();
 		entries.clear();
 		margins.clear();
 		const rootSlot = getSubtree()[0];
 		background.background = (rootSlot ? findComponent(rootSlot, 'uiPanel')?.background : undefined) ?? panel.background ?? '#111827';
-		setSurfaceLit(mesh, texture, (rootSlot ? findComponent(rootSlot, 'uiPanel')?.lit : undefined) === true);
+		if (texture) setSurfaceLit(mesh, texture, (rootSlot ? findComponent(rootSlot, 'uiPanel')?.lit : undefined) === true);
 		rootStack = new StackPanel('ui-panel-layout');
 		rootStack.width = '92%';
 		rootStack.height = '92%';
@@ -609,7 +642,7 @@ export function setupUIPanel(
 		}
 		knownShape = shapeOf(slots, getContext?.());
 		// Only a panel with something to press takes the pointer; a picture or a label is part of what it is on (and is grabbed with it).
-		mesh.metadata = { ...(mesh.metadata ?? {}), interactive: hasInteractiveControls(slots) };
+		if (!into) mesh.metadata = { ...(mesh.metadata ?? {}), interactive: hasInteractiveControls(slots) };
 
 		// Drop the state of elements that no longer exist.
 		for (const [slotId, runtime] of videos) {
@@ -717,7 +750,12 @@ export function setupUIPanel(
 				runtime.video.load();
 			}
 			videos.clear();
-			texture.dispose();
+			for (const entry of entries.values()) entry.grid?.dispose();
+			if (texture) texture.dispose();
+			else {
+				into!.container.removeControl(background);
+				background.dispose();
+			}
 		},
 		sync,
 		getMedia: (slotId) => {

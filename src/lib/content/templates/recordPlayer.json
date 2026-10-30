@@ -1,0 +1,687 @@
+[
+	{
+		"id": "lobby-jukebox-base",
+		"parentId": null,
+		"name": "Record Player Base",
+		"position": [
+			2.2,
+			0.02,
+			-2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.78,
+			0.04,
+			0.58
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2b1a10"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-body",
+		"parentId": null,
+		"name": "Record Player Body",
+		"position": [
+			2.2,
+			0.42,
+			-2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.72,
+			0.76,
+			0.52
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#4a2c1a"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-grille",
+		"parentId": null,
+		"name": "Record Player Speaker",
+		"position": [
+			2.2,
+			0.42,
+			-1.738
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.5,
+			0.4,
+			0.012
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#1f2937"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-grille-bar-1",
+		"parentId": null,
+		"name": "Speaker Bar 1",
+		"position": [
+			2.2,
+			0.3,
+			-1.73
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.46,
+			0.012,
+			0.006
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9ca3af"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-grille-bar-2",
+		"parentId": null,
+		"name": "Speaker Bar 2",
+		"position": [
+			2.2,
+			0.38,
+			-1.73
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.46,
+			0.012,
+			0.006
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9ca3af"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-grille-bar-3",
+		"parentId": null,
+		"name": "Speaker Bar 3",
+		"position": [
+			2.2,
+			0.46,
+			-1.73
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.46,
+			0.012,
+			0.006
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9ca3af"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-grille-bar-4",
+		"parentId": null,
+		"name": "Speaker Bar 4",
+		"position": [
+			2.2,
+			0.54,
+			-1.73
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.46,
+			0.012,
+			0.006
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#9ca3af"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-top",
+		"parentId": null,
+		"name": "Record Player Top",
+		"position": [
+			2.2,
+			0.825,
+			-2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.78,
+			0.05,
+			0.58
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#b98b5e"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-felt",
+		"parentId": null,
+		"name": "Record Player Felt",
+		"position": [
+			2.2,
+			0.852,
+			-2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.7,
+			0.004,
+			0.5
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#2a1d14"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-platter",
+		"parentId": null,
+		"name": "Record Player Platter",
+		"position": [
+			2.2,
+			0.861,
+			-2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.36,
+			0.014,
+			0.36
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#9ca3af"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-mat",
+		"parentId": null,
+		"name": "Record Player Mat",
+		"position": [
+			2.2,
+			0.87,
+			-2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.33,
+			0.004,
+			0.33
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-arm-base",
+		"parentId": null,
+		"name": "Tonearm Base",
+		"position": [
+			2.47,
+			0.8715,
+			-2.17
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.05,
+			0.035,
+			0.05
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#d1d5db"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-arm",
+		"parentId": null,
+		"name": "Tonearm",
+		"position": [
+			2.37,
+			0.895,
+			-2.095
+		],
+		"rotation": [
+			0,
+			-0.4472,
+			0,
+			0.8944
+		],
+		"scale": [
+			0.01,
+			0.01,
+			0.25
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#e5e7eb"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-arm-head",
+		"parentId": null,
+		"name": "Tonearm Head",
+		"position": [
+			2.276,
+			0.891,
+			-2.0245
+		],
+		"rotation": [
+			0,
+			-0.4472,
+			0,
+			0.8944
+		],
+		"scale": [
+			0.022,
+			0.014,
+			0.034
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#111827"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-arm-weight",
+		"parentId": null,
+		"name": "Tonearm Counterweight",
+		"position": [
+			2.498,
+			0.895,
+			-2.191
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.036,
+			0.036,
+			0.036
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#9ca3af"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-knob-1",
+		"parentId": null,
+		"name": "Start Knob",
+		"position": [
+			1.92,
+			0.864,
+			-1.8
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.045,
+			0.02,
+			0.045
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#e5e7eb"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-knob-2",
+		"parentId": null,
+		"name": "Speed Knob",
+		"position": [
+			1.92,
+			0.864,
+			-1.88
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.045,
+			0.02,
+			0.045
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "cylinder"
+				},
+				"color": "#e5e7eb"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-led",
+		"parentId": null,
+		"name": "Power Light",
+		"position": [
+			2,
+			0.858,
+			-1.78
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.014,
+			0.014,
+			0.014
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "sphere"
+				},
+				"color": "#22c55e"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-backboard",
+		"parentId": null,
+		"name": "Record Player Backboard",
+		"position": [
+			2.2,
+			1.12,
+			-2.24
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			0.72,
+			0.5,
+			0.03
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "box"
+				},
+				"color": "#4a2c1a"
+			},
+			{
+				"type": "collider",
+				"shape": "box"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-sign",
+		"parentId": null,
+		"name": "Record Player Sign",
+		"position": [
+			2.2,
+			1.12,
+			-2.222
+		],
+		"rotation": [
+			0,
+			1,
+			0,
+			0
+		],
+		"scale": [
+			0.6,
+			0.3,
+			1
+		],
+		"components": [
+			{
+				"type": "meshRenderer",
+				"meshRef": {
+					"kind": "builtin",
+					"id": "plane"
+				},
+				"color": "#2a1d14"
+			},
+			{
+				"type": "textDisplay",
+				"title": "Record Player",
+				"lines": [
+					"Two records on the rack"
+				],
+				"color": "#2a1d14",
+				"verticalAlign": "middle"
+			}
+		]
+	},
+	{
+		"id": "lobby-jukebox-socket",
+		"parentId": null,
+		"name": "Record Player Socket",
+		"position": [
+			2.2,
+			0.877,
+			-2
+		],
+		"rotation": [
+			0,
+			0,
+			0,
+			1
+		],
+		"scale": [
+			1,
+			1,
+			1
+		],
+		"components": [
+			{
+				"type": "socket",
+				"accepts": [
+					"disc"
+				],
+				"radius": 0.25,
+				"snap": {
+					"position": [
+						0,
+						0,
+						0
+					],
+					"rotation": [
+						0,
+						0,
+						0
+					]
+				},
+				"playMedia": true,
+				"occupantId": "lobby-disc-2"
+			}
+		]
+	}
+]

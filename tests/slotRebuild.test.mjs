@@ -33,3 +33,10 @@ test('components that are built at spawn rebuild when their build-time fields ch
   assert.equal(needsRebuild(code('a'), code('b')), true);
   assert.equal(needsRebuild(slot([mesh()]), slot([mesh(), { type: 'mirror', resolution: 512 }])), true);
 });
+
+test('rounding a box rebuilds it, since it stops being an instance of the shared one', () => {
+	const slot = (extra) => ({ id: 'a', name: 'a', parentId: null, position: [0, 0, 0], rotation: [0, 0, 0, 1], scale: [1, 1, 1], components: [{ type: 'meshRenderer', meshRef: { kind: 'builtin', id: 'box' }, ...extra }] });
+	assert.equal(needsRebuild(slot({}), slot({ cornerRadius: 0.1 })), true);
+	assert.equal(needsRebuild(slot({ cornerRadius: 0.1 }), slot({ cornerRadius: 0.1, roundedEdges: ['top-front'] })), true);
+	assert.equal(needsRebuild(slot({ cornerRadius: 0.1 }), slot({ cornerRadius: 0.1, color: '#ff0000' })), false);
+});

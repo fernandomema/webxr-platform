@@ -249,6 +249,7 @@ msgstr ""
 #~ msgid "New"
 #~ msgstr ""
 
+#: src/routes/(admin)/admin/errors/+page.svelte
 #: src/routes/(admin)/admin/feedback/+page.svelte
 #: src/routes/settings/apps/+page.svelte
 #: src/routes/studio/edit/+page.svelte
@@ -5386,6 +5387,7 @@ msgstr ""
 msgid "Ideas and bugs from players, most voted first. Change the status to move an item through the roadmap."
 msgstr ""
 
+#: src/routes/(admin)/admin/errors/+page.svelte
 #: src/routes/(admin)/admin/feedback/+page.svelte
 #: src/routes/studio/content/+page.svelte
 msgid "All"
@@ -7141,4 +7143,97 @@ msgstr ""
 #. 0: doc.kind
 #: src/lib/studio/components/WarningsPanel.svelte
 msgid "Nothing wrong was found in the data of this {0}."
+msgstr ""
+
+#: src/routes/(admin)/+layout.svelte
+#: src/routes/(admin)/admin/errors/+page.svelte
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Errors"
+msgstr ""
+
+#: src/routes/(admin)/admin/errors/+page.server.ts
+msgid "Error report not found"
+msgstr ""
+
+#. 0: data.open
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Errors players' browsers reported, grouped by what they say. {0} open. Players can turn reporting off in their settings, so counts are a floor."
+msgstr ""
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Hide resolved"
+msgstr ""
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Show resolved"
+msgstr ""
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Delete resolved"
+msgstr ""
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Connection warnings"
+msgstr ""
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Times"
+msgstr ""
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Message"
+msgstr ""
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Page"
+msgstr ""
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Devices"
+msgstr ""
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Last seen"
+msgstr ""
+
+#. 0: entry.userAgent ?? 'unknown browser'; 1: new Date(entry.firstSeenAt).toLocaleString()
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "{0} · first seen {1}"
+msgstr ""
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Reopen"
+msgstr ""
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "Resolve"
+msgstr ""
+
+#: src/routes/(admin)/admin/errors/+page.svelte
+msgid "No error reports."
+msgstr ""
+
+#: src/lib/studio/ScenePreview.svelte
+#: src/lib/studio/ScenePreview.svelte
+msgid "Stretch along the three axes"
+msgstr ""
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Drag a corner to scale while the opposite corner stays put. Alt keeps proportions."
+msgstr ""
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Corners"
+msgstr ""
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Scale mode"
+msgstr ""
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Mode"
+msgstr ""
+
+#: src/lib/studio/ScenePreview.svelte
+msgid "Axes"
 msgstr ""

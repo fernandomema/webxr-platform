@@ -28,10 +28,11 @@ function fixture() {
 	const graph = {
 		getSlotIdForNode(node) { return node?.metadata?.slotId ?? null; },
 		resolveGrabTarget(id) { return id; },
-		slotIds() { return ['left-target', 'right-target']; }
+		slotIds() { return ['left-target', 'right-target']; },
+		getLive() { return undefined; }
 	};
 	const grabs = { getHeldSlot() { return null; }, getGrabbersForSlot() { return []; } };
-	const equipment = { onChanged: new Observable() };
+	const equipment = { onChanged: new Observable(), getEquippedSlot() { return null; } };
 	const state = setupPointerAndGrabControllers(scene, xr, graph, grabs, equipment, () => 'local');
 	for (const [index, side] of ['left', 'right'].entries()) {
 		const controller = {
@@ -43,9 +44,11 @@ function fixture() {
 		controllers.push(controller);
 		xr.input.onControllerAddedObservable.notifyObservers(controller);
 		const trigger = { onButtonStateChangedObservable: new Observable() };
+		const stick = { onAxisValueChangedObservable: new Observable() };
 		controller.trigger = trigger;
+		controller.stick = stick;
 		controller.onMotionControllerInitObservable.notifyObservers({
-			getComponentOfType(type) { return type === WebXRControllerComponent.TRIGGER_TYPE ? trigger : null; }
+			getComponentOfType(type) { return type === WebXRControllerComponent.TRIGGER_TYPE ? trigger : type === WebXRControllerComponent.THUMBSTICK_TYPE ? stick : null; }
 		});
 		const mesh = MeshBuilder.CreateBox(`${side}-target`, {}, scene);
 		mesh.position.x = index * 2;
@@ -118,5 +121,44 @@ test('a shared hit beyond the laser range does not extend the beam or inspector 
 		const beam = f.scene.meshes.find((m) => m.name === 'laser' && m.parent === f.controllers[0].pointer);
 		assert.equal(beam.scaling.y, 5);
 		assert.equal(f.picks(), 1, 'only the hand without a shared pick needs a fallback');
+	} finally { f.dispose(); }
+});
+
+test('the stick scrolls what the laser points at, and is taken from walking meanwhile', async () => {
+	const { registerStickScrollTarget } = await import(new URL('xr/interaction/stickScroll.ts', libUrl).href);
+	const { isStickXClaimed, isStickYClaimed } = await import(new URL('xr/interaction/handLock.ts', libUrl).href);
+	const f = fixture();
+	try {
+		const scrolled = [];
+		let scrollable = true;
+		registerStickScrollTarget(f.scene.getMeshByName('left-target'), {
+			canScroll: (pick, pointerId) => scrollable && pick.pickedMesh.name === 'left-target' && pointerId === 1,
+			scrollBy: (_pick, _pointerId, dy) => scrolled.push(dy)
+		});
+		f.scene.getEngine().getDeltaTime = () => 20; // a headless engine has no frame time of its own
+		const left = f.controllers[0].stick.onAxisValueChangedObservable;
+		f.frame();
+		assert.equal(isStickYClaimed('left'), true, 'pointing at a list reserves forward/back before the push');
+		assert.equal(isStickXClaimed('left'), false);
+		left.notifyObservers({ x: 0, y: -1 });
+		for (let i = 0; i < 5; i++) f.frame();
+		assert.ok(scrolled.length > 0 && scrolled.every((dy) => dy < 0 && Number.isInteger(dy)), `forward scrolls up in whole pixels: ${scrolled}`);
+		assert.equal(isStickXClaimed('left'), true, 'a scrolling stick does not also step sideways');
+		scrollable = false;
+		f.frame();
+		assert.equal(isStickYClaimed('left'), true, 'held until the stick is let go');
+		left.notifyObservers({ x: 0, y: 0 });
+		f.frame();
+		assert.equal(isStickYClaimed('left'), false);
+		assert.equal(isStickXClaimed('left'), false);
+		assert.equal(isStickYClaimed('right'), false, 'the other hand points at nothing that scrolls');
+		// With the laser off the stick walks, even over a list.
+		scrollable = true;
+		f.controllers[0].trigger.onButtonStateChangedObservable.notifyObservers({ changes: { pressed: true }, pressed: true, value: 1 });
+		left.notifyObservers({ x: 0, y: -1 });
+		const before = scrolled.length;
+		f.frame();
+		assert.equal(scrolled.length, before);
+		assert.equal(isStickYClaimed('left'), false);
 	} finally { f.dispose(); }
 });

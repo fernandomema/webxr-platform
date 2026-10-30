@@ -750,3 +750,31 @@ model externalFriendLink {
   @@unique([provider, userId])
   @@index([userId])
 }
+
+/// Errors and warnings players' browsers report in production (see $lib/clientErrorReporter.ts), grouped by what they say so that a
+/// failure many players hit is one row with a count. Players can switch the sending off in their settings. `lastUserId` is not a relation:
+/// deleting an account must not depend on, or leave behind, anything here.
+model clientError {
+  id          String   @id @default(cuid())
+  /// Hash of the level, message and first stack line, with numbers and ids removed (see clientErrorInput.ts).
+  fingerprint String   @unique
+  level       String // error | warn
+  message     String
+  stack       String?
+  /// Where it was seen: the path only, never the query or hash.
+  path        String
+  userAgent   String?
+  /// Of the last report: see deviceInfo.ts. Best effort; browsers hide the model on purpose.
+  platform    String?
+  device      String?
+  /// How many reports came from each device: { "Quest 3": 5, "Desktop": 2 }.
+  devices     Json?
+  count       Int      @default(1)
+  lastUserId  String?
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+  resolved    Boolean  @default(false)
+
+  @@index([lastSeenAt])
+  @@index([resolved, lastSeenAt])
+}

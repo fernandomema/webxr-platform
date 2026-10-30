@@ -11,6 +11,7 @@ export { loadBundle, type BundleManifest, type LoadedBundle } from './xr/content
 export { configureFeatures, getFeatures, type EngineFeatures } from './xr/features.ts';
 export { setEngineLocale, engineLocale, registerTranslations, translate } from './xr/i18n/locale.ts';
 export type { MountedGame, MountGameOptions } from './xr/engine.ts';
+export type { DashTab } from './xr/ui/dashPanel.ts';
 export type { WorldPackage } from './worlds/types.ts';
 
 import type { MountedGame, MountGameOptions } from './xr/engine.ts';

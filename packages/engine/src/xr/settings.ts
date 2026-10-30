@@ -1,6 +1,5 @@
 import type { SlotTree } from '../ecs/types.ts';
 import type { WorldItemLocation } from '../worldStorage/items.ts';
-import { DEFAULT_DASHBOARD_LAYOUT, normalizeDashboardLayout, type DashboardItemId } from './dashboardLayout.ts';
 
 export type MovementMode = 'teleport' | 'smooth';
 export type RotationMode = 'smooth' | 'snap-45' | 'snap-90';
@@ -17,8 +16,10 @@ export interface XrSettings {
 	defaultAvatarSource: string | null;
 	/** Sitting down: the head is lifted to standing height (1.7 m) so the avatar and the world behave as if you stood. */
 	seatedMode: boolean;
-	/** Which buttons the Home tab of the personal menu shows, in order. */
-	dashboardLayout: DashboardItemId[];
+	/** How far the personal menu bends around you: the angle (degrees) its width spans. 0 is flat. */
+	dashCurve: number;
+	/** How far in front of you (metres) the personal menu opens. */
+	dashDistance: number;
 	/** The in-world keyboard's layout last typed with (see keyboard/layouts). Null picks the page's language. */
 	keyboardLayout: string | null;
 	foveation: FoveationLevel;
@@ -38,9 +39,13 @@ export interface XrSettings {
 	masterVolume: number;
 	/** Where the objects a world saves for you (as its host) are kept. Local costs no cloud space; cloud follows you between devices. */
 	worldStorageLocation: WorldItemLocation;
+	/** Send the errors this device hits to the platform, so that they can be fixed (see src/lib/clientErrorReporter.ts). */
+	shareErrorReports: boolean;
 }
 
 export const MOUSE_SENSITIVITIES = [0.5, 1, 1.6, 2.5] as const;
+/** The distances (metres) the personal menu can open at. */
+export const DASH_DISTANCES = [0.6, 0.8, 1, 1.3, 1.7] as const;
 export const DESKTOP_FOVS = [46, 60, 75] as const;
 
 export const xrSettings: XrSettings = {
@@ -49,7 +54,8 @@ export const xrSettings: XrSettings = {
 	defaultAvatar: null,
 	defaultAvatarSource: null,
 	seatedMode: false,
-	dashboardLayout: [...DEFAULT_DASHBOARD_LAYOUT],
+	dashCurve: 55,
+	dashDistance: 1,
 	keyboardLayout: null,
 	foveation: 'high',
 	showPerformance: false,
@@ -59,7 +65,8 @@ export const xrSettings: XrSettings = {
 	invertY: false,
 	desktopFov: 46,
 	masterVolume: 1,
-	worldStorageLocation: 'local'
+	worldStorageLocation: 'local',
+	shareErrorReports: true
 };
 
 const STORAGE_KEY = 'webxr-platform-settings';
@@ -75,7 +82,8 @@ export function loadSettings(): void {
 		if (Array.isArray(parsed.defaultAvatar)) xrSettings.defaultAvatar = parsed.defaultAvatar;
 		if (typeof parsed.defaultAvatarSource === 'string' && xrSettings.defaultAvatar) xrSettings.defaultAvatarSource = parsed.defaultAvatarSource;
 		if (typeof parsed.seatedMode === 'boolean') xrSettings.seatedMode = parsed.seatedMode;
-		if (parsed.dashboardLayout !== undefined) xrSettings.dashboardLayout = normalizeDashboardLayout(parsed.dashboardLayout);
+		if (typeof parsed.dashCurve === 'number' && parsed.dashCurve >= 0 && parsed.dashCurve <= 120) xrSettings.dashCurve = parsed.dashCurve;
+		if (typeof parsed.dashDistance === 'number' && parsed.dashDistance >= 0.3 && parsed.dashDistance <= 3) xrSettings.dashDistance = parsed.dashDistance;
 		if (typeof parsed.keyboardLayout === 'string') xrSettings.keyboardLayout = parsed.keyboardLayout;
 		if (parsed.foveation && parsed.foveation in FOVEATION) xrSettings.foveation = parsed.foveation;
 		if (typeof parsed.showPerformance === 'boolean') xrSettings.showPerformance = parsed.showPerformance;
@@ -85,6 +93,7 @@ export function loadSettings(): void {
 		if (typeof parsed.invertY === 'boolean') xrSettings.invertY = parsed.invertY;
 		if (typeof parsed.desktopFov === 'number' && parsed.desktopFov >= 30 && parsed.desktopFov <= 110) xrSettings.desktopFov = parsed.desktopFov;
 		if (typeof parsed.masterVolume === 'number' && parsed.masterVolume >= 0 && parsed.masterVolume <= 1) xrSettings.masterVolume = parsed.masterVolume;
+		if (typeof parsed.shareErrorReports === 'boolean') xrSettings.shareErrorReports = parsed.shareErrorReports;
 		if (parsed.worldStorageLocation === 'local' || parsed.worldStorageLocation === 'cloud') xrSettings.worldStorageLocation = parsed.worldStorageLocation;
 	} catch {
 		// unavailable/malformed storage — keep defaults

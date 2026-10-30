@@ -10,6 +10,7 @@ import type { AudioTrackHandle, ScriptAudio } from './scriptAudio.ts';
 import type { PlayerPoseView, PlayerSummary, TeleportTarget } from './playerPoses.ts';
 import type { PayResult, ScriptPayments } from './payments/types.ts';
 import type { ScriptPhysics } from './scriptPhysics.ts';
+import type { ScriptDash, ScriptDashTab, ScriptSystem } from './scriptDash.ts';
 import { isAssetId } from '../assets/ref.ts';
 import { hashSlot } from '../ecs/slotHash.ts';
 
@@ -64,6 +65,10 @@ export interface CodeBlockHost {
 	getUIInputText(slotId: string): string | undefined;
 	/** Opens the game's menu (the dash) at a tab on this device; `invite` shows the choices of who can join first. Absent where there is no menu. */
 	openDash?(tab: string, options?: { invite?: boolean }): void;
+	/** What the scripts of the player's own menu may do to it (add tabs). Absent for a world's scripts. */
+	dash?: ScriptDash;
+	/** Readings of the game (frame rate, session) for the scripts of the player's menu. Absent for a world's scripts. */
+	system?: ScriptSystem;
 	/** Questions about the solids of the world (rays, sweeps, overlaps). Absent where the engine keeps no collision world. */
 	physics?: ScriptPhysics;
 	/** Sets a player's body speed, or adds to it (a push). Host/solo only; returns whether the player was found. Absent where bodies are not driven by the engine. */
@@ -741,6 +746,37 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 			/** The older name of `importFromLibrary` for Poly Haven models; kept so existing worlds keep working. */
 			importPolyHavenModel: (id: string, name: string) => host.importLibraryAsset(`polyhaven:${id}`, name)
 		},
+		dash: {
+			/** True where this script runs in the player's own menu, the only place it can change the menu. */
+			get available(): boolean {
+				return Boolean(host.dash);
+			},
+			/**
+			 * Adds a tab to the menu, with a page made of UI nodes: `{ id, label, icon?, order?, ui: [panelSlot, ...elementSlots] }`, slots
+			 * as in a world (the panel has a `uiPanel`, the rest `uiElement`s tied with `parentId`). Returns `{ slots }`, the ids the slots
+			 * really got by the ids you gave them (to change them later with `world.setComponentField`); null when refused. Adding again with
+			 * the same id replaces the tab. Only works for scripts of the player's own menu.
+			 */
+			addTab: (tab: unknown) => {
+				const spec = tabSpecOf(tab);
+				return spec ? (host.dash?.addTab(slotId, spec) ?? null) : null;
+			},
+			/** A name for this piece of UI that stays the same every time it starts: use it to key what a tab keeps (the id of a `grid`). Null outside the player's menu. */
+			instanceId: (): string | null => host.dash?.instanceId(slotId) ?? null,
+			removeTab: (id: string) => typeof id === 'string' && (host.dash?.removeTab(slotId, id) ?? false),
+			showTab: (id: string) => typeof id === 'string' && (host.dash?.showTab(slotId, id) ?? false),
+			/** Reads or changes a setting of the game a script may touch: `masterVolume` (0 to 1). */
+			settings: {
+				get: (key: string): number | null => (typeof key === 'string' ? (host.dash?.getSetting(key) ?? null) : null),
+				set: (key: string, value: number): boolean => typeof key === 'string' && Number.isFinite(value) && (host.dash?.setSetting(key, value) ?? false)
+			}
+		},
+		system: {
+			/** Frame rate and what a frame costs: `{ fps, frameMs, drawCalls, meshes, kilotriangles }`. Null outside the player's menu. */
+			stats: () => host.system?.stats() ?? null,
+			/** `{ role: 'solo' | 'host' | 'guest', roomCode, worldName }`. Null outside the player's menu. */
+			session: () => host.system?.session() ?? null
+		},
 		ui: {
 			/** Playback state of a `video` uiElement on this peer (position, duration, paused, ended...). Write `playing`/`src`/`currentTime` with `world.setComponentField` to control it. */
 			getMedia: (slotId: string) => host.getUIMedia(slotId),
@@ -761,6 +797,20 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 			console.log(`[codeBlock:${slotId}]`, ...args);
 			pushLog('log', 'log', message);
 		}
+	};
+}
+
+/** A tab as a script wrote it, if it is one worth passing on: text where text is wanted, and a page of a sensible size. */
+function tabSpecOf(value: unknown): ScriptDashTab | null {
+	const tab = value as Partial<ScriptDashTab> | null;
+	if (!tab || typeof tab.id !== 'string' || !tab.id || tab.id.length > 64 || typeof tab.label !== 'string' || !tab.label) return null;
+	if (!Array.isArray(tab.ui) || tab.ui.length === 0 || tab.ui.length > 300) return null;
+	return {
+		id: tab.id,
+		label: tab.label.slice(0, 24),
+		...(typeof tab.icon === 'string' ? { icon: tab.icon.slice(0, 32) } : {}),
+		...(typeof tab.order === 'number' && Number.isFinite(tab.order) ? { order: tab.order } : {}),
+		ui: JSON.parse(JSON.stringify(tab.ui)) as ScriptDashTab['ui']
 	};
 }
 

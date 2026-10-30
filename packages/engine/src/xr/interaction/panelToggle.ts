@@ -20,12 +20,12 @@ export function setupPanelToggle(
 	xr: WebXRDefaultExperience | null,
 	panelRoot: TransformNode,
 	getActiveCamera: () => Camera,
-	options: { keyboardKey: string; buttonIdPattern: RegExp },
+	options: { keyboardKey: string; buttonIdPattern: RegExp; /** How far in front of the user it opens (metres). Defaults to 1. */ distance?: () => number },
 	onToggle?: (visible: boolean) => void
 ): void {
 	const toggle = () => {
 		const opening = !panelRoot.isEnabled();
-		if (opening) placeInFrontOfCamera(panelRoot, getActiveCamera(), PANEL_DISTANCE, PANEL_HEIGHT_OFFSET);
+		if (opening) placeInFrontOfCamera(panelRoot, getActiveCamera(), options.distance?.() ?? PANEL_DISTANCE, PANEL_HEIGHT_OFFSET);
 		panelRoot.setEnabled(opening);
 		onToggle?.(opening);
 	};

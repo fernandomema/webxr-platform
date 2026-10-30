@@ -1,4 +1,5 @@
 import type { TransformNode } from '@babylonjs/core';
+import { preferredPanningModel } from '../audioPanning.ts';
 
 /**
  * Proximity voice chat: each remote peer's WebRTC audio track is routed
@@ -45,10 +46,11 @@ export class ProximityVoice {
 	}
 
 	addPeer(id: string, stream: MediaStream, targetNode: TransformNode): void {
+		this.removePeer(id); // the same player on a new link: its old stream is over
 		const ctx = this.getContext();
 		const source = ctx.createMediaStreamSource(stream);
 		const panner = ctx.createPanner();
-		panner.panningModel = 'HRTF';
+		panner.panningModel = preferredPanningModel();
 		panner.distanceModel = 'inverse';
 		panner.refDistance = 1;
 		panner.maxDistance = 20;
@@ -64,7 +66,8 @@ export class ProximityVoice {
 		this.peers.delete(id);
 	}
 
-	update(listener: { position: [number, number, number]; forward: [number, number, number] }): void {
+	/** `listener` is in Web Audio's terms (see the engine's listener pose): its up decides which ear is which. */
+	update(listener: { position: [number, number, number]; forward: [number, number, number]; up: [number, number, number] }): void {
 		if (!this.ctx) return;
 		for (const { panner, targetNode } of this.peers.values()) {
 			const p = targetNode.absolutePosition;
@@ -78,6 +81,9 @@ export class ProximityVoice {
 		this.ctx.listener.forwardX.value = listener.forward[0];
 		this.ctx.listener.forwardY.value = listener.forward[1];
 		this.ctx.listener.forwardZ.value = listener.forward[2];
+		this.ctx.listener.upX.value = listener.up[0];
+		this.ctx.listener.upY.value = listener.up[1];
+		this.ctx.listener.upZ.value = listener.up[2];
 	}
 
 	dispose(): void {

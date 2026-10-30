@@ -63,11 +63,11 @@ const C = {
 	text: THEME.text, muted: THEME.muted, accent: THEME.accent, accentSoft: THEME.accentSoft, ok: THEME.mint, warn: THEME.glow, error: THEME.error
 };
 
-const MAIN_WIDTH = 780;
+const MAIN_WIDTH = 1048;
 const CARD_W = 252;
 const CARD_H = 180;
 const CARD_PREVIEW_H = 122;
-const CARD_COLUMNS = 3;
+const CARD_COLUMNS = 4;
 const VIEWER_W = 470;
 const VIEWER_H = 300;
 /** How much of the 360° picture the viewer shows at once (about 108° across). */

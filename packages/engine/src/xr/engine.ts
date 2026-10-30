@@ -11,6 +11,7 @@ import {
 	WebXRState,
 	WebXRFeatureName,
 	WebXRMotionControllerManager,
+	Quaternion,
 	PointerEventTypes,
 	type AbstractMesh,
 	type TransformNode,
@@ -23,7 +24,7 @@ import { publicationFor } from './appPublication.ts';
 import { getFeatures } from './features.ts';
 import { engineLocale } from './i18n/locale.ts';
 import type { InputDevice } from './inputHints.ts';
-import { createSlot, opensWorldMenu, type SlotTree } from '../ecs/types.ts';
+import { createSlot, findComponent, opensWorldMenu, type SlotTree } from '../ecs/types.ts';
 import { atRest, instantiate } from '../ecs/serialize.ts';
 import { isBuiltinMesh, migrateSlotTree } from '../assets/ref.ts';
 import type { AssetResolver } from '../assets/resolve.ts';
@@ -41,6 +42,7 @@ import { ModelLibrary } from './modelLibrary.ts';
 import { SceneGraph } from './sceneGraph.ts';
 import { SocketSystem } from './interaction/socketSystem.ts';
 import { DropZoneSystem } from './interaction/dropZoneSystem.ts';
+import { DashPinSystem } from './interaction/dashPinSystem.ts';
 import { GrabSystem } from './interaction/grabSystem.ts';
 import { EquipmentSystem } from './interaction/equipmentSystem.ts';
 import { PressableButtonSystem } from './interaction/pressableButtonSystem.ts';
@@ -63,7 +65,7 @@ import { desktopHud, hudActions, resetDesktopHud } from './interaction/desktop/d
 import type { RadialItem } from './ui/radialView.ts';
 import { setupLocomotion } from './locomotion.ts';
 import { setupHandControllerSwitch } from './interaction/handControllerSwitch.ts';
-import { createDashPanel } from './ui/dashPanel.ts';
+import { createDashPanel, type DashPanelHandle } from './ui/dashPanel.ts';
 import { createInspectorHost } from './ui/inspectorHost.ts';
 import { createDropZoneOutline } from './ui/dropZoneOutline.ts';
 import { forwardKeyTo } from './keyForwarding.ts';
@@ -71,6 +73,7 @@ import { createRemoteRadial, setupRadialMenuForHand } from './ui/radialMenu.ts';
 import { KeyboardSystem } from './keyboard/keyboardSystem.ts';
 import { setTextInputProvider } from './keyboard/service.ts';
 import { createPerformanceOverlay } from './ui/performanceOverlay.ts';
+import { createStatusNotice } from './ui/statusNotice.ts';
 import { uploadGuiBeforeDrawing } from './guiUploads.ts';
 import { FOVEATION, loadSettings, saveSettings, xrSettings } from './settings.ts';
 import { selectTargetFrameRate, XR_FRAMEBUFFER_SCALE } from './performance.ts';
@@ -83,8 +86,8 @@ import { AvatarSystem } from './avatar/avatarSystem.ts';
 import { PlayerAvatars } from './avatar/playerAvatars.ts';
 import { loadBaseAvatar } from './avatar/baseAvatar.ts';
 import type { AvatarHooks } from './avatar/avatarHooks.ts';
-import { HostAuthority } from './net/hostAuthority.ts';
-import { GuestSync } from './net/guestSync.ts';
+import { HostAuthority, type HostConnectionEvent } from './net/hostAuthority.ts';
+import { GuestSync, type GuestConnectionStatus, type GuestEndReason } from './net/guestSync.ts';
 import { WorldStorageService } from './worldStorageService.ts';
 import { createWorldItemStore } from '../worldStorage/items.ts';
 import { localWorldItems } from '../worldStorage/localItems.ts';
@@ -116,6 +119,8 @@ export interface MountedGame {
 	enterVR(): Promise<void>;
 	/** Desktop: captures the mouse for looking around (it must be called from a click or key press). */
 	captureMouse(): void;
+	/** The tabs of the personal menu: add your own (a page built with Babylon GUI), remove or open one. */
+	dash: Pick<DashPanelHandle, 'addTab' | 'removeTab' | 'showTab' | 'pageSize'>;
 	dispose(): void;
 }
 
@@ -178,11 +183,26 @@ export async function mountGame(
 	const models = new ModelLibrary(scene, { store: getLocalAssetStore(), getResolvers: () => assetResolvers });
 	const mediaAssets = new BlobAssetLibrary({ store: getLocalAssetStore(), getResolvers: () => assetResolvers });
 	const scriptAudio = createScriptAudio(mediaAssets);
-	// Sounds placed in the world (`ctx.audio.playAt`) are heard from where the player's head is, facing where it faces.
-	scene.onBeforeRenderObservable.add(() => {
+	// Sounds placed in the world are heard from where the player's head is, facing where it faces. The engine is the only one
+	// that moves the listener: Babylon's own Sounds (impacts, audio players) would also move it twice a second, from its camera
+	// and with forward the other way round, and each of those jumps back and forth is heard as a crackle.
+	scene.audioPositioningRefreshRate = Number.POSITIVE_INFINITY;
+	/** Where the player's ears are and which way they face, in Web Audio's terms: for the world's sounds and for voice chat. */
+	const readListenerPose = () => {
 		const eye = getActiveCamera();
-		const forward = eye.getDirection(Vector3.Forward()), up = eye.getDirection(Vector3.Up());
-		scriptAudio.setListener(eye.globalPosition.asArray() as [number, number, number], forward.asArray() as [number, number, number], up.asArray() as [number, number, number]);
+		const forward = eye.getDirection(Vector3.Forward(scene.useRightHandedSystem)), up = eye.getDirection(Vector3.Up());
+		// Web Audio's axes are right-handed: in a left-handed scene its right ear would be the player's left one. With up flipped,
+		// left and right and front and back come out right; only above and below swap, which a mirror cannot avoid.
+		if (!scene.useRightHandedSystem) up.scaleInPlace(-1);
+		return {
+			position: eye.globalPosition.asArray() as [number, number, number],
+			forward: forward.asArray() as [number, number, number],
+			up: up.asArray() as [number, number, number]
+		};
+	};
+	scene.onBeforeRenderObservable.add(() => {
+		const { position, forward, up } = readListenerPose();
+		scriptAudio.setListener(position, forward, up);
 	});
 	// Previews of what is saved are drawn as a second scene on this engine (a second WebGL context would be costly on a headset).
 	configureThumbnails({ engine, getResolvers: () => assetResolvers });
@@ -230,6 +250,11 @@ export async function mountGame(
 		overlapSphere: (...args) => scriptPhysics?.overlapSphere(...args) ?? [],
 		closest: (...args) => scriptPhysics?.closest(...args) ?? null
 	};
+	/** Everyone in the world, the local player first. */
+	const listPlayers = () => [
+		{ id: localPlayerId, name: gameState.userName ?? 'Player', role: gameState.role === 'guest' ? ('guest' as const) : ('host' as const) },
+		...(hostAuthority?.listGuests() ?? [])
+	];
 	const sceneGraph = new SceneGraph(scene, {
 		physics: physicsProxy,
 		setPlayerVelocity: (playerId, velocity, add) => {
@@ -350,10 +375,7 @@ export async function mountGame(
 			};
 		},
 		scriptPlayerId: (equipmentKey) => (equipmentKey === localPlayerId ? equipmentKey : (hostAuthority?.announcedIdFor(equipmentKey) ?? equipmentKey)),
-		getPlayers: () => [
-			{ id: localPlayerId, name: gameState.userName ?? 'Player', role: gameState.role === 'guest' ? ('guest' as const) : ('host' as const) },
-			...(hostAuthority?.listGuests() ?? [])
-		],
+		getPlayers: () => listPlayers(),
 		getPlayerPose: (playerId) => {
 			if (playerId === localPlayerId) return viewPlayerPose({ head: cameraHeadPose(getActiveCamera()), ...readHandPoses(xr) });
 			const pose = hostAuthority?.getGuestPose(playerId);
@@ -395,7 +417,7 @@ export async function mountGame(
 			try {
 				dash.showTab(tab);
 				if (options?.invite) dash.openInvite();
-				if (xr?.baseExperience.state === WebXRState.IN_XR) placeInFrontOfCamera(dash.root, getActiveCamera(), 1, -0.15);
+				if (xr?.baseExperience.state === WebXRState.IN_XR) placeInFrontOfCamera(dash.root, getActiveCamera(), xrSettings.dashDistance, -0.15);
 				dash.root.setEnabled(true);
 			} catch (error) {
 				console.error('[engine] could not open the menu', error);
@@ -452,6 +474,37 @@ export async function mountGame(
 	});
 	const getActiveCamera = () => (xr?.baseExperience.state === WebXRState.IN_XR ? xr.baseExperience.camera : desktopCamera);
 	viewerCamera = getActiveCamera;
+	/** What the player must know about the session's connection, held in front of the view. */
+	const statusNotice = createStatusNotice(scene, getActiveCamera);
+	let guestStatus: GuestConnectionStatus = 'connecting';
+	function showGuestStatus(status: GuestConnectionStatus): void {
+		const previous = guestStatus;
+		guestStatus = status;
+		if (status === 'unstable') statusNotice.show('The connection to the host is unstable…', { tone: 'warn' });
+		else if (status === 'reconnecting') statusNotice.show('Lost the connection to the host. Reconnecting…', { tone: 'warn' });
+		else if (status === 'connected' && (previous === 'unstable' || previous === 'reconnecting')) {
+			statusNotice.show(previous === 'reconnecting' ? 'Reconnected to the host.' : 'The connection is stable again.', { durationMs: 3_000 });
+		}
+	}
+	const GUEST_END_NOTICES: Record<GuestEndReason, { message: string; tone: 'info' | 'error' } | null> = {
+		left: null,
+		'host-left': { message: 'The host ended the session.', tone: 'info' },
+		lost: { message: 'Could not reconnect to the host. You left the session.', tone: 'error' },
+		unreachable: { message: 'Could not reach the host of this session.', tone: 'error' },
+		refused: { message: 'This session is only open to the host\u2019s friends.', tone: 'error' },
+		incompatible: { message: 'The host runs another version of the game. Reload the page to update.', tone: 'error' }
+	};
+	let hostSignaling: 'connecting' | 'connected' | 'reconnecting' = 'connecting';
+	function showHostEvent(event: HostConnectionEvent): void {
+		if (event.kind === 'signaling') {
+			const previous = hostSignaling;
+			hostSignaling = event.status;
+			if (event.status === 'reconnecting') statusNotice.show('Lost the connection to the server. Reconnecting… (players already here can keep playing)', { tone: 'warn' });
+			else if (event.status === 'connected' && previous === 'reconnecting') statusNotice.show('Reconnected to the server.', { durationMs: 3_000 });
+		} else if (event.kind === 'guest-lost') statusNotice.show(`${event.name} lost the connection. Waiting for them to come back…`, { tone: 'warn', durationMs: 8_000 });
+		else if (event.kind === 'guest-back') statusNotice.show(`${event.name} is back.`, { durationMs: 4_000 });
+		else statusNotice.show(`${event.name} could not reconnect and left.`, { tone: 'warn', durationMs: 6_000 });
+	}
 
 	loadSettings();
 	AbstractEngine.audioEngine?.setGlobalVolume(xrSettings.masterVolume);
@@ -640,6 +693,7 @@ export async function mountGame(
 		hostAuthority = null;
 		guestSync?.dispose();
 		guestSync = null;
+		statusNotice.hide(); // what it said was about the session left
 		resetSessionState();
 		if (wasGuest) {
 			// The other players' avatars belonged to that session; ours is placed again by this device.
@@ -702,6 +756,8 @@ export async function mountGame(
 				{ localTrack: track, onRemoteStream: (guestId, stream, targetNode) => voice.addPeer(guestId, stream, targetNode) }
 			);
 			hostAuthority.setAvatarHooks(hostAvatarHooks);
+			hostSignaling = 'connecting';
+			hostAuthority.setStatusHandler(showHostEvent);
 			hostAuthority.setStorageHooks({
 				getPublicationId: () => gameState.publication?.publicationId ?? null,
 				onPlayerReady: (player) => sceneGraph.dispatchPlayerReady({ id: player.playerId, name: player.displayName }),
@@ -796,17 +852,22 @@ export async function mountGame(
 				localTrack: track,
 				onRemoteStream: (stream, targetNode) => voice.addPeer('host', stream, targetNode)
 			},
-			() => {
+			(reason) => {
 				guestSync = null;
 				resetSessionState();
 				playerAvatars.clearAll();
 				void applyLocalAvatar();
 				refreshWorldsTab();
+				const notice = GUEST_END_NOTICES[reason];
+				if (notice) statusNotice.show(notice.message, { tone: notice.tone, durationMs: 8_000 });
+				else statusNotice.hide();
 			},
 			refreshTeleportFloors,
 			() => void applyLocalAvatar()
 		);
 		playerBody.respawn();
+		guestStatus = 'connecting';
+		guestSync.setStatusHandler(showGuestStatus);
 		guestSync.setAvatarHooks(guestAvatarHooks);
 		guestSync.setStorageHooks({
 			onPublication: (publicationId) => { gameState.publication = publicationId ? { publicationId, revisionId: null } : null; },
@@ -839,6 +900,11 @@ export async function mountGame(
 		const camera = getActiveCamera();
 		const spawnPosition = camera.globalPosition.add(camera.getForwardRay().direction.scale(0.6));
 		const tree = instantiate(atRest(slotData), [spawnPosition.x, spawnPosition.y, spawnPosition.z]);
+		// A UI panel is read from its front (-Z): turned to face whoever spawns it, not left to show its back, which reads mirrored.
+		if (findComponent(tree[0], 'uiPanel')) {
+			const forward = camera.getForwardRay().direction;
+			tree[0] = { ...tree[0], rotation: Quaternion.FromEulerAngles(0, Math.atan2(forward.x, forward.z), 0).asArray() as [number, number, number, number] };
+		}
 		for (const slot of tree) {
 			sceneGraph.addSlot(slot);
 			if (gameState.role === 'guest') guestSync?.requestSpawn(slot);
@@ -905,6 +971,8 @@ export async function mountGame(
 		onCreateWorld: () => launchScene(BLANK_WORLD_NAME, buildBlankWorld(), 'solo'),
 		onLocomotionSettingsChanged: async () => { await locomotion?.applySettings(); },
 		onExitVr: async () => { await xr?.baseExperience.exitXRAsync(); },
+		getUiContext: () => ({ locale: engineLocale(), device: inputDevice }),
+		getPlayers: () => listPlayers(),
 		onToggleInspector: inspector ? () => inspector.root.setEnabled(!inspector.root.isEnabled()) : null,
 		onSeatedModeChanged: () => playerBody.setSeated(xrSettings.seatedMode),
 		onDesktopSettingsChanged: () => fps.applySettings(),
@@ -986,7 +1054,9 @@ export async function mountGame(
 		}
 	};
 	const pointerState = xr ? setupPointerAndGrabControllers(scene, xr, sceneGraph, grabSystem, equipment, () => localPlayerId, pointerHooks) : null;
-	setupPanelToggle(scene, xr, dash.root, getActiveCamera, { keyboardKey: 'tab', buttonIdPattern: /x-button|menu/i });
+	// Letting go of UI over the open menu's Home keeps a copy there.
+	new DashPinSystem(scene, sceneGraph, grabSystem, () => gameState.role !== 'guest');
+	setupPanelToggle(scene, xr, dash.root, getActiveCamera, { keyboardKey: 'tab', buttonIdPattern: /x-button|menu/i, distance: () => xrSettings.dashDistance });
 	if (inspector) setupPanelToggle(scene, xr, inspector.root, getActiveCamera, { keyboardKey: 'i', buttonIdPattern: /a-button/i });
 	const radialNetwork = {
 		getInspectTarget: (hand: 'left' | 'right') => inspector?.root.isEnabled() ? pointerState?.getLaserTarget(hand) ?? null : null,
@@ -1096,11 +1166,7 @@ export async function mountGame(
 	setTextInputProvider(keyboards);
 
 	scene.onBeforeRenderObservable.add(() => {
-		const camera = getActiveCamera();
-		voice.update({
-			position: camera.position.asArray() as [number, number, number],
-			forward: camera.getForwardRay().direction.asArray() as [number, number, number]
-		});
+		voice.update(readListenerPose());
 	});
 
 	if (initialRoomCode) void joinWorld(initialRoomCode);
@@ -1144,6 +1210,7 @@ export async function mountGame(
 			}
 		},
 		captureMouse: () => fps.requestLock(),
+		dash: { addTab: dash.addTab, removeTab: dash.removeTab, showTab: dash.showTab, pageSize: dash.pageSize },
 		dispose() {
 			desktopHand.dispose();
 			desktopPanels.dispose();
@@ -1153,6 +1220,7 @@ export async function mountGame(
 			setTextInputProvider(null);
 			stopGuiUploads();
 			performanceOverlay.dispose();
+			statusNotice.dispose();
 			keyboards?.dispose();
 			avatarSystem.dispose();
 			hostAuthority?.dispose();

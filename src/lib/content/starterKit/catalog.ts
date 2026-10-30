@@ -5,6 +5,7 @@
  */
 import type { Component, Slot, SlotTree } from '@kithin/engine/ecs/types';
 import lobby from '../templates/lobby.json' with { type: 'json' };
+import recordPlayer from '../templates/recordPlayer.json' with { type: 'json' };
 import { buildDisc } from '../templates/recordDisc.ts';
 import { buildAtm } from '../templates/atm.ts';
 import { buildKithinLogo, KITHIN_LOGO_ID } from '../templates/kithinLogo.ts';
@@ -12,6 +13,7 @@ import { buildJukebox, JUKEBOX_ID } from '../templates/jukebox.ts';
 import { buildHalloweenToy } from '../templates/halloweenGathering.ts';
 import { HALLOWEEN } from '../templates/halloweenGatheringConfig.ts';
 import { PROP_ENTRIES, PROP_FOLDERS } from './props.ts';
+import { FACETS_FOLDER, FACET_ENTRIES } from './facets.ts';
 import { TOOLS, toolEquippable } from '../../../../scripts/workshop-tools.mjs';
 
 import type { StarterKit, StarterKitEntry as BuiltinEntry, StarterKitFolder as BuiltinFolder } from '@kithin/engine/xr/content/registry';
@@ -20,6 +22,7 @@ export const BUILTIN_FOLDERS: BuiltinFolder[] = [
 	{ id: 'basics', name: 'Basics' },
 	{ id: 'music', name: 'Music' },
 	{ id: 'tools', name: 'Tools' },
+	FACETS_FOLDER,
 	{ id: 'home-builder', name: 'Home Builder', parentId: 'tools' },
 	...PROP_FOLDERS
 ];
@@ -76,9 +79,9 @@ function fromLobby(rootId: string): SlotTree {
 	return clone(lobbySlots.filter((entry) => wanted.has(entry.id))).map((entry) => (entry.id === rootId ? { ...entry, position: [0, 0, 0] as Slot['position'] } : entry));
 }
 
-/** A group of the lobby's loose slots (a record player is several) as one object under a new root, centred on `centre`. */
-function groupFromLobby(id: string, name: string, include: (entry: Slot) => boolean, centre: [number, number]): SlotTree {
-	const parts = clone(lobbySlots.filter(include)).map((entry) => ({
+/** A group of loose slots (a record player is several; it is no longer in the lobby, which loads the jukebox instead) as one object under a new root, centred on `centre`. */
+function groupFromLobby(id: string, name: string, include: (entry: Slot) => boolean, centre: [number, number], source: SlotTree = lobbySlots): SlotTree {
+	const parts = clone(source.filter(include)).map((entry) => ({
 		...entry,
 		parentId: entry.parentId ?? id,
 		position: entry.parentId ? entry.position : [entry.position[0] - centre[0], entry.position[1], entry.position[2] - centre[1]] as Slot['position'],
@@ -98,6 +101,7 @@ const SOURCES = {
 
 const ENTRIES: BuiltinEntry[] = [
 	...PROP_ENTRIES,
+	...FACET_ENTRIES,
 	// A fixture, not something to carry: it plays records, so it stays where it is put.
 	{ id: JUKEBOX_ID, folderId: 'music', name: 'Jukebox', grabbable: false, build: buildJukebox },
 	{ id: KITHIN_LOGO_ID, folderId: 'basics', name: 'Kithin Logo', grabbable: false, build: buildKithinLogo },
@@ -135,7 +139,7 @@ const ENTRIES: BuiltinEntry[] = [
 	},
 	{
 		id: 'record-player', folderId: 'music', name: 'Record Player',
-		build: () => groupFromLobby('record-player', 'Record Player', (entry) => entry.id.startsWith('lobby-jukebox'), [2.2, -2.0])
+		build: () => groupFromLobby('record-player', 'Record Player', (entry) => entry.id.startsWith('lobby-jukebox'), [2.2, -2.0], recordPlayer as unknown as SlotTree)
 	},
 	{
 		id: 'disc-rack', folderId: 'music', name: 'Disc Rack',

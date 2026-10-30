@@ -10,6 +10,8 @@ import {
 	Vector3,
 	Quaternion,
 	Ray,
+	VertexData,
+	VertexBuffer,
 	TransformNode,
 	AbstractMesh,
 	type PBRMaterial,
@@ -20,6 +22,7 @@ import type { Component, MediaControlAction, Slot, SlotTree, UIEvent, Vec3, Quat
 import { findComponent, isGrabbable } from '../ecs/types.ts';
 import { isBuiltinMesh, normalizeMeshRef, type AssetId, type MeshRef } from '../assets/ref.ts';
 import { needsRebuild } from './slotRebuild.ts';
+import { roundedBoxForScale } from './roundedBox.ts';
 import { applyDelta, type SlotDelta } from './net/sceneDelta.ts';
 import { batchMaterialUpdates, batchMeshDisposal } from './performance.ts';
 import type { BlobAssetLibrary } from './blobAssetLibrary.ts';
@@ -48,7 +51,8 @@ import { setupImpactSound } from './impactSoundEffects.ts';
 import type { ScriptAudio } from './scriptAudio.ts';
 import { setupTextDisplay } from './textDisplaySurface.ts';
 import { setupScoreboard } from './scoreboardSurface.ts';
-import { setupUIPanel, type UIMediaState, type UIPanelBinding } from './uiPanelSurface.ts';
+import type { ScriptDash, ScriptSystem } from './scriptDash.ts';
+import { setupUIPanel, type UIMediaState, type UIPanelBinding, type UIPanelContainer } from './uiPanelSurface.ts';
 import type { WorldStorageService } from './worldStorageService.ts';
 import { parseTeleportTarget, type PlayerPoseView, type PlayerSummary, type TeleportTarget } from './playerPoses.ts';
 import type { ScriptPayments } from './payments/types.ts';
@@ -65,6 +69,36 @@ const INSTANCED_SHAPES = new Set(['box', 'sphere', 'cylinder']);
 /** Components that draw onto their slot's own mesh (a texture, or a material of its own): such a mesh cannot be shared. */
 /** Components a script may not put on another slot: they carry code or identity, which only their own authors set. */
 const UNSETTABLE = new Set<string>(['codeBlock', 'avatar', 'boneAttach']);
+
+/** The rounding a slot asks of its box, or null when it draws a plain one (any other shape, a model, no radius). */
+function roundedBox(slot: Slot): { radius: number; edges?: string[] } | null {
+	const mesh = findComponent(slot, 'meshRenderer');
+	if (!mesh || !(mesh.cornerRadius && mesh.cornerRadius > 0) || !isBuiltinMesh(mesh.meshRef, 'box')) return null;
+	return { radius: mesh.cornerRadius, edges: mesh.roundedEdges };
+}
+
+/** What each rounded mesh was last built for, so it is built again only when the scale or the rounding changes. */
+const roundedKeys = new WeakMap<Mesh, string>();
+
+/** Gives `mesh` the vertices of a rounded box that is drawn at `scale`; the first call makes them, later ones rewrite them in place. */
+function applyRoundedBox(mesh: Mesh, scale: readonly number[], round: { radius: number; edges?: string[] }): void {
+	const key = `${scale.map((v) => v.toFixed(4)).join(',')}|${round.radius}|${round.edges?.join(',') ?? '*'}`;
+	if (roundedKeys.get(mesh) === key) return;
+	const first = !roundedKeys.has(mesh);
+	roundedKeys.set(mesh, key);
+	const data = roundedBoxForScale([scale[0], scale[1], scale[2]], round.radius, round.edges);
+	if (first) {
+		const vertexData = new VertexData();
+		vertexData.positions = data.positions;
+		vertexData.normals = data.normals;
+		vertexData.uvs = data.uvs;
+		vertexData.indices = data.indices;
+		vertexData.applyToMesh(mesh, true);
+		return;
+	}
+	mesh.updateVerticesData(VertexBuffer.PositionKind, data.positions, true);
+	mesh.updateVerticesData(VertexBuffer.NormalKind, data.normals);
+}
 
 const OWN_SURFACE = new Set<string>(['mirror', 'camera', 'textDisplay', 'htmlView', 'scoreboard', 'uiPanel', 'uiElement', 'surfaceMask', 'worldPortal', 'audioPlayer']);
 
@@ -151,6 +185,11 @@ export interface SceneGraphOptions {
 	setPlayerVelocity?: (playerId: string, velocity: [number, number, number], add: boolean) => boolean;
 	/** codeBlock's `haptics.pulse`: makes a player's controller(s) buzz; returns whether the player was found. */
 	hapticPulse?: (playerId: string, hand: 'left' | 'right' | 'both', intensity: number, durationMs: number) => boolean;
+	/** Draws the UI panel of a slot inside a control of another GUI instead of on a mesh of its own (see `UIPanelContainer`); null for any other panel. */
+	uiPanelContainer?: (slotId: string) => UIPanelContainer | null;
+	/** codeBlock's `ctx.dash` and `ctx.system`: only for the scenes that are the player's own menu (see ui/dashWidgetHost.ts). */
+	dash?: ScriptDash;
+	system?: ScriptSystem;
 	/** codeBlock's `ui.openDash(tab, options)` — opens the game's menu on this device. */
 	openDash?: (tab: string, options?: { invite?: boolean }) => void;
 	/** codeBlock's `world.equipPlayer(id, slotId, hand)` — returns whether the object was put in the hand. */
@@ -828,6 +867,9 @@ export class SceneGraph {
 		entry.runtime?.sync?.(slot);
 		const color = findComponent(slot, 'meshRenderer')?.color;
 		if (color && !entry.model) this.paint(entry.node, color);
+		// A rounded box keeps its rounds the same size in metres, so its vertices follow the scale.
+		const round = roundedBox(slot);
+		if (round && entry.node instanceof Mesh && !entry.model) applyRoundedBox(entry.node, slot.scale, round);
 		this.syncMaterial(entry);
 		entry.node.position = Vector3.FromArray(slot.position);
 		entry.node.rotationQuaternion = Quaternion.FromArray(slot.rotation);
@@ -947,6 +989,7 @@ export class SceneGraph {
 			if (preview && this.options.mediaAssets) this.addRuntime(entry, setupWorldGlobe(this.scene, node as AbstractMesh, preview, this.options.mediaAssets));
 		}
 		if (uiPanel && node instanceof Mesh) {
+			const into = this.options.uiPanelContainer?.(slot.id);
 			const binding = setupUIPanel(
 				this.scene,
 				node,
@@ -956,8 +999,11 @@ export class SceneGraph {
 					if (this.options.onUIEvent) this.options.onUIEvent(event);
 					else this.dispatchUIEvent(event);
 				},
-				this.options.getUiContext
+				this.options.getUiContext,
+				into ?? undefined
 			);
+			// Drawn inside another GUI: the plane the slot is made of is only a stand-in, never seen or hit.
+			if (into) { node.isVisible = false; node.isPickable = false; }
 			entry.ui = binding;
 			const previousRuntime = entry.runtime;
 			entry.runtime = { ...(previousRuntime ?? { dispose: () => {} }), dispose: () => previousRuntime?.dispose(), sync: (currentSlot) => { previousRuntime?.sync?.(currentSlot ?? slot); binding.sync(); } };
@@ -1162,6 +1208,8 @@ export class SceneGraph {
 			getUIMedia: (slotId) => this.getUIMedia(slotId),
 			getUIInputText: (slotId) => this.getUIInputText(slotId),
 			openDash: (tab, options) => this.options.openDash?.(tab, options),
+			dash: this.options.dash,
+			system: this.options.system,
 			importLibraryAsset: (ref, name) => {
 				if (!(this.options.isHost?.() ?? true) || !this.options.onImportLibraryAsset) throw new Error('Importing is unavailable here.');
 				return this.options.onImportLibraryAsset(ref, name);
@@ -1704,7 +1752,7 @@ export class SceneGraph {
 		const unlit = findComponent(slot, 'meshRenderer')?.unlit === true;
 		const translucent = opacity !== undefined && opacity < 1;
 		// A see-through mesh needs a material of its own, so it cannot be an instance either.
-		if (INSTANCED_SHAPES.has(shape) && !translucent && !unlit && !slot.components.some((c) => OWN_SURFACE.has(c.type) || c.type === 'material') && slot.scale.every((v) => v > 0)) {
+		if (INSTANCED_SHAPES.has(shape) && !roundedBox(slot) && !translucent && !unlit && !slot.components.some((c) => OWN_SURFACE.has(c.type) || c.type === 'material') && slot.scale.every((v) => v > 0)) {
 			const instance = this.primitiveSource(shape).createInstance(id);
 			instance.instancedBuffers.color = instanceColor(color);
 			return instance;
@@ -1731,9 +1779,15 @@ export class SceneGraph {
 				mesh = MeshBuilder.CreateCylinder(id, { diameter: 1, height: 1 }, this.scene);
 				break;
 			case 'box':
-			default:
-				mesh = MeshBuilder.CreateBox(id, { size: 1 }, this.scene);
+			default: {
+				const round = roundedBox(slot);
+				if (round) {
+					const box = new Mesh(id, this.scene);
+					applyRoundedBox(box, slot.scale, round);
+					mesh = box;
+				} else mesh = MeshBuilder.CreateBox(id, { size: 1 }, this.scene);
 				break;
+			}
 		}
 		// A slot with a `material` gets its PBR one right after (see syncMaterial).
 		if ((color || translucent || unlit) && !findComponent(slot, 'material')) {

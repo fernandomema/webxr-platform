@@ -9,7 +9,8 @@
 		{ href: '/admin/users', label: 'Users' },
 		{ href: '/admin/worlds', label: 'Worlds' },
 		{ href: '/admin/scoreboards', label: 'Scoreboards' },
-		{ href: '/admin/feedback', label: 'Feedback' }
+		{ href: '/admin/feedback', label: 'Feedback' },
+		{ href: '/admin/errors', label: 'Errors' }
 	] as const;
 	let menuOpen = $state(false);
 	const isActive = (href: string) => {
