@@ -80,3 +80,40 @@ test('a frame of the jukebox stays cheap', async () => {
     assert.ok(ms < 1, `${ms.toFixed(3)} ms per frame`);
   } finally { world.dispose(); }
 });
+
+test('the lobby seats its discs in the jukebox once it has loaded, and only in empty places', async () => {
+  const { buildLobbyExtras } = await import('../src/lib/content/templates/lobbyExtras.ts');
+  const seat = buildLobbyExtras().find((s) => s.id === 'lobby-jukebox-records');
+  const code = seat.components.find((c) => c.type === 'codeBlock').code;
+  const slots = new Map();
+  const disc = (id) => ({ id, parentId: null, components: [{ type: 'recordDisc', title: id }] });
+  slots.set('lobby-disc-1', disc('lobby-disc-1'));
+  slots.set('lobby-disc-2', disc('lobby-disc-2'));
+  const engine = new NullEngine();
+  const scene = new Scene(engine);
+  const poses = [];
+  const known = {
+    getSlot: (id) => slots.get(id),
+    getNode: (id) => new TransformNode(id, scene),
+    getGrabbers: () => [],
+    getEquipHolder: () => null,
+    isHost: () => true,
+    setComponentField: (id, type, field, value) => { const c = slots.get(id)?.components.find((x) => x.type === type); if (c) c[field] = value; },
+    reparent: (id, parent) => { slots.get(id).parentId = parent; return true; },
+    commitTransform: (id) => poses.push(id)
+  };
+  const host = new Proxy(known, { get: (t, k) => (k in t ? t[k] : () => undefined) });
+  const runtime = createCodeBlockHandlers(seat.id, new TransformNode(seat.id, scene), code, host);
+  try {
+    runtime.tick(1 / 72);
+    assert.equal(slots.get('lobby-disc-1').parentId, null, 'nothing happens before the jukebox is there');
+    const socket = (i, occupantId) => ({ id: `lobby-jukebox::jukebox-slot-${i}`, parentId: 'lobby-jukebox::jukebox', components: [{ type: 'socket', accepts: ['disc'], ...(occupantId ? { occupantId } : {}) }] });
+    slots.set('lobby-jukebox::jukebox-slot-0', socket(0));
+    slots.set('lobby-jukebox::jukebox-slot-1', socket(1, 'someone-else'));
+    runtime.tick(1 / 72);
+    assert.equal(slots.get('lobby-disc-1').parentId, 'lobby-jukebox::jukebox-slot-0');
+    assert.equal(slots.get('lobby-jukebox::jukebox-slot-0').components[0].occupantId, 'lobby-disc-1');
+    assert.equal(slots.get('lobby-disc-2').parentId, null, 'a taken place is left alone');
+    assert.equal(slots.get('lobby-jukebox::jukebox-slot-1').components[0].occupantId, 'someone-else');
+  } finally { runtime.dispose?.(); scene.dispose(); engine.dispose(); }
+});

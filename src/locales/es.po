@@ -7237,3 +7237,7 @@ msgstr ""
 #: src/lib/studio/ScenePreview.svelte
 msgid "Axes"
 msgstr ""
+
+#: src/lib/studio/components/WarningsPanel.svelte
+msgid "Script cost"
+msgstr ""

@@ -1,3 +1,5 @@
+import { scriptCostHints } from '@kithin/engine/worlds/scriptCost';
+
 export type DiagnosticSeverity = 'error' | 'warning' | 'info';
 
 export interface CodeDiagnostic {
@@ -83,5 +85,7 @@ export function lintCode(code: string): CodeDiagnostic[] {
 			diagnostics.push({ severity: 'warning', message: 'The browser page is not available inside a code block; use the ctx API.', line: index + 1 });
 		}
 	});
+	// What makes tick (every frame) expensive: reads of the world that cross out of the sandbox (see scriptCost.ts).
+	for (const hint of scriptCostHints(code)) diagnostics.push({ severity: hint.severity, message: `Performance: ${hint.message}`, line: hint.line });
 	return diagnostics;
 }

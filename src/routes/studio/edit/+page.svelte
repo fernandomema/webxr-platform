@@ -45,7 +45,7 @@
 		const tree = doc.tree;
 		const timer = setTimeout(() => {
 			// An object has no player start to read its signs from, so only the checks that do not need one apply to it.
-			try { findings = lintWorld(tree).filter((finding) => doc.kind === 'world' || finding.rule === 'ui-layout'); } catch { findings = []; }
+			try { findings = lintWorld(tree).filter((finding) => doc.kind === 'world' || finding.rule === 'ui-layout' || finding.rule === 'script-cost'); } catch { findings = []; }
 		}, 300);
 		return () => clearTimeout(timer);
 	});

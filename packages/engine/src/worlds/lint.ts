@@ -5,6 +5,7 @@ import { compose, multiply, transformDirection, transformPoint } from '../lighti
 import { worldBounds } from '../lighting/primitives.ts';
 import type { Mat4, PrimitiveShape, V3 } from '../lighting/types.ts';
 import { lintUiPanels } from '../xr/uiLayout.ts';
+import { SCRIPT_COST_WARNING, scriptCostHints, scriptCostScore } from './scriptCost.ts';
 
 /**
  * Checks of a world that need no browser and no headset, run by `kithin-game check` and by tests: things that are wrong in the data and
@@ -13,7 +14,7 @@ import { lintUiPanels } from '../xr/uiLayout.ts';
 export type LintSeverity = 'error' | 'warning';
 
 export interface LintFinding {
-	rule: 'ui-layout' | 'text-faces-away' | 'text-too-high' | 'text-grazing' | 'panel-out-of-reach';
+	rule: 'ui-layout' | 'text-faces-away' | 'text-too-high' | 'text-grazing' | 'panel-out-of-reach' | 'script-cost';
 	severity: LintSeverity;
 	slotId: string;
 	message: string;
@@ -38,6 +39,22 @@ const unit = (v: V3): V3 => { const n = Math.hypot(v[0], v[1], v[2]) || 1; retur
 const dot = (a: V3, b: V3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const deg = (rad: number) => Math.round((rad * 180) / Math.PI);
 
+/** Scripts whose `tick` reads the world often enough to cost a headset real time each frame (see scriptCost.ts): one finding per script. */
+export function lintScriptCost(tree: SlotTree): LintFinding[] {
+	const findings: LintFinding[] = [];
+	for (const slot of tree) {
+		for (const component of slot.components) {
+			if (component.type !== 'codeBlock' || typeof component.code !== 'string') continue;
+			const hints = scriptCostHints(component.code);
+			if (scriptCostScore(hints) < SCRIPT_COST_WARNING) continue;
+			const worst = hints.find((hint) => hint.severity === 'warning') ?? hints[0];
+			const lines = hints.map((hint) => hint.line).slice(0, 8).join(', ');
+			findings.push({ rule: 'script-cost', severity: 'warning', slotId: slot.id, message: `Its tick reads the world ${hints.length} times in its code (lines ${lines}${hints.length > 8 ? ', ...' : ''}), which costs a headset time every frame. Line ${worst.line}: ${worst.message}` });
+		}
+	}
+	return findings;
+}
+
 /** Every problem the world's data has that can be told without running it. */
 export function lintWorld(source: SlotTree, options: LintOptions = {}): LintFinding[] {
 	const tree = options.fragments ? expandFragments(source, options.fragments, { onlyEnabled: true }) : source;
@@ -45,6 +62,7 @@ export function lintWorld(source: SlotTree, options: LintOptions = {}): LintFind
 	const byId = new Map(tree.map((slot) => [slot.id, slot]));
 
 	for (const issue of lintUiPanels(source)) findings.push({ rule: 'ui-layout', severity: 'error', slotId: issue.id, message: `${issue.message} (panel ${issue.panelId})` });
+	for (const finding of lintScriptCost(tree)) findings.push(finding);
 
 	const worlds = new Map<string, Mat4 | null>();
 	const worldOf = (slot: Slot): Mat4 | null => {

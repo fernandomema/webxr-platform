@@ -205,9 +205,7 @@ let pass = 0;
 function recordOf(id) {
   const source = id ? ctx.hierarchy.getField(id, 'audioPlayer', 'source') : null;
   if (!source) return null;
-  let title = ctx.hierarchy.getField(id, 'recordDisc', 'title');
-  if (!title) { const slot = ctx.hierarchy.getSlot(id); title = slot ? String(slot.name).replace(/^Disc: /, '') : id; }
-  return { id: id, source: source, title: title, author: ctx.hierarchy.getField(id, 'recordDisc', 'author') || '' };
+  return { id: id, source: source, title: ctx.hierarchy.getField(id, 'recordDisc', 'title') || 'Record', author: ctx.hierarchy.getField(id, 'recordDisc', 'author') || '' };
 }
 
 /** The records, in the order of the places they wait in (the one on the turntable counts where it came from), with the number of that place. */
@@ -321,7 +319,7 @@ function spinTick(dt) {
   const state = stateOf();
   const id = state.cur >= 0 && occupantOf(DATA.turntable) === state.discId ? state.discId : '';
   if (spin.id && spin.id !== id) {
-    if (spin.base && ctx.hierarchy.getSlot(spin.id) && !ctx.grab.isSlotHeld(spin.id)) { ctx.world.setWorldPose(spin.id, { rotation: spin.base }, false); ctx.world.flush(); }
+    if (spin.base && ctx.hierarchy.getWorldPose(spin.id) && !ctx.grab.isSlotHeld(spin.id)) { ctx.world.setWorldPose(spin.id, { rotation: spin.base }, false); ctx.world.flush(); }
     spin.id = '';
     spin.base = null;
   }
@@ -367,11 +365,7 @@ function paintNow(list, playing) {
 
 // ---------------------------------------------------------------- the tray
 
-const trayOccupant = () => {
-  const slot = ctx.hierarchy.getSlot(at(DATA.traySocket));
-  const socket = slot && slot.components.find((c) => c.type === 'socket');
-  return (socket && socket.occupantId) || '';
-};
+const trayOccupant = () => ctx.hierarchy.getField(at(DATA.traySocket), 'socket', 'occupantId') || '';
 
 function say(text) { tray.notice = text; tray.noticeLeft = 3; shown = ''; }
 

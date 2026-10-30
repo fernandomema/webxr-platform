@@ -31,10 +31,9 @@ return {
     for (const r of RECORDS) {
       if (!pending.has(r.disc)) continue;
       const socketId = PREFIX + r.place;
-      const slot = ctx.hierarchy.getSlot(socketId);
-      const socket = slot && slot.components.find((c) => c.type === 'socket');
-      if (!socket) continue;
-      if (socket.occupantId || !ctx.hierarchy.getSlot(r.disc) || ctx.grab.isSlotHeld(r.disc)) { pending.delete(r.disc); continue; }
+      // One field read each (see ctx.hierarchy.getField): this runs every frame until the jukebox is loaded.
+      if (!ctx.hierarchy.getField(socketId, 'socket', 'accepts')) continue;
+      if (ctx.hierarchy.getField(socketId, 'socket', 'occupantId') || ctx.hierarchy.getField(r.disc, 'recordDisc', 'title') === undefined || ctx.grab.isSlotHeld(r.disc)) { pending.delete(r.disc); continue; }
       if (!ctx.world.setParent(r.disc, socketId)) continue;
       ctx.world.setLocalPose(r.disc, { position: [0, 0, 0], rotation: REST });
       ctx.world.setComponentField(socketId, 'socket', 'occupantId', r.disc);

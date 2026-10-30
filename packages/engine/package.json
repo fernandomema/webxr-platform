@@ -29,6 +29,7 @@
 	},
 	"dependencies": {
 		"@jitl/quickjs-wasmfile-release-sync": "^0.32.0",
+		"acorn": "^8.16.0",
 		"better-auth": "^1.7.6",
 		"quickjs-emscripten-core": "^0.32.0"
 	},

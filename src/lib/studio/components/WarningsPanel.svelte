@@ -12,7 +12,8 @@
 		'text-faces-away': 'Text faces away',
 		'text-too-high': 'Text too high',
 		'text-grazing': 'Text at a grazing angle',
-		'panel-out-of-reach': 'Panel out of reach'
+		'panel-out-of-reach': 'Panel out of reach',
+		'script-cost': 'Script cost'
 	};
 
 	const nameOf = (id: string) => getSlot(doc.tree, id)?.name ?? id;

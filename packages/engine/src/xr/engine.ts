@@ -492,8 +492,8 @@ export async function mountGame(
 		const timer = setTimeout(resolve, 100);
 		scene.onAfterRenderObservable.addOnce(() => { clearTimeout(timer); resolve(); });
 	});
-	/** A world with fewer new slots than this is put up at once: its cost is not worth a loading screen. */
-	const LOAD_COVER_MIN_SLOTS = 30;
+	/** A world with fewer new slots than this is put up at once (the same world put up again has none new). Any world that is changed to gets the loading screen: a small one that flashed by without it would look like a glitch. */
+	const LOAD_COVER_MIN_SLOTS = 1;
 	/** The most the loading screen waits for the world's models; one that is not in by then appears when it arrives. */
 	const MODEL_WAIT_MS = 20_000;
 	/** The least time the loading screen stays up once it is fully shown: a world that loads in a blink would otherwise make it flash on and off. */
@@ -508,16 +508,12 @@ export async function mountGame(
 		const shownAt = performance.now();
 		const held = holdNewMeshes(scene);
 		try {
-			await sceneGraph.reconcileInFrames(tree, { budgetMs: 4, nextFrame, onProgress: (done) => loadCover.setProgress(done * 0.4) });
+			await sceneGraph.reconcileInFrames(tree, { budgetMs: 4, nextFrame });
 			// Reading a model file takes a good while on a headset and cannot be cut up, so it is done now, with the screen in front, not after the world is shown.
 			const modelsDeadline = performance.now() + MODEL_WAIT_MS;
-			for (let progress = sceneGraph.modelProgress(); progress.pending > 0 && performance.now() < modelsDeadline; progress = sceneGraph.modelProgress()) {
-				loadCover.setProgress(0.4 + 0.3 * (1 - progress.pending / progress.total));
-				await nextFrame();
-			}
+			while (sceneGraph.modelProgress().pending > 0 && performance.now() < modelsDeadline) await nextFrame();
 			held.stop();
-			await revealGradually(scene, held, { nextFrame, onProgress: (done) => loadCover.setProgress(0.7 + done * 0.3) });
-			loadCover.setProgress(1);
+			await revealGradually(scene, held, { nextFrame });
 			const remaining = LOAD_COVER_MIN_MS - (performance.now() - shownAt);
 			if (remaining > 0) await new Promise<void>((resolve) => setTimeout(resolve, remaining));
 			// Whatever moves the player to the start happens before the screen goes, so that it is not watched.
@@ -785,6 +781,8 @@ export async function mountGame(
 		}
 		let didLeave = false;
 		try {
+			// The menu that was used to pick the world must not stay in front of the next one.
+			dash.root.setEnabled(false);
 			await leaveCurrentSession();
 			didLeave = true;
 			gameState.loadedWorld = loaded;
@@ -1218,13 +1216,17 @@ export async function mountGame(
 	 * it starts, so the setting is applied only outside one: it takes effect the next time VR is entered.
 	 */
 	let multiviewApplied = false;
+	// Multiview is only dependable on standalone headsets (Quest browser, Android): on a desktop browser (Edge/Chrome with a
+	// PC runtime) the WebXR layers feature fails to attach and the page freezes as the session opens.
+	const multiviewSupported = !!engine.getCaps().multiview && /OculusBrowser|Quest|Android/i.test(navigator.userAgent);
 	function applyMultiview(): void {
-		if (!xr || xr.baseExperience.state !== WebXRState.NOT_IN_XR || multiviewApplied === xrSettings.multiview) return;
+		const wanted = xrSettings.multiview && multiviewSupported;
+		if (!xr || xr.baseExperience.state !== WebXRState.NOT_IN_XR || multiviewApplied === wanted) return;
 		const features = xr.baseExperience.featuresManager;
 		try {
-			if (xrSettings.multiview) features.enableFeature(WebXRFeatureName.LAYERS, 'latest', { preferMultiviewOnInit: true }, true, false);
+			if (wanted) features.enableFeature(WebXRFeatureName.LAYERS, 'latest', { preferMultiviewOnInit: true }, true, false);
 			else features.disableFeature(WebXRFeatureName.LAYERS);
-			multiviewApplied = xrSettings.multiview;
+			multiviewApplied = wanted;
 		} catch (error) {
 			console.warn('[engine] multiview could not be set up; drawing each eye on its own', error);
 		}
