@@ -3,9 +3,9 @@ import type { RequestHandler } from './$types';
 import { listActiveWorldSessions, startHostingSession } from '$lib/server/services/worlds';
 import { toHttpError } from '$lib/server/apiError';
 
-/** Public: every currently-hosted session, for the Dash "Worlds" tab. */
-export const GET: RequestHandler = async () => {
-	return json(await listActiveWorldSessions());
+/** Every public hosted session for the Dash "Worlds" tab, plus the friends-only ones the signed-in caller's friendships reach. */
+export const GET: RequestHandler = async ({ locals }) => {
+	return json(await listActiveWorldSessions(locals.user), { headers: { 'cache-control': 'no-store' } });
 };
 
 /** Hosts the current scene as a brand new world (see /api/worlds/[id]/host to re-host an existing one). */

@@ -1,5 +1,6 @@
 import { BOWLING_LOGIC_SOURCE } from './bowlingLogic.ts';
-import { BALLS_PER_LANE, BOWLING, LANE_COUNT, ballHome, laneIds } from './bowlingLayout.ts';
+import { BALLS_PER_LANE, BOWLING, CUSTOM_BALL_COUNT, LANE_COUNT, MACHINE, ballHome, customBallHome, customBallId, laneIds } from './bowlingLayout.ts';
+import { BALL_FINISHES, BALL_MATERIALS, MACHINE_BUTTONS, ballMaterial, materialButtonId } from './bowlingMachine.ts';
 
 /**
  * The script that runs every lane of the alley (one code block on the director, which the lane consoles hang from so that it hears their
@@ -19,7 +20,11 @@ const LAYOUT = {
 	deskZ: BOWLING.deskZ,
 	maxPlayers: BOWLING.maxPlayers,
 	hallBoard: BOWLING.hallOfFameBoard,
-	homes: Array.from({ length: LANE_COUNT }, (_, lane) => Array.from({ length: BALLS_PER_LANE }, (_, k) => ({ id: laneIds(lane).ball(k), lane, pos: ballHome(lane, k) }))).flat(),
+	homes: [
+		...Array.from({ length: LANE_COUNT }, (_, lane) => Array.from({ length: BALLS_PER_LANE }, (_, k) => ({ id: laneIds(lane).ball(k), lane, pos: ballHome(lane, k) }))).flat(),
+		// The balls the ball machine makes: they start on its tray, and after a roll come back to the return of the lane they were bowled on.
+		...Array.from({ length: CUSTOM_BALL_COUNT }, (_, k) => ({ id: customBallId(k), lane: 0, pos: customBallHome(k), custom: true }))
+	],
 	neon: ['#ff2fb3', '#25e6ff'],
 	/** Solids a ball passes through: the floors (it has its own) and the walls that keep people off the lanes. */
 	ignore: ['bw-floor-lobby', 'bw-floor-west', 'bw-floor-east', 'bw-barrier-front', 'bw-barrier-west', 'bw-barrier-east']
@@ -56,12 +61,13 @@ let fxLeft = 8;
 let fxTimer = 0;
 let moved = false;
 let flushTimer = 0;
+let checkTimer = 0;
 const lanes = LAYOUT.laneX.map((x, i) => ({
   i: i, x: x, ids: laneId(i), game: null, assist: 1, bumpers: false, phase: 'ready', timer: 0, rollTime: 0, pins: makePins(), ball: null,
   downBefore: 0, rerack: false, banner: null, bannerUntil: 0, hitSound: 0, thrower: null, leaving: [], flashUntil: 0, flashStep: -1
 }));
 const balls = LAYOUT.homes.map((home) => ({
-  id: home.id, home: home.pos, lane: home.lane, phase: 'home', pos: home.pos.slice(), vel: [0, 0, 0], samples: [], holder: null,
+  id: home.id, home: home.pos.slice(), trayHome: home.pos.slice(), custom: !!home.custom, displaced: null, displacedBy: null, parked: false, lastLane: -1, lane: home.lane, phase: 'home', pos: home.pos.slice(), vel: [0, 0, 0], samples: [], holder: null,
   rest: 0, returnAt: 0, quat: [0, 0, 0, 1], hidden: false
 }));
 
@@ -342,13 +348,56 @@ function deliver(L, ball) {
   else if (L.game.over) { L.game = newGame(L.game.players); resetPins(L); }
   L.downBefore = pinsDown(L.pins);
   L.thrower = ball.holder;
+  ball.lastLane = L.i;
   paintLane(L);
 }
 
 // ---------------------------------------------------------------- balls
 
-function sendHome(ball, quiet) {
+/**
+ * A ball from the ball machine that is back from a lane takes the place of one of that lane's own balls on its return (the own ball is put away
+ * until the machine's ball leaves again). Returns whether it found a place; without one the ball goes to the machine's tray.
+ */
+function takeLanePlace(ball, laneIndex) {
+  restoreDisplaced(ball);
+  const own = balls.find((b) => !b.custom && b.lane === laneIndex && b.phase === 'home' && !b.parked && !ctx.grab.isSlotHeld(b.id));
+  if (!own) return false;
+  own.parked = true;
+  own.displacedBy = ball;
+  // Put away twice over: switched off and sent under the floor, so that nothing of it can be left showing under the ball that takes its place.
+  ctx.world.setSlotEnabled(own.id, false);
+  ctx.world.setWorldPose(own.id, { position: [own.home[0], -30, own.home[2]] });
+  ball.displaced = own;
+  ball.home = own.home.slice();
+  return true;
+}
+
+/** The own ball comes back out, and the machine's ball goes back to thinking of its tray as home. */
+function restoreDisplaced(ball) {
+  const own = ball.displaced;
+  if (!own) return;
+  ball.displaced = null;
+  own.displacedBy = null;
+  if (own.parked) {
+    own.parked = false;
+    ctx.world.setWorldPose(own.id, { position: own.home, rotation: [0, 0, 0, 1] });
+    ctx.world.setSlotEnabled(own.id, true);
+  }
+  ball.home = ball.trayHome.slice();
+}
+
+/** The lane whose return a point is over (the one the machine's ball was bowled on, if it is one of that return's two). */
+function laneOfReturn(x, preferred) {
+  const lanesHere = LAYOUT.returnX.map((rx, i) => (Math.abs(rx - x) < 0.5 ? i : -1)).filter((i) => i >= 0);
+  return lanesHere.includes(preferred) ? preferred : lanesHere.length ? lanesHere[0] : -1;
+}
+
+function sendHome(ball, quiet, laneIndex) {
   for (const L of lanes) if (L.ball === ball) abortRoll(L);
+  if (ball.custom) {
+    restoreDisplaced(ball);
+    if (laneIndex >= 0) takeLanePlace(ball, laneIndex);
+  }
   ball.phase = 'home';
   ball.vel = [0, 0, 0];
   ball.pos = ball.home.slice();
@@ -379,6 +428,8 @@ function releaseVelocity(ball) {
 
 function grabbed(ball) {
   ball.holder = nearestPlayer(ball.pos, 3);
+  // Taken off a lane's return: the own ball it replaced is there again.
+  if (ball.custom) { restoreDisplaced(ball); ball.lastLane = -1; }
   for (const L of lanes) if (L.ball === ball) abortRoll(L);
   ball.phase = 'held';
   ball.samples = [];
@@ -388,7 +439,7 @@ function grabbed(ball) {
 
 function released(ball) {
   const p = ball.pos;
-  if (inReturnZone(p)) { sendHome(ball, false); return; }
+  if (inReturnZone(p)) { sendHome(ball, false, ball.custom ? laneOfReturn(p[0], ball.lastLane) : -1); return; }
   const v = releaseVelocity(ball);
   ball.phase = 'free';
   ball.vel = v;
@@ -511,8 +562,18 @@ function afterFrame(dt) {
     if (ball.phase === 'free') {
       ctx.world.setWorldPose(ball.id, { position: ball.pos, rotation: ball.quat }, false);
       moved = true;
-      if (ball.rest > IDLE_RETURN) sendHome(ball, false);
-    } else if (ball.phase === 'pit' && clock >= ball.returnAt) sendHome(ball, false);
+      if (ball.rest > IDLE_RETURN) sendHome(ball, false, -1);
+    } else if (ball.phase === 'pit' && clock >= ball.returnAt) sendHome(ball, false, ball.custom ? ball.lastLane : -1);
+  }
+  // A machine ball on a lane's return that the machine took away again (to make another): the own ball it replaced comes back.
+  checkTimer += dt;
+  if (checkTimer >= 0.5) {
+    checkTimer = 0;
+    for (const ball of balls) {
+      if (!ball.displaced || ball.phase !== 'home') continue;
+      const pose = ctx.hierarchy.getWorldPose(ball.id);
+      if (pose && Math.hypot(pose.position[0] - ball.home[0], pose.position[1] - ball.home[1], pose.position[2] - ball.home[2]) > 0.3) restoreDisplaced(ball);
+    }
   }
   // Poses were written quietly: the guests get them a few times a second, as one difference.
   flushTimer += dt;
@@ -583,55 +644,95 @@ return {
 };
 `;
 
-/**
- * A quiet tune for the jukebox, played note by note with the engine's synthesised hit (no sound file): a bass, a few chord tones and a
- * melody picked from the chord, over four bars. The same pattern every time through. Anyone can switch it off or change the tune.
- */
-export const JUKEBOX_SCRIPT = String.raw`
-const midi = (n) => 440 * Math.pow(2, (n - 69) / 12);
-const TUNES = [
-  { name: 'Lounge', bpm: 84, bars: [[48, [60, 64, 67, 71]], [45, [57, 60, 64, 67]], [50, [62, 65, 69, 72]], [43, [59, 62, 65, 67]]], bass: 0.14, voice: 0.09 },
-  { name: 'Neon', bpm: 112, bars: [[45, [57, 60, 64, 69]], [41, [57, 60, 65, 69]], [48, [60, 64, 67, 72]], [43, [59, 62, 67, 71]]], bass: 0.16, voice: 0.08 }
-];
-const mulberry = (seed) => () => { seed = (seed + 0x6D2B79F5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-let on = true;
-let tune = 0;
-let step = 0;
-let wait = 0;
-let random = mulberry(7);
+const MACHINE_DATA = {
+	materials: BALL_MATERIALS.map((material, i) => ({ name: material.name, chip: material.chip, finish: material.finish, albedo: (ballMaterial(i, 0) as { albedo: { assetId: string } }).albedo.assetId })),
+	finishes: BALL_FINISHES,
+	rails: [...new Set(BOWLING.returnX)],
+	railY: BOWLING.ballRestY,
+	balls: Array.from({ length: CUSTOM_BALL_COUNT }, (_, k) => ({ id: customBallId(k), home: customBallHome(k) })),
+	preview: MACHINE.previewId,
+	buttons: { finish: MACHINE_BUTTONS.finish, make: MACHINE_BUTTONS.make, name: MACHINE_BUTTONS.name, material: Array.from({ length: BALL_MATERIALS.length }, (_, i) => materialButtonId(i)) }
+};
 
-const set = (id, field, value) => ctx.world.setComponentField(id, 'uiElement', field, value, true);
+/**
+ * The ball machine's panel: pick a material (a button each) and a finish, watch the ball in the window turn in it, and make the ball: one of
+ * the machine's balls (hidden until now) is given that material and put on the tray, where anybody can take it and bowl with it like any other.
+ */
+export const MACHINE_SCRIPT = String.raw`
+const DATA = ${JSON.stringify(MACHINE_DATA)};
+const MESSAGE_TIME = 3.5;
+let pick = 0;
+let finish = DATA.materials[0].finish;
+let next = 0;
+let turn = 0;
+let clock = 0;
+let message = '';
+let messageUntil = 0;
+let shownName = '';
+
+const text = (id, value) => ctx.world.setComponentField(id, 'uiElement', 'text', value, true);
+const materialOf = (i, f) => ({ type: 'material', albedo: { kind: 'asset', assetId: DATA.materials[i].albedo }, mapping: 'mesh', tiling: 1, roughness: DATA.finishes[f].roughness, metallic: DATA.finishes[f].metallic });
+
 function paint() {
-  set('bw-juke-toggle', 'text', 'Music: ' + (on ? 'ON' : 'OFF'));
-  set('bw-juke-toggle', 'background', on ? '#16a34a' : '#7f1d1d');
-  set('bw-juke-next', 'text', TUNES[tune].name);
+  const m = DATA.materials[pick];
+  const label = message && clock < messageUntil ? message : m.name + ' · ' + DATA.finishes[finish].name;
+  if (label !== shownName) { shownName = label; text(DATA.buttons.name, label); }
+  DATA.buttons.material.forEach((id, i) => text(id, (i === pick ? '● ' : '') + DATA.materials[i].name));
+  text(DATA.buttons.finish, 'Finish: ' + DATA.finishes[finish].name);
+  ctx.world.setComponent(DATA.preview, materialOf(pick, finish));
 }
 
-function note(frequency, ms, volume) { ctx.audio.play({ frequency: frequency, pitchDrop: 0, noiseMix: 0.03, durationMs: ms, volume: volume }); }
+function say(value) { message = value; messageUntil = clock + MESSAGE_TIME; paint(); }
 
-function playStep() {
-  const t = TUNES[tune];
-  const bar = t.bars[Math.floor(step / 8) % t.bars.length];
-  const i = step % 8;
-  if (i === 0 || i === 4) note(midi(bar[0]), 520, t.bass);
-  if (i === 2 || i === 6) { note(midi(bar[1][1]), 700, t.voice); note(midi(bar[1][2]), 700, t.voice * 0.8); }
-  if (random() < 0.42) note(midi(bar[1][Math.floor(random() * bar[1].length)] + (random() < 0.3 ? 12 : 0)), 850, t.voice * 0.9);
-  step += 1;
+/** The next of the machine's balls that is free: hidden, or waiting on the tray, and not in anybody's hand. */
+function freeBall() {
+  for (let n = 0; n < DATA.balls.length; n++) {
+    const at = (next + n) % DATA.balls.length;
+    const ball = DATA.balls[at];
+    if (ctx.grab.isSlotHeld(ball.id)) continue;
+    const slot = ctx.hierarchy.getSlot(ball.id);
+    if (!slot) continue;
+    let free = slot.disabled === true;
+    if (!free) {
+      const pose = ctx.hierarchy.getWorldPose(ball.id);
+      const at = pose ? pose.position : null;
+      // Waiting on the tray, or on the return of a lane it was bowled on: nobody has it, so it can be made again.
+      free = !!at && (Math.hypot(at[0] - ball.home[0], at[1] - ball.home[1], at[2] - ball.home[2]) < 0.15
+        || (Math.abs(at[1] - DATA.railY) < 0.06 && at[2] > 1.5 && at[2] < 3.8 && DATA.rails.some((x) => Math.abs(at[0] - x) < 0.12)));
+    }
+    if (free) return at;
+  }
+  return -1;
+}
+
+function make() {
+  const at = freeBall();
+  if (at < 0) { say('All the balls are out. Put one back on the tray.'); return; }
+  const ball = DATA.balls[at];
+  next = at + 1;
+  ctx.world.setComponent(ball.id, materialOf(pick, finish));
+  ctx.world.setWorldPose(ball.id, { position: ball.home, rotation: [0, 0, 0, 1] });
+  ctx.world.setSlotEnabled(ball.id, true);
+  ctx.particles.burst({ color: DATA.materials[pick].chip, count: 70, durationMs: 1000 });
+  ctx.audio.play({ frequency: 520, pitchDrop: -260, noiseMix: 0.15, durationMs: 420, volume: 0.45 });
+  say('Your ' + DATA.materials[pick].name + ' ball is on the tray!');
 }
 
 return {
   onUIEvent(event) {
     if (event.type !== 'press' || !ctx.world.isHost()) return;
-    if (event.slotId === 'bw-juke-toggle') { on = !on; paint(); }
-    else if (event.slotId === 'bw-juke-next') { tune = (tune + 1) % TUNES.length; step = 0; random = mulberry(7 + tune); paint(); }
+    const at = DATA.buttons.material.indexOf(event.slotId);
+    if (at >= 0) { pick = at; finish = DATA.materials[at].finish; message = ''; paint(); }
+    else if (event.slotId === DATA.buttons.finish) { finish = (finish + 1) % DATA.finishes.length; message = ''; paint(); }
+    else if (event.slotId === DATA.buttons.make) make();
   },
   tick(dt) {
-    if (!ctx.world.isHost() || !on) return;
-    wait -= dt;
-    if (wait > 0) return;
-    wait += 60 / TUNES[tune].bpm / 2;
-    if (wait < 0) wait = 0;
-    playStep();
+    if (!ctx.world.isHost()) return;
+    clock += dt;
+    if (shownName === '') paint();
+    else if (message && clock >= messageUntil) { message = ''; paint(); }
+    turn += dt * 0.7;
+    ctx.world.setLocalPose(DATA.preview, { rotation: ctx.math.quatMultiply(ctx.math.quatFromAxisAngle([0, 1, 0], turn), ctx.math.quatFromAxisAngle([1, 0, 0], 0.35)) }, false);
   }
 };
 `;

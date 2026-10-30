@@ -23,7 +23,7 @@ test('every starter object sits in a folder, has a unique id and builds a well-f
       if (slot.parentId) assert.ok(ids.indexOf(slot.parentId) >= 0 && ids.indexOf(slot.parentId) < index, `${entry.id}: ${slot.name} comes before its parent`);
     });
     assert.equal(tree.filter((slot) => slot.parentId === null).length, 1, `${entry.id} must be a single object`);
-    assert.ok(tree[0].components.some((c) => c.type === 'grabbable'), `${entry.id}: the root must be grabbable`);
+    assert.equal(tree[0].components.some((c) => c.type === 'grabbable'), entry.grabbable !== false, `${entry.id}: the root is grabbable unless it is scenery`);
     assert.equal(collectAssetIds(tree).size, 0, `${entry.id} must not need cloud assets`);
   }
 });

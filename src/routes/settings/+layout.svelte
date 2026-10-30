@@ -8,6 +8,7 @@
 		{ href: '/settings', label: 'General' },
 		{ href: '/settings/cloud', label: 'Cloud' },
 		{ href: '/settings/credits', label: 'Credits' },
+		{ href: '/settings/friends', label: 'Friends' },
 		{ href: '/settings/apps', label: 'Apps' },
 		{ href: '/settings/connections', label: 'Connections' },
 		{ href: '/settings/account', label: 'Data & Account' }

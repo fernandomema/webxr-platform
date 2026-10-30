@@ -1,6 +1,6 @@
 import { MaterialPluginBase, RegisterMaterialPlugin, UnregisterMaterialPlugin, type AbstractEngine, type Material, type MaterialDefines, type Scene, type SubMesh, type UniformBuffer } from '@babylonjs/core';
 import { FRAGMENT_UNIFORMS, INJECTION_POINTS, MAX_VOLUMES, UNIFORMS, customCode } from './irradianceShader.ts';
-import { LightVolumeManager } from './lightVolumeManager.ts';
+import { LightVolumeManager, noteIrradiancePlugin } from './lightVolumeManager.ts';
 
 const NAME = 'IrradianceVolume';
 
@@ -14,6 +14,8 @@ const MATERIAL_CLASSES = ['StandardMaterial', 'PBRMaterial'];
 export class IrradianceVolumePlugin extends MaterialPluginBase {
 	constructor(material: Material) {
 		super(material, NAME, 200, { IRRADIANCE_VOLUME: false, LV_VERSION: 0 }, true, true);
+		const scene = material.getScene();
+		if (scene) noteIrradiancePlugin(scene);
 	}
 
 	override getClassName(): string {

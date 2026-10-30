@@ -1527,6 +1527,7 @@ msgid "Clear {0}"
 msgstr ""
 
 #: src/lib/studio/components/AiPanel.svelte
+#: src/routes/settings/cloud/+page.svelte
 #: src/routes/studio/content/+page.svelte
 msgid "Clear"
 msgstr ""
@@ -1665,9 +1666,8 @@ msgstr ""
 msgid "Code blocks are JavaScript bodies returning handlers. They run in a sandbox with only the ctx API."
 msgstr ""
 
-#: src/lib/studio/components/AiPanel.svelte
-msgid "Tool failed."
-msgstr ""
+#~ msgid "Tool failed."
+#~ msgstr ""
 
 #~ msgid "The agent reached its step limit. Review its changes or ask it to continue."
 #~ msgstr ""
@@ -5755,9 +5755,8 @@ msgstr ""
 msgid "<0>Purchases and credits:</0> Kithin collects and stores records of what you buy and spend. For your account these are your credit balance; every change to it (the amount, the resulting balance, whether it was a purchase of credits, a spend in a world or an adjustment, the date, and the payment provider and its reference for that payment); and what you bought in worlds (the world, the product code and how many times). When you buy credits with a card, the payment reference is the identifier of the Stripe checkout session. When you buy credits in the Meta Quest app, it is the purchase token returned by Meta."
 msgstr ""
 
-#: src/routes/privacy/+page.svelte
-msgid "<0>Meta user ID (Meta Quest purchases):</0> when you buy credits with Meta's in-app payments, your device gives Kithin your Meta user ID, which is an identifier specific to this app, together with the purchase token and the item purchased. Kithin collects it, stores it linked to your Kithin account, and sends it to Meta with the item code to verify and complete the purchase. It is not collected for any other purpose, and Kithin does not collect your Meta name, email address, friends list or profile."
-msgstr ""
+#~ msgid "<0>Meta user ID (Meta Quest purchases):</0> when you buy credits with Meta's in-app payments, your device gives Kithin your Meta user ID, which is an identifier specific to this app, together with the purchase token and the item purchased. Kithin collects it, stores it linked to your Kithin account, and sends it to Meta with the item code to verify and complete the purchase. It is not collected for any other purpose, and Kithin does not collect your Meta name, email address, friends list or profile."
+#~ msgstr ""
 
 #: src/routes/privacy/+page.svelte
 msgid "<0>Payment details:</0> card numbers and other payment details you enter to pay by card are collected and processed by Stripe, not by Kithin. Kithin receives confirmation that a payment was completed, its amount, and the Stripe reference, and gives Stripe your email address and account identifier so the payment can be matched to your account. Meta processes payments made in the Quest app and Kithin does not receive your payment details."
@@ -6472,15 +6471,11 @@ msgstr ""
 #~ msgid "{0} Paused so it does not waste time. Review what it staged, or continue and ask it to try something different."
 #~ msgstr ""
 
-#. 0: MAX_AGENT_STEPS
-#: src/lib/studio/components/AiPanel.svelte
-msgid "The agent took {0} steps. Review its changes or continue."
-msgstr ""
+#~ msgid "The agent took {0} steps. Review its changes or continue."
+#~ msgstr ""
 
-#. 0: usage.input.toLocaleString(); 1: usage.cacheRead ? ` (${usage.cacheRead.toLocaleString()} cached)` \\: ''; 2: usage.output.toLocaleString()
-#: src/lib/studio/components/AiPanel.svelte
-msgid "{0} tokens in{1} · {2} out"
-msgstr ""
+#~ msgid "{0} tokens in{1} · {2} out"
+#~ msgstr ""
 
 #: src/lib/studio/components/AiPanel.svelte
 msgid "Free for now. Usage is recorded to set fair prices."
@@ -6533,7 +6528,7 @@ msgstr ""
 msgid "Be economical: every step resends the whole conversation. The outline below lists every object, so skip list_scene; read_scene_json already includes everything list_scene would. Call independent tools together in one turn, and make many edits at once with stage_set_component_fields / stage_update_slots instead of one call per edit. Do not re-read or re-validate what a tool already returned."
 msgstr ""
 
-#. 0: loop
+#. 0: caught.message
 #: src/lib/studio/components/AiPanel.svelte
 msgid "{0} Paused so it does not waste time. Review what it changed, or continue and ask it to try something different."
 msgstr ""
@@ -7071,4 +7066,34 @@ msgstr ""
 
 #: src/lib/studio/components/AiPanel.svelte
 msgid "For real surfaces (brick, wood, metal, fabric, concrete, grass…) do not just change colours: search_assets (kind material), then import_asset, then stage_set_material with mapping \"world\" and the size the import returned. For a ready-made object search_assets (kind model), import_asset, then place the assetId with stage_subtree. Everything is downloaded and optimized into the person's own assets for them; if an import says credit is owed, tell the person. Only built-in shapes take a material. Before downloading anything, check what the person already owns with list_assets (kind \"model\", \"audio\" or \"image\", plus a name query) and reuse those assetIds. In big scenes, locate things with find_slots (name or component) instead of paging through list_scene."
+msgstr ""
+
+#: src/routes/privacy/+page.svelte
+msgid "<0>Meta user ID (Meta Quest purchases):</0> when you buy credits with Meta's in-app payments, your device gives Kithin your Meta user ID, which is an identifier specific to this app, together with the purchase token and the item purchased. Kithin collects it, stores it linked to your Kithin account, and sends it to Meta with the item code to verify and complete the purchase. It is not collected for any other purpose than purchases and, if you use it, finding friends (see below), and Kithin does not collect your Meta name, email address or profile."
+msgstr ""
+
+#: src/routes/privacy/+page.svelte
+msgid "<0>Friends:</0> Kithin stores your friend code, who you are friends with, friend requests you sent or received (until they are answered), and the people you blocked. Friends can see your name, your username and, if your sessions allow it, which session you are hosting. If you choose \"Find friends\" in the Quest app, the app gives Kithin your Meta user ID with proof from Meta that it is yours, and the Meta user IDs of your Meta friends who have the Friends permission of this app. Kithin keeps your Meta user ID linked to your account so your Meta friends can find you; it does not store your friends' IDs. It only uses them to show you which of them also use Kithin, and nobody becomes your friend until they accept your request. Meta does not give Kithin their names."
+msgstr ""
+
+#: src/routes/settings/cloud/+page.svelte
+msgid "Could not clear the saved objects."
+msgstr ""
+
+#: src/routes/settings/cloud/+page.svelte
+#: src/routes/settings/cloud/+page.svelte
+msgid "Saved in worlds"
+msgstr ""
+
+#: src/routes/settings/cloud/+page.svelte
+msgid "Nothing is saved in the cloud for any world."
+msgstr ""
+
+#: src/routes/settings/cloud/+page.svelte
+msgid "Objects published worlds keep for you when you host them, if you chose to keep them in the cloud (the choice is in the in-game settings). Their models stay in your storage until you remove them under Largest models."
+msgstr ""
+
+#. 0: (usage.inputTokens ?? 0).toLocaleString(); 1: (usage.outputTokens ?? 0).toLocaleString()
+#: src/lib/studio/components/AiPanel.svelte
+msgid "{0} tokens in · {1} out"
 msgstr ""

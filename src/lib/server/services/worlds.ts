@@ -5,8 +5,9 @@ import { validateWorldScene } from '@kithin/engine/worlds/package';
 import { migrateSlotTree } from '@kithin/engine/assets/ref';
 import { linkSceneAssets, readyAssetIds, releaseUnusedPreview, resolveThumbnail, withThumbnail } from './assets';
 import type { SlotTree } from '@kithin/engine/ecs/types';
-import type { HostedWorldVisibility } from '@kithin/engine/worldVisibility';
+import { isHostedWorldVisibility, type HostedWorldVisibility } from '@kithin/engine/worldVisibility';
 import { getActiveRoomCodes } from '../rooms';
+import { reachableHosts } from '../friends/friendGraph';
 
 export interface SessionUser {
 	id: string;
@@ -20,9 +21,9 @@ function generateRoomCode(): string {
 
 /**
  * Used by the Dash "Worlds" tab (fetched via /api/worlds) — the currently-hosted sessions the caller can enter.
- * Today that is every public one; sessions that only friends can enter belong here too once friend access exists.
+ * Every public one, plus the Friends and Friends+ ones the viewer's friendships reach (a signed-out viewer only gets public ones).
  */
-export async function listActiveWorldSessions() {
+export async function listActiveWorldSessions(viewer: SessionUser | null = null) {
 	const activeSessions = await prisma.worldSession.findMany({
 		where: { endedAt: null },
 		select: { id: true, roomCode: true, startedAt: true }
@@ -39,8 +40,12 @@ export async function listActiveWorldSessions() {
 		});
 	}
 
+	const reach = viewer ? await reachableHosts(viewer.id) : null;
+	const visible: object[] = [{ world: { visibility: 'public' } }];
+	if (reach && reach.friends.size > 0) visible.push({ hostUserId: { in: [...reach.friends] }, world: { visibility: 'friends' } });
+	if (reach && reach.friendsPlus.size > 0) visible.push({ hostUserId: { in: [...reach.friendsPlus] }, world: { visibility: 'friends-plus' } });
 	return prisma.worldSession.findMany({
-		where: { endedAt: null, world: { visibility: 'public' } },
+		where: { endedAt: null, OR: visible },
 		include: { world: { select: { id: true, name: true, hostUserId: true, visibility: true, thumbnailAssetId: true, hostUser: { select: { name: true } } } } },
 		orderBy: { startedAt: 'desc' }
 	});
@@ -69,7 +74,7 @@ export async function startHostingSession(
 	params: { worldId?: string; name?: string; visibility: HostedWorldVisibility; sceneSnapshot: SlotTree; publicationId?: unknown }
 ) {
 	if (!user) throw new UnauthorizedError();
-	if (params.visibility !== 'private' && params.visibility !== 'public') throw new BadRequestError('This visibility is not available yet');
+	if (!isHostedWorldVisibility(params.visibility)) throw new BadRequestError('This visibility is not available yet');
 	try { validateWorldScene(params.sceneSnapshot); } catch (err) { throw new BadRequestError(err instanceof Error ? err.message : 'Invalid world scene'); }
 
 	let publicationId: string | null = null;

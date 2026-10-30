@@ -42,7 +42,7 @@ Copy them with `kithin-engine-static [destination]` (default `./static`), or hos
 | Call | What it decides |
 | --- | --- |
 | `configurePlatform` | `apiBase` (Kithin's API), `getToken`/`setToken` (bearer token), `assetBase`, `signalingUrl`, `stunUrls`, `appId`, `name` |
-| `configureFeatures` | the dash tabs (`homeTab`, `sessionTab`, `worldsTab`, `inventoryTab`, `settingsTab`, `accountTab`) and the `inspector` |
+| `configureFeatures` | the dash tabs (`homeTab`, `sessionTab`, `worldsTab`, `inventoryTab`, `settingsTab`, `friendsTab`, `accountTab`) and the `inspector` |
 | `registerContent` | what the app ships: built-in worlds, the scene to start in, a starter kit, files by content hash, repainters |
 | `loadBundle` | the same, read from a `bundle.json` (below) |
 | `setEngineLocale` | the language; by default the browser's. Texts are in English in the code and translated by the engine itself (`registerTranslations` adds languages) |

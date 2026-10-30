@@ -10,12 +10,22 @@ const packDir = new URL('.', import.meta.url).pathname;
 syncPackAssets(packDir);
 const { default: pack } = await import('./world.ts');
 const { loadBowlingLogic } = await import('./bowlingLogic.ts');
-const { BOWLING, LANE_COUNT, BALLS_PER_LANE, ballHome, laneIds, DIRECTOR_ID, JUKEBOX_ID } = await import('./bowlingLayout.ts');
+const { BOWLING, LANE_COUNT, BALLS_PER_LANE, ballHome, laneIds, DIRECTOR_ID, JUKEBOX_AT, JUKEBOX_LOADER_ID } = await import('./bowlingLayout.ts');
+const { buildJukebox, JUKEBOX_SLOTS, jukeboxSlotId, jukeboxSlotAt } = await import('../../src/lib/content/templates/jukebox.ts');
+const { instantiateExternal } = await import('../../packages/engine/src/inventory/external.ts');
 const { ASSETS } = await import('./assets.ts');
 
 const logic = loadBowlingLogic();
 const tree = pack.build();
 const byId = new Map(tree.map((slot) => [slot.id, slot]));
+
+// The jukebox is not in the scene: a loader builds it from the starter kit. Here the loader's work is done by hand, the way the engine does it (ids
+// `<loader>::<id>`, the roots put where the loader is), so that its script runs in the world as it would.
+const jukeLoader = tree.find((slot) => slot.id === JUKEBOX_LOADER_ID);
+const jukeboxTree = () => instantiateExternal(JUKEBOX_LOADER_ID, buildJukebox(), null, { position: jukeLoader.position, rotation: jukeLoader.rotation });
+const J = (id) => `${JUKEBOX_LOADER_ID}::${id}`;
+const JUKEBOX_PANEL = J('jukebox-panel');
+const treeWithJukebox = [...tree, ...jukeboxTree()];
 const find = (slot, type) => slot.components.find((c) => c.type === type);
 
 /** A seeded random source, for throws that vary like people's. */
@@ -119,7 +129,8 @@ test('the world has no layout or readability problems of the kind tools can find
 });
 
 test('both scripts compile and the consoles hang from the director, which hears their presses', () => {
-	for (const id of [DIRECTOR_ID, JUKEBOX_ID]) assert.doesNotThrow(() => new Function('ctx', find(byId.get(id), 'codeBlock').code));
+	assert.doesNotThrow(() => new Function('ctx', find(byId.get(DIRECTOR_ID), 'codeBlock').code));
+	assert.doesNotThrow(() => new Function('ctx', find(treeWithJukebox.find((slot) => slot.id === JUKEBOX_PANEL), 'codeBlock').code));
 	for (let lane = 0; lane < LANE_COUNT; lane++) {
 		let at = byId.get(laneIds(lane).join);
 		while (at.parentId && at.id !== DIRECTOR_ID) at = byId.get(at.parentId);
@@ -411,6 +422,7 @@ test('leaving takes you off the card, and a lane with nobody left goes back to w
 });
 
 test('bumpers come up in the gutters and make a gutter ball a normal one', () => {
+	assert.ok(byId.get(laneIds(1).bumperRail(0)).disabled && byId.get(laneIds(1).bumperRail(1)).disabled, 'they start down');
 	const { world, run, state } = startWorld();
 	const L = state.lanes[1];
 	world.press(run, laneOne.bumpers);
@@ -474,20 +486,21 @@ test('only the host changes the world: on a guest nothing happens', () => {
 });
 
 test('the jukebox plays, can be switched off and changes tune', () => {
-	const world = createTestWorld(tree);
-	const run = world.run(JUKEBOX_ID);
+	const world = createTestWorld(treeWithJukebox);
+	const run = world.run(JUKEBOX_PANEL);
 	world.tick(6);
 	const played = world.spawned.filter((s) => find(s, 'impactSound'));
 	assert.ok(played.length > 5, `${played.length} notes in six seconds`);
 	assert.ok(played.every((s) => find(s, 'impactSound').volume <= 0.2), 'it is background music');
-	world.press(run, 'bw-juke-toggle');
-	assert.equal(world.component('bw-juke-toggle', 'uiElement').text, 'Music: OFF');
+	world.press(run, J('jukebox-toggle'));
+	assert.equal(world.component(J('jukebox-toggle'), 'uiElement').text, 'Ambient: OFF');
 	const count = world.spawned.length;
 	world.tick(4);
 	assert.equal(world.spawned.length, count, 'silent when off');
-	world.press(run, 'bw-juke-toggle');
-	world.press(run, 'bw-juke-next');
-	assert.equal(world.component('bw-juke-next', 'uiElement').text, 'Neon');
+	world.press(run, J('jukebox-toggle'));
+	world.press(run, J('jukebox-next'));
+	world.tick(0.1);
+	assert.equal(world.component(J('jukebox-next'), 'uiElement').text, 'Neon');
 	world.tick(3);
 	assert.ok(world.spawned.length > count);
 });
@@ -551,4 +564,381 @@ test('after a strike the neon of the lane chases through colours, then goes back
 	L.flashUntil = 0;
 	world.tick(0.3);
 	assert.deepEqual([color('bw-l1-glow-0'), color('bw-l1-glow-1'), color('bw-l1-unit-neon')], own);
+});
+
+test('the sky carries a reflection probe made of the pack\'s own pictures, so glossy things reflect the same in the Studio and in play', () => {
+	const sky = find(byId.get('bw-sky'), 'skybox');
+	const known = new Set(Object.values(ASSETS));
+	for (const face of ['Px', 'Nx', 'Py', 'Ny', 'Pz', 'Nz']) {
+		assert.equal(sky[`reflection${face}`].kind, 'asset');
+		assert.ok(known.has(sky[`reflection${face}`].assetId), `${face} is in the pack`);
+	}
+	assert.ok(!sky.reflectionCapture, 'no capture of the half-loaded scene');
+});
+
+// ---------------------------------------------------------------- the ball machine
+
+const machine = await import('./bowlingMachine.ts');
+const { MACHINE, CUSTOM_BALL_COUNT, customBallId, customBallHome } = await import('./bowlingLayout.ts');
+
+test('the machine has a panel with a button for every material, a finish button, a make button, and balls waiting hidden', () => {
+	assert.equal(machine.BALL_MATERIALS.length, 12);
+	for (let i = 0; i < machine.BALL_MATERIALS.length; i++) {
+		assert.equal(find(byId.get(machine.materialButtonId(i)), 'uiElement').kind, 'button');
+		assert.ok(ASSETS[`balls/${machine.BALL_MATERIALS[i].id}.webp`], `${machine.BALL_MATERIALS[i].name} has its picture`);
+	}
+	for (const id of Object.values(machine.MACHINE_BUTTONS)) assert.ok(byId.has(id), id);
+	assert.ok(find(byId.get(MACHINE.panelId), 'codeBlock') && find(byId.get(MACHINE.panelId), 'uiPanel'));
+	assert.equal(CUSTOM_BALL_COUNT, 3);
+	for (let k = 0; k < CUSTOM_BALL_COUNT; k++) {
+		const ball = byId.get(customBallId(k));
+		assert.ok(ball.disabled, 'hidden until it is made');
+		assert.ok(find(ball, 'grabbable') && find(ball, 'collider') && find(ball, 'material'));
+		assert.deepEqual(ball.position, customBallHome(k));
+		assert.equal(tree.filter((slot) => slot.parentId === ball.id && /hole-\d$/.test(slot.id)).length, 3, 'three finger holes');
+	}
+	const tray = byId.get('bw-mach-tray');
+	assert.ok(Math.abs(tray.position[1] + tray.scale[1] / 2 + 0.108 - customBallHome(0)[1]) < 0.01, 'the balls rest on the tray');
+	for (let k = 1; k < CUSTOM_BALL_COUNT; k++) assert.ok(customBallHome(k)[2] - customBallHome(k - 1)[2] > 0.22, 'balls do not overlap');
+});
+
+test('the machine stands clear of the jukebox and the hall of fame, and inside the hall', () => {
+	const boxes = tree.filter((slot) => slot.id.startsWith('bw-mach-') && find(slot, 'collider'));
+	const extent = (slot) => ({ x: [slot.position[0] - slot.scale[0] / 2, slot.position[0] + slot.scale[0] / 2], z: [slot.position[2] - slot.scale[2] / 2, slot.position[2] + slot.scale[2] / 2] });
+	const juke = { x: [JUKEBOX_AT.x - 0.35, JUKEBOX_AT.x + 0.35], z: [JUKEBOX_AT.z - 0.55, JUKEBOX_AT.z + 0.55] };
+	for (const slot of boxes) {
+		const e = extent(slot);
+		assert.ok(e.x[1] <= 10 && e.x[0] >= 8, `${slot.id} is by the east wall`);
+		assert.ok(e.z[1] <= juke.z[0] || e.x[1] <= juke.x[0] || e.z[0] >= juke.z[1], `${slot.id} does not touch the jukebox`);
+	}
+});
+
+const near = (a, b) => a.every((value, i) => Math.abs(value - b[i]) < 1e-3);
+
+function startMachine() {
+	const world = createTestWorld(tree);
+	world.addPlayer({ id: 'p1', name: 'Alice', head: [8, 1.6, -3] });
+	const run = world.run(MACHINE.panelId);
+	world.tick(0.2);
+	return { world, run };
+}
+
+test('picking a material and a finish shows it on the ball in the window, and the ball in the window turns', () => {
+	const { world, run } = startMachine();
+	assert.equal(world.component(machine.MACHINE_BUTTONS.name, 'uiElement').text, 'Midnight · Glossy');
+	world.press(run, machine.materialButtonId(6));
+	const preview = world.component(MACHINE.previewId, 'material');
+	assert.equal(preview.albedo.assetId, ASSETS['balls/gold.webp']);
+	assert.equal(preview.metallic, 1, 'gold comes metallic');
+	assert.equal(world.component(machine.MACHINE_BUTTONS.finish, 'uiElement').text, 'Finish: Metallic');
+	assert.match(world.component(machine.materialButtonId(6), 'uiElement').text, /^● Gold/);
+	assert.equal(world.component(machine.materialButtonId(0), 'uiElement').text, 'Midnight');
+	world.press(run, machine.MACHINE_BUTTONS.finish);
+	assert.equal(world.component(MACHINE.previewId, 'material').metallic, 0);
+	assert.equal(world.component(MACHINE.previewId, 'material').roughness, machine.BALL_FINISHES[0].roughness);
+	const before = [...world.slot(MACHINE.previewId).rotation];
+	world.tick(1);
+	assert.notDeepEqual(world.slot(MACHINE.previewId).rotation, before, 'it turns');
+});
+
+test('making a ball puts one of the machine\'s balls on the tray with the picked material, and it takes turns', () => {
+	const { world, run } = startMachine();
+	world.press(run, machine.materialButtonId(1));
+	world.press(run, machine.MACHINE_BUTTONS.make);
+	const first = byId.get(customBallId(0)).id;
+	assert.ok(!world.slot(first).disabled, 'it is out');
+	assert.equal(world.component(first, 'material').albedo.assetId, ASSETS['balls/lava.webp']);
+	assert.ok(near(world.position(first), customBallHome(0)));
+	assert.match(world.component(machine.MACHINE_BUTTONS.name, 'uiElement').text, /Lava ball is on the tray/);
+	world.press(run, machine.materialButtonId(4));
+	world.press(run, machine.MACHINE_BUTTONS.make);
+	assert.equal(world.component(customBallId(1), 'material').albedo.assetId, ASSETS['balls/candy.webp']);
+	assert.equal(world.component(customBallId(0), 'material').albedo.assetId, ASSETS['balls/lava.webp'], 'the first keeps its look');
+	// All three out and one in a hand: the machine does not take it away.
+	world.press(run, machine.MACHINE_BUTTONS.make);
+	world.grabbers.set(customBallId(0), ['p1:right']);
+	world.grabbers.set(customBallId(1), ['p1:left']);
+	world.setPosition(customBallId(2), [5, 1, 5]);
+	world.press(run, machine.MACHINE_BUTTONS.make);
+	assert.match(world.component(machine.MACHINE_BUTTONS.name, 'uiElement').text, /All the balls are out/);
+	// Once they are back on the tray (nobody holds them) the next one in turn is remade.
+	world.grabbers.clear();
+	world.setPosition(customBallId(2), customBallHome(2));
+	world.press(run, machine.materialButtonId(9));
+	world.press(run, machine.MACHINE_BUTTONS.make);
+	assert.equal(world.component(customBallId(0), 'material').albedo.assetId, ASSETS['balls/pearl.webp']);
+});
+
+test('a ball from the machine comes back from a lane to that lane\'s return, in the place of one of its own balls, which is put away', () => {
+	const world = createTestWorld(tree);
+	world.addPlayer({ id: 'p1', name: 'Alice', head: [BOWLING.laneX[1], 1.6, 1.5] });
+	const director = world.run(DIRECTOR_ID);
+	const panel = world.run(MACHINE.panelId);
+	world.tick(0.3);
+	world.press(panel, machine.MACHINE_BUTTONS.make);
+	const id = customBallId(0);
+	const lane = director.handlers.state.lanes[1];
+	throwBall(world, id, { from: handAt(1) });
+	world.tick(1);
+	assert.equal(lane.phase, 'rolling');
+	world.tick(10);
+	assert.ok(lane.game.players[0].rolls.length === 1);
+	assert.ok(near(world.position(id), ballHome(1, 0)), 'it is on lane 2\'s return');
+	assert.ok(!world.slot(id).disabled);
+	assert.ok(world.slot(laneIds(1).ball(0)).disabled, 'the own ball it replaced is put away');
+	assert.ok(world.position(laneIds(1).ball(0))[1] < -10, 'and nowhere near the return: nothing of it is left under the machine\'s ball');
+	assert.ok(!world.slot(laneIds(1).ball(1)).disabled, 'the lane\'s other ball stays');
+	for (const other of [0, 2, 3]) for (let k = 0; k < 2; k++) assert.ok(!world.slot(laneIds(other).ball(k)).disabled, 'other lanes are untouched');
+	// Taken off the return, the own ball is there again; bowled on another lane, that lane's return takes it.
+	throwBall(world, id, { from: handAt(3), by: 'p1' });
+	assert.ok(!world.slot(laneIds(1).ball(0)).disabled, 'the own ball is back as soon as the other leaves');
+	assert.ok(near(world.position(laneIds(1).ball(0)), ballHome(1, 0)), 'in its place');
+	world.player('p1').head = [BOWLING.laneX[3], 1.6, 1.5];
+	world.tick(12);
+	assert.ok(near(world.position(id), ballHome(3, 0)), 'now on lane 4\'s return');
+	assert.ok(world.slot(laneIds(3).ball(0)).disabled && !world.slot(laneIds(1).ball(0)).disabled);
+});
+
+test('a ball from the machine put on a return stays there, and the machine can remake it, which gives the own ball back', () => {
+	const { world, run } = startMachine();
+	const director = world.run(DIRECTOR_ID);
+	world.press(run, machine.MACHINE_BUTTONS.make);
+	const id = customBallId(0);
+	// Carried over to the first return and set down on it.
+	throwBall(world, id, { from: [-3.2, 1.0, 2.5], speed: 0, frames: 4 });
+	world.tick(1);
+	assert.ok(near(world.position(id), ballHome(0, 0)), 'it took the place of lane 1\'s first ball');
+	assert.ok(world.slot(laneIds(0).ball(0)).disabled);
+	// The machine makes balls until it comes round to this one, which nobody holds.
+	world.press(run, machine.materialButtonId(3));
+	world.press(run, machine.MACHINE_BUTTONS.make);
+	world.press(run, machine.MACHINE_BUTTONS.make);
+	world.press(run, machine.MACHINE_BUTTONS.make);
+	world.tick(1);
+	assert.equal(world.component(id, 'material').albedo.assetId, ASSETS['balls/galaxy.webp'], 'remade');
+	assert.ok(near(world.position(id), customBallHome(0)), 'back on the tray');
+	assert.ok(!world.slot(laneIds(0).ball(0)).disabled, 'the own ball came back');
+	void director;
+});
+
+// ---------------------------------------------------------------- the logo
+
+test('the Kithin logo hangs once on each side wall as loaders of the app\'s own starter object, facing the room', () => {
+	const loaders = tree.filter((slot) => find(slot, 'loader')?.id === 'kithin-logo');
+	assert.equal(loaders.length, 2, 'one on each side');
+	for (const slot of loaders) {
+		const loader = find(slot, 'loader');
+		assert.deepEqual([loader.adapter, loader.id], ['builtin', 'kithin-logo']);
+		const west = slot.position[0] < 0;
+		assert.ok(Math.abs(Math.abs(slot.position[0]) - 10) < 1e-9, 'on the wall');
+		const forward = rotate(slot.rotation, [0, 0, 1]);
+		assert.ok(west ? forward[0] < -0.99 : forward[0] > 0.99, 'its +Z points into the wall, so it is read from the room');
+		assert.ok(slot.position[2] > BOWLING.foulZ && slot.position[1] > 2 && slot.position[1] < 3.2);
+	}
+	assert.ok(tree.length < 520, 'the logo is not copied into the scene');
+});
+
+test('the logo is a starter object of its own: only the mark, in relief, scenery (not grabbable), made of shapes alone', async () => {
+	const { BUILTIN_ENTRIES } = await import('../../src/lib/content/starterKit/catalog.ts');
+	const entry = BUILTIN_ENTRIES.find((candidate) => candidate.id === 'kithin-logo');
+	assert.ok(entry && entry.grabbable === false);
+	const logo = entry.build();
+	assert.ok(!find(logo[0], 'grabbable'), 'it cannot be pulled off the wall');
+	const ids = new Set(logo.map((slot) => slot.id));
+	assert.equal(ids.size, logo.length);
+	for (const slot of logo.slice(1)) {
+		assert.ok(!find(slot, 'textDisplay') && !find(slot, 'collider'), 'no text and nothing solid');
+		const mesh = find(slot, 'meshRenderer');
+		assert.equal(mesh.meshRef.kind, 'builtin', 'no asset');
+		assert.equal(mesh.meshRef.id, 'sphere', 'a dome');
+		assert.ok(slot.scale[2] < slot.scale[0], 'flattened along the view');
+		assert.equal(slot.parentId, logo[0].id);
+	}
+	const domes = logo.slice(1);
+	assert.deepEqual(domes.map((slot) => slot.id), ['kithin-logo-disc-0', 'kithin-logo-disc-1', 'kithin-logo-disc-2', 'kithin-logo-rim', 'kithin-logo-hole']);
+	assert.ok(domes[0].scale[0] >= 2.4, 'big: 2.4 m across');
+	// Relief: every dome stands out further than the one under it and is smaller, so the front is stepped.
+	for (let i = 1; i < domes.length; i++) {
+		assert.ok(domes[i].scale[2] > domes[i - 1].scale[2], `${domes[i].id} stands out more`);
+		assert.ok(domes[i].scale[0] < domes[i - 1].scale[0], `${domes[i].id} is smaller`);
+	}
+	assert.ok(domes.at(-1).scale[2] / 2 >= 0.4, 'a medallion some 40 cm deep');
+});
+
+test('the finger holes lie flush on the ball, one pair and a thumb, facing out, and nothing sticks out of it', () => {
+	for (const ball of [customBallId(0), MACHINE.previewId]) {
+		const parts = tree.filter((slot) => slot.parentId === ball && /hole-\d(-deep)?$/.test(slot.id));
+		assert.equal(parts.length, 6, 'three holes of two discs');
+		for (const slot of parts) {
+			const radius = Math.hypot(...slot.position);
+			assert.ok(radius > 0.5 && radius < 0.502, `${slot.id} is on the surface (${radius})`);
+			assert.ok(slot.scale[1] <= 0.005, 'thin');
+			const axis = rotate(slot.rotation, [0, 1, 0]);
+			const out = slot.position.map((c) => c / radius);
+			assert.ok(axis[0] * out[0] + axis[1] * out[1] + axis[2] * out[2] > 0.999, `${slot.id} faces out`);
+		}
+	}
+});
+
+// ---------------------------------------------------------------- the jukebox playlist
+
+const { buildDisc } = await import('../../src/lib/content/templates/recordDisc.ts');
+
+/** The sound of a record starts in a promise: let those run (the engine does, between frames). */
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+function jukeboxWorld(discs = 3) {
+	const records = Array.from({ length: discs }, (_, i) => buildDisc({ id: `disc-${i}`, title: `Song ${i}`, author: `Band ${i}`, labelColor: '#6366f1', source: { kind: 'url', url: `/song-${i}.mp3` } }));
+	const world = createTestWorld([...treeWithJukebox, ...records.flat()]);
+	const run = world.run(JUKEBOX_PANEL);
+	const insert = (disc, socket) => { world.component(J(jukeboxSlotId(socket)), 'socket').occupantId = `disc-${disc}`; };
+	const remove = (socket) => { delete world.component(J(jukeboxSlotId(socket)), 'socket').occupantId; };
+	const heard = () => world.audio.played.filter((p) => p.position && p.source.kind === 'url').map((p) => p.source.url);
+	const finish = () => { for (const p of world.audio.played) if (p.source.kind === 'url' && !p.handle.ended) p.handle.ended = true; };
+	return { world, run, insert, remove, heard, finish };
+}
+
+test('the jukebox is not in this world: a loader builds it from the starter kit, turned so that its front faces the room', async () => {
+	assert.ok(![...byId.keys()].some((id) => id.startsWith('bw-juke-')), 'no jukebox parts in the scene');
+	const loader = find(jukeLoader, 'loader');
+	assert.deepEqual([loader.adapter, loader.id], ['builtin', 'jukebox']);
+	assert.deepEqual([jukeLoader.position[0], jukeLoader.position[2]], [JUKEBOX_AT.x, JUKEBOX_AT.z]);
+	assert.equal(jukeLoader.position[1], 0, 'on the floor');
+	const front = rotate(jukeLoader.rotation, [0, 0, -1]);
+	assert.ok(front[0] < -0.99, `its front (local -Z) faces the room (-X): ${front}`);
+	const { BUILTIN_ENTRIES } = await import('../../src/lib/content/starterKit/catalog.ts');
+	const entry = BUILTIN_ENTRIES.find((candidate) => candidate.id === 'jukebox');
+	assert.ok(entry && entry.folderId === 'music' && entry.grabbable === false, 'Starter Kit > Music, a fixture');
+	assert.ok(tree.some((slot) => slot.id === 'bw-light-juke'), 'its lamp stays with the world (it is baked)');
+});
+
+test('the jukebox object has six slots that take records, on its front, in two rows, and a panel with the script and the shared state', () => {
+	const jukebox = buildJukebox();
+	const ids = new Set(jukebox.map((slot) => slot.id));
+	assert.equal(ids.size, jukebox.length);
+	assert.equal(jukebox.filter((slot) => slot.parentId === null).length, 1);
+	for (const slot of jukebox) if (slot.parentId) assert.ok(ids.has(slot.parentId));
+	assert.equal(JUKEBOX_SLOTS, 6);
+	for (let i = 0; i < JUKEBOX_SLOTS; i++) {
+		const socket = jukebox.find((slot) => slot.id === jukeboxSlotId(i));
+		assert.deepEqual(find(socket, 'socket').accepts, ['disc']);
+		assert.equal(find(socket, 'socket').playMedia, false, 'the script plays it, in step for everyone');
+		assert.deepEqual(socket.position, jukeboxSlotAt(i));
+		assert.ok(socket.position[2] < -0.35, 'on the front (-Z side)');
+		assert.ok(Math.abs(socket.position[0]) <= 0.32 + 1e-9, 'inside its width');
+	}
+	assert.ok(jukeboxSlotAt(0)[1] > jukeboxSlotAt(3)[1], 'the first row is the top one');
+	assert.ok(jukeboxSlotAt(0)[0] < jukeboxSlotAt(2)[0], 'left to right as seen from the front');
+	const panel = jukebox.find((slot) => slot.id === 'jukebox-panel');
+	assert.ok(find(panel, 'scriptState') && find(panel, 'codeBlock') && find(panel, 'uiPanel'));
+	for (const id of ['jukebox-now', 'jukebox-toggle', 'jukebox-next']) assert.ok(ids.has(id), id);
+	for (const slot of jukebox) assert.ok(!find(slot, 'meshRenderer')?.meshRef.assetId, 'no asset');
+	// Nothing hides the slots: the lit window is behind the rings and the places (the front is -Z, so in front means a smaller z).
+	const glow = jukebox.find((slot) => slot.id === 'jukebox-glow');
+	const glowFront = glow.position[2] - glow.scale[2] / 2;
+	for (let i = 0; i < JUKEBOX_SLOTS; i++) {
+		const ring = jukebox.find((slot) => slot.id === `jukebox-ring-${i}`);
+		assert.ok(ring.position[2] + ring.scale[1] / 2 < glowFront, `ring ${i} is in front of the lit window`);
+		assert.ok(jukeboxSlotAt(i)[2] < glow.position[2] - glow.scale[2] / 2, `slot ${i} is in front of the lit window`);
+	}
+	// Loaded under another id, the script still finds its parts.
+	for (const slot of jukeboxTree()) assert.ok(slot.id.startsWith(`${JUKEBOX_LOADER_ID}::`));
+});
+
+test('records put in the slots are played one after the other, in order, and round again', async () => {
+	const { world, run, insert, heard, finish } = jukeboxWorld(3);
+	world.tick(1);
+	assert.deepEqual(heard(), [], 'nothing to play but the ambient tune');
+	assert.equal(world.component(J('jukebox-now'), 'uiElement').text.split('\n')[0], 'Put a record in a slot.');
+	insert(2, 4); insert(0, 1);
+	world.tick(0.5);
+	await settle();
+	assert.deepEqual(heard(), ['/song-0.mp3'], 'slot 2 comes before slot 5');
+	const state = world.component(JUKEBOX_PANEL, 'scriptState').data;
+	assert.ok(state.cur === 1 && state.discId === 'disc-0' && state.title === 'Song 0');
+	assert.match(world.component(J('jukebox-now'), 'uiElement').text, /Now playing\nSong 0 - Band 0\nNext: Song 2 - Band 2/);
+	assert.equal(world.component(J('jukebox-next'), 'uiElement').text, 'Skip');
+	const notes = world.spawned.length;
+	world.tick(3);
+	assert.equal(world.spawned.filter((s) => find(s, 'impactSound')).length, notes, 'the ambient tune is quiet while a record plays');
+	finish(); world.tick(0.5); await settle();
+	await settle();
+	assert.deepEqual(heard(), ['/song-0.mp3', '/song-2.mp3']);
+	finish(); world.tick(0.5); await settle();
+	await settle();
+	assert.deepEqual(heard(), ['/song-0.mp3', '/song-2.mp3', '/song-0.mp3'], 'and round again');
+	void run;
+});
+
+test('skip moves on, taking out the record that plays moves on, and an empty jukebox goes back to its tune', async () => {
+	const { world, run, insert, remove, heard } = jukeboxWorld(2);
+	insert(0, 0); insert(1, 1);
+	world.tick(0.5);
+	world.press(run, J('jukebox-next'));
+	world.tick(0.5);
+	await settle();
+	assert.deepEqual(heard(), ['/song-0.mp3', '/song-1.mp3'], 'skipped');
+	remove(1);
+	world.tick(0.5);
+	await settle();
+	assert.deepEqual(heard(), ['/song-0.mp3', '/song-1.mp3', '/song-0.mp3'], 'the one that was playing was taken out');
+	remove(0);
+	world.tick(0.5);
+	assert.equal(world.component(JUKEBOX_PANEL, 'scriptState').data.cur, -1);
+	const before = world.spawned.length;
+	world.tick(4);
+	assert.ok(world.spawned.length > before, 'the ambient tune is back');
+	assert.equal(world.component(J('jukebox-next'), 'uiElement').text, 'Lounge');
+});
+
+test('a guest hears what the host decided, from where it is by then, and nothing else', async () => {
+	const records = [buildDisc({ id: 'disc-0', title: 'Song 0', author: 'Band', labelColor: '#6366f1', source: { kind: 'url', url: '/song-0.mp3' } })].flat();
+	const world = createTestWorld([...treeWithJukebox, ...records], { isHost: false });
+	world.run(JUKEBOX_PANEL);
+	world.component(J(jukeboxSlotId(0)), 'socket').occupantId = 'disc-0';
+	world.tick(1);
+	assert.equal(world.audio.played.length, 0, 'a guest decides nothing');
+	// The host has written that the record started 12 seconds ago.
+	world.component(JUKEBOX_PANEL, 'scriptState').data = { cur: 0, discId: 'disc-0', startedAt: Date.now() - 12000, key: '1:disc-0', title: 'Song 0', author: 'Band' };
+	world.tick(0.5);
+	await settle();
+	assert.equal(world.audio.played.length, 1);
+	const played = world.audio.played[0];
+	assert.equal(played.source.url, '/song-0.mp3');
+	assert.ok(played.options.offset > 11.5 && played.options.offset < 13, `it joins at ${played.options.offset}`);
+	const panelAt = world.position(JUKEBOX_PANEL);
+	assert.deepEqual(played.position.map((c) => +c.toFixed(3)), [panelAt[0], +(panelAt[1] + 0.7).toFixed(3), panelAt[2]].map((c) => +c.toFixed(3)), 'from the jukebox');
+	world.tick(2);
+	assert.equal(world.audio.played.length, 1, 'it does not start it again');
+});
+
+test('the record that is playing turns on its own axis and the others do not; when it stops it is as it was seated', async () => {
+	const { world, insert, remove, finish } = jukeboxWorld(2);
+	insert(0, 0); insert(1, 1);
+	world.setPosition('disc-0', world.position(J(jukeboxSlotId(0))), [0.5, 0.5, -0.5, 0.5]);
+	world.setPosition('disc-1', world.position(J(jukeboxSlotId(1))), [0.5, 0.5, -0.5, 0.5]);
+	const seated = [0.5, 0.5, -0.5, 0.5];
+	// A turn is the same turn with its quaternion negated.
+	const sameTurn = (p, q) => Math.abs(p.reduce((sum, c, i) => sum + c * q[i], 0)) > 0.99999;
+	const rotation = (id) => { const q = world.node(id).rotationQuaternion; return [q.x, q.y, q.z, q.w]; };
+	const axis = (id) => rotate(rotation(id), [0, 1, 0]);
+	const start = axis('disc-0');
+	world.tick(0.5);
+	await settle();
+	const a = rotation('disc-0');
+	world.tick(0.3);
+	const b = rotation('disc-0');
+	assert.notDeepEqual(a, b, 'it turns');
+	assert.ok(!sameTurn(b, seated));
+	for (const v of [axis('disc-0')]) for (let i = 0; i < 3; i++) assert.ok(Math.abs(v[i] - start[i]) < 1e-4, 'about its own axis: the face keeps pointing the same way');
+	assert.ok(world.slot('disc-0').position.every((c, i) => Math.abs(c - world.position('disc-0')[i]) < 2), 'it stays where it is');
+	assert.ok(sameTurn(rotation('disc-1'), seated), 'the one that waits does not turn');
+	assert.ok(world.flushes > 0, 'the guests are sent the turn');
+	// Next record: the first goes back to how it was seated, the second turns.
+	finish(); world.tick(0.5); await settle();
+	assert.ok(sameTurn(rotation('disc-0'), seated), 'the one that stopped is as it was seated');
+	world.tick(0.4);
+	assert.ok(!sameTurn(rotation('disc-1'), seated), 'the next one turns');
+	remove(1); world.tick(0.5); await settle();
+	assert.ok(sameTurn(rotation('disc-1'), seated), 'taken out of the slot, it is left as it was');
 });

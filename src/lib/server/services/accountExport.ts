@@ -11,7 +11,7 @@ export async function exportAccountData(user: SessionUser | null) {
 	if (!user) throw new UnauthorizedError();
 	const userId = user.id;
 	const worldStorageItems = await prisma.worldPlayerItem.findMany({ where: { accountId: userId } });
-	const [profile, accounts, sessions, worlds, worldSessions, worldInventoryFolders, worldInventoryItems, cloudFolders, cloudItems, publications, publicationRevisions, marketplaceItems, marketplaceRevisions, purchases, assets, feedbackEntries, feedbackVotes, feedbackInteractions, moodResponses, creditAccount, creditTransactions, productEntitlements, paymentIdentities] = await Promise.all([
+	const [profile, accounts, sessions, worlds, worldSessions, worldInventoryFolders, worldInventoryItems, cloudFolders, cloudItems, publications, publicationRevisions, marketplaceItems, marketplaceRevisions, purchases, assets, feedbackEntries, feedbackVotes, feedbackInteractions, moodResponses, creditAccount, creditTransactions, productEntitlements, paymentIdentities, friendships, friendRequests, blocks, externalLinks] = await Promise.all([
 		prisma.user.findUnique({ where: { id: userId } }),
 		prisma.account.findMany({ where: { userId }, select: { providerId: true, accountId: true, createdAt: true } }),
 		prisma.session.findMany({ where: { userId }, select: { id: true, ipAddress: true, userAgent: true, createdAt: true, expiresAt: true } }),
@@ -34,7 +34,11 @@ export async function exportAccountData(user: SessionUser | null) {
 		prisma.creditAccount.findUnique({ where: { userId } }),
 		prisma.creditTransaction.findMany({ where: { userId }, orderBy: { createdAt: 'asc' } }),
 		prisma.productEntitlement.findMany({ where: { userId } }),
-		prisma.paymentIdentity.findMany({ where: { userId } })
+		prisma.paymentIdentity.findMany({ where: { userId } }),
+		prisma.friendship.findMany({ where: { OR: [{ userAId: userId }, { userBId: userId }] } }),
+		prisma.friendRequest.findMany({ where: { OR: [{ fromUserId: userId }, { toUserId: userId }] } }),
+		prisma.userBlock.findMany({ where: { blockerId: userId } }),
+		prisma.externalFriendLink.findMany({ where: { userId } })
 	]);
 	return {
 		exportedAt: new Date().toISOString(),
@@ -52,6 +56,8 @@ export async function exportAccountData(user: SessionUser | null) {
 		models: assets,
 		feedback: { entries: feedbackEntries, votes: feedbackVotes, interactions: feedbackInteractions, moodResponses },
 		/** Credits: the balance, every movement of it (with the provider's payment reference), what was bought in worlds, and the store accounts (Meta user id) linked to this account. Card details are held by Stripe, never by Kithin. */
-		credits: { account: creditAccount, transactions: creditTransactions, productEntitlements, linkedStoreAccounts: paymentIdentities }
+		credits: { account: creditAccount, transactions: creditTransactions, productEntitlements, linkedStoreAccounts: paymentIdentities },
+		/** Friends: your friend code, who you are friends with, open requests, people you blocked, and the platform accounts (Meta Quest) linked to find friends. Only ids are listed for other people. */
+		friends: { friendCode: profile?.friendCode ?? null, friendships, requests: friendRequests, blocked: blocks, linkedPlatformAccounts: externalLinks }
 	};
 }

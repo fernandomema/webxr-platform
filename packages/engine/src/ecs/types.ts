@@ -442,6 +442,11 @@ export interface SkyboxComponent {
 	reflectionNz?: SourceRef;
 	/** Capture the scene from this slot as the environment that shiny surfaces reflect: taken on load and again a moment after the scene changes. */
 	reflectionCapture?: boolean;
+	/**
+	 * How strong the reflections of the probe (images or capture) are, times the usual (1). Baked lighting has no highlights of its own (its
+	 * lamps are not drawn live), so a glossy surface in a baked world shines only by what it reflects: raise this to give it its gloss back.
+	 */
+	reflectionIntensity?: number;
 	/** Legacy built-in preset, kept for saved Polygon Quest worlds. */
 	reflectionPreset?: 'polygon-quest';
 	/** Apply ACES tone mapping while this world is active. */

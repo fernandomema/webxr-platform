@@ -64,7 +64,6 @@ export function createWorldPortalMenu(
   for (const visibility of options) {
     const button = Button.CreateSimpleButton(`world-settings-${visibility}`, WORLD_VISIBILITY_INFO[visibility].label);
     button.height = '70px'; button.color = THEME.text; button.fontSize = 22; button.cornerRadius = 10;
-    if (visibility === 'friends' || visibility === 'friends-plus') { button.textBlock!.text += ' (unavailable)'; button.isEnabled = false; }
     button.onPointerClickObservable.add(() => { selectedVisibility = visibility; refresh(); });
     stack.addControl(button);
     buttons.set(visibility, button);

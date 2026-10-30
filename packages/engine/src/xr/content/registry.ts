@@ -22,6 +22,8 @@ export interface StarterKitEntry {
 	name: string;
 	/** A fresh tree on every call, so nobody shares (or edits) the catalog's own data. */
 	build: () => SlotTree;
+	/** Whether the object can be picked up by its root (true unless said otherwise). Scenery (a sign for a wall) is not. */
+	grabbable?: boolean;
 }
 
 /** Ready-made objects every player has, listed read-only in the inventory. */

@@ -61,7 +61,31 @@ export function ballHome(lane: number, k: number): [number, number, number] {
 }
 
 export const DIRECTOR_ID = 'bw-director';
-export const JUKEBOX_ID = 'bw-jukebox';
 
 /** Where the jukebox stands, against the east wall. */
 export const JUKEBOX_AT = { x: HALL.maxX - 0.45, z: -1.6 } as const;
+
+/** The slot that loads the jukebox (a starter kit object), and so the prefix of the ids of everything the jukebox is made of: `bw-jukebox::jukebox-panel`. */
+export const JUKEBOX_LOADER_ID = 'bw-jukebox';
+
+/**
+ * The ball machine next to the jukebox, against the east wall: a body, a window with the ball being made, a panel, and a tray where the
+ * finished balls come out. `custom` are the balls it can hand out: they exist from the start, hidden, and the director plays them like any other ball.
+ */
+export const MACHINE = {
+	x: HALL.maxX - 0.5,
+	z: -3.2,
+	/** Where the panel stands and the ball on show turns. */
+	panel: [HALL.maxX - 0.925, 0.8, -3.55],
+	preview: [HALL.maxX - 0.6, 1.55, -3.55],
+	/** Balls on the tray, in a row along it. */
+	trayX: HALL.maxX - 1.1,
+	trayY: 1.035,
+	trayZ: [-3.0, -2.75, -2.5],
+	panelId: 'bw-mach-panel',
+	previewId: 'bw-mach-preview'
+} as const;
+
+export const CUSTOM_BALL_COUNT = MACHINE.trayZ.length;
+export const customBallId = (k: number) => `bw-custom-ball-${k}`;
+export const customBallHome = (k: number): [number, number, number] => [MACHINE.trayX, MACHINE.trayY, MACHINE.trayZ[k]];

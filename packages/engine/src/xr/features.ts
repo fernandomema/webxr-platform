@@ -9,13 +9,15 @@ export interface EngineFeatures {
 	worldsTab: boolean;
 	inventoryTab: boolean;
 	settingsTab: boolean;
+	/** Adding friends, answering requests and joining the sessions friends are hosting. */
+	friendsTab: boolean;
 	/** Signing in, creating an account and signing out from the dash. */
 	accountTab: boolean;
 	/** The in-game inspector, which needs the hosting app to serve its panel page (see `inspectorPanelPath`). */
 	inspector: boolean;
 }
 
-const defaults = (): EngineFeatures => ({ homeTab: true, sessionTab: true, worldsTab: true, inventoryTab: true, settingsTab: true, accountTab: true, inspector: true });
+const defaults = (): EngineFeatures => ({ homeTab: true, sessionTab: true, worldsTab: true, inventoryTab: true, settingsTab: true, friendsTab: true, accountTab: true, inspector: true });
 
 let current: EngineFeatures = defaults();
 

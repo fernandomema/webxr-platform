@@ -165,7 +165,7 @@ Required fields are marked **(req)**. Everything else is optional; omit a field 
 
 **`skybox`**: gradient sky behind everything. **One per world**, on a root slot with no mesh.
 - `topColor` **(req)**, `horizonColor` **(req)**, `bottomColor` **(req)**: hex.
-- `stars`: 0–1. `ambientIntensity`: 0–3 (default 1). `reflectionCapture`: boolean, live reflections on shiny surfaces. `toneMapping`: `"aces"`.
+- `stars`: 0–1. `ambientIntensity`: 0–3 (default 1). `reflectionCapture`: boolean, live reflections on shiny surfaces. `reflectionIntensity`: 0–8 (default 1), how strong those reflections are. `toneMapping`: `"aces"`.
 - Colour grading of the whole picture: `exposure` 0.2–3, `contrast` 0.5–2 and `saturation` 0–2 (all 1 by default), and `bloom` 0–1, a glow around bright things that only a desktop screen gets (a headset draws without it). A script can change them live with `setComponentField`.
 
 **`textDisplay`**: a sign. Needs a `meshRenderer` with a **`plane`** on the same slot; the plane's scale is the sign's size in metres.

@@ -17,6 +17,8 @@ model user {
   image           String?
   username        String?
   displayUsername String?
+  /// Short shareable code others type to send this person a friend request. Created on first use.
+  friendCode      String?
   role            String?
   banned          Boolean?  @default(false)
   banReason       String?
@@ -45,9 +47,19 @@ model user {
   creditTransactions creditTransaction[]
   productEntitlements productEntitlement[]
   paymentIdentities paymentIdentity[]
+  friendshipsAsA  friendship[] @relation("friendshipA")
+  friendshipsAsB  friendship[] @relation("friendshipB")
+  friendRequestsSent friendRequest[] @relation("friendRequestFrom")
+  friendRequestsReceived friendRequest[] @relation("friendRequestTo")
+  blocksMade      userBlock[] @relation("blocker")
+  blocksReceived  userBlock[] @relation("blocked")
+  externalFriendLinks externalFriendLink[]
 
   @@unique([email])
   @@unique([username])
+  // Not unique yet: the column is new and unique constraints make `db push` warn. Codes are checked for collisions in code
+  // (services/friends.ts); make this `@@unique([friendCode])` in a later push once every deployment has the column.
+  @@index([friendCode])
 }
 
 model session {
@@ -686,4 +698,55 @@ model aiCall {
 
   @@index([runId])
   @@index([createdAt])
+}
+
+// --- friends ----------------------------------------------------------------
+// A confirmed friendship is one row per pair with the ids in sorted order (userAId < userBId), so the pair is unique whichever
+// side asked. Requests, blocks and links to platform accounts (Meta Quest, later Steam) sit beside it.
+model friendship {
+  userAId   String
+  userA     user     @relation("friendshipA", fields: [userAId], references: [id], onDelete: Cascade)
+  userBId   String
+  userB     user     @relation("friendshipB", fields: [userBId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userAId, userBId])
+  @@index([userBId])
+}
+
+model friendRequest {
+  id          String    @id @default(cuid())
+  fromUserId  String
+  from        user      @relation("friendRequestFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId    String
+  to          user      @relation("friendRequestTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  /// Only open requests are kept: accepting, declining or cancelling deletes the row.
+  @@unique([fromUserId, toUserId])
+  @@index([toUserId])
+}
+
+model userBlock {
+  blockerId String
+  blocker   user     @relation("blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String
+  blocked   user     @relation("blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([blockerId, blockedId])
+  @@index([blockedId])
+}
+
+/// An account of a platform's friend graph (Meta Quest user id, later a Steam id) proven to belong to a person here.
+model externalFriendLink {
+  provider   String
+  externalId String
+  userId     String
+  user       user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@id([provider, externalId])
+  @@unique([provider, userId])
+  @@index([userId])
 }

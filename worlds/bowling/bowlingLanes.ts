@@ -2,9 +2,9 @@ import type { Slot } from '@kithin/engine/ecs/types';
 import { createSlot } from '@kithin/engine/ecs/types';
 import { asset } from './assets.ts';
 import { loadBowlingLogic } from './bowlingLogic.ts';
-import { BALLS_PER_LANE, BOWLING, DIRECTOR_ID, HALL, JUKEBOX_AT, JUKEBOX_ID, LANE_COUNT, ballHome, laneIds } from './bowlingLayout.ts';
+import { BALLS_PER_LANE, BOWLING, DIRECTOR_ID, HALL, LANE_COUNT, ballHome, laneIds } from './bowlingLayout.ts';
 import { SURFACES } from './bowlingHall.ts';
-import { box, cylinder, group, pitch, pointLight, sign, spotLight, ui, yaw, type Vec3 } from './bowlingParts.ts';
+import { box, cylinder, group, pitch, pointLight, sign, spotLight, ui, type Vec3 } from './bowlingParts.ts';
 
 const logic = loadBowlingLogic();
 const MAGENTA = '#ff2fb3';
@@ -186,32 +186,13 @@ function buildConsole(lane: number): Slot[] {
 	];
 }
 
-/** The jukebox panel: music on and off, and the next tune. */
-export function buildJukeboxPanel(script: string): Slot[] {
-	const root = JUKEBOX_ID;
-	return [
-		createSlot({
-			id: root,
-			name: 'Jukebox Panel',
-			position: [JUKEBOX_AT.x - 0.385, 0.3, JUKEBOX_AT.z],
-			rotation: yaw(Math.PI / 2),
-			components: [{ type: 'uiPanel', width: 480, height: 200, worldWidth: 0.7, background: '#150a1f' }, { type: 'codeBlock', code: script }]
-		}),
-		ui('bw-juke-title', root, 'text', { text: 'JUKEBOX', width: 420, height: 40, fontSize: 30, fontWeight: 'bold', textAlign: 'center', color: '#ff9f5a' }),
-		ui('bw-juke-row', root, 'container', { width: 430, height: 70, flexDirection: 'row', gap: 10, margin: 4 }),
-		ui('bw-juke-toggle', 'bw-juke-row', 'button', { width: 210, height: 64, text: 'Music: ON', fontSize: 24, fontWeight: 'bold', textAlign: 'center', cornerRadius: 16, background: '#16a34a' }),
-		ui('bw-juke-next', 'bw-juke-row', 'button', { width: 210, height: 64, text: 'Next tune', fontSize: 24, fontWeight: 'bold', textAlign: 'center', cornerRadius: 16, background: '#1e293b' })
-	];
-}
-
 /** The alley's lanes and what is on them. `directorScript` is the script that runs the games; it sits on the slot the consoles hang from. */
-export function buildLanes(directorScript: string, jukeboxScript: string): Slot[] {
+export function buildLanes(directorScript: string): Slot[] {
 	const slots: Slot[] = [
 		createSlot({ id: DIRECTOR_ID, name: 'Alley Director', components: [{ type: 'container' }, { type: 'codeBlock', code: directorScript }] }),
 		...buildBlock()
 	];
 	for (let lane = 0; lane < LANE_COUNT; lane++) slots.push(...buildLane(lane), ...buildDesk(lane), ...buildConsole(lane));
-	slots.push(...buildJukeboxPanel(jukeboxScript));
 	// Light over each pair's approach, and a row of lamps down the length of the lanes (they are baked: see bowling.ts).
 	for (const [i, x] of [-3.2, 3.2].entries()) slots.push(pointLight(`bw-light-approach-${i}`, 'Approach Light', [x, 3.4, 1.6], '#ffe2b8', 2.4, 10, false));
 	for (const [i, x] of [-3.2, 3.2].entries()) for (const [j, z] of [8, 13, 17.5].entries()) slots.push(pointLight(`bw-light-lane-${i}-${j}`, 'Lane Lamp', [x, 4.0, z], '#fff0d8', 2.2, 8, false));

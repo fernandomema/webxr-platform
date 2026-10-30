@@ -48,6 +48,7 @@
 		"vite": "^8.0.16"
 	},
 	"dependencies": {
+		"@ai-sdk/provider": "^4.0.34",
 		"@aws-sdk/client-s3": "^3.1142.0",
 		"@aws-sdk/s3-request-presigner": "^3.1142.0",
 		"@babylonjs/core": "^9.28.0",
@@ -58,6 +59,7 @@
 		"@prisma/adapter-pg": "^7.10.0",
 		"@prisma/client": "^7.10.0",
 		"@wuchale/svelte": "^0.21.4",
+		"ai": "^7.0.157",
 		"better-auth": "^1.7.6",
 		"dotenv": "^18.0.4",
 		"monaco-editor": "^0.52.2",
@@ -67,6 +69,7 @@
 		"sharp": "^0.35.5",
 		"three": "^0.186.1",
 		"ws": "^8.22.0",
-		"wuchale": "^0.26.7"
+		"wuchale": "^0.26.7",
+		"zod": "^4.6.7"
 	}
 }

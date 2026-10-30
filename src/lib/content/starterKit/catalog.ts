@@ -7,6 +7,8 @@ import type { Component, Slot, SlotTree } from '@kithin/engine/ecs/types';
 import lobby from '../templates/lobby.json' with { type: 'json' };
 import { buildDisc } from '../templates/recordDisc.ts';
 import { buildAtm } from '../templates/atm.ts';
+import { buildKithinLogo, KITHIN_LOGO_ID } from '../templates/kithinLogo.ts';
+import { buildJukebox, JUKEBOX_ID } from '../templates/jukebox.ts';
 import { buildHalloweenToy } from '../templates/halloweenGathering.ts';
 import { HALLOWEEN } from '../templates/halloweenGatheringConfig.ts';
 import { PROP_ENTRIES, PROP_FOLDERS } from './props.ts';
@@ -96,6 +98,9 @@ const SOURCES = {
 
 const ENTRIES: BuiltinEntry[] = [
 	...PROP_ENTRIES,
+	// A fixture, not something to carry: it plays records, so it stays where it is put.
+	{ id: JUKEBOX_ID, folderId: 'music', name: 'Jukebox', grabbable: false, build: buildJukebox },
+	{ id: KITHIN_LOGO_ID, folderId: 'basics', name: 'Kithin Logo', grabbable: false, build: buildKithinLogo },
 	{ id: 'atm', folderId: 'basics', name: 'ATM', build: () => buildAtm({ id: 'atm', grabbable: true }) },
 	{ id: 'cube', folderId: 'basics', name: 'Cube', build: () => shape('cube', 'Cube', 'box', '#8b7cf6', [0.3, 0.3, 0.3]) },
 	{ id: 'sphere', folderId: 'basics', name: 'Sphere', build: () => shape('sphere', 'Sphere', 'sphere', '#38bdf8', [0.3, 0.3, 0.3]) },
@@ -182,7 +187,7 @@ function withGrabbableRoot(tree: SlotTree): SlotTree {
 	return [{ ...root, components: [...root.components, { type: 'grabbable', scalable: true }] }, ...rest];
 }
 
-export const BUILTIN_ENTRIES: BuiltinEntry[] = [...ENTRIES, ...DEV_ENTRIES].map((entry) => ({ ...entry, build: () => withGrabbableRoot(entry.build()) }));
+export const BUILTIN_ENTRIES: BuiltinEntry[] = [...ENTRIES, ...DEV_ENTRIES].map((entry) => ({ ...entry, build: entry.grabbable === false ? entry.build : () => withGrabbableRoot(entry.build()) }));
 
 /** What the engine's starter kit inventory lists (see `registerContent`). */
 export const starterKit: StarterKit = { folders: BUILTIN_FOLDERS, entries: BUILTIN_ENTRIES };

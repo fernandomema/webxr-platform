@@ -25,6 +25,16 @@ export function tintOf(hex: string | undefined): [number, number, number] {
 	return [parseInt(m[1].slice(0, 2), 16) / 255, parseInt(m[1].slice(2, 4), 16) / 255, parseInt(m[1].slice(4, 6), 16) / 255];
 }
 
+const sceneWithPlugin = new WeakSet<Scene>();
+
+/**
+ * Called by the material plugin when a material of the scene takes it. A scene whose materials were made before the plugin was registered
+ * (or by code that does not register it) cannot show baked light, so it must not turn off its flat ambient and live lights for it.
+ */
+export function noteIrradiancePlugin(scene: Scene): void {
+	sceneWithPlugin.add(scene);
+}
+
 /** `?lightdebug=off` shows the world without its baked light, `only` shows the light alone (as if every surface were white). */
 function modeFromUrl(): LightingMode {
 	if (typeof window === 'undefined') return 'on';
@@ -88,7 +98,7 @@ export class LightVolumeManager {
 
 	/** Whether the world is lit by baked light right now. */
 	get active(): boolean {
-		return this.texture !== null && this.layouts.length > 0 && this.mode !== 'off' && this.policy !== 'live';
+		return this.texture !== null && this.layouts.length > 0 && this.mode !== 'off' && this.policy !== 'live' && sceneWithPlugin.has(this.scene);
 	}
 
 	add(id: string, layout: Omit<VolumeLayout, 'atlasX'>, texels: Uint8Array, tint: [number, number, number], intensity: number, enabled: boolean): void {

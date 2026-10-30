@@ -648,7 +648,6 @@ export async function mountGame(
 		publication ??= publicationFor(undefined, getPlatformConfig().appId);
 		validateWorldScene(snapshot);
 		snapshot = migrateSlotTree(snapshot);
-		if (visibility === 'friends' || visibility === 'friends-plus') throw new Error('Friend-only access is not available yet');
 		if (visibility !== 'solo' && visibility !== 'private' && !gameState.userId) {
 			throw new Error('Sign in to host a public session');
 		}

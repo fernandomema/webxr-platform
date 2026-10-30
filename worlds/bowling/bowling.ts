@@ -4,7 +4,8 @@ import { ASSETS } from './assets.ts';
 import { buildHall } from './bowlingHall.ts';
 import { HALL } from './bowlingLayout.ts';
 import { buildLanes } from './bowlingLanes.ts';
-import { DIRECTOR_SCRIPT, JUKEBOX_SCRIPT } from './bowlingScript.ts';
+import { buildMachine } from './bowlingMachine.ts';
+import { DIRECTOR_SCRIPT, MACHINE_SCRIPT } from './bowlingScript.ts';
 
 /**
  * Neon Pin Lanes: a social bowling alley for a headset (a desktop works too). Four lanes in two pairs, a ball return between the lanes of a
@@ -36,5 +37,5 @@ const bake = (slots: Slot[]): Slot[] =>
 		.map((slot) => ({ ...slot, components: slot.components.map((c) => (c.type === 'pointLight' || c.type === 'spotLight' ? { ...c, baked: true } : c)) }));
 
 export function buildBowling(): SlotTree {
-	return [...bake([...buildHall(), ...buildLanes(DIRECTOR_SCRIPT, JUKEBOX_SCRIPT)]), ...lightVolumeSlots(ASSETS, lighting.regions)];
+	return [...bake([...buildHall(), ...buildLanes(DIRECTOR_SCRIPT), ...buildMachine(MACHINE_SCRIPT)]), ...lightVolumeSlots(ASSETS, lighting.regions)];
 }

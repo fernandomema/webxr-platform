@@ -1,3 +1,4 @@
+import { LightVolumeManager } from './lightVolumeManager.ts';
 import { setAmbientBase, resetAmbient } from './ambientControl.ts';
 import { Color3, ColorCurves, CubeTexture, DefaultRenderingPipeline, Effect, HemisphericLight, ImageProcessingConfiguration, Mesh, MeshBuilder, ReflectionProbe, RenderTargetTexture, ShaderMaterial, type AbstractMesh, type Scene, type TransformNode } from '@babylonjs/core';
 import type { Slot, SkyboxComponent } from '../ecs/types.ts';
@@ -58,6 +59,9 @@ function registerShader(): void {
 		}`;
 }
 
+/** The skybox's `reflectionIntensity`, kept to what a texture level can take. */
+const reflectionLevel = (sky: SkyboxComponent): number => (typeof sky.reflectionIntensity === 'number' && Number.isFinite(sky.reflectionIntensity) ? Math.min(8, Math.max(0, sky.reflectionIntensity)) : 1);
+
 /**
  * Renders a `skybox` component as a huge inside-out sphere that follows the
  * camera (`infiniteDistance`), shaded with a top/horizon/bottom gradient and
@@ -91,7 +95,7 @@ export function setupSkybox(scene: Scene, node: TransformNode, initial: SkyboxCo
 	function installImageProbe(): void {
 		if (disposed || probe || urls.some((url) => !url)) return;
 		const texture = CubeTexture.CreateFromImages(urls, scene);
-		texture.level = 0.8;
+		texture.level = 0.8 * reflectionLevel(initial);
 		probe = texture;
 		scene.environmentTexture = texture;
 	}
@@ -132,16 +136,19 @@ export function setupSkybox(scene: Scene, node: TransformNode, initial: SkyboxCo
 			const index = list ? list.indexOf(mesh) : -1;
 			if (list && index >= 0) list.splice(index, 1);
 		});
+		// The baked light arrives after the room (its file loads on its own): what was captured before it is dark, so capture again.
+		const stopVolumeWatch = LightVolumeManager.for(scene).onChange(scheduleCapture);
 		const poseObserver = scene.onBeforeRenderObservable.add(() => capture.position.copyFrom(node.getAbsolutePosition()));
 		scheduleCapture();
 		stopMeshWatch = () => {
 			scene.onNewMeshAddedObservable.remove(meshObserver);
 			scene.onMeshRemovedObservable.remove(removedObserver);
+			stopVolumeWatch();
 			if (recapture) clearTimeout(recapture);
 			if (settle) clearTimeout(settle);
 		};
 		stopPoseWatch = () => scene.onBeforeRenderObservable.remove(poseObserver);
-		capture.cubeTexture.level = 0.8;
+		capture.cubeTexture.level = 0.8 * reflectionLevel(initial);
 		probe = capture;
 		scene.environmentTexture = capture.cubeTexture;
 	}

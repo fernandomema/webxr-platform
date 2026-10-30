@@ -38,6 +38,45 @@ export class RunBudgetError extends Error {
 	}
 }
 
+/** One model call over an explicit wire, with no conversation state. Shared by `ProviderConversation.step` and the AI SDK model adapter. */
+export async function generateOnce(profile: ProviderProfile, instructions: string, wire: unknown[], tools: AgentTool[], credential: string, sessionId: string, signal: AbortSignal, useConnection = false, runId: string | null = null): Promise<{ text: string; calls: AgentCall[]; usage: TokenUsage; wire: unknown[] }> {
+	if (!profile.model.trim()) throw new Error('Choose a model first.');
+	const protocol = profile.protocol;
+	const adapter = PROTOCOL_ADAPTERS[protocol];
+	const payload = adapter.buildPayload(profile.model, instructions, wire, tools, { key: sessionId });
+
+	const kind = profile.kind;
+	let response: Response;
+	if (kind === 'ollama' || kind === 'custom' || kind === 'freellmapi') {
+		let endpoint = profile.endpoint.trim() || defaultProfile(kind).endpoint;
+		const url = new URL(endpoint);
+		if (url.protocol !== 'https:' && !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)) throw new Error('Remote endpoints must use HTTPS.');
+		if (url.username || url.password) throw new Error('Put credentials in the API key field, not in the endpoint URL.');
+		if (kind === 'freellmapi') {
+			url.pathname = `${url.pathname.replace(/\/+$/, '')}/${PROTOCOL_PATHS[protocol]}`;
+			endpoint = url.toString();
+		}
+		try {
+			response = await fetch(endpoint, { method: 'POST', headers: { 'content-type': 'application/json', ...(credential ? protocol === 'messages' ? { 'x-api-key': credential, 'anthropic-version': '2023-06-01' } : { authorization: `Bearer ${credential}` } : {}) }, body: JSON.stringify(payload), signal });
+		} catch (caught) {
+			if (kind !== 'freellmapi' || signal.aborted || !(caught instanceof TypeError)) throw caught;
+			throw new FreeLLMAPIConnectionError();
+		}
+	} else {
+		response = await fetch('/api/studio/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-studio-session': sessionId }, body: JSON.stringify({ kind, protocol, credential: useConnection ? '' : credential, useConnection, runId, payload }), signal });
+	}
+	if (!response.ok) {
+		const message = await response.text();
+		if (kind === 'platform' && response.status === 402) throw new RunBudgetError(parsePlatformMessage(message));
+		throw new Error(`Provider error ${response.status}: ${message.slice(0, 600)}`);
+	}
+	const data = await response.json() as Record<string, unknown>;
+	const result = adapter.parseReply(data, kind);
+	// A reply with neither text nor tool calls ends the run silently; surface it instead, so an empty answer is never mistaken for success.
+	if (!result.text.trim() && result.calls.length === 0) throw new Error('The model returned an empty response. Send again, or try another model.');
+	return result;
+}
+
 export class ProviderConversation {
 	private wire: unknown[] = [];
 	private readonly sessionId = crypto.randomUUID();
@@ -57,43 +96,10 @@ export class ProviderConversation {
 	}
 
 	async step(credential: string, tools: AgentTool[], signal: AbortSignal, useConnection = false): Promise<{ text: string; calls: AgentCall[]; usage: TokenUsage }> {
-		if (!this.profile.model.trim()) throw new Error('Choose a model first.');
-		const protocol = this.profile.protocol;
-		const adapter = PROTOCOL_ADAPTERS[protocol];
-		const payload = adapter.buildPayload(this.profile.model, this.instructions, this.wire, tools, { key: this.sessionId });
-
-		const kind = this.profile.kind;
-		let response: Response;
-		if (kind === 'ollama' || kind === 'custom' || kind === 'freellmapi') {
-			let endpoint = this.profile.endpoint.trim() || defaultProfile(kind).endpoint;
-			const url = new URL(endpoint);
-			if (url.protocol !== 'https:' && !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)) throw new Error('Remote endpoints must use HTTPS.');
-			if (url.username || url.password) throw new Error('Put credentials in the API key field, not in the endpoint URL.');
-			if (kind === 'freellmapi') {
-				url.pathname = `${url.pathname.replace(/\/+$/, '')}/${PROTOCOL_PATHS[protocol]}`;
-				endpoint = url.toString();
-			}
-			try {
-				response = await fetch(endpoint, { method: 'POST', headers: { 'content-type': 'application/json', ...(credential ? protocol === 'messages' ? { 'x-api-key': credential, 'anthropic-version': '2023-06-01' } : { authorization: `Bearer ${credential}` } : {}) }, body: JSON.stringify(payload), signal });
-			} catch (caught) {
-				if (kind !== 'freellmapi' || signal.aborted || !(caught instanceof TypeError)) throw caught;
-				throw new FreeLLMAPIConnectionError();
-			}
-		} else {
-			response = await fetch('/api/studio/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-studio-session': this.sessionId }, body: JSON.stringify({ kind, protocol, credential: useConnection ? '' : credential, useConnection, runId: this.runId, payload }), signal });
-		}
-		if (!response.ok) {
-			const message = await response.text();
-			if (kind === 'platform' && response.status === 402) throw new RunBudgetError(parsePlatformMessage(message));
-			throw new Error(`Provider error ${response.status}: ${message.slice(0, 600)}`);
-		}
-		const data = await response.json() as Record<string, unknown>;
-		const result = adapter.parseReply(data, kind);
-		// A reply with neither text nor tool calls ends the run silently; surface it instead, so an empty answer is never mistaken for success.
-		if (!result.text.trim() && result.calls.length === 0) throw new Error('The model returned an empty response. Send again, or try another model.');
+		const result = await generateOnce(this.profile, this.instructions, this.wire, tools, credential, this.sessionId, signal, useConnection, this.runId);
 		this.wire.push(...result.wire);
 		for (const key of Object.keys(this.usage) as (keyof TokenUsage)[]) this.usage[key] += result.usage[key];
-		return { text: result.text, calls: result.calls, usage: result.usage };
+		return result;
 	}
 }
 

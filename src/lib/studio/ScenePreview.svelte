@@ -242,6 +242,14 @@
 		const onPanPointerUp = (event: PointerEvent) => {
 			if (panPointer?.id === event.pointerId) panPointer = null;
 		};
+		/** The slot to select for a click on `slotId`: itself, or for something a loader built, the loader at the top of it. */
+		const ownerOf = (slotId: string): string => {
+			let current = sceneGraph?.getLive(slotId)?.slot;
+			for (let guard = 0; current?.external && current.parentId && guard < 64; guard++) {
+				current = sceneGraph?.getLive(current.parentId)?.slot;
+			}
+			return current && !current.external ? current.id : slotId;
+		};
 		const onPointerUp = (event: PointerEvent) => {
 			if (!pointerDownAt) return;
 			const moved = Math.hypot(event.clientX - pointerDownAt.x, event.clientY - pointerDownAt.y);
@@ -250,8 +258,9 @@
 			if (event.button !== 0 || !scene || !sceneGraph) return;
 			if (moved > 6 || elapsed > 500 || cameraHelper?.recentlyDragged() || zoneHelper?.recentlyDragged() || transformHelper?.recentlyDragged() || colliderHelper?.recentlyDragged()) return;
 			const slotId = sceneGraph.getSlotIdForNode(scene.pick(scene.pointerX, scene.pointerY)?.pickedMesh);
-			// What a loader brought in is not part of the world being edited: it can be seen, not picked.
-			if (slotId && !sceneGraph.getLive(slotId)?.slot.external) onSelect(slotId);
+			// What a loader brought in is not part of the world being edited, so it is not selected itself: clicking it selects the slot with the loader
+			// (the owner of everything it built), which is what the world holds and can be moved, turned or switched off.
+			if (slotId) onSelect(ownerOf(slotId));
 		};
 		canvas.addEventListener('pointerdown', onPointerDown);
 		canvas.addEventListener('pointermove', onPanPointerMove);

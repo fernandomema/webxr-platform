@@ -39,6 +39,7 @@ import { THEME } from './theme.ts';
 import { TabRegistry, tabBarLayout, type TabSpec } from './dashTabs.ts';
 import { iconUri } from './icons.ts';
 import { createScrollColumn, createCard, placeText } from './layout.ts';
+import { createFriendsTab } from './friendsTab.ts';
 
 /** A tab of the dash. Built-in ones are registered the same way, so anything can add its own with `DashPanelHandle.addTab`. */
 export interface DashTab extends TabSpec {
@@ -492,35 +493,31 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		sessionNotice.height = text ? '38px' : '0px';
 	}
 
-	// Inviting: how open the hosted session is. Each option is a card; the ones that cannot be used yet say so.
+	// Inviting: how open the hosted session is. Each option is a card.
 	const shareHeading = sessionHeading('Who can join?');
 	sessionList.addControl(shareHeading);
 	const shareCards: Rectangle[] = [];
-	const UNAVAILABLE_VISIBILITIES: HostedWorldVisibility[] = ['friends', 'friends-plus'];
 
 	function addShareOption(visibility: HostedWorldVisibility) {
 		const info = WORLD_VISIBILITY_INFO[visibility];
-		const unavailable = UNAVAILABLE_VISIBILITIES.includes(visibility);
 		const card = sessionCard(`world-visibility-${visibility}`, 86);
 		card.height = '86px';
 		card.isPointerBlocker = true;
-		card.hoverCursor = unavailable ? 'default' : 'pointer';
-		cardText(card, `world-visibility-${visibility}-title`, info.label, 24, 14, 560, 30, 21, unavailable ? THEME.dim : THEME.text);
-		cardText(card, `world-visibility-${visibility}-about`, unavailable ? 'Coming soon: needs friends and access checks.' : info.description, 24, 44, 640, 26, 16, THEME.muted);
-		const action = new TextBlock(`world-visibility-${visibility}-action`, unavailable ? 'Soon' : 'Host  ›');
+		card.hoverCursor = 'pointer';
+		cardText(card, `world-visibility-${visibility}-title`, info.label, 24, 14, 560, 30, 21, THEME.text);
+		cardText(card, `world-visibility-${visibility}-about`, info.description, 24, 44, 640, 26, 16, THEME.muted);
+		const action = new TextBlock(`world-visibility-${visibility}-action`, 'Host  ›');
 		action.width = '160px'; action.height = '30px'; action.fontSize = 19;
-		action.color = unavailable ? THEME.dim : THEME.accentBorder;
+		action.color = THEME.accentBorder;
 		action.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
 		action.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
 		action.left = '-24px';
 		action.isHitTestVisible = false;
 		card.addControl(action);
-		if (!unavailable) {
-			card.onPointerEnterObservable.add(() => { if (card.isEnabled) card.background = THEME.surfaceHover; });
-			card.onPointerOutObservable.add(() => { card.background = THEME.surface; });
-		}
+		card.onPointerEnterObservable.add(() => { if (card.isEnabled) card.background = THEME.surfaceHover; });
+		card.onPointerOutObservable.add(() => { card.background = THEME.surface; });
 		card.onPointerClickObservable.add(async () => {
-			if (unavailable || !card.isEnabled) return;
+			if (!card.isEnabled) return;
 			if (!gameState.userId && visibility !== 'private') {
 				setSessionNotice('Sign in (Account tab) to host a friends or public session.', 'error');
 				return;
@@ -1852,6 +1849,9 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		refreshWorldsTab();
 	}
 	void refreshSession();
+
+	// Friends: added last since it only needs the panel's mesh (for the keyboard) and the join callback.
+	if (features.friendsTab) addTab(createFriendsTab({ near: () => mesh, onJoinWorld: callbacks.onJoinWorld }));
 
 	ready = true;
 	const firstTab = tabs.has('home') ? 'home' : tabs.list()[0]?.id;

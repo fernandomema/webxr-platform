@@ -1,4 +1,4 @@
-import { signalingAddress } from '../platform/config.ts';
+import { platformFetch, signalingAddress } from '../platform/config.ts';
 
 export type SignalingMessage =
 	| { type: 'guest-joined'; roomCode: string; guestId: string }
@@ -23,7 +23,11 @@ export class SignalingClient {
 		role: 'host' | 'join'
 	) {
 		this.ws = new WebSocket(signalingAddress());
-		this.ws.addEventListener('open', () => this.send({ type: role, roomCode } as never));
+		this.ws.addEventListener('open', () => {
+			if (role === 'host') return this.send({ type: role, roomCode } as never);
+			// A session that only friends may enter wants a pass from the platform; for any other the answer is none.
+			void joinTicket(roomCode).then((ticket) => this.send({ type: role, roomCode, ...(ticket ? { ticket } : {}) } as never));
+		});
 		this.ws.addEventListener('message', (event) => {
 			try {
 				const msg = JSON.parse(event.data) as SignalingMessage;
@@ -47,5 +51,16 @@ export class SignalingClient {
 
 	close(): void {
 		this.ws.close();
+	}
+}
+
+/** The pass to join `roomCode`, or null when it needs none, the player is not signed in, or the platform cannot be reached. */
+async function joinTicket(roomCode: string): Promise<string | null> {
+	try {
+		const response = await platformFetch(`/api/sessions/${encodeURIComponent(roomCode)}/ticket`, { method: 'POST' });
+		if (!response.ok) return null;
+		return ((await response.json()) as { ticket?: string | null }).ticket ?? null;
+	} catch {
+		return null;
 	}
 }

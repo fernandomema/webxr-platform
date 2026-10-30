@@ -10,7 +10,7 @@ import { registerHost, registerGuest, getRoom, removeSocket, connectionIdFor } f
 // guestId to route the answer to).
 type SignalingMessage =
 	| { type: 'host'; roomCode: string }
-	| { type: 'join'; roomCode: string }
+	| { type: 'join'; roomCode: string; ticket?: string }
 	| {
 			type: 'offer' | 'answer' | 'ice-candidate';
 			roomCode: string;
@@ -38,14 +38,26 @@ export default function signalingHandler(ws: WebSocket, _req: IncomingMessage) {
 				break;
 			}
 			case 'join': {
-				const result = registerGuest(msg.roomCode, ws);
-				if (!result) {
-					ws.send(JSON.stringify({ type: 'error', message: 'room-not-found' }));
-					return;
-				}
-				result.room.host.send(
-					JSON.stringify({ type: 'guest-joined', roomCode: msg.roomCode, guestId: result.guestId })
-				);
+				// Sessions that only friends may enter need a pass the platform signed after checking the friendship (see joinTicket.ts).
+				const { roomCode, ticket } = msg;
+				void import('./joinAccess.ts')
+					.then(({ mayJoin }) => mayJoin(roomCode, ticket))
+					.then((allowed) => {
+						if (!allowed) {
+							ws.send(JSON.stringify({ type: 'error', message: 'friends-only' }));
+							return;
+						}
+						const result = registerGuest(roomCode, ws);
+						if (!result) {
+							ws.send(JSON.stringify({ type: 'error', message: 'room-not-found' }));
+							return;
+						}
+						result.room.host.send(JSON.stringify({ type: 'guest-joined', roomCode, guestId: result.guestId }));
+					})
+					.catch((err) => {
+						console.error('Failed to check who may join a room', err);
+						ws.send(JSON.stringify({ type: 'error', message: 'room-not-found' }));
+					});
 				break;
 			}
 			case 'offer':

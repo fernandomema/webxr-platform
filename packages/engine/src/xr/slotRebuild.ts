@@ -30,7 +30,7 @@ const CONSTRUCTED: Partial<Record<Component['type'], Construction>> = {
 	uiPanel: { rebuildKeys: ['width', 'height', 'worldWidth'] },
 	particleBurst: { liveKeys: [] },
 	particleEmitter: { rebuildKeys: ['capacity'] },
-	skybox: { rebuildKeys: ['reflectionPreset', 'reflectionCapture', 'reflectionPx', 'reflectionNx', 'reflectionPy', 'reflectionNy', 'reflectionPz', 'reflectionNz', 'toneMapping'] },
+	skybox: { rebuildKeys: ['reflectionPreset', 'reflectionCapture', 'reflectionIntensity', 'reflectionPx', 'reflectionNx', 'reflectionPy', 'reflectionNy', 'reflectionPz', 'reflectionNz', 'toneMapping'] },
 	pointLight: { rebuildKeys: ['baked'] },
 	spotLight: { rebuildKeys: ['baked'] },
 	lightVolume: { rebuildKeys: ['data'] },

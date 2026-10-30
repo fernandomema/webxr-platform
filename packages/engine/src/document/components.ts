@@ -653,6 +653,7 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 			{ key: 'stars', label: 'Stars', kind: 'number', min: 0, max: 1, step: 0.05, optional: true, default: 0.8 },
 			{ key: 'ambientIntensity', label: 'Ambient intensity', kind: 'number', min: 0, max: 3, step: 0.05, optional: true, default: 1 },
 			{ key: 'reflectionCapture', label: 'Live reflections', kind: 'bool', optional: true, default: true, help: 'Capture the world from this object while it runs. Use Generate reflection probe to save the capture as assets.' },
+			{ key: 'reflectionIntensity', label: 'Reflection strength', kind: 'number', min: 0, max: 8, step: 0.1, optional: true, default: 1, help: 'How much glossy things reflect. Raise it in a world with baked lighting, where the lamps give no highlights.' },
 			{ key: 'exposure', label: 'Exposure', kind: 'number', min: 0.2, max: 3, step: 0.05, optional: true, default: 1, advanced: true },
 			{ key: 'contrast', label: 'Contrast', kind: 'number', min: 0.5, max: 2, step: 0.05, optional: true, default: 1, advanced: true },
 			{ key: 'saturation', label: 'Saturation', kind: 'number', min: 0, max: 2, step: 0.05, optional: true, default: 1, advanced: true },

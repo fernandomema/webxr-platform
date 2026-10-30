@@ -13,11 +13,11 @@ export const WORLD_VISIBILITY_INFO: Record<WorldVisibility, { label: string; des
 	},
 	friends: {
 		label: 'Friends only',
-		description: 'Unavailable until friend relationships and access checks exist.'
+		description: 'Hosted session. Your friends can find and join it.'
 	},
 	'friends-plus': {
 		label: 'Friends+',
-		description: 'Unavailable until friend relationships and access checks exist.'
+		description: 'Hosted session. Your friends and their friends can find and join it.'
 	},
 	public: {
 		label: 'Public',

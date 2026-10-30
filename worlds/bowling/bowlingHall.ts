@@ -1,15 +1,15 @@
 import type { Slot } from '@kithin/engine/ecs/types';
 import { createSlot } from '@kithin/engine/ecs/types';
 import { asset } from './assets.ts';
-import { BOWLING, HALL, JUKEBOX_AT, LANE_COUNT } from './bowlingLayout.ts';
+import { BOWLING, HALL, JUKEBOX_AT, JUKEBOX_LOADER_ID, LANE_COUNT } from './bowlingLayout.ts';
 import { box, cylinder, group, pitch, pointLight, sign, yaw, type Surface, type Vec3 } from './bowlingParts.ts';
 
 /** What the surfaces of the alley are made of: Poly Haven textures (CC0) kept in the pack. */
 export const SURFACES = {
-	carpet: { albedo: asset('textures/carpet-diff.jpg'), normal: asset('textures/carpet-nor.jpg'), size: 2, roughness: 0.95 } satisfies Surface,
-	lane: { albedo: asset('textures/lane-diff.jpg'), normal: asset('textures/lane-nor.jpg'), arm: asset('textures/lane-arm.jpg'), size: 1.2, roughness: 0.3 } satisfies Surface,
-	wood: { albedo: asset('textures/bar-diff.jpg'), size: 1.4, roughness: 0.45 } satisfies Surface,
-	paneling: { albedo: asset('textures/wall-diff.jpg'), size: 1.6, roughness: 0.7 } satisfies Surface
+	carpet: { albedo: asset('textures/carpet-diff.webp'), normal: asset('textures/carpet-nor.webp'), size: 2, roughness: 0.95 } satisfies Surface,
+	lane: { albedo: asset('textures/oak-diff.webp'), normal: asset('textures/oak-nor.webp'), arm: asset('textures/oak-arm.webp'), size: 1.8, roughness: 0.3 } satisfies Surface,
+	wood: { albedo: asset('textures/bar-diff.webp'), size: 1.4, roughness: 0.45 } satisfies Surface,
+	paneling: { albedo: asset('textures/wall-diff.webp'), size: 1.6, roughness: 0.7 } satisfies Surface
 };
 
 const MAGENTA = '#ff2fb3';
@@ -22,7 +22,29 @@ const LENGTH = HALL.maxZ - HALL.minZ;
 /** The sky is only there so that nothing outside is bright; the alley is lit by its own lamps and neon. */
 function buildSky(): Slot[] {
 	return [
-		createSlot({ id: 'bw-sky', name: 'Sky', components: [{ type: 'skybox', topColor: '#05040c', horizonColor: '#0a0818', bottomColor: '#030308', ambientIntensity: 0.55 }] }),
+		// Glossy things (the ball, the pins, the lane) reflect a picture of the alley, drawn by makeProbe.mjs. A capture of the live scene
+		// would show whatever has loaded by then, which in play is little; this looks the same everywhere.
+		createSlot({
+			id: 'bw-sky',
+			name: 'Sky',
+			components: [
+				{
+					type: 'skybox',
+					topColor: '#05040c',
+					horizonColor: '#0a0818',
+					bottomColor: '#030308',
+					ambientIntensity: 0.55,
+					// The lamps are baked, so they give no highlights: the reflections have to carry the gloss of the ball and pins.
+					reflectionIntensity: 3,
+					reflectionPx: { kind: 'asset', assetId: asset('probe/px.png') },
+					reflectionNx: { kind: 'asset', assetId: asset('probe/nx.png') },
+					reflectionPy: { kind: 'asset', assetId: asset('probe/py.png') },
+					reflectionNy: { kind: 'asset', assetId: asset('probe/ny.png') },
+					reflectionPz: { kind: 'asset', assetId: asset('probe/pz.png') },
+					reflectionNz: { kind: 'asset', assetId: asset('probe/nz.png') }
+				}
+			]
+		}),
 		createSlot({ id: 'bw-spawn', name: 'Spawn', position: [...BOWLING.spawn] as Vec3, components: [{ type: 'spawnPoint' }] })
 	];
 }
@@ -37,7 +59,7 @@ function buildShell(): Slot[] {
 		floor('bw-floor-west', 'West Aisle', HALL.minX, bx0, foulZ, HALL.maxZ, '#2a2a22', SURFACES.carpet),
 		floor('bw-floor-east', 'East Aisle', bx1, HALL.maxX, foulZ, HALL.maxZ, '#2a2a22', SURFACES.carpet),
 		// The approach: the wood players stand on to throw, in front of the foul line.
-		box('bw-approach', 'Approach', [0, 0.003, (BOWLING.approachStartZ + foulZ) / 2], [bx1 - bx0, 0.006, foulZ - BOWLING.approachStartZ], '#c8995a', { surface: { ...SURFACES.lane, size: 1.6 } }),
+		box('bw-approach', 'Approach', [0, 0.003, (BOWLING.approachStartZ + foulZ) / 2], [bx1 - bx0, 0.006, foulZ - BOWLING.approachStartZ], '#c8995a', { surface: { ...SURFACES.lane, size: 1.8 } }),
 		box('bw-ceiling', 'Ceiling', [0, HALL.height + 0.1, MID], [HALL.maxX - HALL.minX + 0.6, 0.2, LENGTH + 0.6], '#0b0a16', { solid: true }),
 		box('bw-wall-west', 'West Wall', [HALL.minX - 0.15, HALL.height / 2, MID], [0.3, HALL.height, LENGTH], WALL, { solid: true }),
 		box('bw-wall-east', 'East Wall', [HALL.maxX + 0.15, HALL.height / 2, MID], [0.3, HALL.height, LENGTH], WALL, { solid: true }),
@@ -178,19 +200,31 @@ function buildSpectators(): Slot[] {
 	return slots;
 }
 
-/** The jukebox against the east wall by the approach: the body and its glow. Its panel and script are in bowlingLanes.ts with the other controls. */
+/**
+ * The jukebox against the east wall by the approach: not made here but loaded from the app's own starter kit (`loader`, adapter `builtin`, id `jukebox`;
+ * Starter Kit > Music), so any world can have the same one. Turned so that its front, the record slots and the panel, is towards the room. Its lamp stays here:
+ * lights belong to the world (this one is baked).
+ */
 function buildJukebox(): Slot[] {
 	const { x, z } = JUKEBOX_AT;
 	return [
-		group('bw-jukebox-model', 'Jukebox', [0, 0, 0]),
-		box('bw-juke-body', 'Jukebox Body', [x, 0.8, z], [0.7, 1.6, 1.1], '#3a1230', { parentId: 'bw-jukebox-model', solid: true }),
-		cylinder('bw-juke-arch', 'Jukebox Arch', [x, 1.62, z], 0.9, 0.7, '#3a1230', { parentId: 'bw-jukebox-model', rotation: pitch(Math.PI / 2), solid: true }),
-		box('bw-juke-glow-a', 'Jukebox Glow', [x - 0.36, 1.0, z], [0.02, 0.9, 0.85], '#ff7a3d', { parentId: 'bw-jukebox-model', unlit: true }),
-		box('bw-juke-glow-b', 'Jukebox Trim', [x - 0.36, 1.62, z], [0.02, 0.22, 0.85], CYAN, { parentId: 'bw-jukebox-model', unlit: true }),
+		createSlot({ id: JUKEBOX_LOADER_ID, name: 'Jukebox', position: [x, 0, z], rotation: yaw(Math.PI / 2), components: [{ type: 'loader', adapter: 'builtin', id: 'jukebox' }] }),
 		pointLight('bw-light-juke', 'Jukebox Light', [x - 1.1, 1.6, z], '#ff7a3d', 1.6, 6, false)
 	];
 }
 
+/**
+ * The Kithin logo, once on each side wall half way down the lanes: not copied into this world but loaded from the app's own starter kit (`loader`, adapter
+ * `builtin`), so it costs the world two slots and nothing in size, and any other world can hang the same piece the same way.
+ */
+function buildLogos(): Slot[] {
+	const slots: Slot[] = [];
+	for (const [side, x, turn] of [['w', HALL.minX, -Math.PI / 2], ['e', HALL.maxX, Math.PI / 2]] as const) {
+		slots.push(createSlot({ id: `bw-logo-${side}`, name: 'Kithin Logo', position: [x, 2.6, 14], rotation: yaw(turn), components: [{ type: 'loader', adapter: 'builtin', id: 'kithin-logo' }] }));
+	}
+	return slots;
+}
+
 export function buildHall(): Slot[] {
-	return [...buildSky(), ...buildShell(), ...buildSigns(), ...buildHallOfFame(), ...buildLounge(), ...buildSpectators(), ...buildJukebox()];
+	return [...buildSky(), ...buildShell(), ...buildSigns(), ...buildHallOfFame(), ...buildLounge(), ...buildSpectators(), ...buildJukebox(), ...buildLogos()];
 }

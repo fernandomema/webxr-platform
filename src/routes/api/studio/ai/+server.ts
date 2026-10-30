@@ -57,7 +57,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ message: 'Invalid provider configuration.' }, { status: 400 });
 	}
 	const payload = body.payload as Record<string, unknown>;
-	if (typeof payload.model !== 'string' || payload.model.length > 150 || !Array.isArray(payload.tools) || payload.tools.length > 20) {
+	if (typeof payload.model !== 'string' || payload.model.length > 150 || !Array.isArray(payload.tools) || payload.tools.length > 30) {
 		return json({ message: 'Invalid model or tools.' }, { status: 400 });
 	}
 	const serialized = JSON.stringify(payload);
