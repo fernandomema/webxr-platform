@@ -3,7 +3,7 @@
 // `worlds/<id>/assets/lighting/<region>.lvol`, where it is an asset like any other.
 // Run with: npm run bake -- <world> [region ...]
 import { createHash } from 'node:crypto';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -52,6 +52,21 @@ const { encode } = await import(engine('lighting/format.ts'));
 const { nodeCodec } = await import(engine('lighting/nodeCodec.ts'));
 
 const world = WORLDS[worldId] ? await WORLDS[worldId]() : await packWorld(worldId);
+
+// Objects that loaders bring in while the world runs (the jukebox, the logos) are part of the scene too: they block and bounce light. Starter kit ones are built here
+// and hung from their loader like the engine does.
+const { BUILTIN_ENTRIES } = await import(src('content/starterKit/catalog.ts'));
+const { instantiateExternal } = await import(engine('inventory/external.ts'));
+const { readGlbBounds } = await import(engine('assets/glbBounds.ts'));
+const { JUKEBOX_MODEL } = await import(src('content/templates/jukebox.ts'));
+const builtins = new Map(BUILTIN_ENTRIES.map((entry) => [entry.id, entry]));
+world.tree = world.tree.flatMap((slot) => {
+	const loader = slot.components.find((component) => component.type === 'loader');
+	const entry = loader?.adapter === 'builtin' ? builtins.get(loader.id) : undefined;
+	return entry ? [slot, ...instantiateExternal(slot.id, entry.build(), slot.id)] : [slot];
+});
+// The models the starter kit objects use, so that a model is the box it fills and not the whole slot.
+const modelBoxes = { [JUKEBOX_MODEL]: readGlbBounds(readFileSync(join(root, 'static/assets/models/jukebox.glb')), { babylon: true }) };
 const regions = only.length ? world.regions.filter((r) => only.includes(r.id)) : world.regions;
 const dir = world.pack ? join(root, 'worlds', world.name, 'assets', 'lighting') : join(root, 'static/worlds', world.name);
 mkdirSync(dir, { recursive: true });
@@ -63,7 +78,7 @@ const registry = { ...BUNDLED_LIGHTING };
 
 for (const region of regions) {
 	const started = Date.now();
-	const scene = extractScene(world.tree, { region: { min: region.min, max: region.max }, skyIntensity: world.skyIntensity, albedoScale: world.albedoScale });
+	const scene = extractScene(world.tree, { region: { min: region.min, max: region.max }, skyIntensity: world.skyIntensity, albedoScale: world.albedoScale, modelBox: (id) => modelBoxes[id] ?? null });
 	const spec = specFor(region.min, region.max, region.voxel);
 	const volume = bake(scene, spec);
 	const signature = sceneSignature(scene, { min: spec.min, voxel: spec.voxel, dims: spec.dims }, { min: region.min, max: region.max });

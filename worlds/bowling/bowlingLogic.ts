@@ -326,7 +326,7 @@ function boardRows(player, current) {
   const card = scoreGame(player.rolls);
   const marks = card.frames.map((frame, i) => frame.mark.join(i === 9 ? '' : ' '));
   const scores = card.frames.map((frame) => (frame.score === null ? '' : String(frame.score)));
-  return [{ name: player.name, cells: marks, highlight: current }, { name: '', cells: scores, highlight: current }];
+  return [{ name: player.name, cells: marks, highlight: current, rowSpan: 2 }, { name: '', cells: scores, highlight: current }];
 }
 `;
 

@@ -156,7 +156,7 @@ function paintMonitor(L) {
     title = who.name; color = '#ffffff';
     lines = ['Frame ' + (next.frame + 1) + '  ·  Ball ' + (next.roll + 1), 'Score ' + scoreGame(who.rolls).total];
   }
-  ctx.world.setComponent(L.ids.monitor, { type: 'textDisplay', title: title, titleColor: color, lines: lines, lineColor: '#cfe1ff', background: background, scale: 1.1 });
+  ctx.world.setComponent(L.ids.monitor, { type: 'textDisplay', title: title, titleColor: color, lines: lines, lineColor: '#cfe1ff', background: background });
 }
 
 function paintLane(L) { paintConsole(L); paintBoard(L); paintMonitor(L); }
@@ -281,6 +281,31 @@ function sweepPins(L) {
   L.downBefore = pinsDown(L.pins);
 }
 
+/** A rack with the number of pins given standing: new pins, less the ones a first ball took (any of them: they are not kept, only how many). */
+function setRack(L, standing) {
+  resetPins(L);
+  for (const pin of L.pins) {
+    if (10 - pinsDown(L.pins) <= standing) break;
+    pin.state = 'gone';
+    posePin(L, pin);
+  }
+  ctx.world.flush();
+}
+
+/** A ball thrown out of turn is the thrower's own: it goes on their card, and the turn passes to them (a player that was not in the game joins it, if there is room). */
+function claimTurn(L, thrower) {
+  const game = L.game;
+  if (!thrower || game.over || game.players.length === 0) return;
+  let index = game.players.findIndex((p) => p.id === thrower.id);
+  if (index < 0) {
+    if (game.players.length >= LAYOUT.maxPlayers) return;
+    addPlayer(game, thrower);
+    index = game.players.length - 1;
+  }
+  if (isComplete(game.players[index].rolls)) return;
+  game.turn = index;
+}
+
 // ---------------------------------------------------------------- the roll is over
 
 function endOfRoll(L) {
@@ -346,6 +371,10 @@ function deliver(L, ball) {
   L.rollTime = 0;
   if (!L.game) startGame(L, ball.holder);
   else if (L.game.over) { L.game = newGame(L.game.players); resetPins(L); }
+  else claimTurn(L, ball.holder);
+  // The rack is what the one who throws has left to hit: a card that expects a second ball finds the pins its first one left.
+  const up = currentPlayer(L.game);
+  if (up) { const standing = nextRoll(up.rolls).standing; if (10 - pinsDown(L.pins) !== standing) setRack(L, standing); }
   L.downBefore = pinsDown(L.pins);
   L.thrower = ball.holder;
   ball.lastLane = L.i;

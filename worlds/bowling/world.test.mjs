@@ -399,6 +399,36 @@ test('with two players on a lane the turn passes after the second ball, to the o
 	assert.ok(rows[2].name === 'Bob' && rows[2].highlight && !rows[0].highlight);
 });
 
+test('a ball thrown out of turn goes on the thrower\'s own card and the turn passes to them', () => {
+	const { world, run, state } = startWorld({ second: true });
+	const L = state.lanes[1];
+	world.press(run, laneOne.join);
+	world.player('p1').head = [BOWLING.laneX[1] + 6, 1.6, 0];
+	world.player('p2').head = [BOWLING.laneX[1], 1.6, BOWLING.deskZ - 0.6];
+	world.press(run, laneOne.join);
+	assert.deepEqual(L.game.players.map((p) => p.name), ['Alice', 'Bob']);
+	assert.equal(logic.currentPlayer(L.game).name, 'Alice', 'it is Alice\'s turn');
+	// Bob throws anyway.
+	world.player('p1').head = [BOWLING.laneX[1] + 6, 1.6, 0];
+	world.player('p2').head = [BOWLING.laneX[1], 1.6, 1.5];
+	const ball = state.balls.find((b) => b.id === laneOne.ball(0));
+	throwBall(world, ball.id, { from: handAt(1), by: 'p2' });
+	world.tick(9);
+	assert.equal(L.game.players[1].rolls.length, 1, 'the ball is Bob\'s');
+	assert.equal(L.game.players[0].rolls.length, 0, 'and Alice\'s card is untouched');
+	assert.deepEqual(L.game.players.map((p) => p.name), ['Alice', 'Bob'], 'nobody joined twice');
+});
+
+test('the scoreboard draws a player as one block of two rows: the name once, then marks over totals', () => {
+	const { world, run, state } = startWorld();
+	world.press(run, laneOne.join);
+	const rows = world.component(laneOne.board, 'scoreboard').rows;
+	assert.equal(rows.length, 2);
+	assert.equal(rows[0].rowSpan, 2, 'the name covers both rows');
+	assert.equal(rows[1].name, '');
+	void state;
+});
+
 test('a lane takes four players and says so when it is full', () => {
 	const { world, run, state } = startWorld();
 	const L = state.lanes[1];
@@ -792,10 +822,12 @@ function jukeboxWorld(discs = 3) {
 	const world = createTestWorld([...treeWithJukebox, ...records.flat()]);
 	const run = world.run(JUKEBOX_PANEL);
 	const insert = (disc, socket) => { world.component(J(jukeboxSlotId(socket)), 'socket').occupantId = `disc-${disc}`; };
-	const remove = (socket) => { delete world.component(J(jukeboxSlotId(socket)), 'socket').occupantId; };
+	// Takes a record out of whichever socket it is in now: the script moves the one that plays to the turntable.
+	const remove = (disc) => { for (let i = 0; i < JUKEBOX_SLOTS; i++) { const socket = world.component(J(jukeboxSlotId(i)), 'socket'); if (socket.occupantId === `disc-${disc}`) delete socket.occupantId; } };
+	const socketOf = (disc) => { for (let i = 0; i < JUKEBOX_SLOTS; i++) if (world.component(J(jukeboxSlotId(i)), 'socket').occupantId === `disc-${disc}`) return i; return -1; };
 	const heard = () => world.audio.played.filter((p) => p.position && p.source.kind === 'url').map((p) => p.source.url);
 	const finish = () => { for (const p of world.audio.played) if (p.source.kind === 'url' && !p.handle.ended) p.handle.ended = true; };
-	return { world, run, insert, remove, heard, finish };
+	return { world, run, insert, remove, socketOf, heard, finish };
 }
 
 test('the jukebox is not in this world: a loader builds it from the starter kit, turned so that its front faces the room', async () => {
@@ -812,7 +844,7 @@ test('the jukebox is not in this world: a loader builds it from the starter kit,
 	assert.ok(tree.some((slot) => slot.id === 'bw-light-juke'), 'its lamp stays with the world (it is baked)');
 });
 
-test('the jukebox object has six slots that take records, on its front, in two rows, and a panel with the script and the shared state', () => {
+test('the jukebox object has six places for records (five to wait in and the turntable), a tray to put them in by, and a panel with the script and the shared state', () => {
 	const jukebox = buildJukebox();
 	const ids = new Set(jukebox.map((slot) => slot.id));
 	assert.equal(ids.size, jukebox.length);
@@ -824,23 +856,15 @@ test('the jukebox object has six slots that take records, on its front, in two r
 		assert.deepEqual(find(socket, 'socket').accepts, ['disc']);
 		assert.equal(find(socket, 'socket').playMedia, false, 'the script plays it, in step for everyone');
 		assert.deepEqual(socket.position, jukeboxSlotAt(i));
-		assert.ok(socket.position[2] < -0.35, 'on the front (-Z side)');
-		assert.ok(Math.abs(socket.position[0]) <= 0.32 + 1e-9, 'inside its width');
+		assert.ok(Math.abs(socket.position[0]) <= 0.4, 'inside its width');
 	}
-	assert.ok(jukeboxSlotAt(0)[1] > jukeboxSlotAt(3)[1], 'the first row is the top one');
-	assert.ok(jukeboxSlotAt(0)[0] < jukeboxSlotAt(2)[0], 'left to right as seen from the front');
+	assert.ok(jukeboxSlotAt(0)[0] < jukeboxSlotAt(1)[0] && jukeboxSlotAt(1)[0] < jukeboxSlotAt(2)[0], 'left to right as seen from the front');
+	assert.ok([0, 1, 2, 4, 5].every((i) => jukeboxSlotAt(3)[1] < jukeboxSlotAt(i)[1]), 'the turntable is the lowest place');
 	const panel = jukebox.find((slot) => slot.id === 'jukebox-panel');
 	assert.ok(find(panel, 'scriptState') && find(panel, 'codeBlock') && find(panel, 'uiPanel'));
-	for (const id of ['jukebox-now', 'jukebox-toggle', 'jukebox-next']) assert.ok(ids.has(id), id);
-	for (const slot of jukebox) assert.ok(!find(slot, 'meshRenderer')?.meshRef.assetId, 'no asset');
-	// Nothing hides the slots: the lit window is behind the rings and the places (the front is -Z, so in front means a smaller z).
-	const glow = jukebox.find((slot) => slot.id === 'jukebox-glow');
-	const glowFront = glow.position[2] - glow.scale[2] / 2;
-	for (let i = 0; i < JUKEBOX_SLOTS; i++) {
-		const ring = jukebox.find((slot) => slot.id === `jukebox-ring-${i}`);
-		assert.ok(ring.position[2] + ring.scale[1] / 2 < glowFront, `ring ${i} is in front of the lit window`);
-		assert.ok(jukeboxSlotAt(i)[2] < glow.position[2] - glow.scale[2] / 2, `slot ${i} is in front of the lit window`);
-	}
+	for (const id of ['jukebox-now', 'jukebox-toggle', 'jukebox-next', 'jukebox-add', 'jukebox-tray', 'jukebox-tray-socket']) assert.ok(ids.has(id), id);
+	assert.equal(find(jukebox.find((slot) => slot.id === 'jukebox-tray-socket'), 'socket').radius < 0.01, true, 'closed, the tray reaches nothing');
+	assert.ok(find(jukebox.find((slot) => slot.id === 'jukebox-model'), 'meshRenderer').meshRef.assetId, 'the cabinet is the bundled model');
 	// Loaded under another id, the script still finds its parts.
 	for (const slot of jukeboxTree()) assert.ok(slot.id.startsWith(`${JUKEBOX_LOADER_ID}::`));
 });
@@ -849,14 +873,14 @@ test('records put in the slots are played one after the other, in order, and rou
 	const { world, run, insert, heard, finish } = jukeboxWorld(3);
 	world.tick(1);
 	assert.deepEqual(heard(), [], 'nothing to play but the ambient tune');
-	assert.equal(world.component(J('jukebox-now'), 'uiElement').text.split('\n')[0], 'Put a record in a slot.');
+	assert.equal(world.component(J('jukebox-now'), 'uiElement').text.split('\n')[0], 'Add a record with the tray.');
 	insert(2, 4); insert(0, 1);
 	world.tick(0.5);
 	await settle();
 	assert.deepEqual(heard(), ['/song-0.mp3'], 'slot 2 comes before slot 5');
 	const state = world.component(JUKEBOX_PANEL, 'scriptState').data;
 	assert.ok(state.cur === 1 && state.discId === 'disc-0' && state.title === 'Song 0');
-	assert.match(world.component(J('jukebox-now'), 'uiElement').text, /Now playing\nSong 0 - Band 0\nNext: Song 2 - Band 2/);
+	assert.equal(world.component(J('jukebox-now'), 'uiElement').text, 'Song 0 - Band 0\nNext: Song 2 - Band 2');
 	assert.equal(world.component(J('jukebox-next'), 'uiElement').text, 'Skip');
 	const notes = world.spawned.length;
 	world.tick(3);
@@ -912,33 +936,73 @@ test('a guest hears what the host decided, from where it is by then, and nothing
 	assert.equal(world.audio.played.length, 1, 'it does not start it again');
 });
 
-test('the record that is playing turns on its own axis and the others do not; when it stops it is as it was seated', async () => {
-	const { world, insert, remove, finish } = jukeboxWorld(2);
+test('the record that plays is moved to the turntable and turns there, on its own axis, and goes back to its place when the next one starts', async () => {
+	const { world, insert, remove, socketOf, finish } = jukeboxWorld(2);
 	insert(0, 0); insert(1, 1);
-	world.setPosition('disc-0', world.position(J(jukeboxSlotId(0))), [0.5, 0.5, -0.5, 0.5]);
-	world.setPosition('disc-1', world.position(J(jukeboxSlotId(1))), [0.5, 0.5, -0.5, 0.5]);
 	const seated = [0.5, 0.5, -0.5, 0.5];
+	world.setPosition('disc-0', world.position(J(jukeboxSlotId(0))), seated);
+	world.setPosition('disc-1', world.position(J(jukeboxSlotId(1))), seated);
 	// A turn is the same turn with its quaternion negated.
 	const sameTurn = (p, q) => Math.abs(p.reduce((sum, c, i) => sum + c * q[i], 0)) > 0.99999;
 	const rotation = (id) => { const q = world.node(id).rotationQuaternion; return [q.x, q.y, q.z, q.w]; };
 	const axis = (id) => rotate(rotation(id), [0, 1, 0]);
-	const start = axis('disc-0');
 	world.tick(0.5);
 	await settle();
+	assert.equal(socketOf(0), 3, 'the record that plays is on the turntable');
+	assert.equal(world.slot('disc-0').parentId, J(jukeboxSlotId(3)), 'and hangs from it');
+	assert.equal(socketOf(1), 1, 'the one that waits stays in its place');
+	assert.ok(sameTurn(rotation('disc-1'), seated), 'and does not turn');
+	const turntable = world.position(J(jukeboxSlotId(3)));
+	assert.ok(world.position('disc-0').every((c, i) => Math.abs(c - turntable[i]) < 1e-3), 'it is where the turntable is');
+	const start = axis('disc-0');
 	const a = rotation('disc-0');
 	world.tick(0.3);
 	const b = rotation('disc-0');
 	assert.notDeepEqual(a, b, 'it turns');
-	assert.ok(!sameTurn(b, seated));
-	for (const v of [axis('disc-0')]) for (let i = 0; i < 3; i++) assert.ok(Math.abs(v[i] - start[i]) < 1e-4, 'about its own axis: the face keeps pointing the same way');
-	assert.ok(world.slot('disc-0').position.every((c, i) => Math.abs(c - world.position('disc-0')[i]) < 2), 'it stays where it is');
-	assert.ok(sameTurn(rotation('disc-1'), seated), 'the one that waits does not turn');
+	for (let i = 0; i < 3; i++) assert.ok(Math.abs(axis('disc-0')[i] - start[i]) < 1e-4, 'about its own axis: the face keeps pointing the same way');
 	assert.ok(world.flushes > 0, 'the guests are sent the turn');
-	// Next record: the first goes back to how it was seated, the second turns.
+	// Next record: the first goes back to its place, the second goes to the turntable.
 	finish(); world.tick(0.5); await settle();
-	assert.ok(sameTurn(rotation('disc-0'), seated), 'the one that stopped is as it was seated');
-	world.tick(0.4);
-	assert.ok(!sameTurn(rotation('disc-1'), seated), 'the next one turns');
+	assert.equal(socketOf(0), 0, 'the one that stopped is back in its place');
+	assert.equal(socketOf(1), 3, 'the next one is on the turntable');
+	assert.equal(world.slot('disc-0').parentId, J(jukeboxSlotId(0)));
 	remove(1); world.tick(0.5); await settle();
-	assert.ok(sameTurn(rotation('disc-1'), seated), 'taken out of the slot, it is left as it was');
+	const left = rotation('disc-1');
+	world.tick(0.3);
+	assert.deepEqual(rotation('disc-1'), left, 'taken out of the turntable, it does not turn any more');
+});
+
+test('the tray slides out when asked, takes a record let go on it, closes and the record is seated in a free place', async () => {
+	const { world, run, socketOf, insert } = jukeboxWorld(2);
+	insert(1, 0); // a record that waits in the first place, and plays
+	const tray = J('jukebox-tray');
+	const closed = world.slot(tray).position.slice();
+	assert.equal(world.component(J('jukebox-tray-socket'), 'socket').radius < 0.01, true);
+	world.tick(0.1);
+	world.press(run, J('jukebox-add'));
+	world.tick(0.5);
+	assert.equal(world.component(J('jukebox-add'), 'uiElement').text, 'Close tray');
+	assert.equal(world.component(J('jukebox-now'), 'uiElement').text, 'Lay a record on the tray.');
+	for (let i = 0; i < 40; i++) world.tick(0.05);
+	const open = world.slot(tray).position;
+	assert.ok(open[2] < closed[2] - 0.3, 'it is out of the cabinet (towards the front, -Z)');
+	assert.ok(world.component(J('jukebox-tray-socket'), 'socket').radius > 0.1, 'and reaches a record now');
+	// A record is let go on it.
+	world.component(J('jukebox-tray-socket'), 'socket').occupantId = 'disc-0';
+	world.setPosition('disc-0', world.position(J('jukebox-tray-socket')));
+	for (let i = 0; i < 80; i++) world.tick(0.05);
+	await settle();
+	assert.deepEqual(world.slot(tray).position, closed, 'the tray is shut again');
+	assert.equal(socketOf(0), 1, 'the record is in the first free place (the second: the first is taken)');
+	assert.ok(!world.component(J('jukebox-tray-socket'), 'socket').occupantId, 'and the tray is empty');
+});
+
+test('a full jukebox does not open its tray', () => {
+	const { world, run, insert } = jukeboxWorld(5);
+	[0, 1, 2, 4, 5].forEach((socket, i) => insert(i, socket));
+	world.tick(0.1);
+	world.press(run, J('jukebox-add'));
+	world.tick(0.2);
+	assert.equal(world.component(J('jukebox-now'), 'uiElement').text, 'The jukebox is full.');
+	assert.equal(world.component(J('jukebox-tray-socket'), 'socket').radius < 0.01, true);
 });

@@ -101,17 +101,29 @@ export function setupScoreboard(scene: Scene, mesh: AbstractMesh, initial: Score
 			g.addControl(cell(col, { color: GOLD, bold: true }), 0, i + 1);
 		});
 
+		// A name that spans rows is one block over them: the rows it covers draw no name of their own.
+		let covered = 0;
 		rows.forEach((row, r) => {
 			const rowIndex = r + 1;
 			const baseBg = row.highlight ? HIGHLIGHT_BG : r % 2 === 0 ? ROW_BG_A : ROW_BG_B;
 
-			g.addControl(cellBackground(baseBg), rowIndex, 0);
-			const nameLabel = cell(`${row.isLeader ? '\u{1F3C6} ' : ''}${row.name}`, {
-				align: Control.HORIZONTAL_ALIGNMENT_LEFT,
-				bold: Boolean(row.highlight)
-			});
-			nameLabel.paddingLeft = '12px';
-			g.addControl(nameLabel, rowIndex, 0);
+			if (covered > 0) covered--;
+			else {
+				const span = Math.max(1, Math.min(Math.floor(row.rowSpan ?? 1), rows.length - r));
+				covered = span - 1;
+				const block = cellBackground(baseBg);
+				const nameLabel = cell(`${row.isLeader ? '\u{1F3C6} ' : ''}${row.name}`, {
+					align: Control.HORIZONTAL_ALIGNMENT_LEFT,
+					bold: Boolean(row.highlight)
+				});
+				nameLabel.paddingLeft = '12px';
+				for (const control of [block, nameLabel]) {
+					control.height = `${ROW_HEIGHT * span}px`;
+					control.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+				}
+				g.addControl(block, rowIndex, 0);
+				g.addControl(nameLabel, rowIndex, 0);
+			}
 
 			cols.forEach((_col, c) => {
 				g.addControl(cellBackground(baseBg), rowIndex, c + 1);

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { BUILTIN_ENTRIES, BUILTIN_FOLDERS, starterKit } from '../src/lib/content/starterKit/catalog.ts';
 import { registerContent } from '../packages/engine/src/xr/content/registry.ts';
 import { collectAssetIds } from '../packages/engine/src/assets/ref.ts';
+import { JUKEBOX_MODEL } from '../src/lib/content/templates/jukebox.ts';
 import { paintDisc } from '../src/lib/content/templates/recordDisc.ts';
 import { TOOLS } from '../scripts/workshop-tools.mjs';
 import { instantiate } from '../packages/engine/src/ecs/serialize.ts';
@@ -24,7 +25,9 @@ test('every starter object sits in a folder, has a unique id and builds a well-f
     });
     assert.equal(tree.filter((slot) => slot.parentId === null).length, 1, `${entry.id} must be a single object`);
     assert.equal(tree[0].components.some((c) => c.type === 'grabbable'), entry.grabbable !== false, `${entry.id}: the root is grabbable unless it is scenery`);
-    assert.equal(collectAssetIds(tree).size, 0, `${entry.id} must not need cloud assets`);
+    // Only files that ship with the app (see bundledAssets.ts) are allowed: nothing a starter object needs is stored in the cloud.
+    const shipped = new Set([JUKEBOX_MODEL]);
+    for (const id of collectAssetIds(tree)) assert.ok(shipped.has(id), `${entry.id} must not need cloud assets`);
   }
 });
 

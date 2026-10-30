@@ -12,3 +12,14 @@ test('a text display says its background, title and lines, each with its own col
 	assert.equal(styled.background, '#00000000', 'background wins over color, and may be transparent');
 	assert.deepEqual(styled.rows.map((r) => [r.text, r.color, r.size]), [['T', '#ff0000', 80], ['a', '#0000ff', 120], ['b', '#00ff00', 60], ['c', '#00ff00', 60]]);
 });
+
+const { autoTextScale } = await import('../packages/engine/src/xr/textDisplaySurface.ts').catch(() => ({}));
+
+test('text with room to spare grows to fill its sign, and never shrinks below the standard size', { skip: !autoTextScale }, () => {
+	const short = { type: 'textDisplay', lines: ['Bay 1'] };
+	assert.ok(autoTextScale(short, 3, 1) > 3, 'one short line on a wide board is made much larger');
+	assert.ok(autoTextScale(short, 3, 1) <= 4);
+	const crowded = { type: 'textDisplay', title: 'T', lines: Array.from({ length: 12 }, (_, i) => `line number ${i} with some words`) };
+	assert.equal(autoTextScale(crowded, 1, 1), 1, 'a sign that is full at the standard size keeps it');
+	assert.ok(autoTextScale({ type: 'textDisplay', lines: ['x'.repeat(200)] }, 1, 1) >= 1);
+});

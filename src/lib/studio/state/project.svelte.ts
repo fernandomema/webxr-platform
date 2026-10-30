@@ -70,16 +70,29 @@ export class StudioProject {
 		return this.adapterId === 'builtin' ? (/^builtin:world:(.+)$/.exec(this.item?.id ?? '')?.[1] ?? null) : null;
 	}
 
-	/** What the Studio changed in a code-built world, as text to give to whoever edits its builder; `null` when nothing changed. */
+	/** The id of the starter-kit object this project was opened from, when it is one. */
+	get starterObjectId(): string | null {
+		return this.adapterId === 'builtin' ? (/^builtin:(?!world:)(.+)$/.exec(this.item?.id ?? '')?.[1] ?? null) : null;
+	}
+
+	/** Whether the diff against the code-built original can be taken: a built-in world, or a starter-kit object for devs and admins. */
+	get canGetDiff(): boolean {
+		return this.codeWorldId !== null || (this.starterObjectId !== null && (import.meta.env.DEV || Boolean(this.context.isAdmin)));
+	}
+
+	/** What the Studio changed in a code-built world or starter-kit object, as text to give to whoever edits its builder; `null` when nothing changed. */
 	codeWorldDiff(): string | null {
-		const id = this.codeWorldId;
+		const worldId = this.codeWorldId;
+		const id = worldId ?? (this.canGetDiff ? this.starterObjectId : null);
 		if (!id || !this.item) return null;
 		const diff = diffTrees(this.item.slotData, cloneTree(this.doc.tree));
 		if (isEmptyDiff(diff)) return null;
+		const what = worldId ? 'world' : 'object';
+		const file = worldId ? 'src/lib/content/templates/builtinWorlds.ts' : 'src/lib/content/starterKit/catalog.ts (or src/lib/content/starterKit/props.ts)';
 		return [
-			`# Changes to the built-in world "${this.item.name}" (id \`${id}\`)`,
+			`# Changes to the built-in ${what} "${this.item.name}" (id \`${id}\`)`,
 			'',
-			'Before is the world as its code builds it; after is the copy edited in the Studio. Make the same changes in the code that builds this world: find the entry with `id: \'' + id + '\'` in `src/lib/content/templates/builtinWorlds.ts` and follow its builder (and the files it imports or loads from). Slots are identified by their `id` (or, if the builder generates ids, by name and position in the hierarchy). Positions are in metres and rotations are quaternions [x, y, z, w]. Keep the style of the surrounding code and keep strings in English.',
+			`Before is the ${what} as its code builds it; after is the copy edited in the Studio. Make the same changes in the code that builds this ${what}: find the entry with \`id: '${id}'\` in \`${file}\` and follow its builder (and the files it imports or loads from). Slots are identified by their \`id\` (or, if the builder generates ids, by name and position in the hierarchy). Positions are in metres and rotations are quaternions [x, y, z, w]. Keep the style of the surrounding code and keep strings in English.`,
 			'',
 			formatTreeDiff(diff)
 		].join('\n');

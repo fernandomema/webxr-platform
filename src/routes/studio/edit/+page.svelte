@@ -25,6 +25,8 @@
 	import SaveDialog from '$lib/studio/components/SaveDialog.svelte';
 	import PublishPanel from '$lib/studio/components/PublishPanel.svelte';
 	import CommandPalette, { type Command } from '$lib/studio/components/CommandPalette.svelte';
+	import WarningsPanel from '$lib/studio/components/WarningsPanel.svelte';
+	import { lintWorld, type LintFinding } from '@kithin/engine/worlds/lint';
 	import CodeView from '$lib/studio/views/CodeView.svelte';
 	import JsonView from '$lib/studio/views/JsonView.svelte';
 	import Icon from '$lib/studio/ui/Icon.svelte';
@@ -36,7 +38,17 @@
 	let advanced = $state(false);
 	let centerView = $state<'scene' | 'code' | 'json'>('scene');
 	let leftTab = $state<'hierarchy' | 'assets'>('hierarchy');
-	let rightTab = $state<'inspector' | 'ai' | 'explore' | 'marketplace'>('inspector');
+	let rightTab = $state<'inspector' | 'warnings' | 'ai' | 'explore' | 'marketplace'>('inspector');
+	// What the world's data gets wrong (see lintWorld), looked at again shortly after the last change.
+	let findings = $state.raw<LintFinding[]>([]);
+	$effect(() => {
+		const tree = doc.tree;
+		const timer = setTimeout(() => {
+			// An object has no player start to read its signs from, so only the checks that do not need one apply to it.
+			try { findings = lintWorld(tree).filter((finding) => doc.kind === 'world' || finding.rule === 'ui-layout'); } catch { findings = []; }
+		}, 300);
+		return () => clearTimeout(timer);
+	});
 	// The online libraries are only asked once the tab has been opened.
 	let exploreOpened = $state(false);
 	let mobilePanel = $state<'left' | 'center' | 'right'>('center');
@@ -237,6 +249,7 @@
 
 	const commands = $derived<Command[]>([
 		{ id: 'save', label: project.codeWorldId ? 'Get diff' : 'Save', shortcut: 'Ctrl+S', run: () => void save() },
+		...(project.canGetDiff && !project.codeWorldId ? [{ id: 'diff', label: 'Get diff', run: () => void getDiff() }] : []),
 		{ id: 'undo', label: 'Undo', shortcut: 'Ctrl+Z', enabled: doc.canUndo, run: () => doc.undo() },
 		{ id: 'redo', label: 'Redo', shortcut: 'Ctrl+Shift+Z', enabled: doc.canRedo, run: () => doc.redo() },
 		{ id: 'add', label: 'Add object…', run: () => { leftTab = 'hierarchy'; mobilePanel = 'left'; showAddObject = true; } },
@@ -383,6 +396,7 @@
 			<section class="right" aria-label="Properties">
 				<div class="tabs" role="tablist">
 					<button class="tab" role="tab" aria-selected={rightTab === 'inspector'} onclick={() => (rightTab = 'inspector')}><Icon name="sliders" size={14} />Inspector</button>
+					<button class="tab" role="tab" aria-selected={rightTab === 'warnings'} aria-label="Warnings" title="Warnings" onclick={() => (rightTab = 'warnings')}><Icon name="warning" size={14} />{findings.length || ''}</button>
 					<button class="tab" role="tab" aria-selected={rightTab === 'ai'} onclick={() => (rightTab = 'ai')}>AI</button>
 					<button class="tab" role="tab" aria-selected={rightTab === 'explore'} onclick={() => { rightTab = 'explore'; exploreOpened = true; }}><Icon name="search" size={14} />Explore</button>
 					{#if doc.kind === 'world' || !isReadOnlyAdapter(project.adapterId)}
@@ -391,6 +405,7 @@
 				</div>
 				<div class="right-body">
 					<div class="right-view" hidden={rightTab !== 'inspector'}><Inspector {doc} {advanced} onExportNode={(id) => void exportFile(id)} onOpenCode={openCode} onGenerateProbe={generateProbe} getViewPose={() => preview?.getViewPose() ?? null} /></div>
+					<div class="right-view" hidden={rightTab !== 'warnings'}><WarningsPanel {doc} {findings} /></div>
 					<div class="right-view" hidden={rightTab !== 'ai'}><AiPanel {doc} projectKey={project.key} /></div>
 					<div class="right-view" hidden={rightTab !== 'explore'}>{#if exploreOpened}<ExplorePanel {doc} />{/if}</div>
 					{#if doc.kind === 'world' || !isReadOnlyAdapter(project.adapterId)}

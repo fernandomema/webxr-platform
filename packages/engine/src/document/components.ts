@@ -249,7 +249,8 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 			{ key: 'lineColor', label: 'Text colour', kind: 'color', optional: true, default: '#ffffff' },
 			{ key: 'billboard', label: 'Face the player', kind: 'enum', options: [{ value: 'none', label: 'No' }, { value: 'y', label: 'Around the vertical' }, { value: 'full', label: 'Always' }], optional: true, default: 'none' },
 			{ key: 'scale', label: 'Text size', kind: 'number', min: 0.25, max: 6, step: 0.25, optional: true, default: 1, help: 'Times the usual size of the text.' },
-			{ key: 'verticalAlign', label: 'Vertical alignment', kind: 'enum', options: [{ value: 'top', label: 'Top' }, { value: 'middle', label: 'Middle' }], optional: true, default: 'top' }
+			{ key: 'verticalAlign', label: 'Vertical alignment', kind: 'enum', options: [{ value: 'top', label: 'Top' }, { value: 'middle', label: 'Middle' }], optional: true, default: 'top' },
+			{ key: 'lit', label: 'Lit by the world', kind: 'bool', optional: true, default: false, help: 'Takes the light of the world like a painted board, so its colour matches the objects beside it. Off, it glows on its own like a screen.' }
 		],
 		create: () => ({ type: 'textDisplay', title: 'New label', lines: ['Edit this text'] })
 	},
@@ -263,7 +264,8 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 			{ key: 'width', label: 'Design width', kind: 'number', min: 64, max: 4096, step: 64 },
 			{ key: 'height', label: 'Design height', kind: 'number', min: 64, max: 4096, step: 64 },
 			{ key: 'worldWidth', label: 'World width', kind: 'number', min: 0.1, max: 10, step: 0.1, optional: true, default: 1.2, unit: 'm' },
-			{ key: 'background', label: 'Background', kind: 'color', optional: true, default: '#111827' }
+			{ key: 'background', label: 'Background', kind: 'color', optional: true, default: '#111827' },
+			{ key: 'lit', label: 'Lit by the world', kind: 'bool', optional: true, default: false, help: 'Takes the light of the world like a painted board, so its colours match the objects beside it. Off, it glows on its own like a screen.' }
 		],
 		create: () => ({ type: 'uiPanel', width: 1024, height: 640, worldWidth: 1.2, background: '#111827' })
 	},

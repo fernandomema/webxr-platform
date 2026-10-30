@@ -499,8 +499,10 @@ export interface TextDisplayComponent {
 	lineSizes?: number[];
 	/** Turns the sign to face each player's own eyes: about the vertical only (`'y'`), or any way (`'full'`). */
 	billboard?: 'none' | 'y' | 'full';
-	/** How big the text is, times the usual size (1). Larger for shop signs, smaller to fit more lines. */
+	/** How big the text is, times the usual size (1). Larger for shop signs, smaller to fit more lines. Left out, the text is sized to the sign: the usual size, or larger (up to 4 times) when the sign has room to spare. */
 	scale?: number;
+	/** Lit like a painted board: the world's lights fall on it, so its colours match the objects beside it. Off (the default) it is self-lit, as bright in a dark room as in a bright one, like a screen or a neon sign. */
+	lit?: boolean;
 	/** Where the text block sits in the sign: from the top (the default) or centred vertically. */
 	verticalAlign?: 'top' | 'middle';
 }
@@ -527,6 +529,8 @@ export interface ScoreboardComponent {
 		highlight?: boolean;
 		/** Shows a leader marker next to the name. */
 		isLeader?: boolean;
+		/** The name takes this many rows (this one and the ones after it), as one block, for a player drawn over several rows. The names of those rows are not shown. */
+		rowSpan?: number;
 	}[];
 }
 
@@ -540,6 +544,8 @@ export interface UIPanelComponent {
 	worldWidth?: number;
 	/** Mirrors only the GUI texture horizontally; the panel's world transform stays unchanged. */
 	mirrorX?: boolean;
+	/** Lit like a painted board: the world's lights fall on it, so its colours match the objects beside it. Off (the default) it is self-lit, as bright in a dark room as in a bright one, like a screen. */
+	lit?: boolean;
 }
 
 /** A renderable UI control attached to a normal Slot in the scene hierarchy. */

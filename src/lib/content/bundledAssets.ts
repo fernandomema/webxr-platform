@@ -1,5 +1,6 @@
 import type { AssetId } from '@kithin/engine/assets/ref';
 import { packAssets } from 'virtual:world-packs';
+import { JUKEBOX_MODEL } from '$lib/content/templates/jukebox';
 import { BUNDLED_LIGHTING } from '$lib/content/bundledLighting';
 
 /** Files that ship with the app, addressed by their actual content hash. */
@@ -14,5 +15,6 @@ export const BUNDLED_ASSETS: Partial<Record<AssetId, string>> = {
 	'sha256:a46de5872d202bfa8a0f4c76477eff30fd806504a59e8cb28f09f17cd51c78fe': '/worlds/polygon-quest/probe/face-3.png',
 	'sha256:18f08e2c46fb6b4c2d50e6595d9b6657025bf7b1fe34a5635d50a208f2264163': '/worlds/polygon-quest/probe/face-4.png',
 	'sha256:c378eecd14a8ebc9d23925ca8cd9f43effac7499241323cecad364ea86f68c3e': '/worlds/polygon-quest/probe/face-5.png',
+	[JUKEBOX_MODEL]: '/assets/models/jukebox.glb',
 	...Object.fromEntries(Object.values(BUNDLED_LIGHTING).map((file) => [file.assetId, file.url]))
 };

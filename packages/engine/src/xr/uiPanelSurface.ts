@@ -12,6 +12,7 @@ import {
 	TextBlock
 } from '@babylonjs/gui';
 import { findComponent, type Slot, type UIElementComponent, type UIEvent, type UIPanelComponent } from '../ecs/types.ts';
+import { setSurfaceLit } from './surfaceLighting.ts';
 import { typeWithKeyboard } from './keyboard/guiInput.ts';
 import { hasInteractiveControls } from './uiPanelInteractivity.ts';
 import { plainUiText, uiText, type UiContext } from './uiLocale.ts';
@@ -263,6 +264,7 @@ export function setupUIPanel(
 	background.thickness = 0;
 	background.background = panel.background ?? '#111827';
 	texture.addControl(background);
+	setSurfaceLit(mesh, texture, panel.lit === true);
 
 
 	/** The widths the elements really get (see uiLayout.ts); worked out again whenever the panel is built or synced. */
@@ -588,6 +590,7 @@ export function setupUIPanel(
 		margins.clear();
 		const rootSlot = getSubtree()[0];
 		background.background = (rootSlot ? findComponent(rootSlot, 'uiPanel')?.background : undefined) ?? panel.background ?? '#111827';
+		setSurfaceLit(mesh, texture, (rootSlot ? findComponent(rootSlot, 'uiPanel')?.lit : undefined) === true);
 		rootStack = new StackPanel('ui-panel-layout');
 		rootStack.width = '92%';
 		rootStack.height = '92%';

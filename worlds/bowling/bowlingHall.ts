@@ -87,7 +87,7 @@ function buildShell(): Slot[] {
 function buildSigns(): Slot[] {
 	const faceViewer = (towardX: number, towardZ: number) => yaw(Math.atan2(towardX, towardZ));
 	return [
-		sign('bw-sign-name', 'Alley Name', [0, 3.5, HALL.maxZ - 0.08], [10, 1.9], { title: 'NEON PIN LANES', titleColor: '#ff58d6', lines: ['OPEN LATE  ·  EVERY GAME A STRIKE'], lineColor: '#7df3ff', background: '#08051a', scale: 1.3 }),
+		sign('bw-sign-name', 'Alley Name', [0, 3.5, HALL.maxZ - 0.08], [10, 1.9], { title: 'NEON PIN LANES', titleColor: '#ff58d6', lines: ['OPEN LATE  ·  EVERY GAME A STRIKE'], lineColor: '#7df3ff', background: '#08051a' }),
 		box('bw-sign-name-frame', 'Alley Name Frame', [0, 3.5, HALL.maxZ - 0.04], [10.3, 2.2, 0.05], MAGENTA, { unlit: true }),
 		sign('bw-sign-welcome', 'Welcome', [0, 3.1, HALL.minZ + 0.08], [7, 1.2], { title: 'WELCOME', titleColor: '#facc15', lines: ['Grab a ball  ·  Roll it down the lane'], lineColor: '#ffffff', background: '#10102a' }, { rotation: yaw(Math.PI) }),
 		// How to play, on a post in front of the arrival point.
@@ -97,8 +97,7 @@ function buildSigns(): Slot[] {
 			titleColor: '#facc15',
 			lines: ['1  Take a ball from a return', '2  Stand on the approach', '3  Swing and let go down the lane', '4  Press JOIN at a desk to add friends', 'Bumpers and aim help are on the desk'],
 			lineSizes: [1, 0.82, 0.82, 0.82, 0.82],
-			background: '#10102a',
-			scale: 0.9
+			background: '#10102a'
 		}),
 		sign('bw-sign-rules', 'Rules', [HALL.maxX - 0.08, 2.3, -11], [2.4, 1.2], { title: 'HOUSE RULES', titleColor: '#25e6ff', lines: ['Strike  =  10 + the next two balls', 'Spare  =  10 + the next ball', 'Ten frames  ·  300 is perfect'], background: '#0d1030' }, { rotation: yaw(Math.PI / 2) }),
 		sign('bw-sign-bar', 'Bar Sign', [HALL.minX + 0.08, 2.9, -8.5], [2.6, 0.7], { title: 'THE SPARE ROOM', titleColor: '#ff58d6', lines: [], background: '#00000000' }, { rotation: yaw(-Math.PI / 2) }),

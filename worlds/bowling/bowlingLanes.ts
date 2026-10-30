@@ -48,7 +48,7 @@ function buildBlock(): Slot[] {
 		slots.push(box(`${id}-rail-a`, 'Return Rail', [x - 0.2, 0.84, z], [0.04, 0.08, 2.6], '#d4d8de', { parentId: id }));
 		slots.push(box(`${id}-rail-b`, 'Return Rail', [x + 0.2, 0.84, z], [0.04, 0.08, 2.6], '#d4d8de', { parentId: id }));
 		slots.push(box(`${id}-glow`, 'Return Glow', [x, 0.5, foulZ - 0.01], [0.5, 0.05, 0.03], '#ffb347', { parentId: id, unlit: true }));
-		slots.push(sign(`${id}-label`, 'Return Label', [x, 0.5, z - 1.36], [0.5, 0.16], { title: 'BALL RETURN', titleColor: '#ffffff', lines: [], background: '#7a1620', scale: 0.5 }, { parentId: id }));
+		slots.push(sign(`${id}-label`, 'Return Label', [x, 0.5, z - 1.36], [0.5, 0.16], { title: 'BALL RETURN', titleColor: '#ffffff', lines: [], background: '#7a1620', lit: true }, { parentId: id }));
 	}
 	return slots;
 }
@@ -85,7 +85,7 @@ function buildLane(lane: number): Slot[] {
 	slots.push(own(box(`bw-l${lane}-unit-neon`, 'Pinsetter Neon', [x, 2.52, DECK_Z - 2.28], [1.9, 0.04, 0.04], colors[lane % 2], { unlit: true })));
 	slots.push(
 		own(
-			sign(ids.monitor, 'Lane Screen', [x, 3.0, DECK_Z - 2.31], [1.85, 0.72], { title: `LANE ${lane + 1}`, titleColor: '#facc15', lines: ['Grab a ball and roll'], lineColor: '#ffffff', background: '#0a1030', scale: 1.1 }, { rotation: pitch(-0.1) })
+			sign(ids.monitor, 'Lane Screen', [x, 3.0, DECK_Z - 2.31], [1.85, 0.72], { title: `LANE ${lane + 1}`, titleColor: '#facc15', lines: ['Grab a ball and roll'], lineColor: '#ffffff', background: '#0a1030' }, { rotation: pitch(-0.1) })
 		)
 	);
 	slots.push(own(spotLight(`bw-l${lane}-spot`, 'Pin Spot', [x, 4.1, DECK_Z - 4.5], pitch(0.74), '#fff3df', 3, 9, 60)));

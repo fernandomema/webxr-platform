@@ -6400,11 +6400,11 @@ msgstr ""
 msgid "Export"
 msgstr ""
 
-#: src/lib/studio/components/TopBar.svelte
-msgid "Copy what you changed, to hand to whoever edits this world's code (Ctrl+S)"
-msgstr ""
+#~ msgid "Copy what you changed, to hand to whoever edits this world's code (Ctrl+S)"
+#~ msgstr ""
 
 #: src/lib/studio/components/TopBar.svelte
+#: src/routes/studio/edit/+page.svelte
 #: src/routes/studio/edit/+page.svelte
 msgid "Get diff"
 msgstr ""
@@ -6421,9 +6421,8 @@ msgstr ""
 msgid "Diff downloaded"
 msgstr ""
 
-#: src/lib/studio/state/project.svelte.ts
-msgid "Before is the world as its code builds it; after is the copy edited in the Studio. Make the same changes in the code that builds this world: find the entry with `id: '"
-msgstr ""
+#~ msgid "Before is the world as its code builds it; after is the copy edited in the Studio. Make the same changes in the code that builds this world: find the entry with `id: '"
+#~ msgstr ""
 
 #: src/lib/studio/components/Inspector.svelte
 msgid "Export this object and everything under it as a .kin file"
@@ -7096,4 +7095,50 @@ msgstr ""
 #. 0: (usage.inputTokens ?? 0).toLocaleString(); 1: (usage.outputTokens ?? 0).toLocaleString()
 #: src/lib/studio/components/AiPanel.svelte
 msgid "{0} tokens in · {1} out"
+msgstr ""
+
+#. 0: what; 1: what; 2: id; 3: file
+#: src/lib/studio/state/project.svelte.ts
+msgid "Before is the {0} as its code builds it; after is the copy edited in the Studio. Make the same changes in the code that builds this {1}: find the entry with `id: '{2}'` in `{3}` and follow its builder (and the files it imports or loads from). Slots are identified by their `id` (or, if the builder generates ids, by name and position in the hierarchy). Positions are in metres and rotations are quaternions [x, y, z, w]. Keep the style of the surrounding code and keep strings in English."
+msgstr ""
+
+#~ msgid "Copy what you changed, to hand to whoever edits the code that builds this (Ctrl+S)"
+#~ msgstr ""
+
+#: src/lib/studio/components/TopBar.svelte
+msgid "Copy what you changed, to hand to whoever edits the code that builds this"
+msgstr ""
+
+#: src/routes/studio/edit/+page.svelte
+#: src/routes/studio/edit/+page.svelte
+msgid "Warnings"
+msgstr ""
+
+#: src/lib/studio/components/WarningsPanel.svelte
+msgid "UI layout"
+msgstr ""
+
+#: src/lib/studio/components/WarningsPanel.svelte
+msgid "Text faces away"
+msgstr ""
+
+#: src/lib/studio/components/WarningsPanel.svelte
+msgid "Text too high"
+msgstr ""
+
+#: src/lib/studio/components/WarningsPanel.svelte
+msgid "Text at a grazing angle"
+msgstr ""
+
+#: src/lib/studio/components/WarningsPanel.svelte
+msgid "Panel out of reach"
+msgstr ""
+
+#: src/lib/studio/components/WarningsPanel.svelte
+msgid "No warnings"
+msgstr ""
+
+#. 0: doc.kind
+#: src/lib/studio/components/WarningsPanel.svelte
+msgid "Nothing wrong was found in the data of this {0}."
 msgstr ""

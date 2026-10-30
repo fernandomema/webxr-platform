@@ -103,7 +103,7 @@ export function buildMachine(script: string): Slot[] {
 		box('bw-mach-pillar-b', 'Window Pillar', [x, 1.55, -2.775], [0.8, 0.7, 0.85], '#1a1530', { parentId: 'bw-mach', solid: true }),
 		box('bw-mach-trim-a', 'Machine Trim', [face - 0.005, 0.12, z], [0.02, 0.04, 1.7], '#25e6ff', { parentId: 'bw-mach', unlit: true }),
 		box('bw-mach-trim-b', 'Machine Trim', [face - 0.005, 2.02, z], [0.02, 0.04, 1.7], '#ff2fb3', { parentId: 'bw-mach', unlit: true }),
-		sign('bw-mach-sign', 'Machine Sign', [face - 0.01, 1.88, z], [1.5, 0.3], { title: 'BALL WORKS', titleColor: '#25e6ff', lines: [], background: '#08051a', scale: 0.9 }, { parentId: 'bw-mach', rotation: yaw(Math.PI / 2) }),
+		sign('bw-mach-sign', 'Machine Sign', [face - 0.01, 1.88, z], [1.5, 0.3], { title: 'BALL WORKS', titleColor: '#25e6ff', lines: [], background: '#08051a' }, { parentId: 'bw-mach', rotation: yaw(Math.PI / 2) }),
 		// The window: a dark back, the ball on show, glass in front.
 		box('bw-mach-glass', 'Window Glass', [face, 1.55, MACHINE.preview[2]], [0.02, 0.7, 0.7], '#a5d8ff', { parentId: 'bw-mach', opacity: 0.16 }),
 		box('bw-mach-glow', 'Window Glow', [x - 0.15, 1.21, MACHINE.preview[2]], [0.5, 0.02, 0.66], '#25e6ff', { parentId: 'bw-mach', unlit: true }),

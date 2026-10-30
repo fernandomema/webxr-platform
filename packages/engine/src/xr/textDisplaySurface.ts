@@ -1,6 +1,7 @@
 import { TransformNode, type AbstractMesh, type Scene } from '@babylonjs/core';
 import { AdvancedDynamicTexture, Control, Rectangle, StackPanel, TextBlock } from '@babylonjs/gui';
 import { findComponent, type Slot, type TextDisplayComponent } from '../ecs/types.ts';
+import { setSurfaceLit } from './surfaceLighting.ts';
 
 /** What a text display draws, without drawing it: the background, and each row's text, colour and size (times `unit`, the pixels of the standard size). */
 export function textDisplayRows(component: TextDisplayComponent, unit = 1): { background: string; rows: { text: string; color: string; size: number }[] } {
@@ -12,6 +13,38 @@ export function textDisplayRows(component: TextDisplayComponent, unit = 1): { ba
 		rows.push({ text: line, color: component.lineColors?.[n] ?? component.lineColor ?? 'white', size: 30 * k * (typeof size === 'number' && size > 0 ? size : 1) });
 	});
 	return { background: component.background ?? component.color ?? '#0f172a', rows };
+}
+
+/** What a glyph takes of its font size across, on average, and what a row of text takes down (line height and the gap under it), both as the sign draws them. */
+const GLYPH_WIDTH = 0.55;
+const ROW_HEIGHT = 1.25;
+const ROW_GAP = 0.3;
+/** How much of the sign's room text may fill when it is sized to the sign, and the largest it is made (times the standard size). */
+const FILL = 0.85;
+const MAX_AUTO_SCALE = 4;
+
+/**
+ * How big the text of a sign is when the sign does not say (`scale` unset): the standard size, or larger when the sign has room to spare, so a short title
+ * on a big board is not a speck in the middle of it. The text grows until it fills `FILL` of the room it has (the design box: the sign's texture with its shorter side
+ * taken as 512, its content 90% as wide, with 24 clear above and below), up to `MAX_AUTO_SCALE` times; it is never made smaller than the standard size, which is what
+ * a sign full of lines was designed with.
+ */
+export function autoTextScale(component: TextDisplayComponent, width: number, height: number): number {
+	// The texture is what text is drawn on, and its sides are capped, so a very long sign has less room than its proportions say.
+	const [textureWidth, textureHeight] = textDisplayTextureSize(width, height);
+	const toDesign = DESIGN_SHORT_SIDE / Math.min(textureWidth, textureHeight);
+	const designWidth = textureWidth * toDesign, designHeight = textureHeight * toDesign;
+	const room = { width: designWidth * 0.9, height: (designHeight - 48) * FILL };
+	const rows = textDisplayRows({ ...component, scale: 1 }).rows;
+	const heightAt = (k: number): number => rows.reduce((sum, row) => {
+		const size = row.size * k;
+		const lines = row.text.split('\n').reduce((count, part) => count + Math.max(1, Math.ceil((part.length * GLYPH_WIDTH * size) / room.width)), 0);
+		return sum + lines * size * ROW_HEIGHT + size * ROW_GAP;
+	}, 0);
+	if (rows.length === 0 || heightAt(1) >= room.height) return 1;
+	let best = 1;
+	for (let k = 1.05; k <= MAX_AUTO_SCALE + 1e-9; k += 0.05) { if (heightAt(k) > room.height) break; best = k; }
+	return Math.round(best * 100) / 100;
 }
 
 export interface TextDisplayBinding {
@@ -70,7 +103,7 @@ export function setupTextDisplay(scene: Scene, mesh: AbstractMesh, initial: Text
 		const middle = component.verticalAlign === 'middle';
 		stack.verticalAlignment = middle ? Control.VERTICAL_ALIGNMENT_CENTER : Control.VERTICAL_ALIGNMENT_TOP;
 		stack.top = middle ? '0px' : `${Math.round(24 * unit)}px`;
-		return unit * (component.scale ?? 1);
+		return unit * (component.scale ?? autoTextScale(component, mesh.scaling.x, mesh.scaling.y));
 	};
 
 	function textRow(text: string, color: string, fontSize: number): TextBlock {
@@ -88,8 +121,10 @@ export function setupTextDisplay(scene: Scene, mesh: AbstractMesh, initial: Text
 	function render(component: TextDisplayComponent): void {
 		current = component;
 		const k = fit(component);
-		const drawn = textDisplayRows(component, k / (component.scale ?? 1));
+		// `k` already has the sign's own scale in it (or the one worked out for it), which the rows would apply again.
+		const drawn = textDisplayRows({ ...component, scale: 1 }, k);
 		background.background = drawn.background;
+		setSurfaceLit(mesh, texture, component.lit === true);
 		for (const child of [...stack.children]) stack.removeControl(child);
 		for (const row of drawn.rows) stack.addControl(textRow(row.text, row.color, row.size));
 		mesh.billboardMode = component.billboard === 'full' ? TransformNode.BILLBOARDMODE_ALL : component.billboard === 'y' ? TransformNode.BILLBOARDMODE_Y : TransformNode.BILLBOARDMODE_NONE;
