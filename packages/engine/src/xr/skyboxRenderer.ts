@@ -1,5 +1,6 @@
 import { LightVolumeManager } from './lightVolumeManager.ts';
 import { setAmbientBase, resetAmbient } from './ambientControl.ts';
+import { isExperimentOn } from './experiments.ts';
 import { Color3, ColorCurves, CubeTexture, DefaultRenderingPipeline, Effect, HemisphericLight, ImageProcessingConfiguration, Mesh, MeshBuilder, ReflectionProbe, RenderTargetTexture, ShaderMaterial, type AbstractMesh, type Scene, type TransformNode } from '@babylonjs/core';
 import type { Slot, SkyboxComponent } from '../ecs/types.ts';
 import { POLYGON_QUEST_PROBE } from '../assets/builtin.ts';
@@ -193,7 +194,7 @@ export function setupSkybox(scene: Scene, node: TransformNode, initial: SkyboxCo
 			}
 		}
 		if (pipeline) {
-			pipeline.bloomEnabled = bloom > 0;
+			pipeline.bloomEnabled = bloom > 0 && !isExperimentOn('noGlow');
 			pipeline.bloomWeight = 0.15 + bloom * 0.6;
 			pipeline.bloomThreshold = 0.75;
 			pipeline.bloomKernel = 48;

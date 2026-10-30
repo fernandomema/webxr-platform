@@ -72,13 +72,6 @@ function workshopTool(tool: (typeof TOOLS)[number]): SlotTree {
 	]);
 }
 
-/** An object that lives in the lobby, with its parts and what hangs from them, moved to the origin. */
-function fromLobby(rootId: string): SlotTree {
-	const wanted = new Set([rootId]);
-	for (const entry of lobbySlots) if (entry.parentId && wanted.has(entry.parentId)) wanted.add(entry.id);
-	return clone(lobbySlots.filter((entry) => wanted.has(entry.id))).map((entry) => (entry.id === rootId ? { ...entry, position: [0, 0, 0] as Slot['position'] } : entry));
-}
-
 /** A group of loose slots (a record player is several; it is no longer in the lobby, which loads the jukebox instead) as one object under a new root, centred on `centre`. */
 function groupFromLobby(id: string, name: string, include: (entry: Slot) => boolean, centre: [number, number], source: SlotTree = lobbySlots): SlotTree {
 	const parts = clone(source.filter(include)).map((entry) => ({
@@ -140,10 +133,6 @@ const ENTRIES: BuiltinEntry[] = [
 	{
 		id: 'record-player', folderId: 'music', name: 'Record Player',
 		build: () => groupFromLobby('record-player', 'Record Player', (entry) => entry.id.startsWith('lobby-jukebox'), [2.2, -2.0], recordPlayer as unknown as SlotTree)
-	},
-	{
-		id: 'disc-rack', folderId: 'music', name: 'Disc Rack',
-		build: () => fromLobby('lobby-disc-rack')
 	},
 	{
 		id: 'camera', folderId: 'tools', name: 'Camera',

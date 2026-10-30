@@ -28,18 +28,20 @@ export interface ScrollColumn {
 	width: number;
 }
 
-/** A vertically scrolling column filling the page (below `top`), with a `width` its content is sure to fit in. */
-export function createScrollColumn(name: string, options: { top?: number; height?: number } = {}): ScrollColumn {
-	const { top = 0, height = PAGE_HEIGHT } = options;
+/** A vertically scrolling column filling the page (below `top`; `width` and `align` make it narrower and put it to a side), with a `width` its content is sure to fit in. */
+export function createScrollColumn(name: string, options: { top?: number; height?: number; width?: number; align?: 'left' | 'right' } = {}): ScrollColumn {
+	const { top = 0, height = PAGE_HEIGHT, width: outer = PAGE_WIDTH - 2 * SIDE_MARGIN, align } = options;
 	const scroll = new ScrollViewer(`${name}-scroll`);
-	scroll.width = `${PAGE_WIDTH - 2 * SIDE_MARGIN}px`;
+	scroll.width = `${outer}px`;
+	if (align) scroll.horizontalAlignment = align === 'left' ? Control.HORIZONTAL_ALIGNMENT_LEFT : Control.HORIZONTAL_ALIGNMENT_RIGHT;
+	if (align) scroll.paddingLeft = scroll.paddingRight = '0px';
 	scroll.height = `${height}px`;
 	scroll.top = `${top}px`;
 	scroll.thickness = 0;
 	scroll.barSize = BAR_SIZE;
 	scroll.barColor = THEME.accent;
 	scroll.barBackground = THEME.ink;
-	const width = PAGE_WIDTH - 2 * SIDE_MARGIN - BAR_SIZE - 2 * BAR_GUTTER;
+	const width = outer - BAR_SIZE - 2 * BAR_GUTTER;
 	const list = new StackPanel(`${name}-list`);
 	list.width = `${width}px`;
 	scroll.addControl(list);

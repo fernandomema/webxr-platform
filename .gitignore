@@ -40,3 +40,6 @@ src/locales/.wuchale
 /static/xr-input-profiles
 /static/avatars
 /static/assets/inputs
+
+# Dev performance log (see src/lib/server/perfLog.ts)
+/logs/

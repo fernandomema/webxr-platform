@@ -6,9 +6,9 @@ import { buildAtm, LOBBY_ATM } from './atm.ts';
 import { buildLobbyBillboard } from './lobbyBillboard.ts';
 import { buildLobbyHub } from './lobbyHub.ts';
 
-/** The jukebox by the discs: loaded from the starter kit (`builtin`, id `jukebox`) rather than built here, turned so that its front faces the room (+Z). */
+/** The jukebox by the discs: loaded from the starter kit (`builtin`, id `jukebox`) rather than built here, on the east side, turned so that its front faces the centre of the room (-X). */
 function buildLobbyJukebox(): SlotTree {
-	return [createSlot({ id: LOBBY_JUKEBOX, name: 'Jukebox', position: [2.2, 0, -2.2], rotation: [0, 1, 0, 0], components: [{ type: 'loader', adapter: 'builtin', id: JUKEBOX_ID }] }),
+	return [createSlot({ id: LOBBY_JUKEBOX, name: 'Jukebox', position: [9, 0, 0], rotation: [0, Math.SQRT1_2, 0, Math.SQRT1_2], components: [{ type: 'loader', adapter: 'builtin', id: JUKEBOX_ID }] }),
 		createSlot({ id: 'lobby-jukebox-records', name: 'Jukebox Records', components: [{ type: 'codeBlock', code: SEAT_RECORDS }] })
 	];
 }

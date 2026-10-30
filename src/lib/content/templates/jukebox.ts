@@ -188,23 +188,26 @@ const host = () => ctx.world.isHost();
 
 // ---------------------------------------------------------------- the records
 
-const stateOf = () => { const c = ctx.self.getComponent('scriptState'); return (c && c.data) || {}; };
+// Every read of the world from here is a trip out of the script, so the tick keeps what it read: the shared state once per frame, and which record
+// is in each place once per pass of the playlist (a few times a second, see PASS_SECONDS), corrected at once by the moves made here.
+let frameState = null;
+const stateOf = () => frameState || (frameState = ctx.self.getField('scriptState', 'data') || {});
 
 const socketId = (i) => at(DATA.sockets[i]);
-
-function occupantOf(i) {
-  const slot = ctx.hierarchy.getSlot(at(DATA.sockets[i]));
-  const socket = slot && slot.components.find((c) => c.type === 'socket');
-  return (socket && socket.occupantId) || '';
-}
+const SOCKET_IDS = DATA.sockets.map((_, i) => socketId(i));
+let occupants = SOCKET_IDS.map(() => '');
+function readOccupants() { occupants = SOCKET_IDS.map((id) => ctx.hierarchy.getField(id, 'socket', 'occupantId') || ''); }
+const occupantOf = (i) => occupants[i];
+const PASS_SECONDS = 0.1;
+let pass = 0;
 
 /** What is known of a record: its song and its title and author. Null for something that is not a record with a song. */
 function recordOf(id) {
-  const slot = id ? ctx.hierarchy.getSlot(id) : null;
-  const audio = slot && slot.components.find((c) => c.type === 'audioPlayer');
-  if (!slot || !audio || !audio.source) return null;
-  const info = slot.components.find((c) => c.type === 'recordDisc');
-  return { id: id, source: audio.source, title: (info && info.title) || String(slot.name).replace(/^Disc: /, ''), author: (info && info.author) || '' };
+  const source = id ? ctx.hierarchy.getField(id, 'audioPlayer', 'source') : null;
+  if (!source) return null;
+  let title = ctx.hierarchy.getField(id, 'recordDisc', 'title');
+  if (!title) { const slot = ctx.hierarchy.getSlot(id); title = slot ? String(slot.name).replace(/^Disc: /, '') : id; }
+  return { id: id, source: source, title: title, author: ctx.hierarchy.getField(id, 'recordDisc', 'author') || '' };
 }
 
 /** The records, in the order of the places they wait in (the one on the turntable counts where it came from), with the number of that place. */
@@ -226,6 +229,10 @@ function moveDisc(discId, fromSocket, toSocket, snap) {
   ctx.world.setComponentField(fromSocket, 'socket', 'occupantId', '');
   ctx.world.setLocalPose(discId, { position: snap.position, rotation: snap.rotation });
   ctx.world.setComponentField(toSocket, 'socket', 'occupantId', discId);
+  const from = SOCKET_IDS.indexOf(fromSocket);
+  const to = SOCKET_IDS.indexOf(toSocket);
+  if (from >= 0) occupants[from] = '';
+  if (to >= 0) occupants[to] = discId;
   return true;
 }
 
@@ -261,6 +268,7 @@ function write(record) {
     ? { cur: record.index, discId: record.id, startedAt: Date.now(), key: String(++counter) + ':' + record.id, title: record.title, author: record.author }
     : { cur: -1, discId: '', startedAt: 0, key: 'idle:' + (++counter), title: '', author: '' };
   ctx.world.setComponentField(ctx.self.id, 'scriptState', 'data', data);
+  frameState = data;
 }
 
 /** What the host does every frame about the playlist: start a record, move on when it ends, is taken out or is skipped. */
@@ -326,8 +334,11 @@ function spinTick(dt) {
     spin.angle = 0;
   }
   spin.angle = (spin.angle + dt * SPIN_SPEED) % (Math.PI * 2);
-  // A turn about the record's own axis (its local up, the way a cylinder is made) after the way it is seated.
-  ctx.world.setWorldPose(id, { rotation: ctx.math.quatMultiply(spin.base, ctx.math.quatFromAxisAngle([0, 1, 0], spin.angle)) }, false);
+  // A turn about the record's own axis (its local up, the way a cylinder is made) after the way it is seated: base * (turn about Y), worked out here.
+  const b = spin.base;
+  const s = Math.sin(spin.angle / 2);
+  const c = Math.cos(spin.angle / 2);
+  ctx.world.setWorldPose(id, { rotation: [b[0] * c - b[2] * s, b[1] * c + b[3] * s, b[0] * s + b[2] * c, b[3] * c - b[1] * s] }, false);
   spin.flush += dt;
   if (spin.flush >= 0.05) { spin.flush = 0; ctx.world.flush(); }
 }
@@ -379,7 +390,8 @@ function toggleTray() {
  */
 function trayTick(dt) {
   if (tray.noticeLeft > 0) { tray.noticeLeft -= dt; if (tray.noticeLeft <= 0) shown = ''; }
-  const occupant = trayOccupant();
+  // Shut and carrying nothing, nobody can lay a record on it: there is nothing to look at.
+  const occupant = tray.open || tray.carry ? trayOccupant() : '';
   if (tray.open) {
     if (occupant && !ctx.grab.isSlotHeld(occupant)) { tray.settle += dt; if (tray.settle > 0.6) { tray.open = false; tray.carry = occupant; tray.settle = 0; shown = ''; } }
     else tray.settle = 0;
@@ -439,9 +451,13 @@ return {
     }
   },
   tick(dt) {
+    frameState = null;
+    pass -= dt;
+    const passing = pass <= 0;
+    if (passing) { pass = PASS_SECONDS; readOccupants(); }
     playHere();
     if (!host()) return;
-    hostPlaylist();
+    if (passing) hostPlaylist();
     spinTick(dt);
     trayTick(dt);
     // The tune only plays while there is no record.

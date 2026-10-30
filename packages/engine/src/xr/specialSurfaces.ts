@@ -11,6 +11,7 @@ import {
 	type Scene
 } from '@babylonjs/core';
 import { mirrorRenderHooks } from './mirrorHooks.ts';
+import { isExperimentOn } from './experiments.ts';
 
 /** A mirror only reflects what is within this distance of it (the sky and the floor, being large, always are). */
 const MIRROR_REACH = 8;
@@ -126,7 +127,10 @@ export function setupMirrorSurface(scene: Scene, mesh: AbstractMesh, resolution 
 		return Vector3.Distance(sphere.centerWorld, position) - sphere.radiusWorld < MIRROR_REACH;
 	};
 
+	let frame = 0;
 	const drawReflections = () => {
+		// A dev experiment draws the reflections every second frame; in between the last ones are shown.
+		if (isExperimentOn('mirrorHalfRate') && (++frame & 1) === 1) return;
 		mesh.computeWorldMatrix(true);
 		const world = mesh.getWorldMatrix();
 		position = Vector3.TransformCoordinates(Vector3.Zero(), world);

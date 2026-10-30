@@ -73,9 +73,14 @@ import { createRemoteRadial, setupRadialMenuForHand } from './ui/radialMenu.ts';
 import { KeyboardSystem } from './keyboard/keyboardSystem.ts';
 import { setTextInputProvider } from './keyboard/service.ts';
 import { createPerformanceOverlay } from './ui/performanceOverlay.ts';
+import { applyExperiments } from './experiments.ts';
+import { logExperimentToggle, profileRenderObservers, startPerfLog } from './perfLog.ts';
+import { setProfileSink } from './profiler.ts';
+import { createWorldLoadCover } from './worldLoadCover.ts';
+import { holdNewMeshes, revealGradually } from './revealGradually.ts';
 import { createStatusNotice } from './ui/statusNotice.ts';
 import { uploadGuiBeforeDrawing } from './guiUploads.ts';
-import { FOVEATION, loadSettings, saveSettings, xrSettings } from './settings.ts';
+import { FOVEATION, loadSettings, saveSettings, xrSettings, type FoveationLevel, type ScriptRate } from './settings.ts';
 import { selectTargetFrameRate, XR_FRAMEBUFFER_SCALE } from './performance.ts';
 import { sanitizeAvatarTree } from './avatar/sanitize.ts';
 import { saveWithPreview } from './inventorySave.ts';
@@ -146,6 +151,10 @@ export async function mountGame(
 	// Baked lighting: every lit material made from here on can read the world's baked volumes. It needs 3D textures (WebGL 2).
 	registerIrradiancePlugin(((engine as unknown as { webGLVersion?: number }).webGLVersion ?? 2) >= 2);
 	const scene = new Scene(engine);
+	// Dev builds time each script and each per-frame callback for the performance log (perfLog.ts), from before anything adds its own.
+	const scriptCosts = import.meta.env?.DEV ? new Map<string, number>() : undefined;
+	if (scriptCosts) profileRenderObservers(scene, scriptCosts);
+	setProfileSink(scriptCosts ?? null);
 	// The desktop pointer only acts on clicks, and XR controllers do their own ray casts. Babylon's default hover pick
 	// traverses every pickable mesh on every pointer move, which is wasted CPU work (and costly in large worlds).
 	scene.skipPointerMovePicking = true;
@@ -256,6 +265,7 @@ export async function mountGame(
 		...(hostAuthority?.listGuests() ?? [])
 	];
 	const sceneGraph = new SceneGraph(scene, {
+		frameBudgetMs: 3,
 		physics: physicsProxy,
 		setPlayerVelocity: (playerId, velocity, add) => {
 			if (playerId === localPlayerId) {
@@ -476,6 +486,47 @@ export async function mountGame(
 	viewerCamera = getActiveCamera;
 	/** What the player must know about the session's connection, held in front of the view. */
 	const statusNotice = createStatusNotice(scene, getActiveCamera);
+	const loadCover = createWorldLoadCover(scene, getActiveCamera);
+	/** Resolves after the next frame is drawn (or a little later, for frames that are not being drawn: a tab in the background). */
+	const nextFrame = () => new Promise<void>((resolve) => {
+		const timer = setTimeout(resolve, 100);
+		scene.onAfterRenderObservable.addOnce(() => { clearTimeout(timer); resolve(); });
+	});
+	/** A world with fewer new slots than this is put up at once: its cost is not worth a loading screen. */
+	const LOAD_COVER_MIN_SLOTS = 30;
+	/** The most the loading screen waits for the world's models; one that is not in by then appears when it arrives. */
+	const MODEL_WAIT_MS = 20_000;
+	/** The least time the loading screen stays up once it is fully shown: a world that loads in a blink would otherwise make it flash on and off. */
+	const LOAD_COVER_MIN_MS = 1500;
+	/**
+	 * Puts a world up without freezing: a loading screen hides the view, the slots are built a few milliseconds per frame, and what they made
+	 * is shown a few meshes per frame, once its shaders are ready (see `revealGradually`). The screen moves the whole time, except while a
+	 * model file is being read, which cannot be cut up.
+	 */
+	async function reconcileBehindCover(tree: SlotTree, settle: () => void): Promise<void> {
+		await loadCover.show();
+		const shownAt = performance.now();
+		const held = holdNewMeshes(scene);
+		try {
+			await sceneGraph.reconcileInFrames(tree, { budgetMs: 4, nextFrame, onProgress: (done) => loadCover.setProgress(done * 0.4) });
+			// Reading a model file takes a good while on a headset and cannot be cut up, so it is done now, with the screen in front, not after the world is shown.
+			const modelsDeadline = performance.now() + MODEL_WAIT_MS;
+			for (let progress = sceneGraph.modelProgress(); progress.pending > 0 && performance.now() < modelsDeadline; progress = sceneGraph.modelProgress()) {
+				loadCover.setProgress(0.4 + 0.3 * (1 - progress.pending / progress.total));
+				await nextFrame();
+			}
+			held.stop();
+			await revealGradually(scene, held, { nextFrame, onProgress: (done) => loadCover.setProgress(0.7 + done * 0.3) });
+			loadCover.setProgress(1);
+			const remaining = LOAD_COVER_MIN_MS - (performance.now() - shownAt);
+			if (remaining > 0) await new Promise<void>((resolve) => setTimeout(resolve, remaining));
+			// Whatever moves the player to the start happens before the screen goes, so that it is not watched.
+			settle();
+		} finally {
+			held.revealAll();
+			await loadCover.hide();
+		}
+	}
 	let guestStatus: GuestConnectionStatus = 'connecting';
 	function showGuestStatus(status: GuestConnectionStatus): void {
 		const previous = guestStatus;
@@ -607,11 +658,16 @@ export async function mountGame(
 	// defensively try/caught internally (see sceneGraph.ts) — this is a
 	// second, outer layer in case something here throws before even
 	// reaching it.
+	// Dev builds measure how the scene runs and keep it in logs/perf.log (see perfLog.ts); the experiments of the Settings tab are what they compare.
+	sceneGraph.scriptProfile = scriptCosts ?? null;
+	const perfLog = startPerfLog(scene, () => ({ world: gameState.worldId, mode: xr?.baseExperience.state === WebXRState.IN_XR ? 'xr' : 'desktop' }), scriptCosts);
 	scene.onBeforeRenderObservable.add(() => {
 		try {
 			const dt = scene.getEngine().getDeltaTime() / 1000;
 			playerBody.update(dt);
+			const tickStart = performance.now();
 			const removed = sceneGraph.tick(dt);
+			perfLog?.recordTick(performance.now() - tickStart);
 			if (removed > 0 && gameState.role !== 'guest') hostAuthority?.broadcastSnapshot();
 		} catch (err) {
 			console.error('[engine] sceneGraph.tick threw', err);
@@ -733,10 +789,16 @@ export async function mountGame(
 			didLeave = true;
 			gameState.loadedWorld = loaded;
 			gameState.publication = publication;
-			sceneGraph.reconcile(copyScene(snapshot));
-			refreshTeleportFloors();
-			playerBody.respawn();
-			void applyLocalAvatar();
+			const settle = () => {
+				refreshTeleportFloors();
+				playerBody.respawn();
+				void applyLocalAvatar();
+			};
+			if (sceneGraph.countNewSlots(snapshot) >= LOAD_COVER_MIN_SLOTS) await reconcileBehindCover(copyScene(snapshot), settle);
+			else {
+				sceneGraph.reconcile(copyScene(snapshot));
+				settle();
+			}
 			if (visibility === 'solo') {
 				// Kept so that hosting it later, or saving it, starts from its own name.
 				gameState.worldName = name;
@@ -934,6 +996,26 @@ export async function mountGame(
 	 * Declared before the dash, which reads it while it builds its Settings tab.
 	 */
 	let supportedFrameRates: number[] = [];
+
+	/**
+	 * Live quality knobs handed to the experiments (the adaptive governor moves them within the player's own settings).
+	 * Reading them answers with the user's settings; setting them applies immediately without touching what is saved.
+	 */
+	const qualityKnobs = {
+		inXr: () => xr?.baseExperience.state === WebXRState.IN_XR,
+		fps: () => engine.getFps(),
+		targetFps: () =>
+			xr?.baseExperience.state === WebXRState.IN_XR ? xr.baseExperience.sessionManager.currentFrameRate ?? 72 : 60,
+		foveation: (): FoveationLevel => xrSettings.foveation,
+		setFoveation: (level: FoveationLevel) => {
+			if (xr?.baseExperience.state === WebXRState.IN_XR) xr.baseExperience.sessionManager.fixedFoveation = FOVEATION[level];
+		},
+		scriptRate: (): ScriptRate => xrSettings.scriptRate,
+		setScriptRate: (rate: ScriptRate) => {
+			sceneGraph.scriptTickDivisor = rate;
+		}
+	};
+
 	const dash = createDashPanel(scene, sceneGraph, {
 		onHostWorld: hostCurrentWorld,
 		onStopHosting: stopHostingWorld,
@@ -978,6 +1060,10 @@ export async function mountGame(
 		onDesktopSettingsChanged: () => fps.applySettings(),
 		onAudioSettingsChanged: () => AbstractEngine.audioEngine?.setGlobalVolume(xrSettings.masterVolume),
 		onPerformanceSettingsChanged: () => applyPerformanceSettings(),
+		onExperimentChanged: (id, on) => {
+			logExperimentToggle(id, on);
+			applyExperiments({ scene, scripts: sceneGraph, quality: qualityKnobs });
+		},
 		frameRates: () => supportedFrameRates
 	});
 	refreshWorldsTab = dash.refreshWorldsTab;
@@ -1156,6 +1242,8 @@ export async function mountGame(
 		if (xr?.baseExperience.state === WebXRState.IN_XR) xr.baseExperience.sessionManager.fixedFoveation = FOVEATION[xrSettings.foveation];
 		performanceOverlay.setVisible(xrSettings.showPerformance);
 		applyMultiview();
+		sceneGraph.scriptTickDivisor = xrSettings.scriptRate;
+		applyExperiments({ scene, scripts: sceneGraph, quality: qualityKnobs });
 	}
 	xr?.baseExperience.onStateChangedObservable.add((state) => {
 		if (state === WebXRState.IN_XR || state === WebXRState.NOT_IN_XR) applyPerformanceSettings();
@@ -1177,7 +1265,7 @@ export async function mountGame(
 
 	void applyLocalAvatar();
 	// Lets a developer inspect the live scene from the browser console.
-	if (import.meta.env.DEV) (window as unknown as { __game?: unknown }).__game = { scene, sceneGraph, avatarSystem, playerAvatars, hostCurrentWorld, joinWorld, applyLocalAvatar, xrSettings };
+	if (import.meta.env.DEV) (window as unknown as { __game?: unknown }).__game = { scene, sceneGraph, launchScene, sceneColliders, avatarSystem, playerAvatars, hostCurrentWorld, joinWorld, applyLocalAvatar, xrSettings };
 
 	// Last of the per-frame work: GUI textures changed during this frame are uploaded before the cameras draw (see guiUploads.ts).
 	const stopGuiUploads = uploadGuiBeforeDrawing(scene);
@@ -1220,7 +1308,10 @@ export async function mountGame(
 			setTextInputProvider(null);
 			stopGuiUploads();
 			performanceOverlay.dispose();
+			perfLog?.dispose();
+			setProfileSink(null);
 			statusNotice.dispose();
+			loadCover.dispose();
 			keyboards?.dispose();
 			avatarSystem.dispose();
 			hostAuthority?.dispose();

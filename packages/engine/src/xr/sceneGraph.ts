@@ -34,6 +34,7 @@ import { setupHtmlView } from './htmlViewSurface.ts';
 import { setupParticleBurst } from './particleEffects.ts';
 import { setupSurfaceMask } from './surfaceMaskRenderer.ts';
 import { setupStroke } from './strokeRenderer.ts';
+import { FrameBudget } from './frameBudget.ts';
 import { setupMaterialSurfaces, type MaterialSurfaces } from './materialSurface.ts';
 import { setupSkybox } from './skyboxRenderer.ts';
 import { setupLightVolume } from './lightVolumeRenderer.ts';
@@ -127,6 +128,8 @@ interface LiveSlot {
 		proxy: Mesh;
 		placeholder: Mesh;
 		instance?: ModelInstance;
+		/** Set while the model waits for its turn to be made (see `SceneGraphOptions.frameBudgetMs`), and once it has had it. */
+		turn?: 'waiting' | 'given';
 	};
 	/** Load state of this slot's model, for the inspector and the network layer. */
 	assetState?: ModelState;
@@ -216,6 +219,11 @@ export interface SceneGraphOptions {
 	mediaAssets?: BlobAssetLibrary;
 	/** The viewer's position, to load nearby models first. */
 	getViewerPosition?: () => Vector3 | null;
+	/**
+	 * Milliseconds per frame that may go to making models and uploading textures that have finished loading. Work over it waits for
+	 * the next frames, so a world full of assets appears piece by piece instead of freezing. Without it all of it is done at once.
+	 */
+	frameBudgetMs?: number;
 	/** A slot's model changed state (queued, loading, ready, missing, error). */
 	onAssetStateChanged?: (slotId: string, state: ModelState) => void;
 }
@@ -244,7 +252,7 @@ export class SceneGraph {
 	/** The PBR surfaces of slots that carry a `material`; made the first time one does. */
 	private materialSurfaces: MaterialSurfaces | null = null;
 	private get materials(): MaterialSurfaces {
-		return (this.materialSurfaces ??= setupMaterialSurfaces(this.scene, this.options.mediaAssets));
+		return (this.materialSurfaces ??= setupMaterialSurfaces(this.scene, this.options.mediaAssets, this.frameBudget ?? undefined));
 	}
 	/** Slots by the components they carry, and whole objects, for the systems that look every frame; rebuilt after the scene changes. */
 	private byComponent = new Map<string, LiveSlot[]>();
@@ -267,7 +275,11 @@ export class SceneGraph {
 
 	private changeListeners = new Set<(ids: readonly string[] | null) => void>();
 
-	constructor(private scene: Scene, private options: SceneGraphOptions = {}) {}
+	private readonly frameBudget: FrameBudget | null;
+
+	constructor(private scene: Scene, private options: SceneGraphOptions = {}) {
+		this.frameBudget = options.frameBudgetMs ? new FrameBudget(options.frameBudgetMs) : null;
+	}
 
 	/**
 	 * Calls `listener` (synchronously) whenever the set of slots or what they hold changes: added, removed, reparented,
@@ -546,6 +558,7 @@ export class SceneGraph {
 		}
 		if (entry.model) {
 			try {
+				this.frameBudget?.cancel(entry.model);
 				entry.model.instance?.dispose();
 				entry.model.lease.release();
 			} catch (err) {
@@ -804,6 +817,93 @@ export class SceneGraph {
 	 * locally-optimistic grab isn't fought by a slightly-stale broadcast).
 	 */
 	reconcile(tree: SlotTree, ignoreSlotIds: Set<string> = new Set(), options: { keepExternal?: boolean } = {}): void {
+		// Each added slot would sync every panel again: a world of hundreds of slots and a few panels takes seconds. Once, at the end, is enough.
+		this.batchUISync(() => this.reconcileSlots(tree, ignoreSlotIds, options));
+	}
+
+	/** The models slots are waiting for: how many slots have one and how many of those are not on screen yet (still being fetched, decoded or put together). */
+	modelProgress(): { total: number; pending: number } {
+		let total = 0;
+		let pending = 0;
+		for (const entry of this.live.values()) {
+			if (!entry.model) continue;
+			total++;
+			const state = entry.model.lease.state;
+			if (!entry.model.instance && state !== 'missing' && state !== 'error') pending++;
+		}
+		return { total, pending };
+	}
+
+	/** How many slots of `tree` are not in the scene yet: what a `reconcileInFrames` would have to build. */
+	countNewSlots(tree: SlotTree): number {
+		let count = 0;
+		for (const slot of tree) if (!this.live.has(slot.id)) count++;
+		return count;
+	}
+
+	/**
+	 * `reconcile` for a world that arrives all at once: the slots that are new are built a few milliseconds at a time, one stretch per
+	 * frame (`nextFrame` waits for the next one), so the frames in between are drawn and an animation (a loading screen) keeps moving.
+	 * Nothing runs until every slot exists: the scripts start, the hierarchy is joined and the listeners are told in one last step,
+	 * as when a world is loaded with `load`. Reports how far it is (0 to 1) as it goes.
+	 */
+	async reconcileInFrames(
+		tree: SlotTree,
+		options: { budgetMs: number; nextFrame: () => Promise<void>; onProgress?: (done: number) => void; ignoreSlotIds?: Set<string>; keepExternal?: boolean }
+	): Promise<void> {
+		const ignore = options.ignoreSlotIds ?? new Set<string>();
+		const incomingIds = new Set(tree.map((slot) => slot.id));
+		const removedIds = [...this.live.keys()].filter((id) => !incomingIds.has(id) && !this.live.get(id)?.system && !(options.keepExternal && this.live.get(id)?.slot.external));
+		if (removedIds.length > 0) batchMeshDisposal(this.scene, () => { for (const id of removedIds) this.removeSlot(id); });
+		const fresh = tree.filter((slot) => !ignore.has(slot.id) && !this.live.has(slot.id));
+		let built = 0;
+		while (built < fresh.length) {
+			const started = performance.now();
+			batchMaterialUpdates(this.scene, () => {
+				do this.spawnNode(fresh[built++]); while (built < fresh.length && performance.now() - started < options.budgetMs);
+			});
+			options.onProgress?.(built / fresh.length);
+			if (built < fresh.length) await options.nextFrame();
+		}
+		const freshIds = new Set(fresh.map((slot) => slot.id));
+		this.batchUISync(() => {
+			for (const slot of tree) {
+				if (ignore.has(slot.id) || freshIds.has(slot.id)) continue;
+				const existing = this.live.get(slot.id);
+				if (!existing || existing.system) continue;
+				if (needsRebuild(existing.slot, slot)) this.rebuildSubtree(slot, tree);
+				else this.applyLive(existing, slot);
+			}
+			for (const slot of tree) {
+				if (ignore.has(slot.id)) continue;
+				const entry = this.live.get(slot.id);
+				if (!entry || entry.system) continue;
+				entry.node.parent = this.parentNodeFor(slot);
+			}
+			for (const slot of fresh) {
+				const node = this.live.get(slot.id)?.node;
+				if (node) this.activateCodeBlock(slot, node);
+			}
+			this.syncUIPanels();
+		});
+		this.notifyChanged(null);
+	}
+
+	private uiSyncDepth = 0;
+	private uiSyncPending = false;
+
+	/** Runs `work` with panel syncs held back, then does one if any was asked for. */
+	private batchUISync(work: () => void): void {
+		this.uiSyncDepth++;
+		try {
+			work();
+		} finally {
+			this.uiSyncDepth--;
+			if (this.uiSyncDepth === 0 && this.uiSyncPending) this.syncUIPanels();
+		}
+	}
+
+	private reconcileSlots(tree: SlotTree, ignoreSlotIds: Set<string>, options: { keepExternal?: boolean }): void {
 		const incomingIds = new Set(tree.map((s) => s.id));
 		// `keepExternal` is for an editor feeding in the world's own slots: what loaders built is not in that list and must stay.
 		const removedIds = [...this.live.keys()].filter((id) => !incomingIds.has(id) && !this.live.get(id)?.system && !(options.keepExternal && this.live.get(id)?.slot.external));
@@ -1336,22 +1436,79 @@ export class SceneGraph {
 		return [...nearest.entries()].sort((x, y) => x[1] - y[1]).map(([id]) => id);
 	}
 
+	/** When set (dev builds, for the performance log), the time in ms each script and each part of `tick` took, summed since the map was last emptied, by slot id (`#name` for the engine's own). */
+	scriptProfile: Map<string, number> | null = null;
+	private timed(name: string, run: () => void): void {
+		const profile = this.scriptProfile;
+		if (!profile) { run(); return; }
+		const started = performance.now();
+		run();
+		profile.set(name, (profile.get(name) ?? 0) + performance.now() - started);
+	}
+
+	/** Scripts tick once every this many frames (1 = every frame), with the time of the frames skipped added to their `dt`: the Settings tab's script rate. */
+	scriptTickDivisor = 1;
+	private scriptTickFrame = 0;
+	private scriptTickPending = 0;
+	/** When set, scripts on slots farther than `distance` metres from the viewer tick only once every `divisor` of their turns (a dev experiment). */
+	farScripts: { distance: number; divisor: number } | null = null;
+	private farScriptPending = new WeakMap<LiveSlot, { turns: number; dt: number }>();
+
+	private runScript(entry: LiveSlot, dt: number): void {
+		const profile = this.scriptProfile;
+		if (!profile) { entry.runtime?.tick?.(dt); return; }
+		const started = performance.now();
+		entry.runtime?.tick?.(dt);
+		profile.set(entry.slot.id, (profile.get(entry.slot.id) ?? 0) + performance.now() - started);
+	}
+
+	/** Ticks the scripts, those far from the viewer less often when `farScripts` says so (each keeps the time it missed). */
+	private tickScripts(dt: number): void {
+		const far = this.farScripts;
+		const viewer = far ? this.options.getViewerPosition?.() : null;
+		for (const entry of this.slotsWith('codeBlock')) {
+			if (!far || !viewer) { this.runScript(entry, dt); continue; }
+			const pending = this.farScriptPending.get(entry);
+			if (Vector3.DistanceSquared(viewer, entry.node.getAbsolutePosition()) <= far.distance * far.distance) {
+				this.runScript(entry, dt + (pending?.dt ?? 0));
+				if (pending) this.farScriptPending.delete(entry);
+				continue;
+			}
+			const waiting = pending ?? { turns: 0, dt: 0 };
+			waiting.turns += 1;
+			waiting.dt += dt;
+			if (waiting.turns < far.divisor) { this.farScriptPending.set(entry, waiting); continue; }
+			this.farScriptPending.delete(entry);
+			this.runScript(entry, waiting.dt);
+		}
+	}
+
 	/** Applies each codeBlock's tick() (own try/catch inside), integrates generic `velocity` components, and sweeps expired slots — call every frame, on every peer, solo included. Returns how many slots were removed by expiry. */
 	tick(dt: number): number {
 		// These cached component lists are invalidated whenever the graph changes. Large authored worlds contain hundreds
 		// of static decorative slots, so do not scan all of them several times on every headset frame.
-		for (const entry of this.slotsWith('codeBlock')) entry.runtime?.tick?.(dt);
+		// The script rate setting can run the scripts every few frames instead of every one (`scriptTickDivisor`).
+		this.scriptTickPending += dt;
+		if (++this.scriptTickFrame >= this.scriptTickDivisor) {
+			const scriptDt = this.scriptTickPending;
+			this.scriptTickFrame = 0;
+			this.scriptTickPending = 0;
+			this.tickScripts(scriptDt);
+		}
 		// What follows whether its slot is on (a map's fragment and baked light) is looked at every frame; a slot with a script is ticked above.
-		for (const type of ['fragment', 'lightVolume', 'loader'] as const) for (const entry of this.slotsWith(type)) if (!entry.slot.components.some((c) => c.type === 'codeBlock')) entry.runtime?.tick?.(dt);
-		this.flushUISync();
-		this.updateModelPriorities(dt);
+		this.timed('#fragments', () => {
+			for (const type of ['fragment', 'lightVolume', 'loader'] as const) for (const entry of this.slotsWith(type)) if (!entry.slot.components.some((c) => c.type === 'codeBlock')) entry.runtime?.tick?.(dt);
+		});
+		this.timed('#uiSync', () => this.flushUISync());
+		this.timed('#modelPriorities', () => this.updateModelPriorities(dt));
+		this.timed('#frameBudget', () => this.frameBudget?.run());
 
 		// Everything below is engine code, not user script, but it now runs
 		// every frame ahead of movement/rotation/grab controllers in the
 		// observer list (see engine.ts) — an uncaught throw here must not be
 		// able to silently stop those from running, this frame or any after.
 		try {
-			this.integrateVelocities(dt);
+			this.timed('#velocities', () => this.integrateVelocities(dt));
 		} catch (err) {
 			console.error('[sceneGraph] integrateVelocities threw', err);
 		}
@@ -1509,6 +1666,11 @@ export class SceneGraph {
 	}
 
 	private syncUIPanels(): void {
+		if (this.uiSyncDepth > 0) {
+			this.uiSyncPending = true;
+			return;
+		}
+		this.uiSyncPending = false;
 		for (const entry of this.live.values()) {
 			if (findComponent(entry.slot, 'uiPanel')) entry.runtime?.sync?.(entry.slot);
 		}
@@ -1603,7 +1765,15 @@ export class SceneGraph {
 		model.proxy.position.set(...centre);
 		model.placeholder.position.set(...centre);
 
-		if (state === 'ready' && !model.instance) {
+		if (state === 'ready' && !model.instance && this.frameBudget && !model.turn) {
+			// Making the meshes of a big model takes long enough to be seen as a hitch: it waits for its turn.
+			model.turn = 'waiting';
+			this.frameBudget.enqueue(() => {
+				if (this.live.get(slotId)?.model !== model) return;
+				model.turn = 'given';
+				this.syncModel(slotId);
+			}, model.lease.priority, model);
+		} else if (state === 'ready' && !model.instance && model.turn !== 'waiting') {
 			// Avatars keep real-world metres so bones, height and attached items line up with the player.
 			const instance = model.lease.instantiate(`${slotId}-model`, { normalize: !native });
 			if (instance) {

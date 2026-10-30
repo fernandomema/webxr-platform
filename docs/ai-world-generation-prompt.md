@@ -389,6 +389,7 @@ ctx.self
   .id                                   this slot's id
   .getSlot()                            this slot's data { id, parentId, name, position, rotation, scale, components }
   .getComponent(type)                   one of its components, or undefined
+  .getField(type, field)                one field of one of its components, as a copy (cheaper in tick)
   .getWorldPosition() -> [x,y,z]        world space
   .getWorldRotation() -> [x,y,z,w]
   .setWorldPosition([x,y,z])            moves it (sync from host)
@@ -396,6 +397,8 @@ ctx.self
 
 ctx.hierarchy
   .getSlot(id)                          slot data or undefined
+  .getField(id, type, field)            one field of a component of that slot, as a copy, or undefined: use it in tick (every
+                                        step through getSlot(id).components... is a separate trip into the world)
   .getChildren(id)                      direct children (array of slot data); null = root slots
   .getParent(id)
   .findByName(name)                     first slot in the whole world with that name

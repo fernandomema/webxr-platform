@@ -55,7 +55,7 @@ test('the record player starts empty and is centred on its own origin; the brush
 });
 
 test('the starter discs are real discs: painting them changes nothing', () => {
-  for (const entry of BUILTIN_ENTRIES.filter((e) => e.folderId === 'music' && e.id.includes('disc') && e.id !== 'disc-rack')) {
+  for (const entry of BUILTIN_ENTRIES.filter((e) => e.folderId === 'music' && e.id.includes('disc'))) {
     const tree = entry.build();
     assert.deepEqual(paintDisc(tree, tree[0].id), tree);
   }

@@ -194,6 +194,35 @@ test('scripts can still move model roots after construction', () => {
 	} finally { graph.dispose(); f.dispose(); }
 });
 
+test('a slower script rate ticks scripts every few frames with the time missed, and far scripts wait their turns', () => {
+	const f = fixture();
+	let viewer = new Vector3(0, 0, 0);
+	const graph = new SceneGraph(f.scene, { getViewerPosition: () => viewer });
+	const mover = (id, x) => createSlot({ id, position: [x, 0, 0], components: [{ type: 'codeBlock', code: 'return { tick(dt) { const p = ctx.self.getWorldPosition(); ctx.self.setWorldPosition([p[0], p[1] + dt, p[2]]); } };' }] });
+	try {
+		graph.load([mover('near', 1), mover('far', 50)]);
+		const y = (id) => graph.getLive(id).node.position.y;
+		graph.scriptTickDivisor = 3;
+		graph.tick(0.1);
+		graph.tick(0.1);
+		assert.equal(y('near'), 0, 'nothing runs before the third frame');
+		graph.tick(0.1);
+		assert.ok(Math.abs(y('near') - 0.3) < 1e-5, 'and then with the time of all three');
+		graph.scriptTickDivisor = 1;
+		graph.farScripts = { distance: 12, divisor: 2 };
+		const farBefore = y('far');
+		graph.tick(0.1);
+		assert.equal(y('far'), farBefore, 'a far script skips a turn');
+		graph.tick(0.1);
+		assert.ok(Math.abs(y('far') - farBefore - 0.2) < 1e-5, 'and catches up on the next');
+		graph.tick(0.1);
+		viewer = new Vector3(50, 0, 0);
+		const nearBefore = y('far');
+		graph.tick(0.1);
+		assert.ok(Math.abs(y('far') - nearBefore - 0.2) < 1e-5, 'once near it runs at once with what it missed');
+	} finally { graph.dispose(); f.dispose(); }
+});
+
 function closeArray(actual, expected) {
 	actual.forEach((value, i) => assert.ok(Math.abs(value - expected[i]) < 1e-5, `${value} differs from ${expected[i]} at ${i}`));
 }
@@ -995,5 +1024,35 @@ test('an object saved from a script comes back through a loader by its key, with
 		assert.deepEqual(graph.serialize().map((slot) => slot.id), ['dir'], 'and it is still not part of the saved world');
 		assert.equal(await ctx.storage.items.save('fav2', 'again::disc'), true, 'an object that was brought in can be saved again');
 		assert.equal((await store.find({ key: 'fav2' })).slotData.every((slot) => slot.external === undefined), true);
+	} finally { graph.dispose(); scene.dispose(); engine.dispose(); }
+});
+
+test('reconcileInFrames builds a world a stretch per frame, then starts its scripts and joins the hierarchy in one step', async () => {
+	const engine = new NullEngine();
+	const scene = new Scene(engine);
+	const graph = new SceneGraph(scene, {});
+	try {
+		const tree = [
+			createSlot({ id: 'parent', name: 'Parent', position: [1, 0, 0] }),
+			createSlot({ id: 'child', name: 'Child', parentId: 'parent', position: [0, 2, 0], components: [{ type: 'codeBlock', code: 'return { tick() {} };' }] }),
+			...Array.from({ length: 5 }, (_, i) => createSlot({ id: `extra${i}`, name: `Extra ${i}` }))
+		];
+		let frames = 0;
+		let existsWhenScriptStarted = -1;
+		const progress = [];
+		const seen = new Set();
+		// With no time budget each slot takes its own stretch: 7 slots, 6 waits for a frame.
+		await graph.reconcileInFrames(tree, {
+			budgetMs: 0,
+			nextFrame: async () => { frames++; if (graph.getLive('child')?.runtime) existsWhenScriptStarted = graph.serialize().length; for (const s of graph.serialize()) seen.add(s.id); },
+			onProgress: (done) => progress.push(done)
+		});
+		assert.equal(frames, 6);
+		assert.equal(progress.at(-1), 1);
+		assert.equal(existsWhenScriptStarted, -1, 'no script runs while slots are still being added');
+		assert.ok(graph.getLive('child').runtime, 'the script starts at the end');
+		assert.equal(graph.getLive('child').node.parent, graph.getLive('parent').node);
+		assert.equal(graph.countNewSlots(tree), 0);
+		assert.equal(graph.countNewSlots([...tree, createSlot({ id: 'later', name: 'Later' })]), 1);
 	} finally { graph.dispose(); scene.dispose(); engine.dispose(); }
 });

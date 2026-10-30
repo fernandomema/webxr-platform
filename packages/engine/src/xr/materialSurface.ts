@@ -2,6 +2,7 @@ import { Color3, PBRMaterial, RawTexture, Texture, VertexBuffer, type AbstractMe
 import type { MaterialComponent } from '../ecs/types.ts';
 import type { SourceRef } from '../assets/ref.ts';
 import type { BlobAssetLibrary, BlobLease } from './blobAssetLibrary.ts';
+import type { FrameBudget } from './frameBudget.ts';
 import { worldUvs, type UvShape } from './materialUv.ts';
 import { TriplanarPlugin } from './triplanarPlugin.ts';
 import { packNormalHeight, packSize } from './heightPack.ts';
@@ -93,8 +94,16 @@ export class MaterialSurfaces {
 
 	constructor(
 		private scene: Scene,
-		private assets?: BlobAssetLibrary
+		private assets?: BlobAssetLibrary,
+		/** When given, textures are made (and so uploaded to the GPU) a few at a time over several frames instead of all at once. */
+		private budget?: FrameBudget
 	) {}
+
+	/** Runs `make` now, or when the frame budget gets to it; `held` is what cancels it. */
+	private defer(held: Held, make: () => void): void {
+		if (!this.budget) return make();
+		this.budget.enqueue(make, 0, held);
+	}
 
 	/** Shows `component` on `mesh`, creating the material the first time and updating it after. */
 	apply(slotId: string, mesh: AbstractMesh, component: MaterialComponent, color?: string, shape?: string): void {
@@ -234,23 +243,32 @@ export class MaterialSurfaces {
 			if (name === 'albedo') this.findCells(surface);
 		};
 		if (source.kind === 'url') {
-			const texture = this.acquireShared(key, source.url, tiling);
-			held.release = () => this.releaseShared(key);
-			show(texture);
+			held.release = () => this.budget?.cancel(held);
+			this.defer(held, () => {
+				const texture = this.acquireShared(key, source.url, tiling);
+				held.release = () => this.releaseShared(key);
+				show(texture);
+			});
 		} else if (this.assets) {
 			const lease: BlobLease = this.assets.acquire(source.assetId, () => {
-				if (lease.state === 'ready' && lease.url && !held.texture) {
-					const texture = new Texture(lease.url, this.scene, false, true);
-					texture.uScale = tiling;
-					texture.vScale = tiling;
-					held.release = () => {
-						texture.dispose();
-						lease.release();
-					};
-					show(texture);
+				if (lease.state === 'ready' && lease.url && !held.texture && !this.budget?.has(held)) {
+					this.defer(held, () => {
+						if (surface.maps[name] !== held || !lease.url) return;
+						const texture = new Texture(lease.url, this.scene, false, true);
+						texture.uScale = tiling;
+						texture.vScale = tiling;
+						held.release = () => {
+							texture.dispose();
+							lease.release();
+						};
+						show(texture);
+					});
 				}
 			});
-			held.release = () => lease.release();
+			held.release = () => {
+				this.budget?.cancel(held);
+				lease.release();
+			};
 		}
 	}
 
@@ -349,6 +367,6 @@ export class MaterialSurfaces {
 }
 
 /** The PBR surfaces of a scene's slots that carry a `material` (made by the scene graph the first time one does). */
-export function setupMaterialSurfaces(scene: Scene, assets?: BlobAssetLibrary): MaterialSurfaces {
-	return new MaterialSurfaces(scene, assets);
+export function setupMaterialSurfaces(scene: Scene, assets?: BlobAssetLibrary, budget?: FrameBudget): MaterialSurfaces {
+	return new MaterialSurfaces(scene, assets, budget);
 }

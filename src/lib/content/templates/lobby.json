@@ -729,9 +729,9 @@
 		"parentId": null,
 		"name": "Mirror Frame",
 		"position": [
-			-3,
+			-9.5,
 			1.25,
-			-3.28
+			0
 		],
 		"rotation": [
 			0,
@@ -740,9 +740,9 @@
 			1
 		],
 		"scale": [
-			1.5,
+			0.06,
 			2.3,
-			0.06
+			1.5
 		],
 		"components": [
 			{
@@ -764,15 +764,15 @@
 		"parentId": null,
 		"name": "Mirror",
 		"position": [
-			-3,
+			-9.465,
 			1.25,
-			-3.245
+			0
 		],
 		"rotation": [
 			0,
-			1,
+			-0.7071,
 			0,
-			0
+			0.7071
 		],
 		"scale": [
 			1.34,
@@ -798,9 +798,9 @@
 		"parentId": null,
 		"name": "Brush Pedestal",
 		"position": [
-			-2.2,
+			-7.5,
 			0.45,
-			-2
+			0
 		],
 		"rotation": [
 			0,
@@ -833,9 +833,9 @@
 		"parentId": null,
 		"name": "Brush Pedestal Top",
 		"position": [
-			-2.2,
+			-7.5,
 			0.92,
-			-2
+			0
 		],
 		"rotation": [
 			0,
@@ -868,9 +868,9 @@
 		"parentId": null,
 		"name": "Paint Brush",
 		"position": [
-			-2.2,
+			-7.5,
 			1.12,
-			-2
+			0
 		],
 		"rotation": [
 			0,
@@ -991,727 +991,19 @@
 		]
 	},
 	{
-		"id": "lobby-disc-rack",
-		"parentId": null,
-		"name": "Disc Rack",
-		"position": [
-			3.6,
-			0,
-			-2
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1,
-			1,
-			1
-		],
-		"components": [
-			{
-				"type": "container"
-			}
-		]
-	},
-	{
-		"id": "lobby-disc-rack-panel",
-		"parentId": "lobby-disc-rack",
-		"name": "Rack Panel",
-		"position": [
-			0,
-			0.643,
-			0.01
-		],
-		"rotation": [
-			-0.1564,
-			0,
-			0,
-			0.9877
-		],
-		"scale": [
-			1,
-			1.12,
-			0.03
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": {
-					"kind": "builtin",
-					"id": "box"
-				},
-				"color": "#3a2518"
-			},
-			{
-				"type": "collider",
-				"shape": "box"
-			}
-		]
-	},
-	{
-		"id": "lobby-disc-rack-side-L",
-		"parentId": "lobby-disc-rack",
-		"name": "Rack Side L",
-		"position": [
-			-0.52,
-			0.6523,
-			0.0385
-		],
-		"rotation": [
-			-0.1564,
-			0,
-			0,
-			0.9877
-		],
-		"scale": [
-			0.04,
-			1.12,
-			0.09
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": {
-					"kind": "builtin",
-					"id": "box"
-				},
-				"color": "#b98b5e"
-			},
-			{
-				"type": "collider",
-				"shape": "box"
-			}
-		]
-	},
-	{
-		"id": "lobby-disc-rack-side-R",
-		"parentId": "lobby-disc-rack",
-		"name": "Rack Side R",
-		"position": [
-			0.52,
-			0.6523,
-			0.0385
-		],
-		"rotation": [
-			-0.1564,
-			0,
-			0,
-			0.9877
-		],
-		"scale": [
-			0.04,
-			1.12,
-			0.09
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": {
-					"kind": "builtin",
-					"id": "box"
-				},
-				"color": "#b98b5e"
-			},
-			{
-				"type": "collider",
-				"shape": "box"
-			}
-		]
-	},
-	{
-		"id": "lobby-disc-rack-cap",
-		"parentId": "lobby-disc-rack",
-		"name": "Rack Top Rail",
-		"position": [
-			0,
-			1.2039,
-			-0.1407
-		],
-		"rotation": [
-			-0.1564,
-			0,
-			0,
-			0.9877
-		],
-		"scale": [
-			1.08,
-			0.04,
-			0.09
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": {
-					"kind": "builtin",
-					"id": "box"
-				},
-				"color": "#b98b5e"
-			},
-			{
-				"type": "collider",
-				"shape": "box"
-			}
-		]
-	},
-	{
-		"id": "lobby-disc-rack-ledge-1",
-		"parentId": "lobby-disc-rack",
-		"name": "Rack Ledge 1",
-		"position": [
-			0,
-			0.1829,
-			0.2121
-		],
-		"rotation": [
-			-0.1564,
-			0,
-			0,
-			0.9877
-		],
-		"scale": [
-			1,
-			0.03,
-			0.07
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": {
-					"kind": "builtin",
-					"id": "box"
-				},
-				"color": "#8a5a34"
-			},
-			{
-				"type": "collider",
-				"shape": "box"
-			}
-		]
-	},
-	{
-		"id": "lobby-disc-rack-ledge-2",
-		"parentId": "lobby-disc-rack",
-		"name": "Rack Ledge 2",
-		"position": [
-			0,
-			0.5253,
-			0.1008
-		],
-		"rotation": [
-			-0.1564,
-			0,
-			0,
-			0.9877
-		],
-		"scale": [
-			1,
-			0.03,
-			0.07
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": {
-					"kind": "builtin",
-					"id": "box"
-				},
-				"color": "#8a5a34"
-			},
-			{
-				"type": "collider",
-				"shape": "box"
-			}
-		]
-	},
-	{
-		"id": "lobby-disc-rack-ledge-3",
-		"parentId": "lobby-disc-rack",
-		"name": "Rack Ledge 3",
-		"position": [
-			0,
-			0.8677,
-			-0.0104
-		],
-		"rotation": [
-			-0.1564,
-			0,
-			0,
-			0.9877
-		],
-		"scale": [
-			1,
-			0.03,
-			0.07
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": {
-					"kind": "builtin",
-					"id": "box"
-				},
-				"color": "#8a5a34"
-			},
-			{
-				"type": "collider",
-				"shape": "box"
-			}
-		]
-	},
-	{
-		"id": "lobby-disc-rack-skid-L",
-		"parentId": "lobby-disc-rack",
-		"name": "Rack Skid L",
-		"position": [
-			-0.5,
-			0.025,
-			0.05
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			0.06,
-			0.05,
-			0.62
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": {
-					"kind": "builtin",
-					"id": "box"
-				},
-				"color": "#3b2416"
-			},
-			{
-				"type": "collider",
-				"shape": "box"
-			}
-		]
-	},
-	{
-		"id": "lobby-disc-rack-leg-L",
-		"parentId": "lobby-disc-rack",
-		"name": "Rack Back Leg L",
-		"position": [
-			-0.5,
-			0.5535,
-			-0.2159
-		],
-		"rotation": [
-			0.0436,
-			0,
-			0,
-			0.999
-		],
-		"scale": [
-			0.05,
-			1.0109,
-			0.05
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": {
-					"kind": "builtin",
-					"id": "box"
-				},
-				"color": "#3b2416"
-			}
-		]
-	},
-	{
-		"id": "lobby-disc-rack-skid-R",
-		"parentId": "lobby-disc-rack",
-		"name": "Rack Skid R",
-		"position": [
-			0.5,
-			0.025,
-			0.05
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			0.06,
-			0.05,
-			0.62
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": {
-					"kind": "builtin",
-					"id": "box"
-				},
-				"color": "#3b2416"
-			},
-			{
-				"type": "collider",
-				"shape": "box"
-			}
-		]
-	},
-	{
-		"id": "lobby-disc-rack-leg-R",
-		"parentId": "lobby-disc-rack",
-		"name": "Rack Back Leg R",
-		"position": [
-			0.5,
-			0.5535,
-			-0.2159
-		],
-		"rotation": [
-			0.0436,
-			0,
-			0,
-			0.999
-		],
-		"scale": [
-			0.05,
-			1.0109,
-			0.05
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": {
-					"kind": "builtin",
-					"id": "box"
-				},
-				"color": "#3b2416"
-			}
-		]
-	},
-	{
-		"id": "lobby-disc-rack-bar",
-		"parentId": "lobby-disc-rack",
-		"name": "Rack Front Bar",
-		"position": [
-			0,
-			0.025,
-			0.34
-		],
-		"rotation": [
-			0,
-			0,
-			0,
-			1
-		],
-		"scale": [
-			1.06,
-			0.05,
-			0.05
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": {
-					"kind": "builtin",
-					"id": "box"
-				},
-				"color": "#3b2416"
-			},
-			{
-				"type": "collider",
-				"shape": "box"
-			}
-		]
-	},
-	{
-		"id": "lobby-disc-rack-drop-zone-1",
-		"parentId": "lobby-disc-rack",
-		"name": "Disc Rack Drop Zone 1",
-		"position": [
-			0,
-			0.3499,
-			0.1583
-		],
-		"rotation": [
-			-0.1564,
-			0,
-			0,
-			0.9877
-		],
-		"scale": [
-			1,
-			0.32,
-			0.28
-		],
-		"components": [
-			{
-				"type": "dropZone",
-				"align": "nearest",
-				"yawStep": 90
-			}
-		]
-	},
-	{
-		"id": "lobby-disc-rack-drop-zone-2",
-		"parentId": "lobby-disc-rack",
-		"name": "Disc Rack Drop Zone 2",
-		"position": [
-			0,
-			0.6923,
-			0.047
-		],
-		"rotation": [
-			-0.1564,
-			0,
-			0,
-			0.9877
-		],
-		"scale": [
-			1,
-			0.32,
-			0.28
-		],
-		"components": [
-			{
-				"type": "dropZone",
-				"align": "nearest",
-				"yawStep": 90
-			}
-		]
-	},
-	{
-		"id": "lobby-disc-rack-drop-zone-3",
-		"parentId": "lobby-disc-rack",
-		"name": "Disc Rack Drop Zone 3",
-		"position": [
-			0,
-			1.0347,
-			-0.0642
-		],
-		"rotation": [
-			-0.1564,
-			0,
-			0,
-			0.9877
-		],
-		"scale": [
-			1,
-			0.32,
-			0.28
-		],
-		"components": [
-			{
-				"type": "dropZone",
-				"align": "nearest",
-				"yawStep": 90
-			}
-		]
-	},
-	{
-		"id": "lobby-disc-rack-sleeve-1",
-		"parentId": "lobby-disc-rack",
-		"name": "Record Sleeve 1",
-		"position": [
-			-0.32,
-			0.33,
-			0.1306
-		],
-		"rotation": [
-			-0.1564,
-			0,
-			0,
-			0.9877
-		],
-		"scale": [
-			0.3,
-			0.3,
-			0.006
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": {
-					"kind": "builtin",
-					"id": "box"
-				},
-				"color": "#be123c"
-			}
-		]
-	},
-	{
-		"id": "lobby-disc-rack-sleeve-2",
-		"parentId": "lobby-disc-rack",
-		"name": "Record Sleeve 2",
-		"position": [
-			0,
-			0.33,
-			0.1306
-		],
-		"rotation": [
-			-0.1564,
-			0,
-			0,
-			0.9877
-		],
-		"scale": [
-			0.3,
-			0.3,
-			0.006
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": {
-					"kind": "builtin",
-					"id": "box"
-				},
-				"color": "#0f766e"
-			}
-		]
-	},
-	{
-		"id": "lobby-disc-rack-sleeve-3",
-		"parentId": "lobby-disc-rack",
-		"name": "Record Sleeve 3",
-		"position": [
-			0.32,
-			0.33,
-			0.1306
-		],
-		"rotation": [
-			-0.1564,
-			0,
-			0,
-			0.9877
-		],
-		"scale": [
-			0.3,
-			0.3,
-			0.006
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": {
-					"kind": "builtin",
-					"id": "box"
-				},
-				"color": "#7c3aed"
-			}
-		]
-	},
-	{
-		"id": "lobby-disc-rack-sleeve-4",
-		"parentId": "lobby-disc-rack",
-		"name": "Record Sleeve 4",
-		"position": [
-			-0.32,
-			0.6723,
-			0.0194
-		],
-		"rotation": [
-			-0.1564,
-			0,
-			0,
-			0.9877
-		],
-		"scale": [
-			0.3,
-			0.3,
-			0.006
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": {
-					"kind": "builtin",
-					"id": "box"
-				},
-				"color": "#ca8a04"
-			}
-		]
-	},
-	{
-		"id": "lobby-disc-rack-sleeve-5",
-		"parentId": "lobby-disc-rack",
-		"name": "Record Sleeve 5",
-		"position": [
-			0,
-			0.6723,
-			0.0194
-		],
-		"rotation": [
-			-0.1564,
-			0,
-			0,
-			0.9877
-		],
-		"scale": [
-			0.3,
-			0.3,
-			0.006
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": {
-					"kind": "builtin",
-					"id": "box"
-				},
-				"color": "#1d4ed8"
-			}
-		]
-	},
-	{
-		"id": "lobby-disc-rack-sleeve-6",
-		"parentId": "lobby-disc-rack",
-		"name": "Record Sleeve 6",
-		"position": [
-			0.32,
-			0.6723,
-			0.0194
-		],
-		"rotation": [
-			-0.1564,
-			0,
-			0,
-			0.9877
-		],
-		"scale": [
-			0.3,
-			0.3,
-			0.006
-		],
-		"components": [
-			{
-				"type": "meshRenderer",
-				"meshRef": {
-					"kind": "builtin",
-					"id": "box"
-				},
-				"color": "#c2410c"
-			}
-		]
-	},
-	{
 		"id": "lobby-disc-1",
 		"parentId": null,
 		"name": "Disc: Remembering a Heartbeat",
 		"position": [
-			3.28,
-			1.0156,
-			-2.089
+			8.2,
+			0.05,
+			-0.5
 		],
 		"rotation": [
-			0.5878,
 			0,
 			0,
-			0.809
+			0,
+			1
 		],
 		"scale": [
 			0.3,
@@ -2077,15 +1369,15 @@
 		"parentId": null,
 		"name": "Disc: Mesosiderite",
 		"position": [
-			3.6,
-			1.0156,
-			-2.089
+			8.2,
+			0.05,
+			0.5
 		],
 		"rotation": [
-			0.5878,
 			0,
 			0,
-			0.809
+			0,
+			1
 		],
 		"scale": [
 			0.3,

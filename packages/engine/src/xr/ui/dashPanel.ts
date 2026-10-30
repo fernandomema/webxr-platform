@@ -23,7 +23,8 @@ import { ensureCloudAssets } from '../../assets/cloudSync.ts';
 import { getLocalAssetStore } from '../../assets/store.ts';
 import type { WorldPackage } from '../../worlds/types.ts';
 import { gameState, getInventoryContext } from '../gameState.ts';
-import { xrSettings, saveSettings, DASH_DISTANCES, DESKTOP_FOVS, MOUSE_SENSITIVITIES, type FoveationLevel, type MovementMode, type RotationMode } from '../settings.ts';
+import { EXPERIMENTS, visibleExperiments } from '../experiments.ts';
+import { xrSettings, saveSettings, DASH_DISTANCES, DESKTOP_FOVS, MOUSE_SENSITIVITIES, type FoveationLevel, type MovementMode, type ScriptRate, type RotationMode } from '../settings.ts';
 import { saveWithPreview } from '../inventorySave.ts';
 import { captureItemThumbnail } from '../thumbnail/capture.ts';
 import { typeWithKeyboard } from '../keyboard/guiInput.ts';
@@ -83,8 +84,10 @@ export interface DashPanelCallbacks {
 	onToggleInspector: (() => void) | null;
 	/** Seated mode was switched on or off (`xrSettings.seatedMode` already holds the new value). */
 	onSeatedModeChanged(): void;
-	/** Foveated rendering or the performance readout was changed (`xrSettings` already holds the new values). */
+	/** Foveated rendering, the script rate or the performance readout was changed (`xrSettings` already holds the new values). */
 	onPerformanceSettingsChanged(): void;
+	/** A dev performance experiment was switched (`xrSettings.experiments` already holds the new state; see experiments.ts). */
+	onExperimentChanged(id: string, on: boolean): void;
 	/** Mouse speed, inverted look or field of view (the desktop controls) was changed (`xrSettings` already holds the new values). */
 	onDesktopSettingsChanged(): void;
 	/** The master audio volume changed (`xrSettings.masterVolume` already holds the new value). */
@@ -1498,12 +1501,36 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 	// Sections of setting cards, all the same width: what the setting is and does on the left, and on the right a
 	// segmented control of a fixed width whatever the number of options. The whole list scrolls.
 	const CHOICE_WIDTH = 420;
-	const settingsColumn = createScrollColumn('settings');
+	// A rail of the sections on the left, to jump to one; the settings scroll beside it.
+	const SETTINGS_RAIL = 216;
+	const settingsColumn = createScrollColumn('settings', { width: PAGE_WIDTH - 2 * 24 - SETTINGS_RAIL, align: 'right' });
 	const SETTINGS_WIDTH = settingsColumn.width;
 	const settingsScroll = settingsColumn.scroll;
 	contentByTab.settings.addControl(settingsScroll);
 	const settingsList = settingsColumn.list;
 	settingsList.paddingBottom = '16px';
+	const settingsRail = new StackPanel('settings-rail');
+	settingsRail.width = `${SETTINGS_RAIL - 16}px`;
+	settingsRail.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+	settingsRail.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+	settingsRail.left = '24px';
+	settingsRail.top = '8px';
+	contentByTab.settings.addControl(settingsRail);
+
+	/** Scrolls the settings so that `heading` is at the top (the list's rows have fixed heights, so their sum is where it is). */
+	function scrollSettingsTo(heading: Control): void {
+		let above = 0;
+		let total = 0;
+		let found = false;
+		for (const child of settingsList.children) {
+			if (child === heading) found = true;
+			const height = parseFloat(String(child.height)) || 0;
+			if (!found) above += height;
+			total += height;
+		}
+		const range = total + 16 - settingsScroll.heightInPixels;
+		if (range > 0) settingsScroll.verticalBar.value = Math.max(0, Math.min(1, above / range));
+	}
 
 	interface SettingOption {
 		label: string;
@@ -1522,6 +1549,20 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		heading.color = INV.text;
 		heading.textHorizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
 		settingsList.addControl(heading);
+
+		const jump = Button.CreateSimpleButton(`settings-rail-${title}`, title);
+		jump.width = `${SETTINGS_RAIL - 16}px`;
+		jump.height = '46px';
+		jump.paddingBottom = '6px';
+		jump.cornerRadius = 10;
+		jump.thickness = 0;
+		jump.fontSize = 18;
+		jump.color = INV.text;
+		jump.background = INV.surface;
+		jump.onPointerEnterObservable.add(() => { jump.background = INV.accent; });
+		jump.onPointerOutObservable.add(() => { jump.background = INV.surface; });
+		jump.onPointerClickObservable.add(() => scrollSettingsTo(heading));
+		settingsRail.addControl(jump);
 	}
 
 	/** A setting's card: its name and what it does, and a segmented control choosing between `options()`. */
@@ -1700,6 +1741,11 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 			pick('foveation', level, label, () => callbacks.onPerformanceSettingsChanged())
 		)
 	);
+	settingRow('script-rate', 'Script rate', 'How often world scripts run. Lower is lighter for modest headsets, but games and moving things react a little later.', () =>
+		([[1, 'Full'], [2, 'Half'], [3, 'Third'], [4, 'Quarter']] as [ScriptRate, string][]).map(([rate, label]) =>
+			pick('scriptRate', rate, label, () => callbacks.onPerformanceSettingsChanged())
+		)
+	);
 	settingRow('multiview', 'Multiview', 'Draws both eyes at once: much faster in busy worlds. Experimental: turn it off if anything looks wrong. Applies the next time you enter VR.', () => [
 		pick('multiview', false, 'Off', () => callbacks.onPerformanceSettingsChanged()),
 		pick('multiview', true, 'On', () => callbacks.onPerformanceSettingsChanged())
@@ -1708,6 +1754,24 @@ export function createDashPanel(scene: Scene, sceneGraph: SceneGraph, callbacks:
 		pick('showPerformance', false, 'Hidden', () => callbacks.onPerformanceSettingsChanged()),
 		pick('showPerformance', true, 'Shown', () => callbacks.onPerformanceSettingsChanged())
 	]);
+
+	const offeredExperiments = visibleExperiments();
+	if (offeredExperiments.length) {
+		// In a player build only the experiments listed for production show, and the section says it is unfinished work.
+		settingsSection(import.meta.env?.DEV ? 'Experiments (dev)' : 'Experiments (beta, may misbehave)');
+		for (const experiment of offeredExperiments) {
+			const choose = (on: boolean): SettingOption => ({
+				label: on ? 'On' : 'Off',
+				active: () => (xrSettings.experiments[experiment.id] === true) === on,
+				select: () => {
+					xrSettings.experiments[experiment.id] = on;
+					saveSettings();
+					callbacks.onExperimentChanged(experiment.id, on);
+				}
+			});
+			settingRow(`experiment-${experiment.id}`, experiment.label, experiment.description, () => [choose(false), choose(true)]);
+		}
+	}
 
 	function refreshSettingsTab() {
 		for (const refresh of settingRows) refresh();

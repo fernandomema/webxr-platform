@@ -171,7 +171,7 @@
 
 		models = new ModelLibrary(scene, { getResolvers: () => [cloudResolver] });
 		mediaAssets = new BlobAssetLibrary({ getResolvers: () => [cloudResolver] });
-		sceneGraph = new SceneGraph(scene, { models, mediaAssets, externalItems: createExternalResolver(), getViewerPosition: () => camera?.position ?? null });
+		sceneGraph = new SceneGraph(scene, { frameBudgetMs: 3, models, mediaAssets, externalItems: createExternalResolver(), getViewerPosition: () => camera?.position ?? null });
 		cameraHelper = new PreviewCameraHelper(scene, canvas, camera, {
 			getSnapPrecision: () => snapPrecision,
 			getNode: (slotId) => sceneGraph?.getLive(slotId)?.node,

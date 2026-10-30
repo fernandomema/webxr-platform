@@ -324,6 +324,8 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 			id: slotId,
 			getSlot: () => host.getSlot(slotId),
 			getComponent: (type: string) => host.getSlot(slotId)?.components.find((c) => c.type === type),
+			/** One field of one of its components, as a copy (undefined when it has none): one call, where reading it through `getComponent` crosses into the world at each step. */
+			getField: (type: string, field: string) => fieldOf(host.getSlot(slotId), type, field),
 			getWorldPosition: () => getWorldPosition(node),
 			getWorldRotation: () => getWorldRotation(node),
 			setWorldPosition: (v: Vec3) => setWorldPosition(node, v),
@@ -343,6 +345,11 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 				return parentId ? host.getSlot(parentId) : undefined;
 			},
 			findByName: (name: string) => host.allSlots().find((s) => s.name === name),
+			/**
+			 * One field of a component of any slot, as a copy (undefined when the slot or the component is missing). One call, where `getSlot(id).components.find(...)`
+			 * crosses into the world at every step: what to use in a `tick`, which runs every frame.
+			 */
+			getField: (id: string, type: string, field: string) => fieldOf(host.getSlot(id), type, field),
 			/** Stable content hash of a slot and its descendants, independent of ids and the root's world pose; null for a missing slot. */
 			getSlotHash: async (id: string): Promise<string | null> => {
 				const root = host.getSlot(id);
@@ -798,6 +805,12 @@ function buildCtx(slotId: string, node: TransformNode, host: CodeBlockHost, push
 			pushLog('log', 'log', message);
 		}
 	};
+}
+
+/** A field of a slot's component of `type`, or undefined. */
+function fieldOf(slot: Slot | undefined, type: string, field: string): unknown {
+	const component = slot?.components.find((c) => c.type === type) as Record<string, unknown> | undefined;
+	return component ? component[field] : undefined;
 }
 
 /** A tab as a script wrote it, if it is one worth passing on: text where text is wanted, and a page of a sensible size. */

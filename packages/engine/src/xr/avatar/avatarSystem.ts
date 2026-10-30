@@ -1,4 +1,5 @@
 import { Matrix, Quaternion, Vector3, WebXRState, type Skeleton, type Scene, type TransformNode, type WebXRDefaultExperience, type Camera } from '@babylonjs/core';
+import { profiled } from '../profiler.ts';
 import { findComponent, type AvatarComponent, type Vec3 } from '../../ecs/types.ts';
 import type { SceneGraph } from '../sceneGraph.ts';
 import type { HandPose, TransformPose } from './defaultAvatar.ts';
@@ -10,6 +11,7 @@ import type { GraspPose } from './graspPose.ts';
 import { FINGER_NAMES, OPEN_HAND, bendsFromCurls, conjugate, easeValues, handFrameFromKnuckles, parseBends, parseCurls, parseThumbDirections, rotateVector as rotateBy } from './fingers.ts';
 import { detectHumanoidMap, fingerJoints, missingRequiredBones, pruneHumanoidMap, type HumanoidBone } from './humanoid.ts';
 import { mirrorRenderHooks } from '../mirrorHooks.ts';
+import { isExperimentOn } from '../experiments.ts';
 import { newFoot, smoothVelocity, stepFoot, type Foot } from './gait.ts';
 import { arcBetween, followYaw, headYaw, restFacingYaw, solveTwoBone, stepToReach, updateStandingHeight, type Q4, type V3 } from './ik.ts';
 import { cameraHeadPose } from './headPose.ts';
@@ -100,6 +102,8 @@ interface Rig {
 	restHeadOffset: Vector3;
 	restEyeHeight: number;
 	lengths: { left: [number, number]; right: [number, number] };
+	/** The avatar's overall scale from the last full body drive; the half-rate frames reuse it. */
+	lastScale: number | null;
 	facing: number;
 	yaw: number;
 	yawReady: boolean;
@@ -169,6 +173,9 @@ export class AvatarSystem {
 	private graspSolver = new GraspSolver();
 	private readonly observer;
 	private readonly mirrorObservers;
+	/** Time banked for the next full body drive: under the experiment the skipped frames hand their time to the run frame. */
+	private carryDt = 0;
+	private halfRateFrame = 0;
 	/** The local player's avatar, whose head is hidden from their own eyes but shown in a mirror. */
 	private localRig: Rig | null = null;
 
@@ -262,13 +269,20 @@ export class AvatarSystem {
 		const localId = this.options.getLocalPlayerId();
 		const seen = new Set<string>();
 		let localDriven = false;
+		// Under the experiment the body and legs run on even frames; the skipped frames bank their time so the body's
+		// animation keeps its speed. The hands run every frame either way (driveHandsOnly).
+		const halfRate = isExperimentOn('avatarHalfRate');
+		this.carryDt += dt;
+		const skipBody = halfRate && (this.halfRateFrame++ & 1) === 1;
+		const bodyDt = this.carryDt;
+		if (!skipBody) this.carryDt = 0;
 		for (const entry of this.sceneGraph.slotsWith('avatar')) {
 			const avatar = findComponent(entry.slot, 'avatar');
 			const ownerId = avatar?.ownerId;
 			if (!avatar || !ownerId) continue;
 			const instance = entry.model?.instance;
 			if (!instance) continue;
-			const pose = ownerId === localId ? this.readLocalPose() : this.poses.get(ownerId);
+			const pose = ownerId === localId ? profiled('avatar:readPose', () => this.readLocalPose()) : this.poses.get(ownerId);
 			if (!pose) continue;
 			let rig = this.rigs.get(entry.slot.id);
 			if (!rig || rig.root !== entry.node) {
@@ -278,7 +292,8 @@ export class AvatarSystem {
 				if (!rig) continue;
 				this.rigs.set(entry.slot.id, rig);
 			}
-			this.drive(rig, avatar, pose, dt, ownerId === localId, ownerId);
+			if (skipBody && rig.lastScale !== null) this.driveHandsOnly(rig, pose, dt, ownerId, ownerId === localId);
+			else this.drive(rig, avatar, pose, bodyDt, ownerId === localId, ownerId);
 			seen.add(ownerId);
 			if (ownerId === localId) localDriven = true;
 		}
@@ -291,7 +306,7 @@ export class AvatarSystem {
 				this.graspSolver.clear(`${slotId}:right`);
 			}
 		}
-		this.setControllersHidden(localDriven);
+		profiled('avatar:controllers', () => this.setControllersHidden(localDriven));
 	}
 
 	private buildRig(slotId: string, root: TransformNode, avatar: AvatarComponent, boneNodes: Map<string, TransformNode>): Rig | null {
@@ -460,6 +475,7 @@ export class AvatarSystem {
 			restHeadOffset,
 			restEyeHeight: restHeadOffset.y + 0.08,
 			lengths,
+			lastScale: null,
 			facing: restFacingYaw(leftX, rightX),
 			yaw: 0,
 			yawReady: false,
@@ -469,9 +485,27 @@ export class AvatarSystem {
 	}
 
 	private drive(rig: Rig, avatar: AvatarComponent, pose: AvatarPose, dt: number, isLocal: boolean, ownerId: string): void {
+		const { scale, bodyYaw, facingMatrix } = this.driveBody(rig, avatar, pose, dt, isLocal);
+		this.driveTracked(rig, pose, dt, ownerId, isLocal, scale, bodyYaw, facingMatrix);
+		if (rig.hips) profiled('avatar:legs', () => this.driveLegs(rig, bodyYaw, facingMatrix, dt));
+	}
+
+	/**
+	 * What the half-rate experiment runs on the frames it skips: only the tracking-driven parts (head, arms, grasp,
+	 * fingers), from the cached body scale and yaw, so the hands stay glued to the controllers while the body and legs
+	 * update every second frame.
+	 */
+	private driveHandsOnly(rig: Rig, pose: AvatarPose, dt: number, ownerId: string, isLocal: boolean): void {
+		if (rig.lastScale === null) return;
+		const bodyYaw = Quaternion.RotationAxis(UP, rig.yaw);
+		const facingMatrix = orientationOfQuat(Quaternion.RotationAxis(UP, rig.facing));
+		this.driveTracked(rig, pose, dt, ownerId, isLocal, rig.lastScale, bodyYaw, facingMatrix);
+	}
+
+	/** Everything the body follows: its placement on the floor, its yaw and scale. Runs at half rate under the experiment. */
+	private driveBody(rig: Rig, avatar: AvatarComponent, pose: AvatarPose, dt: number, isLocal: boolean): { scale: number; bodyYaw: Quaternion; facingMatrix: Matrix } {
 		const { root } = rig;
 		const headPosition = Vector3.FromArray(pose.head.position);
-		const headRotation = toQuat(pose.head.rotation);
 		const floorY = this.options.getFloorY?.(headPosition.x, headPosition.y, headPosition.z) ?? 0;
 
 		rig.standing = updateStandingHeight(rig.standing, headPosition.y - floorY, dt);
@@ -533,8 +567,19 @@ export class AvatarSystem {
 
 		const facingMatrix = orientationOfQuat(Quaternion.RotationAxis(UP, rig.facing));
 
+		const bodyYaw = Quaternion.RotationAxis(UP, rig.yaw);
+		rig.lastScale = scale;
+		return { scale, bodyYaw, facingMatrix };
+	}
+
+	/**
+	 * Everything that tracks the player every frame: the head's orientation, the arms reaching for the hands with two-bone
+	 * IK, the grasp and the fingers. Under the half-rate experiment this is the part that still runs on the skipped frames,
+	 * from the cached body scale and yaw, so the hands never visibly step.
+	 */
+	private driveTracked(rig: Rig, pose: AvatarPose, dt: number, ownerId: string, isLocal: boolean, scale: number, bodyYaw: Quaternion, facingMatrix: Matrix): void {
 		// Head: copy the head's orientation onto the bone.
-		this.orient(rig, rig.head, orientationOfQuat(headRotation), facingMatrix, null);
+		this.orient(rig, rig.head, orientationOfQuat(toQuat(pose.head.rotation)), facingMatrix, null);
 		// Your own head is never in view of your own eyes.
 		if (isLocal !== rig.headHidden) {
 			rig.head.scaling.setAll(isLocal ? 0.001 : 1);
@@ -542,20 +587,17 @@ export class AvatarSystem {
 		}
 		if (isLocal) this.localRig = rig;
 
-		const bodyYaw = Quaternion.RotationAxis(UP, rig.yaw);
 		for (const side of ['left', 'right'] as const) {
 			const hand = pose[side];
-			this.reachArm(rig, side, hand, null, scale, bodyYaw, facingMatrix);
+			profiled('avatar:arms', () => this.reachArm(rig, side, hand, null, scale, bodyYaw, facingMatrix));
 			// The grasp is solved, and the fingers placed, in the frame of the hand as it is now posed.
 			const frame = hand ? this.handFrame(rig, side, hand) : null;
-			const grasp = hand && frame ? this.graspFor(rig, side, ownerId, hand, frame) : null;
+			const grasp = hand && frame ? profiled('avatar:grasp', () => this.graspFor(rig, side, ownerId, hand, frame)) : null;
 			// A hand moved onto what it grabbed eases there instead of jumping.
 			rig.shift[side] = easeValues(rig.shift[side], grasp?.shift ?? [0, 0, 0], dt, 12) as V3;
-			if (hand && frame && Math.hypot(...rig.shift[side]) > 1e-4) this.reachArm(rig, side, hand, Vector3.FromArray(rotateBy(frame, rig.shift[side])), scale, bodyYaw, facingMatrix);
-			this.driveFingers(rig, side, hand, dt, grasp, frame);
+			if (hand && frame && Math.hypot(...rig.shift[side]) > 1e-4) profiled('avatar:arms', () => this.reachArm(rig, side, hand, Vector3.FromArray(rotateBy(frame, rig.shift[side])), scale, bodyYaw, facingMatrix));
+			profiled('avatar:fingers', () => this.driveFingers(rig, side, hand, dt, grasp, frame));
 		}
-
-		if (rig.hips) this.driveLegs(rig, bodyYaw, facingMatrix, dt);
 	}
 
 	/**

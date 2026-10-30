@@ -3,12 +3,14 @@ import '@babylonjs/loaders/glTF';
 import { LoadAssetContainerAsync, TransformNode, Vector3, type AssetContainer, type Scene } from '@babylonjs/core';
 import type { Vec3 } from '../ecs/types.ts';
 import { configureDraco } from './draco.ts';
+import { configureKtx2 } from './ktx2.ts';
 import { extentsOf, normalizationTransform, normalizedExtents } from '../assets/normalize.ts';
 import type { AssetId } from '../assets/ref.ts';
 import { resolveAsset, type AssetResolver } from '../assets/resolve.ts';
 import { assetStoreChanges, getLocalAssetStore, type AssetStore } from '../assets/store.ts';
 
 configureDraco();
+configureKtx2();
 
 /**
  * pending  – queued, waiting for a decode slot
@@ -126,7 +128,7 @@ export class ModelLibrary {
 		private options: ModelLibraryOptions = {}
 	) {
 		this.store = options.store ?? getLocalAssetStore();
-		this.maxConcurrent = options.maxConcurrent ?? 2;
+		this.maxConcurrent = options.maxConcurrent ?? 1;
 		this.releaseDelayMs = options.releaseDelayMs ?? 30_000;
 		this.retryMs = options.retryMs ?? 15_000;
 		assetStoreChanges.addEventListener('put', this.onStorePut);
@@ -231,7 +233,12 @@ export class ModelLibrary {
 			}
 			const manifest = await this.store.getManifest(entry.id);
 			if (manifest?.type === 'model') entry.bounds = manifest.bounds;
+			// Reading a glTF file is done on the main thread: let a frame be drawn between one model and the next.
+			await new Promise<void>((resolve) => setTimeout(resolve, 0));
+			if (controller.signal.aborted || this.disposed) return;
+			const decodeStart = performance.now();
 			const container = await LoadAssetContainerAsync(result.bytes, this.scene, { pluginExtension: '.glb', name: entry.id });
+			if (import.meta.env?.DEV) console.debug(`[models] ${entry.name ?? entry.id.slice(7, 15)} decoded in ${Math.round(performance.now() - decodeStart)} ms (${Math.round(result.bytes.byteLength / 1024)} KB)`);
 			// The glTF loader starts a model's first clip, even in a container nothing shows: its nodes would keep animating,
 			// and every instance made later would be cloned mid-clip instead of in the model's own pose.
 			for (const group of container.animationGroups) group.stop();
