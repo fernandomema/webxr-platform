@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createSlot } from '../packages/engine/src/ecs/types.ts';
 import { collectAssetIds } from '../packages/engine/src/assets/ref.ts';
 import { needsRebuild } from '../packages/engine/src/xr/slotRebuild.ts';
+import { packNormalHeight, packSize } from '../packages/engine/src/xr/heightPack.ts';
 import { isMaterialUrl, isValidMaterialMap, materialSourceKey, materialSources } from '../packages/engine/src/xr/materialSources.ts';
 
 const assetId = `sha256:${'a'.repeat(64)}`;
@@ -47,4 +48,22 @@ test('gaining or losing a material rebuilds the slot, changing it does not', () 
 	assert.equal(needsRebuild(plain, brick), true, 'it may have been an instance of a shared mesh');
 	assert.equal(needsRebuild(brick, plain), true);
 	assert.equal(needsRebuild(brick, wood), false, 'the maps are swapped in place');
+});
+
+test('the height map is collected for upload like the other maps', () => {
+	const tree = [sphere([{ type: 'material', height: { kind: 'asset', assetId }, parallax: 0.05 }])];
+	assert.deepEqual([...collectAssetIds(tree)], [assetId]);
+	assert.deepEqual(materialSources({ type: 'material', height: url('https://a.test/h.png') }), { height: url('https://a.test/h.png') });
+});
+
+test('the normal and height maps are packed with the height in the alpha', () => {
+	const normal = [10, 20, 30, 255, 40, 50, 60, 255];
+	const height = [200, 0, 0, 255, 7, 0, 0, 255];
+	assert.deepEqual([...packNormalHeight(normal, height, 2)], [10, 20, 30, 200, 40, 50, 60, 7]);
+	assert.deepEqual([...packNormalHeight(null, height, 2)], [128, 128, 255, 200, 128, 128, 255, 7], 'a flat normal stands in when there is none');
+});
+
+test('packed maps are brought under the size limit, keeping their proportions', () => {
+	assert.deepEqual(packSize(512, 256), { width: 512, height: 256 });
+	assert.deepEqual(packSize(4096, 2048), { width: 1024, height: 512 });
 });

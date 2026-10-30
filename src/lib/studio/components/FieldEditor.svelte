@@ -18,7 +18,7 @@
 	import { explore } from '../state/explore.svelte';
 	import { toasts } from '../state/toasts.svelte';
 
-	const MATERIAL_MAPS = ['albedo', 'normal', 'arm'];
+	const MATERIAL_MAPS = ['albedo', 'normal', 'arm', 'height'];
 
 	interface Props {
 		field: FieldDef;
@@ -55,7 +55,7 @@
 		const result = await explore.pick({ kind: browseKind, title: browseKind === 'material' ? 'Materials' : browseKind === 'model' ? 'Models' : browseKind === 'audio' ? 'Sounds' : 'Pictures', actionLabel: browseKind === 'material' ? 'Use this material' : 'Use this', ...(browseKind === 'material' ? {} : { optimizedLabel: 'Use optimized' }) });
 		if (!result) return;
 		if (result.kind === 'model' && field.kind === 'mesh') onchange(assetMesh(result.assetId));
-		else if (result.kind === 'material') { const map = result[field.key as 'albedo' | 'normal' | 'arm']; if (map) onchange(assetSource(map)); else toasts.push('error', `“${result.name}” has no ${field.label.toLowerCase()}.`); }
+		else if (result.kind === 'material') { const map = result[field.key as 'albedo' | 'normal' | 'arm' | 'height']; if (map) onchange(assetSource(map)); else toasts.push('error', `“${result.name}” has no ${field.label.toLowerCase()}.`); }
 		else if ('assetId' in result && field.kind === 'asset') onchange(assetSource(result.assetId));
 	}
 	const fallback = $derived.by(() => {

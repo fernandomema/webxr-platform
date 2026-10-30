@@ -41,6 +41,16 @@ export interface MaterialComponent {
 	albedo?: SourceRef;
 	normal?: SourceRef;
 	arm?: SourceRef;
+	/** Height map (white is high), for `parallax`. Any channel works: the red one is read. */
+	height?: SourceRef;
+	/**
+	 * Parallax depth: how far the `height` map seems to sink into the surface, in the map's own units (0.02 to 0.08 is usual). Off when
+	 * left out or 0. Needs a `height` map and a mapping that uses the mesh's coordinates (not the triplanar ones). The normal map and
+	 * the height map are drawn together at up to 1024 pixels a side.
+	 */
+	parallax?: number;
+	/** Parallax with occlusion: steps along the view ray, so near parts hide far ones. Dearer to draw than the plain kind. */
+	parallaxOcclusion?: boolean;
 	/** Multiplies the roughness of `arm` (1 by default), or is the roughness itself without it (0.7). 0-1. */
 	roughness?: number;
 	/** Multiplies the metallic of `arm` (1 by default), or is the metallic itself without it (0). 0-1. */

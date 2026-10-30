@@ -13,7 +13,9 @@ export interface ImageOptimizeOptions {
 export const TEXTURE_PRESETS = {
 	albedo: { maxSide: 2048, quality: 0.82 },
 	normal: { maxSide: 2048, quality: 0.92 },
-	arm: { maxSide: 2048, quality: 0.88 }
+	arm: { maxSide: 2048, quality: 0.88 },
+	/** Parallax draws the height map at 1024 pixels at most. */
+	height: { maxSide: 1024, quality: 0.88 }
 } as const satisfies Record<string, ImageOptimizeOptions>;
 
 /** The size an image gets: scaled to fit `maxSide`, keeping its proportions, never enlarged. */

@@ -40,3 +40,10 @@ test('a texture offers one variant per size that has a colour or a normal map, w
 	assert.deepEqual(textureVariants({ arm: { '1k': { jpg: at('1k', 'jpg') } } }), [], 'a texture with only an ARM map is not usable');
 	assert.equal(textureVariants({ Diffuse: { '1k': { jpg: { url: 'https://evil.example/x.jpg', size: 10 } } } }).length, 0, 'files outside Poly Haven\'s folder are left out');
 });
+
+test('the Displacement file is offered as the height map', async () => {
+	const { textureVariants } = await import('../src/lib/server/polyHavenTextures.ts');
+	const at = (res, ext) => ({ url: `https://dl.polyhaven.org/file/ph-assets/Textures/${ext}/${res}/a/a.${ext}`, size: 1000 });
+	const variants = textureVariants({ Diffuse: { '1k': { jpg: at('1k', 'jpg') } }, Displacement: { '1k': { png: at('1k', 'png') } } });
+	assert.deepEqual(variants[0].maps.map((map) => map.role), ['albedo', 'height']);
+});

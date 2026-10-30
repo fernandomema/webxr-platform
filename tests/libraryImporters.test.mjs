@@ -149,3 +149,16 @@ test('a sound and a picture are optimized the same way, and a changed format cha
 test('only models, pictures and sounds have a separate optimized option', () => {
 	assert.deepEqual(['model', 'image', 'audio', 'material', 'hdri'].map(canOptimizeKind), [true, true, true, false, false]);
 });
+
+test('a height map is imported with the others, and one that cannot be fetched does not fail the material', async () => {
+	const { deps, log } = fakeDeps();
+	const result = await importFromLibrary(detail('material', [{ id: '1k', label: '1K', resolution: '1k', format: 'jpg', files: [file('albedo'), file('height')] }]), deps);
+	assert.ok(result.albedo && result.height);
+	assert.deepEqual(log.stored.map((entry) => entry.name).sort(), ['Thing albedo.webp', 'Thing height.webp']);
+	const broken = fakeDeps();
+	const download = broken.deps.download;
+	broken.deps.download = async (ref, variant, role, ...rest) => { if (role === 'height') throw new Error('404'); return download(ref, variant, role, ...rest); };
+	const partial = await importFromLibrary(detail('material', [{ id: '1k', label: '1K', resolution: '1k', format: 'jpg', files: [file('albedo'), file('height')] }]), broken.deps);
+	assert.ok(partial.albedo);
+	assert.equal(partial.height, null);
+});

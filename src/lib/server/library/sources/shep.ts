@@ -59,12 +59,13 @@ function mapRole(mapType: string | undefined): FileRole | null {
 	if (['ao', 'ambientocclusion', 'occlusion'].includes(name)) return 'ao';
 	if (['metal', 'metallic', 'metalness'].includes(name)) return 'metallic';
 	if (name === 'arm') return 'arm';
+	if (['displacement', 'disp', 'height'].includes(name)) return 'height';
 	return null;
 }
 
 /** The entries of an ambientCG ZIP that stand for each role. */
 const ZIP_ROLES: [FileRole, RegExp][] = [
-	['albedo', /_Color\.(jpg|png)$/i], ['normal', /_NormalGL\.(jpg|png)$/i], ['roughness', /_Roughness\.(jpg|png)$/i], ['ao', /_AmbientOcclusion\.(jpg|png)$/i], ['metallic', /_Metalness\.(jpg|png)$/i]
+	['albedo', /_Color\.(jpg|png)$/i], ['normal', /_NormalGL\.(jpg|png)$/i], ['roughness', /_Roughness\.(jpg|png)$/i], ['ao', /_AmbientOcclusion\.(jpg|png)$/i], ['metallic', /_Metalness\.(jpg|png)$/i], ['height', /_Displacement\.(jpg|png)$/i]
 ];
 
 const variantId = (parts: (string | undefined)[]) => parts.filter(Boolean).join('-').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-|-$/g, '') || 'default';
@@ -97,7 +98,7 @@ function materialVariants(files: ShepFile[]): Variant[] {
 	for (const file of files.filter((candidate) => candidate.format.toLowerCase() === 'zip' && candidate.resolution && !candidate.requiresAuth)) {
 		const resolution = file.resolution!;
 		if (variants.has(resolution) && file.group !== 'jpg') continue;
-		const roles: FileRole[] = ['albedo', 'normal', 'roughness', 'ao', 'metallic'];
+		const roles: FileRole[] = ['albedo', 'normal', 'roughness', 'ao', 'metallic', 'height'];
 		variants.set(resolution, {
 			id: resolution, label: resolution.toUpperCase(), resolution, format: file.group ?? 'jpg', ...(file.sizeBytes ? { totalBytes: file.sizeBytes } : {}),
 			files: roles.map((role) => ({ role, url: `${ZIP_SCHEME}${encodeURIComponent(file.url)}#${role}`, format: file.group === 'png' ? 'png' : 'jpg' }))

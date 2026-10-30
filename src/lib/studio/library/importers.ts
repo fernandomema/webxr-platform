@@ -13,7 +13,7 @@ import { pickVariant } from '@kithin/engine/library/variants';
 export interface ImportDeps {
 	download(ref: string, variantId: string, role: FileRole, index?: number, signal?: AbortSignal): Promise<Uint8Array>;
 	/** Re-encodes a map as WebP at a sensible size. `mimeType` is `image/png` where the browser can not encode WebP. */
-	optimizeMap(bytes: Uint8Array, map: 'albedo' | 'normal' | 'arm'): Promise<{ bytes: Uint8Array; mimeType: string }>;
+	optimizeMap(bytes: Uint8Array, map: 'albedo' | 'normal' | 'arm' | 'height'): Promise<{ bytes: Uint8Array; mimeType: string }>;
 	/** Packs separate occlusion, roughness and metallic maps into one ARM map (R, G, B). */
 	packArm(maps: { ao?: Uint8Array; roughness?: Uint8Array; metallic?: Uint8Array }): Promise<{ bytes: Uint8Array; mimeType: string }>;
 	store(bytes: Uint8Array, fileName: string, type: string, provenance: AssetProvenance): Promise<AssetManifest>;
@@ -34,7 +34,7 @@ export interface ImportOptions {
 export interface Optimized { before: number; after: number }
 
 export type ImportResult =
-	| { kind: 'material'; name: string; albedo: AssetId | null; normal: AssetId | null; arm: AssetId | null; size: number; bytes: { downloaded: number; stored: number } }
+	| { kind: 'material'; name: string; albedo: AssetId | null; normal: AssetId | null; arm: AssetId | null; height: AssetId | null; size: number; bytes: { downloaded: number; stored: number } }
 	| { kind: 'model'; name: string; assetId: AssetId; triangles: number; size: number; byteSize: number; optimized?: Optimized }
 	| { kind: 'audio'; name: string; assetId: AssetId; byteSize: number; optimized?: Optimized }
 	| { kind: 'image'; name: string; assetId: AssetId; byteSize: number; optimized?: Optimized };
@@ -57,8 +57,8 @@ type Importer = (detail: AssetDetail, variant: Variant, deps: ImportDeps, option
 
 const importMaterial: Importer = async (detail, variant, deps, options) => {
 	const provenance = provenanceOf(detail);
-	const result = { kind: 'material' as const, name: detail.title, albedo: null as AssetId | null, normal: null as AssetId | null, arm: null as AssetId | null, size: detail.facts?.realWorldSize ?? 1, bytes: { downloaded: 0, stored: 0 } };
-	const keep = async (map: 'albedo' | 'normal' | 'arm', bytes: Uint8Array, downloaded: number) => {
+	const result = { kind: 'material' as const, name: detail.title, albedo: null as AssetId | null, normal: null as AssetId | null, arm: null as AssetId | null, height: null as AssetId | null, size: detail.facts?.realWorldSize ?? 1, bytes: { downloaded: 0, stored: 0 } };
+	const keep = async (map: 'albedo' | 'normal' | 'arm' | 'height', bytes: Uint8Array, downloaded: number) => {
 		const optimized = await deps.optimizeMap(bytes, map);
 		const manifest = await deps.store(optimized.bytes, `${detail.title} ${map}.${optimized.mimeType === 'image/webp' ? 'webp' : 'png'}`, 'image', provenance);
 		result[map] = manifest.assetId;
@@ -66,9 +66,14 @@ const importMaterial: Importer = async (detail, variant, deps, options) => {
 		result.bytes.stored += optimized.bytes.byteLength;
 	};
 	const jobs: Promise<void>[] = [];
-	for (const map of ['albedo', 'normal', 'arm'] as const) {
+	for (const map of ['albedo', 'normal', 'arm', 'height'] as const) {
 		if (map === 'arm' && !has(variant, 'arm') && (has(variant, 'ao') || has(variant, 'roughness') || has(variant, 'metallic'))) continue;
-		if (has(variant, map)) jobs.push(deps.download(detail.ref, variant.id, map, 0, options.signal).then((bytes) => keep(map, bytes, bytes.byteLength)));
+		if (!has(variant, map)) continue;
+		// A height map alone is no material.
+		if (map === 'height' && !(['albedo', 'normal', 'arm', 'ao', 'roughness', 'metallic'] as const).some((role) => has(variant, role))) continue;
+		const job = deps.download(detail.ref, variant.id, map, 0, options.signal).then((bytes) => keep(map, bytes, bytes.byteLength));
+		// Only the height map is a bonus: a provider that lists it but does not have it leaves it out instead of failing the import.
+		jobs.push(map === 'height' ? job.catch((error) => { if (options.signal?.aborted) throw error; }) : job);
 	}
 	// Separate occlusion / roughness / metallic maps become the one ARM map the engine reads.
 	if (!has(variant, 'arm') && (has(variant, 'ao') || has(variant, 'roughness') || has(variant, 'metallic'))) {

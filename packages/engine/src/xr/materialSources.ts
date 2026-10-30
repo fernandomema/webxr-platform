@@ -2,7 +2,7 @@ import type { MaterialComponent } from '../ecs/types.ts';
 import type { SourceRef } from '../assets/ref.ts';
 
 /** The maps of a material, in the order they are loaded. */
-export const MATERIAL_MAPS = ['albedo', 'normal', 'arm'] as const;
+export const MATERIAL_MAPS = ['albedo', 'normal', 'arm', 'height'] as const;
 export type MaterialMap = (typeof MATERIAL_MAPS)[number];
 
 const MAX_URL_LENGTH = 2048;

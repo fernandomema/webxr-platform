@@ -16,6 +16,7 @@ const GOLD = '#facc15';
 const GRID_WIDTH = 860;
 const NAME_WIDTH = 200;
 const ROW_HEIGHT = 42;
+const GRID_TOP = 118;
 
 function cell(text: string, opts: { color?: string; bold?: boolean; align?: number } = {}): TextBlock {
 	const t = new TextBlock('', text);
@@ -69,11 +70,13 @@ export function setupScoreboard(scene: Scene, mesh: AbstractMesh, initial: Score
 	background.addControl(status);
 
 	let grid: Grid | null = null;
+	const overlay: Control[] = [];
 
 	function render(component: ScoreboardComponent): void {
 		title.text = component.title ?? 'Bowling';
 		status.text = component.status ?? '';
 
+		for (const control of overlay.splice(0)) { background.removeControl(control); control.dispose(); }
 		if (grid) {
 			background.removeControl(grid);
 			grid.dispose();
@@ -87,7 +90,7 @@ export function setupScoreboard(scene: Scene, mesh: AbstractMesh, initial: Score
 		const g = new Grid('scoreboard-grid');
 		g.width = `${GRID_WIDTH}px`;
 		g.height = `${(rows.length + 1) * ROW_HEIGHT}px`;
-		g.top = '118px';
+		g.top = `${GRID_TOP}px`;
 		g.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
 		g.addColumnDefinition(NAME_WIDTH, true);
 		for (let i = 0; i < cols.length; i++) g.addColumnDefinition(cellWidth, true);
@@ -101,7 +104,8 @@ export function setupScoreboard(scene: Scene, mesh: AbstractMesh, initial: Score
 			g.addControl(cell(col, { color: GOLD, bold: true }), 0, i + 1);
 		});
 
-		// A name that spans rows is one block over them: the rows it covers draw no name of their own.
+		// A name that spans rows is one block over them, drawn over the grid (a grid cell cuts off what is bigger than it); the rows it covers have no name cell.
+		const blocks: { row: number; span: number; label: string; bold: boolean; background: string }[] = [];
 		let covered = 0;
 		rows.forEach((row, r) => {
 			const rowIndex = r + 1;
@@ -111,18 +115,7 @@ export function setupScoreboard(scene: Scene, mesh: AbstractMesh, initial: Score
 			else {
 				const span = Math.max(1, Math.min(Math.floor(row.rowSpan ?? 1), rows.length - r));
 				covered = span - 1;
-				const block = cellBackground(baseBg);
-				const nameLabel = cell(`${row.isLeader ? '\u{1F3C6} ' : ''}${row.name}`, {
-					align: Control.HORIZONTAL_ALIGNMENT_LEFT,
-					bold: Boolean(row.highlight)
-				});
-				nameLabel.paddingLeft = '12px';
-				for (const control of [block, nameLabel]) {
-					control.height = `${ROW_HEIGHT * span}px`;
-					control.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
-				}
-				g.addControl(block, rowIndex, 0);
-				g.addControl(nameLabel, rowIndex, 0);
+				blocks.push({ row: rowIndex, span, label: `${row.isLeader ? '\u{1F3C6} ' : ''}${row.name}`, bold: Boolean(row.highlight), background: baseBg });
 			}
 
 			cols.forEach((_col, c) => {
@@ -133,6 +126,23 @@ export function setupScoreboard(scene: Scene, mesh: AbstractMesh, initial: Score
 
 		background.addControl(g);
 		grid = g;
+		blocks.forEach((block, i) => {
+			const box = cellBackground(block.background);
+			const label = cell(block.label, { align: Control.HORIZONTAL_ALIGNMENT_LEFT, bold: block.bold });
+			label.paddingLeft = '12px';
+			for (const control of [box, label]) {
+				control.width = `${NAME_WIDTH}px`;
+				control.height = `${ROW_HEIGHT * block.span}px`;
+				control.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_CENTER;
+				control.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+				control.top = `${GRID_TOP + ROW_HEIGHT * block.row}px`;
+				control.left = `${(NAME_WIDTH - GRID_WIDTH) / 2}px`;
+				control.name = `scoreboard-name-${i}`;
+			}
+			overlay.push(box, label);
+			background.addControl(box);
+			background.addControl(label);
+		});
 	}
 
 	render(initial);

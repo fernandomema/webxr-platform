@@ -70,7 +70,7 @@ test('an ambientCG material becomes one variant per size whose maps are unpacked
 	try {
 		const detail = await createShepSource().detail('ambientcg:Bricks097');
 		assert.deepEqual(detail.variants.map((variant) => variant.id), ['1k', '2k']);
-		assert.deepEqual(detail.variants[0].files.map((file) => file.role), ['albedo', 'normal', 'roughness', 'ao', 'metallic']);
+		assert.deepEqual(detail.variants[0].files.map((file) => file.role), ['albedo', 'normal', 'roughness', 'ao', 'metallic', 'height']);
 		assert.ok(detail.variants[0].files.every((file) => file.url.startsWith('shepzip:')));
 		assert.equal(detail.license.name, 'CC0');
 		assert.equal(detail.ref, 'shep:ambientcg:Bricks097');
@@ -78,7 +78,7 @@ test('an ambientCG material becomes one variant per size whose maps are unpacked
 });
 
 test('opening a map takes it out of the ZIP, once for all the maps of that ZIP', async () => {
-	const files = { 'Bricks097_1K-JPG_Color.jpg': [1, 2, 3], 'Bricks097_1K-JPG_NormalGL.jpg': [4, 5], 'Bricks097_1K-JPG_NormalDX.jpg': [9], 'Bricks097_1K-JPG_Roughness.jpg': [6] };
+	const files = { 'Bricks097_1K-JPG_Color.jpg': [1, 2, 3], 'Bricks097_1K-JPG_NormalGL.jpg': [4, 5], 'Bricks097_1K-JPG_NormalDX.jpg': [9], 'Bricks097_1K-JPG_Roughness.jpg': [6], 'Bricks097_1K-JPG_Displacement.jpg': [7, 8] };
 	const zip = await writeZip(Object.entries(files).map(([path, data]) => ({ path, data: new Uint8Array(data) })));
 	const net = network({ zip });
 	try {
@@ -88,6 +88,7 @@ test('opening a map takes it out of the ZIP, once for all the maps of that ZIP',
 		assert.deepEqual([...(await open('albedo')).bytes], [1, 2, 3]);
 		assert.deepEqual([...(await open('normal')).bytes], [4, 5], 'the OpenGL normal, not the DirectX one');
 		assert.deepEqual([...(await open('roughness')).bytes], [6]);
+		assert.deepEqual([...(await open('height')).bytes], [7, 8]);
 		await assert.rejects(open('ao'), (error) => error.status === 404, 'a map the archive does not have');
 		assert.equal(net.calls.filter((call) => call.url.includes('ambientcg.com/get')).length, 1, 'the archive is downloaded once');
 	} finally { net.restore(); }

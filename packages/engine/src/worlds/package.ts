@@ -61,7 +61,7 @@ function validateAssetRefs(scene: SlotTree): void {
 			}
 			if (component?.type === 'material') {
 				// A map is an asset, or a picture at any https address.
-				for (const key of ['albedo', 'normal', 'arm']) {
+				for (const key of ['albedo', 'normal', 'arm', 'height']) {
 					const source = (component as Record<string, unknown>)[key];
 					if (source !== undefined && !isValidMaterialMap(source)) throw new Error('Invalid material map');
 				}

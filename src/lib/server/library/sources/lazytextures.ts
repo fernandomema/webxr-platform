@@ -20,7 +20,7 @@ const ID_SEPARATOR = '~';
 
 const MAP_ROLES: Record<string, FileRole> = {
 	color: 'albedo', diffuse: 'albedo', albedo: 'albedo', basecolor: 'albedo', normal: 'normal', normalgl: 'normal', roughness: 'roughness', ao: 'ao', ambientocclusion: 'ao',
-	metalness: 'metallic', metallic: 'metallic', opacity: 'opacity', emission: 'emissive', emissive: 'emissive', arm: 'arm'
+	metalness: 'metallic', metallic: 'metallic', opacity: 'opacity', emission: 'emissive', emissive: 'emissive', arm: 'arm', displacement: 'height', height: 'height'
 };
 const mapRole = (type: string): FileRole | null => MAP_ROLES[type.toLowerCase().replace(/[^a-z]/g, '')] ?? null;
 

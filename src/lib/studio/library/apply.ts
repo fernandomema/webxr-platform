@@ -36,6 +36,9 @@ export function materialFields(material: Material): Record<string, unknown> {
 		albedo: material.albedo ? assetSource(material.albedo) : undefined,
 		normal: material.normal ? assetSource(material.normal) : undefined,
 		arm: material.arm ? assetSource(material.arm) : undefined,
+		height: material.height ? assetSource(material.height) : undefined,
+		// A height map would otherwise show nothing until the depth is set.
+		parallax: material.height ? 0.03 : undefined,
 		mapping: 'world',
 		size: material.size,
 		label: material.name

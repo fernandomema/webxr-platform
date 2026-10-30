@@ -2,14 +2,15 @@
  * The pure rules for taking a texture from Poly Haven: which of its files stands for each map and which addresses may be
  * downloaded. Kept apart from the code that talks to the network so they can be tested.
  */
-export const TEXTURE_MAPS = ['albedo', 'normal', 'arm'] as const;
+export const TEXTURE_MAPS = ['albedo', 'normal', 'arm', 'height'] as const;
 export type TextureMap = (typeof TEXTURE_MAPS)[number];
 
 /** The names a texture's files go by in Poly Haven's file list, best first (the same choice the in-world material shop makes). */
 const FILE_NAMES: Record<TextureMap, string[]> = {
 	albedo: ['Diffuse', 'diff', 'col_1', 'col_01', 'col_2'],
 	normal: ['nor_gl'],
-	arm: ['arm']
+	arm: ['arm'],
+	height: ['Displacement']
 };
 /** 1k is plenty for a surface at arm's length and light on a headset; larger ones only when 1k is missing. */
 const RESOLUTIONS = ['1k', '2k'];
@@ -49,10 +50,10 @@ export function isTextureUrl(value: unknown): value is string {
 export const isTextureId = (value: unknown): value is string => typeof value === 'string' && /^[A-Za-z0-9_]{1,90}$/.test(value);
 
 /** What a map is called in the library contract's roles. */
-export const MAP_ROLES: Record<TextureMap, 'albedo' | 'normal' | 'arm'> = { albedo: 'albedo', normal: 'normal', arm: 'arm' };
+export const MAP_ROLES: Record<TextureMap, 'albedo' | 'normal' | 'arm' | 'height'> = { albedo: 'albedo', normal: 'normal', arm: 'arm', height: 'height' };
 
 /** One variant per size that has at least a colour or a normal map, with the maps it has as files. */
-export function textureVariants(files: unknown): { resolution: string; maps: { role: 'albedo' | 'normal' | 'arm'; file: TextureFile }[] }[] {
+export function textureVariants(files: unknown): { resolution: string; maps: { role: 'albedo' | 'normal' | 'arm' | 'height'; file: TextureFile }[] }[] {
 	const result = [];
 	for (const resolution of VARIANT_RESOLUTIONS) {
 		const maps = TEXTURE_MAPS.flatMap((map) => {
