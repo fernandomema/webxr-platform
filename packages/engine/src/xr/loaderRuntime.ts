@@ -1,4 +1,5 @@
-import type { LoaderComponent, Slot } from '../ecs/types.ts';
+import type { InstancerComponent, LoaderComponent, ParamValue, Slot } from '../ecs/types.ts';
+import { applyParams } from '../inventory/params.ts';
 import {
 	EXTERNAL_LIMITS, ExternalItemError, externalSourceKey, instantiateExternal, normalizeExternalSource, validateExternalTree,
 	type ExternalResolver, type ExternalSource
@@ -17,7 +18,11 @@ export interface LoaderHost {
 	load(ownerId: string, slots: Slot[]): boolean;
 	/** Takes down what `load` built for the owner. */
 	unload(ownerId: string): void;
+	/** An `instancer` finished building: the values its parameters took and the ids of the slots it made. */
+	built?(ownerId: string, info: { values: Record<string, ParamValue>; slotIds: string[] }): void;
 }
+
+type LoaderLike = LoaderComponent | InstancerComponent;
 
 export type LoaderStatus =
 	| { state: 'idle' }
@@ -27,7 +32,7 @@ export type LoaderStatus =
 
 export interface LoaderBinding {
 	tick(): void;
-	sync(component: LoaderComponent): void;
+	sync(component: LoaderLike): void;
 	dispose(): void;
 	readonly status: LoaderStatus;
 }
@@ -35,14 +40,16 @@ export interface LoaderBinding {
 /** A source that could not be reached is tried again after this long; one that does not exist, or is not allowed, is not. */
 const RETRY_MS = 15_000;
 
-const sourceOf = (component: LoaderComponent): ExternalSource | null => normalizeExternalSource(component);
-const keyOf = (component: LoaderComponent): string => { const source = sourceOf(component); return source ? externalSourceKey(source) : ''; };
+const sourceOf = (component: LoaderLike): ExternalSource | null => normalizeExternalSource(component);
+const keyOf = (component: LoaderLike): string => { const source = sourceOf(component); return source ? externalSourceKey(source) : ''; };
+/** What makes the built object different: its source, and for an instancer the values it was given. */
+const versionOf = (component: LoaderLike): string => keyOf(component) + (component.type === 'instancer' ? JSON.stringify(component.values ?? {}) : '');
 
 /**
  * Keeps the object a `loader` names built under its slot while the slot is enabled. It is asked for when the slot is first on and
  * taken down when it goes off. A failure leaves the slot as it is, empty, with the reason in `status`: the world goes on without it.
  */
-export function setupLoader(ownerId: string, initial: LoaderComponent, host: LoaderHost, now: () => number = Date.now, onError: (ownerId: string, status: LoaderStatus) => void = (id, status) => console.warn(`[loader] ${id}`, status)): LoaderBinding {
+export function setupLoader(ownerId: string, initial: LoaderLike, host: LoaderHost, now: () => number = Date.now, onError: (ownerId: string, status: LoaderStatus) => void = (id, status) => console.warn(`[loader] ${id}`, status)): LoaderBinding {
 	let current = initial;
 	let status: LoaderStatus = { state: 'idle' };
 	let request: AbortController | null = null;
@@ -70,6 +77,7 @@ export function setupLoader(ownerId: string, initial: LoaderComponent, host: Loa
 		const above = host.ancestors();
 		if (above.includes(key)) return fail('cycle', 'The object would contain itself', false);
 		if (above.length >= EXTERNAL_LIMITS.maxDepth) return fail('too-deep', `Objects may be nested ${EXTERNAL_LIMITS.maxDepth} deep at most`, false);
+		const version = versionOf(current);
 		const mine = new AbortController();
 		request = mine;
 		status = { state: 'loading' };
@@ -78,15 +86,19 @@ export function setupLoader(ownerId: string, initial: LoaderComponent, host: Loa
 				if (disposed || request !== mine) return;
 				request = null;
 				let slots: Slot[];
+				let values: Record<string, ParamValue> = {};
 				try {
-					slots = instantiateExternal(ownerId, validateExternalTree(item.slots), ownerId);
+					let tree = validateExternalTree(item.slots);
+					if (current.type === 'instancer') ({ tree, values } = applyParams(tree, current.values));
+					slots = instantiateExternal(ownerId, tree, ownerId);
 				} catch (error) {
 					return fail(error instanceof ExternalItemError ? error.code : 'invalid-item', error instanceof Error ? error.message : 'Invalid object', false);
 				}
-				if (!host.isEnabled() || keyOf(current) !== key) { status = { state: 'idle' }; return; }
+				if (!host.isEnabled() || versionOf(current) !== version) { status = { state: 'idle' }; return; }
 				if (!host.load(ownerId, slots)) return fail('budget', 'Too many objects are loaded already', false);
 				built = true;
 				status = { state: 'ready', slots: slots.length };
+				host.built?.(ownerId, { values, slotIds: slots.map((slot) => slot.id) });
 			},
 			(error) => {
 				if (disposed || request !== mine) return;
@@ -112,7 +124,7 @@ export function setupLoader(ownerId: string, initial: LoaderComponent, host: Loa
 			start(source);
 		},
 		sync(component) {
-			const changed = keyOf(component) !== keyOf(current);
+			const changed = versionOf(component) !== versionOf(current);
 			current = component;
 			if (changed) drop();
 		},

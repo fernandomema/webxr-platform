@@ -279,6 +279,7 @@ export const EXPERIMENTS: readonly Experiment[] = [
 	{
 		id: 'slowFarScripts',
 		label: 'Slow far scripts',
+		environments: ['dev', 'prod'],
 		description: 'Scripts on things more than 12 m away run once every 4 of their turns, with the time they missed. Far games may react late.',
 		apply: (on, { scripts }) => {
 			scripts.farScripts = on ? { distance: 12, divisor: 4 } : null;
@@ -287,6 +288,7 @@ export const EXPERIMENTS: readonly Experiment[] = [
 	{
 		id: 'mirrorHalfRate',
 		label: 'Mirrors at half rate',
+		environments: ['dev', 'prod'],
 		description: 'Mirrors draw their reflection every second frame and keep the last one in between. The reflection may lag a little.',
 		apply() {
 			// Read every frame by the mirror itself (specialSurfaces.ts).
@@ -295,6 +297,7 @@ export const EXPERIMENTS: readonly Experiment[] = [
 	{
 		id: 'fewerLights',
 		label: 'Fewer lights per material',
+		environments: ['dev', 'prod'],
 		description: 'Each surface is lit by at most 2 lights instead of 4: cheaper shaders. Places with many lamps may look darker.',
 		apply(on, { scene }) {
 			stopLightWatch?.();
@@ -320,6 +323,7 @@ export const EXPERIMENTS: readonly Experiment[] = [
 	{
 		id: 'avatarHalfRate',
 		label: 'Avatar body at half rate',
+		environments: ['dev', 'prod'],
 		description: 'Poses the body and legs every second frame while the head, arms and fingers keep tracking the controllers every frame, so the hands stay glued to them. The gait looks a little less fluid.',
 		apply() {
 			// Read every frame by the avatar system (avatarSystem.ts).
@@ -328,6 +332,7 @@ export const EXPERIMENTS: readonly Experiment[] = [
 	{
 		id: 'dashGuiHalfRate',
 		label: 'Personal menu at half rate',
+		environments: ['dev', 'prod'],
 		description: 'The personal menu repaints every second frame instead of every one. Its animations and typing look half as smooth; everything else is untouched.',
 		apply() {
 			// Read every frame by the GUI upload pass (guiUploads.ts).
@@ -342,6 +347,7 @@ export const EXPERIMENTS: readonly Experiment[] = [
 	{
 		id: 'freezeStatics',
 		label: 'Freeze static meshes',
+		environments: ['dev', 'prod'],
 		description: 'Meshes that have not moved for a moment stop recomputing their transforms. The moment a script, a grab or physics writes to one (a ball leaving its rest spot) it is let go again, so nothing can get stuck; a mesh parented to something that starts moving later would, so far, stay behind.',
 		apply: applyFreezeStatics
 	},

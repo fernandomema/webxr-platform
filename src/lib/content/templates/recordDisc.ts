@@ -233,3 +233,31 @@ export function paintDisc(slots: Slot[], id: string): Slot[] {
 		return slot;
 	});
 }
+
+/** The parameters of a disc built to be instanced (see `buildParametricDisc`). */
+export const DISC_PARAMS = [
+	{ name: 'title', label: 'Title', kind: 'text', default: 'Untitled' },
+	{ name: 'author', label: 'Author', kind: 'text', default: 'Unknown' },
+	{ name: 'color', label: 'Label colour', kind: 'color', default: '#6366f1' },
+	{ name: 'cover', label: 'Cover picture', kind: 'url', default: '' },
+	{ name: 'audio', label: 'Audio', kind: 'url', default: '' }
+] as const;
+
+/**
+ * A disc that an `instancer` fills in: title, author, label colour, cover picture and audio are parameters bound to every field
+ * that shows them (the `recordDisc` component, the label text, the colours of the rim and label, the picture, the player's source).
+ * It always has the picture label, so a disc without a cover shows a plain label and its text on the strip.
+ */
+export function buildParametricDisc(id: string, placement: DiscPlacement = {}): Slot[] {
+	const slots = buildDisc({ id, title: 'Untitled', author: 'Unknown', labelColor: '#6366f1', labelImage: 'about:blank', source: { kind: 'url', url: '' } }, placement);
+	const bind = (param: string, slot: string, component: string, field: string) => ({ param, slot: slot === '' ? id : `${id}-${slot}`, component, field });
+	const bindings = [
+		bind('title', '', 'recordDisc', 'title'), bind('title', 'label-text', 'textDisplay', 'title'),
+		bind('author', '', 'recordDisc', 'author'), bind('author', 'label-text', 'textDisplay', 'lines.0'),
+		bind('color', '', 'recordDisc', 'labelColor'), bind('color', 'rim', 'meshRenderer', 'color'), bind('color', 'label', 'meshRenderer', 'color'),
+		bind('color', 'label-text', 'meshRenderer', 'color'), bind('color', 'label-text', 'textDisplay', 'color'),
+		bind('cover', '', 'recordDisc', 'labelImage'), bind('cover', 'label-picture', 'uiElement', 'src'),
+		bind('audio', '', 'audioPlayer', 'source.url')
+	];
+	return slots.map((slot) => (slot.id === id ? { ...slot, components: [...slot.components, { type: 'params' as const, params: DISC_PARAMS.map((p) => ({ ...p })), bindings }] } : slot));
+}

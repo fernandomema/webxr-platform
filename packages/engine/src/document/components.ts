@@ -133,6 +133,32 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		create: () => ({ type: 'loader', adapter: 'builtin', id: '' })
 	},
 	{
+		type: 'instancer',
+		label: 'Object instancer',
+		group: 'World',
+		description: 'Like the object loader, but for a parametric object: it is built with the values set here in the fields the object\u2019s parameters bind (a record\u2019s cover, title and audio, say). Changing a value builds it again. The slot\u2019s code block gets onInstance when it is ready.',
+		glyph: '\u21f6',
+		fields: [
+			{ key: 'adapter', label: 'From', kind: 'enum', options: [{ value: 'builtin', label: 'Starter kit' }, { value: 'marketplace', label: 'Marketplace' }, { value: 'cloud', label: 'Public cloud object' }, { value: 'worldStorage', label: 'World storage' }] },
+			{ key: 'id', label: 'Object id', kind: 'text', optional: true, help: 'The object\u2019s id in that source.' },
+			{ key: 'key', label: 'Saved as', kind: 'text', optional: true, when: { key: 'adapter', is: 'worldStorage' }, help: 'The name a script saved the object under.' },
+			{ key: 'values', label: 'Values', kind: 'json', optional: true, help: 'One entry per parameter of the object, by name: {"title": "Song", "cover": "https://\u2026"}. A missing or mistyped one uses the parameter\u2019s default.' }
+		],
+		create: () => ({ type: 'instancer', adapter: 'builtin', id: '', values: {} })
+	},
+	{
+		type: 'params',
+		label: 'Parameters',
+		group: 'World',
+		description: 'Makes an object parametric. Put it on the object\u2019s root: it lists the parameters (name, kind, default) and which component field each one fills. An instancer gives the values.',
+		glyph: '\u2699',
+		fields: [
+			{ key: 'params', label: 'Parameters', kind: 'json', help: '[{"name": "title", "kind": "text", "default": "Untitled"}]. Kinds: text, url, number, color, bool.' },
+			{ key: 'bindings', label: 'Bindings', kind: 'json', help: '[{"param": "title", "slot": "disc", "component": "recordDisc", "field": "title"}]. The slot is its id inside the object.' }
+		],
+		create: () => ({ type: 'params', params: [], bindings: [] })
+	},
+	{
 		type: 'worldSettings',
 		label: 'World settings',
 		group: 'World',
@@ -358,8 +384,26 @@ export const COMPONENT_SCHEMAS: ComponentSchema[] = [
 		description: 'Shows what is in front of this surface (along its +Z) live. Held in a hand, the trigger takes a photo or records a video.',
 		glyph: '◉',
 		advanced: true,
-		fields: [{ key: 'resolution', label: 'Starting quality (px)', kind: 'number', min: 64, max: 1280, step: 64, optional: true, default: 960 }],
-		create: () => ({ type: 'camera', resolution: 960 })
+		fields: [
+			{ key: 'resolution', label: 'Starting quality (px)', kind: 'number', min: 64, max: 1280, step: 64, optional: true, default: 960 },
+			{ key: 'output', label: 'Photo output', kind: 'enum', options: [{ value: 'download', label: 'Download' }, { value: 'instax', label: 'Instax print' }], optional: true, default: 'instax', help: 'Instax: the photo appears in the world as an instant print, built from the starter kit\u2019s Instax photo. The holder can change it.' }
+		],
+		create: () => ({ type: 'camera', resolution: 960, output: 'instax' })
+	},
+	{
+		type: 'stereoImage',
+		label: 'Stereo image',
+		group: 'Render',
+		description: 'A picture on this surface, flat or in 3D: each eye of a headset sees its own half of a stereo picture. Put it on a plane shaped like one eye\u2019s view; the picture is not stretched. Always lit the same.',
+		glyph: '\u25a3',
+		fields: [
+			{ key: 'source', label: 'Picture', kind: 'asset', assetType: 'image' },
+			{ key: 'layout', label: 'Layout', kind: 'enum', options: [{ value: 'mono', label: 'Flat' }, { value: 'sbs', label: 'Side by side (left, right)' }, { value: 'tb', label: 'Top and bottom (left, right)' }, { value: 'depth', label: 'Spatial (picture | depth map)' }], optional: true, default: 'mono' },
+			{ key: 'swapEyes', label: 'Swap eyes', kind: 'bool', optional: true, default: false },
+			{ key: 'relief', label: 'Relief (spatial)', kind: 'number', min: 0, max: 0.5, step: 0.01, optional: true, default: 0.35, when: { key: 'layout', is: 'depth' } },
+			{ key: 'inset', label: 'Margin (spatial)', kind: 'number', min: 0, max: 0.4, step: 0.01, optional: true, default: 0, when: { key: 'layout', is: 'depth' }, help: 'The part of each side of the picture that is margin: not shown, but there to be seen when the surface is turned.' }
+		],
+		create: () => ({ type: 'stereoImage', source: { kind: 'url', url: '' }, layout: 'mono' })
 	},
 	{
 		type: 'collider',

@@ -143,6 +143,8 @@ export interface CodeBlockHandlers {
 	onPlayerReady?(player: { id: string; name: string }): void | Promise<void>;
 	/** A guest left the world (closed the tab, lost the connection, or was dropped). Runs once, on the host (or solo player). */
 	onPlayerLeft?(player: { id: string; name: string }): void;
+	/** An `instancer` on this slot finished building its object: the values its parameters took and the ids of the slots it made. Runs once, on the host (or solo player). */
+	onInstance?(instance: { values: Record<string, string | number | boolean>; slotIds: string[] }): void;
 	onGrab?(): void;
 	onRelease?(): void;
 	/** Fired by PressableButtonSystem once a `pressableButton` component's depression crosses its threshold — see interaction/pressableButtonSystem.ts. Unrelated to grabbing. */
@@ -925,6 +927,7 @@ export function createCodeBlockHandlers(slotId: string, node: TransformNode, cod
 	return {
 		onPlayerReady: safe('onPlayerReady'),
 		onPlayerLeft: safe('onPlayerLeft'),
+		onInstance: safe('onInstance'),
 		onGrab: safe('onGrab'),
 		onRelease: safe('onRelease'),
 		onPress: safe('onPress'),

@@ -59,6 +59,14 @@ function validateAssetRefs(scene: SlotTree): void {
 				if (!valid) throw new Error('Invalid audio source');
 				continue;
 			}
+			if (component?.type === 'stereoImage') {
+				const c = component as unknown as { layout?: unknown; swapEyes?: unknown; relief?: unknown; inset?: unknown };
+				const source = component.source as { kind?: unknown; url?: unknown; assetId?: unknown } | null | undefined;
+				// A print a camera made travels as the address itself, so an image address may be long.
+				const valid = !!source && ((source.kind === 'asset' && isAssetId(source.assetId)) || (source.kind === 'url' && typeof source.url === 'string' && source.url.length <= (source.url.startsWith('data:image/') ? 300_000 : 2048)));
+				if (!valid || (c.layout !== undefined && c.layout !== 'mono' && c.layout !== 'sbs' && c.layout !== 'tb' && c.layout !== 'depth') || (c.swapEyes !== undefined && typeof c.swapEyes !== 'boolean') || (c.relief !== undefined && !(typeof c.relief === 'number' && c.relief >= 0 && c.relief <= 0.5)) || (c.inset !== undefined && !(typeof c.inset === 'number' && c.inset >= 0 && c.inset <= 0.4))) throw new Error('Invalid stereo image');
+				continue;
+			}
 			if (component?.type === 'material') {
 				// A map is an asset, or a picture at any https address.
 				for (const key of ['albedo', 'normal', 'arm', 'height']) {
@@ -94,6 +102,16 @@ function validateAssetRefs(scene: SlotTree): void {
 				const c = component as unknown as { adapter?: unknown; id?: unknown; key?: unknown };
 				const text = (value: unknown) => value === undefined || (typeof value === 'string' && value.length <= 200);
 				if (!(EXTERNAL_ADAPTERS as readonly unknown[]).includes(c.adapter) || !text(c.id) || !text(c.key)) throw new Error('Invalid loader source');
+				continue;
+			}
+			if (component?.type === 'instancer') {
+				const c = component as unknown as { adapter?: unknown; id?: unknown; key?: unknown; values?: unknown };
+				const text = (value: unknown) => value === undefined || (typeof value === 'string' && value.length <= 200);
+				if (!(EXTERNAL_ADAPTERS as readonly unknown[]).includes(c.adapter) || !text(c.id) || !text(c.key)) throw new Error('Invalid instancer source');
+				if (c.values !== undefined) {
+					const entries = c.values && typeof c.values === 'object' && !Array.isArray(c.values) ? Object.entries(c.values) : null;
+					if (!entries || entries.length > 64 || entries.some(([k, v]) => k.length > 40 || !(typeof v === 'boolean' || (typeof v === 'number' && Number.isFinite(v)) || (typeof v === 'string' && v.length <= (v.startsWith('data:image/') ? 300_000 : 4000))))) throw new Error('Invalid instancer values');
+				}
 				continue;
 			}
 			if (component?.type === 'worldSettings') {

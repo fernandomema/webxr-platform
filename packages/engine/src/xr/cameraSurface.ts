@@ -1,5 +1,7 @@
 import {
 	Color3,
+	DepthRenderer,
+	Matrix,
 	Quaternion,
 	RenderTargetTexture,
 	StandardMaterial,
@@ -12,6 +14,7 @@ import {
 import type { CameraComponent } from '../ecs/types.ts';
 import type { RadialItemDef } from './codeBlockRuntime.ts';
 import { mirrorRenderHooks } from './mirrorHooks.ts';
+import { encodeDepth, hasDepth } from './depthPhoto.ts';
 import { createCameraUi, loadSettings, qualityFor, saveSettings, QUALITY_LONG_SIDE, QUALITY_LABEL, type CameraSettings } from './cameraSettingsUi.ts';
 
 /** Further than this from the viewer, the screen is too small to read: it draws nothing and costs nothing. */
@@ -24,7 +27,31 @@ const FIELD_OF_VIEW = 0.9;
 /** How long the screen flashes white after a photo. */
 const FLASH_MS = 160;
 /** The distance between the two eyes of a 3D photo. */
-const EYE_SEPARATION = 0.064;
+const EYE_SEPARATION = 0.045;
+/**
+ * How far away something has to be to sit on the screen (no difference between the eyes). Nearer comes out of it, farther goes behind.
+ * Both eyes looking straight ahead, with nothing to bring their views together, make everything come out of the screen, and what is
+ * near enough to touch is far too different between them to look at.
+ */
+const CONVERGENCE = 1.5;
+/** How far a spatial photo's depth reaches (the camera's far plane while the depth is drawn); farther counts as nothing. */
+const DEPTH_REACH = 12;
+/** A spatial photo is taken wider than what it shows, by this much of the shown width on each side: what lies at its edge is there to be seen when it is turned. */
+const SPATIAL_MARGIN = 0.25;
+/** The side of a spatial photo's picture and of its depth map, margins included. */
+const SPATIAL_SIDE = 640;
+
+/** What a camera can ask of the world around it. */
+export interface CameraHost {
+	/**
+	 * An instant print: the photo as a `data:image/jpeg` URL small enough to travel with the world. Each eye is cropped square;
+	 * `sbs` holds a 3D photo's two (left, then right), `depth` a spatial photo's picture and then its depth map (taken wider than it shows: `inset` is the part of each side that is margin), `mono` is the one picture.
+	 */
+	onPrint?(photo: string, layout: 'mono' | 'sbs' | 'depth', inset?: number): void;
+}
+
+/** The side of the square print, in pixels. */
+const PRINT_SIDE = 512;
 
 export interface CameraBinding {
 	dispose: () => void;
@@ -62,6 +89,37 @@ function saveBlob(blob: Blob, name: string): void {
 	window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
+/** Whether a picture is one flat colour (a target that nothing was drawn to). Looks at a spread of pixels, not all. */
+function isBlank(picture: ImageData): boolean {
+	const { data, width, height } = picture;
+	const first = [data[0], data[1], data[2]];
+	for (let i = 0; i < 400; i++) {
+		const at = (Math.floor((i * 2654435761) % (width * height)) * 4) % data.length;
+		if (Math.abs(data[at] - first[0]) > 3 || Math.abs(data[at + 1] - first[1]) > 3 || Math.abs(data[at + 2] - first[2]) > 3) return false;
+	}
+	return true;
+}
+
+/** The most characters a print's address may have (see PARAM_LIMITS.maxImage): a longer one is thrown away whole, and the print shows nothing. */
+const MAX_PRINT_CHARS = 280_000;
+
+/** The canvas as a JPEG address no longer than `MAX_PRINT_CHARS`: less quality first, then fewer pixels. */
+function jpegWithin(source: HTMLCanvasElement): string {
+	let canvas = source;
+	for (let shrink = 0; shrink < 6; shrink++) {
+		for (const quality of [0.8, 0.7, 0.6, 0.5]) {
+			const url = canvas.toDataURL('image/jpeg', quality);
+			if (url.length <= MAX_PRINT_CHARS) return url;
+		}
+		const smaller = document.createElement('canvas');
+		smaller.width = Math.max(2, Math.floor(canvas.width * 0.8));
+		smaller.height = Math.max(1, Math.floor(canvas.height * 0.8));
+		smaller.getContext('2d')?.drawImage(canvas, 0, 0, smaller.width, smaller.height);
+		canvas = smaller;
+	}
+	return canvas.toDataURL('image/jpeg', 0.4);
+}
+
 const stamp = () => new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
 
 /**
@@ -70,8 +128,8 @@ const stamp = () => new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
  * it switches between the two. Pictures are saved on the device of the one holding the camera. Whatever the screen is
  * part of (the camera's body) is left out of the picture, so it does not look at itself.
  */
-export function setupCameraSurface(scene: Scene, mesh: AbstractMesh, component: CameraComponent): CameraBinding {
-	const settings: CameraSettings = loadSettings(qualityFor(component.resolution ?? 960));
+export function setupCameraSurface(scene: Scene, mesh: AbstractMesh, component: CameraComponent, host: CameraHost = {}): CameraBinding {
+	const settings: CameraSettings = loadSettings(qualityFor(component.resolution ?? 960), component.output ?? 'instax');
 	// The shape of the screen as it stands in the world, whatever its parent's scale.
 	mesh.computeWorldMatrix(true);
 	const worldScale = new Vector3();
@@ -81,6 +139,21 @@ export function setupCameraSurface(scene: Scene, mesh: AbstractMesh, component: 
 
 	const camera = new UniversalCamera(`${mesh.name}-camera`, Vector3.Zero(), scene);
 	camera.fov = FIELD_OF_VIEW;
+	// The picture's own shape. The camera would take it from whatever the engine is drawing to when the target is rendered
+	// (the headset's framebuffer in a session), which squashes the picture; so the projection is fixed to the target's shape.
+	// An eye moved sideways by `eyeOffset` gets its view slid back the same way, so what lies at CONVERGENCE stays in the same place of the
+	// picture for both eyes (an off-axis projection: the eyes look straight ahead, but their pictures are brought together).
+	const fitProjection = (shape: { width: number; height: number }, eyeOffset = 0, zoom = 1) => {
+		const projection = Matrix.Zero();
+		const engine = scene.getEngine();
+		Matrix.PerspectiveFovLHToRef(2 * Math.atan(Math.tan(FIELD_OF_VIEW / 2) * zoom), shape.width / shape.height, 0.15, 200, projection, true, engine.isNDCHalfZRange, undefined, engine.useReverseDepthBuffer);
+		if (eyeOffset !== 0) {
+			const values = projection.asArray().slice();
+			values[8] += (values[0] * eyeOffset) / CONVERGENCE;
+			Matrix.FromArrayToRef(values, 0, projection);
+		}
+		camera.freezeProjectionMatrix(projection);
+	};
 	// Nothing nearer than this is drawn: the camera's own lens and body, and the fingers of whoever holds it.
 	camera.minZ = 0.15;
 	camera.maxZ = 200;
@@ -97,6 +170,7 @@ export function setupCameraSurface(scene: Scene, mesh: AbstractMesh, component: 
 		return texture;
 	};
 	const preview = makeTarget(size.width, size.height, `${mesh.name}-preview`);
+	fitProjection(size);
 
 	const material = new StandardMaterial(`${mesh.name}-camera-material`, scene);
 	material.disableLighting = true;
@@ -135,8 +209,10 @@ export function setupCameraSurface(scene: Scene, mesh: AbstractMesh, component: 
 		if (eyeOffset !== 0) camera.position.addInPlace(Vector3.Right().applyRotationQuaternion(rotation).scale(eyeOffset));
 	};
 
-	const draw = (target: RenderTargetTexture, eyeOffset = 0) => {
+	/** `zoom` above 1 sees that much more of the scene round the same centre (a wider view); `shape` is the target's. */
+	const draw = (target: RenderTargetTexture, eyeOffset = 0, zoom = 1, shape: { width: number; height: number } = size) => {
 		place(eyeOffset);
+		fitProjection(shape, eyeOffset, zoom);
 		relistIfNeeded(target);
 		camera.outputRenderTarget = target;
 		scene.incrementRenderId();
@@ -163,6 +239,95 @@ export function setupCameraSurface(scene: Scene, mesh: AbstractMesh, component: 
 		return new ImageData(flipRows(raw, width, height) as Uint8ClampedArray<ArrayBuffer>, width, height);
 	};
 
+	let disposed = false;
+	let depthRenderer: DepthRenderer | null = null;
+	/** Draws the photo's depth from where the screen is (inside the frame, with the pictures); `readDepth` reads it afterwards. */
+	const drawDepth = (shape: { width: number; height: number }, zoom: number): void => {
+		// Made when a spatial photo is first taken, and drawn by hand only: scene.enableDepthRenderer would draw it every frame.
+		depthRenderer ??= new DepthRenderer(scene, undefined, camera);
+		const map = depthRenderer.getDepthMap();
+		const at = scene.customRenderTargets.indexOf(map);
+		if (at >= 0) scene.customRenderTargets.splice(at, 1);
+		if (map.getSize().width !== shape.width || map.getSize().height !== shape.height) map.resize(shape);
+		place(0);
+		fitProjection(shape, 0, zoom);
+		relistIfNeeded(map);
+		camera.maxZ = DEPTH_REACH;
+		scene.incrementRenderId();
+		mirrorRenderHooks.before.notifyObservers();
+		try {
+			map.render();
+		} finally {
+			mirrorRenderHooks.after.notifyObservers();
+			camera.maxZ = 200;
+		}
+	};
+	/** How many frames a depth map is given to show something: its shader compiles the first time it is used, and draws nothing until it has. */
+	const DEPTH_ATTEMPTS = 180;
+	const nextFrame = () => new Promise<void>((resolve) => { scene.onBeforeRenderObservable.addOnce(() => resolve()); });
+	/** The photo's depth as a grey picture (see `encodeDepth`), drawn again each frame until the map holds something; null if it never does. */
+	const readDepth = async (shape: { width: number; height: number }, zoom: number): Promise<ImageData | null> => {
+		for (let attempt = 0; attempt < DEPTH_ATTEMPTS && !disposed; attempt++) {
+			await nextFrame();
+			drawDepth(shape, zoom);
+			const pixels = (await depthRenderer!.getDepthMap().readPixels(0, 0, null, true, false)) as unknown as ArrayLike<number> | null;
+			if (!pixels || pixels.length < shape.width * shape.height * 4 || !hasDepth(pixels, shape.width, shape.height)) continue;
+			return new ImageData(encodeDepth(pixels, shape.width, shape.height) as Uint8ClampedArray<ArrayBuffer>, shape.width, shape.height);
+		}
+		console.warn('[camera] the depth of the photo could not be read; it is printed flat');
+		return null;
+	};
+
+	/** How many frames a spatial photo's picture is given to show something. */
+	const COLOR_ATTEMPTS = 90;
+	/** The middle square of a picture, scaled to `side`: what a print shows of the screen's picture. */
+	const middleSquare = (picture: ImageData, side: number): HTMLCanvasElement => {
+		const whole = document.createElement('canvas');
+		whole.width = picture.width;
+		whole.height = picture.height;
+		whole.getContext('2d')?.putImageData(picture, 0, 0);
+		const square = Math.min(picture.width, picture.height);
+		const out = document.createElement('canvas');
+		out.width = out.height = side;
+		out.getContext('2d')?.drawImage(whole, (picture.width - square) / 2, (picture.height - square) / 2, square, square, 0, 0, side, side);
+		return out;
+	};
+	/**
+	 * A spatial photo: the picture and its depth, both taken wider than they show (see SPATIAL_MARGIN) and cut square, as one JPEG with
+	 * the picture on the left. They are drawn with the screen's own picture target, which is known to draw, only with a wider view: the
+	 * middle square of it then holds the print and the margin round it. Without a depth it is printed as a plain picture.
+	 */
+	const takeSpatialPrint = async () => {
+		const zoom = 1 + 2 * SPATIAL_MARGIN;
+		// Drawn again each frame until it holds a picture, and the last one is kept if it never does.
+		let picture: ImageData | null = null;
+		for (let attempt = 0; attempt < COLOR_ATTEMPTS && !disposed; attempt++) {
+			if (attempt > 0) await nextFrame();
+			draw(preview, 0, zoom);
+			picture = await readPicture(preview, size.width, size.height);
+			if (picture && !isBlank(picture)) break;
+		}
+		if (!picture) return;
+		const depth = await readDepth(size, zoom);
+		const color = middleSquare(picture, SPATIAL_SIDE);
+		if (depth) {
+			const both = document.createElement('canvas');
+			both.width = SPATIAL_SIDE * 2;
+			both.height = SPATIAL_SIDE;
+			const context = both.getContext('2d');
+			if (!context) return;
+			context.drawImage(color, 0, 0);
+			context.drawImage(middleSquare(depth, SPATIAL_SIDE), SPATIAL_SIDE, 0);
+			host.onPrint?.(jpegWithin(both), 'depth', SPATIAL_MARGIN / (1 + 2 * SPATIAL_MARGIN));
+			return;
+		}
+		const shown = Math.round(SPATIAL_SIDE / zoom);
+		const flat = document.createElement('canvas');
+		flat.width = flat.height = PRINT_SIDE;
+		flat.getContext('2d')?.drawImage(color, (SPATIAL_SIDE - shown) / 2, (SPATIAL_SIDE - shown) / 2, shown, shown, 0, 0, PRINT_SIDE, PRINT_SIDE);
+		host.onPrint?.(jpegWithin(flat), 'mono');
+	};
+
 	let photoRequested = false;
 
 	/**
@@ -171,6 +336,7 @@ export function setupCameraSurface(scene: Scene, mesh: AbstractMesh, component: 
 	 */
 	const takePhoto = async () => {
 		flashUntil = performance.now() + FLASH_MS;
+		if (settings.format === 'spatial' && settings.output === 'instax' && host.onPrint) return takeSpatialPrint();
 		const stereo = settings.format === '3d';
 		const eyes = stereo ? [-EYE_SEPARATION / 2, EYE_SEPARATION / 2] : [0];
 		const { width, height } = size;
@@ -181,11 +347,23 @@ export function setupCameraSurface(scene: Scene, mesh: AbstractMesh, component: 
 		const pictures = await Promise.all(reads);
 		if (pictures.some((picture) => !picture)) return;
 		const canvas = document.createElement('canvas');
-		canvas.width = width * eyes.length;
+		canvas.width = width * pictures.length;
 		canvas.height = height;
 		const context = canvas.getContext('2d');
 		if (!context) return;
 		pictures.forEach((picture, index) => context.putImageData(picture!, index * width, 0));
+		if (settings.output === 'instax' && host.onPrint) {
+			// The square in the middle of each eye's picture: the shape the screen frames while printing.
+			const print = document.createElement('canvas');
+			print.width = PRINT_SIDE * pictures.length;
+			print.height = PRINT_SIDE;
+			const side = Math.min(width, height);
+			const printContext = print.getContext('2d');
+			if (!printContext) return;
+			pictures.forEach((_, index) => printContext.drawImage(canvas, index * width + (width - side) / 2, (height - side) / 2, side, side, index * PRINT_SIDE, 0, PRINT_SIDE, PRINT_SIDE));
+			host.onPrint(jpegWithin(print), stereo ? 'sbs' : 'mono');
+			return;
+		}
 		const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
 		if (blob) saveBlob(blob, `kithin-photo-${stamp()}${stereo ? '-3d-sbs' : ''}.png`);
 	};
@@ -273,6 +451,7 @@ export function setupCameraSurface(scene: Scene, mesh: AbstractMesh, component: 
 		if (settings.quality !== before) {
 			size = pictureSize(aspect, QUALITY_LONG_SIDE[settings.quality]);
 			preview.resize(size);
+			fitProjection(size);
 		}
 		saveSettings(settings);
 		ui.refresh();
@@ -288,6 +467,8 @@ export function setupCameraSurface(scene: Scene, mesh: AbstractMesh, component: 
 			stopVideo();
 			material.dispose();
 			preview.dispose();
+			disposed = true;
+			depthRenderer?.dispose();
 			camera.dispose();
 		},
 		onTrigger: () => true,
@@ -311,9 +492,14 @@ export function setupCameraSurface(scene: Scene, mesh: AbstractMesh, component: 
 				onSelect: () => change({ quality: settings.quality === 'low' ? 'medium' : settings.quality === 'medium' ? 'high' : 'low' })
 			},
 			{
-				label: settings.format === '2d' ? 'Photo: 2D' : 'Photo: 3D',
+				label: settings.output === 'instax' ? 'Output: Instax' : 'Output: Download',
+				isEnabled: () => !!host.onPrint,
+				onSelect: () => change({ output: settings.output === 'instax' ? 'download' : 'instax' })
+			},
+			{
+				label: settings.format === '2d' ? 'Photo: 2D' : settings.format === '3d' ? 'Photo: 3D' : 'Photo: Spatial',
 				isEnabled: () => true,
-				onSelect: () => change({ format: settings.format === '2d' ? '3d' : '2d' })
+				onSelect: () => change({ format: settings.format === '2d' ? '3d' : settings.format === '3d' ? 'spatial' : '2d' })
 			}
 		]
 	};

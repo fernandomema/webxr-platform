@@ -19,7 +19,7 @@ import {
 	type InstancedMesh
 } from '@babylonjs/core';
 import type { Component, MediaControlAction, Slot, SlotTree, UIEvent, Vec3, Quat } from '../ecs/types.ts';
-import { findComponent, isGrabbable } from '../ecs/types.ts';
+import { createSlot, findComponent, isGrabbable } from '../ecs/types.ts';
 import { isBuiltinMesh, normalizeMeshRef, type AssetId, type MeshRef } from '../assets/ref.ts';
 import { needsRebuild } from './slotRebuild.ts';
 import { roundedBoxForScale } from './roundedBox.ts';
@@ -28,6 +28,7 @@ import { batchMaterialUpdates, batchMeshDisposal } from './performance.ts';
 import type { BlobAssetLibrary } from './blobAssetLibrary.ts';
 import type { ModelInstance, ModelLease, ModelLibrary, ModelState } from './modelLibrary.ts';
 import { setupMirrorSurface } from './specialSurfaces.ts';
+import { setupStereoImageSurface } from './stereoImageSurface.ts';
 import { setupCameraSurface } from './cameraSurface.ts';
 import { setupAudioPlayerSurface, type MediaRuntimeBinding } from './mediaSurfaces.ts';
 import { setupHtmlView } from './htmlViewSurface.ts';
@@ -148,6 +149,7 @@ interface LiveSlot {
 		onUIEvent?: (event: UIEvent) => void;
 		onPlayerReady?: (player: { id: string; name: string }) => void | Promise<void>;
 		onPlayerLeft?: (player: { id: string; name: string }) => void;
+		onInstance?: (instance: { values: Record<string, string | number | boolean>; slotIds: string[] }) => void;
 		onEquip?: (event: HandEvent) => void;
 		onUnequip?: (event: HandEvent) => void;
 		onTrigger?: (event: TriggerEvent) => boolean | void;
@@ -441,7 +443,7 @@ export class SceneGraph {
 		const seen = new Set<string>([slotId]);
 		for (let at = this.live.get(slotId)?.slot.parentId ?? null; at && !seen.has(at); at = this.live.get(at)?.slot.parentId ?? null) {
 			seen.add(at);
-			const loader = this.live.get(at)?.slot.components.find((component) => component.type === 'loader');
+			const loader = this.live.get(at)?.slot.components.find((component) => component.type === 'loader' || component.type === 'instancer');
 			const source = loader ? normalizeExternalSource(loader) : null;
 			if (source) sources.push(externalSourceKey(source));
 		}
@@ -460,6 +462,22 @@ export class SceneGraph {
 			if (entry && !(entry.slot.parentId && mine.has(entry.slot.parentId))) this.removeSlot(id);
 		}
 		this.options.onSlotMutated?.(ownerId, 'structure');
+	}
+
+	/**
+	 * A camera's instant print: the starter kit's parametric Instax photo, built with the picture just taken, appears beside the
+	 * camera (below it, on the side of its screen). It is an ordinary spawn, so a guest's goes through the host like any other.
+	 */
+	private printInstax(camera: TransformNode, photo: string, layout: 'mono' | 'sbs' | 'depth', inset = 0): void {
+		camera.computeWorldMatrix(true);
+		const at = camera.getAbsolutePosition().add(camera.getDirection(Vector3.Backward()).scale(0.12)).add(new Vector3(0, -0.12, 0));
+		const turn = Quaternion.FromEulerAngles(0, Math.atan2(camera.getDirection(Vector3.Forward()).x, camera.getDirection(Vector3.Forward()).z), 0);
+		this.options.onSpawnRequest?.(createSlot({
+			name: 'Instax photo',
+			position: [at.x, at.y, at.z],
+			rotation: [turn.x, turn.y, turn.z, turn.w],
+			components: [{ type: 'instancer', adapter: 'builtin', id: 'instax-photo', values: { photo, layout, inset, caption: new Date().toISOString().slice(0, 10) } }]
+		}));
 	}
 
 	/** What a `loader` slot is doing now; null when the slot is not a loader. */
@@ -1069,9 +1087,14 @@ export class SceneGraph {
 			const mirror = findComponent(slot, 'mirror');
 			if (mirror) this.addRuntime(entry, { dispose: setupMirrorSurface(this.scene, node as AbstractMesh, mirror.resolution) });
 			const camera = findComponent(slot, 'camera');
-			if (camera) this.addRuntime(entry, setupCameraSurface(this.scene, node as AbstractMesh, camera));
+			if (camera) this.addRuntime(entry, setupCameraSurface(this.scene, node as AbstractMesh, camera, { onPrint: (photo, layout, inset) => this.printInstax(node, photo, layout, inset) }));
 			const audio = findComponent(slot, 'audioPlayer');
 			if (audio) entry.runtime = this.createMediaRuntime(slot, node as AbstractMesh, setupAudioPlayerSurface);
+			const stereoImage = findComponent(slot, 'stereoImage');
+			if (stereoImage) {
+				const binding = setupStereoImageSurface(this.scene, node as AbstractMesh, stereoImage, this.options.mediaAssets);
+				this.addRuntime(entry, { dispose: () => binding.dispose(), sync: (currentSlot) => { const next = findComponent(currentSlot, 'stereoImage'); if (next) binding.sync(next); } });
+			}
 			const htmlView = findComponent(slot, 'htmlView');
 			if (htmlView) {
 				const binding = setupHtmlView(this.scene, node as AbstractMesh, htmlView);
@@ -1168,9 +1191,10 @@ export class SceneGraph {
 			});
 			this.addRuntime(entry, { dispose: () => binding.dispose(), sync: (currentSlot) => { const next = findComponent(currentSlot, 'fragment'); if (next) binding.sync(next); }, tick: () => binding.tick() });
 		}
-		const loader = findComponent(slot, 'loader');
+		const loader = findComponent(slot, 'loader') ?? findComponent(slot, 'instancer');
 		if (loader) {
 			const binding = setupLoader(slot.id, loader, {
+				built: (ownerId, info) => this.live.get(ownerId)?.runtime?.onInstance?.(info),
 				isHost: () => this.options.isHost?.() ?? true,
 				isEnabled: () => node.isEnabled(),
 				ancestors: () => this.loaderAncestors(slot.id),
@@ -1179,7 +1203,7 @@ export class SceneGraph {
 				unload: (ownerId) => this.unloadExternalSlots(ownerId)
 			});
 			entry.loader = binding;
-			this.addRuntime(entry, { dispose: () => binding.dispose(), sync: (currentSlot) => { const next = findComponent(currentSlot, 'loader'); if (next) binding.sync(next); }, tick: () => binding.tick() });
+			this.addRuntime(entry, { dispose: () => binding.dispose(), sync: (currentSlot) => { const next = findComponent(currentSlot, 'loader') ?? findComponent(currentSlot, 'instancer'); if (next) binding.sync(next); }, tick: () => binding.tick() });
 		}
 		const worldSettings = findComponent(slot, 'worldSettings');
 		if (worldSettings) {
@@ -1497,7 +1521,7 @@ export class SceneGraph {
 		}
 		// What follows whether its slot is on (a map's fragment and baked light) is looked at every frame; a slot with a script is ticked above.
 		this.timed('#fragments', () => {
-			for (const type of ['fragment', 'lightVolume', 'loader'] as const) for (const entry of this.slotsWith(type)) if (!entry.slot.components.some((c) => c.type === 'codeBlock')) entry.runtime?.tick?.(dt);
+			for (const type of ['fragment', 'lightVolume', 'loader', 'instancer'] as const) for (const entry of this.slotsWith(type)) if (!entry.slot.components.some((c) => c.type === 'codeBlock')) entry.runtime?.tick?.(dt);
 		});
 		this.timed('#uiSync', () => this.flushUISync());
 		this.timed('#modelPriorities', () => this.updateModelPriorities(dt));

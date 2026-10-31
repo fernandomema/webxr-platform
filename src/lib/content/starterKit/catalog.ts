@@ -6,7 +6,8 @@
 import type { Component, Slot, SlotTree } from '@kithin/engine/ecs/types';
 import lobby from '../templates/lobby.json' with { type: 'json' };
 import recordPlayer from '../templates/recordPlayer.json' with { type: 'json' };
-import { buildDisc } from '../templates/recordDisc.ts';
+import { buildDisc, buildParametricDisc } from '../templates/recordDisc.ts';
+import { buildInstaxPhoto } from '../templates/instaxPhoto.ts';
 import { buildAtm } from '../templates/atm.ts';
 import { buildKithinLogo, KITHIN_LOGO_ID } from '../templates/kithinLogo.ts';
 import { buildJukebox, JUKEBOX_ID } from '../templates/jukebox.ts';
@@ -121,6 +122,14 @@ const ENTRIES: BuiltinEntry[] = [
 	{
 		id: 'record-disc', folderId: 'music', name: 'Record Disc',
 		build: () => buildDisc({ id: 'record-disc', title: 'Untitled', author: 'Unknown', labelColor: '#6366f1', source: { kind: 'url', url: '' } })
+	},
+	{
+		id: 'record-disc-parametric', folderId: 'music', name: 'Record Disc (parametric)',
+		build: () => buildParametricDisc('record-disc-parametric')
+	},
+	{
+		id: 'instax-photo', folderId: 'basics', name: 'Instax photo (parametric)',
+		build: () => buildInstaxPhoto('instax-photo')
 	},
 	{
 		id: 'disc-remembering-a-heartbeat', folderId: 'music', name: 'Disc: Remembering a Heartbeat',

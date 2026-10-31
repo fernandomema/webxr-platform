@@ -172,6 +172,29 @@ export interface CameraComponent {
 	type: 'camera';
 	/** Pixels on the long side of the preview (and of a video and a photo). */
 	resolution?: number;
+	/** What a photo becomes at first: an `instax` print that appears in the world (the default) or a `download`. The holder can change it. */
+	output?: 'download' | 'instax';
+}
+
+/** How a picture holds its eyes: `mono` one picture, `sbs` left eye then right eye side by side, `tb` left eye above right eye, `depth` a picture (left half) and its depth map (right half; white is near): a spatial photo, whose parts shift against each other as the viewer or the surface moves. */
+export type StereoImageLayout = 'mono' | 'sbs' | 'tb' | 'depth';
+
+/**
+ * A picture, flat or in 3D, on this slot's mesh (a plane, usually; the surface should have the shape of one eye's view, the picture
+ * is not stretched to anything else). Each eye of a headset sees its own half of a stereo picture; a flat screen shows the left one.
+ * Self-lit: it looks the same in any light.
+ */
+export interface StereoImageComponent {
+	type: 'stereoImage';
+	/** The picture: an address, or an image asset (local, cloud or shared). */
+	source: SourceRef;
+	layout?: StereoImageLayout;
+	/** The picture holds the right eye first. */
+	swapEyes?: boolean;
+	/** `depth` only: how far the nearest part seems to lie from the farthest, as a fraction of the picture's width. 0.35 when left out. */
+	relief?: number;
+	/** `depth` only: the part of each side of the picture that is margin (0 to 0.4 of its width): not shown, but seen when the surface is turned. 0 when left out. */
+	inset?: number;
 }
 
 export interface AudioPlayerComponent {
@@ -355,6 +378,49 @@ export interface LoaderComponent {
 	id?: string;
 	/** `worldStorage` only: the name a script saved the object under, instead of its id. */
 	key?: string;
+}
+
+/** A value an `instancer` can give an object: text and URLs as strings, numbers, booleans, colours as `#rrggbb`. */
+export type ParamValue = string | number | boolean;
+
+/** One parameter a parametric object declares. */
+export interface ParamDef {
+	/** The key an `instancer`'s `values` uses. */
+	name: string;
+	label?: string;
+	kind: 'text' | 'number' | 'color' | 'bool' | 'url';
+	default?: ParamValue;
+}
+
+/** Where a parameter's value goes: one field of one component of one of the object's slots. */
+export interface ParamBinding {
+	param: string;
+	/** The slot's id inside the object (before it is built under an owner). */
+	slot: string;
+	component: string;
+	field: string;
+}
+
+/**
+ * Put on the root of an object kept outside the world (or any slot tree), it makes the object parametric: it names the parameters
+ * and which fields they fill. An `instancer` builds the object with its own values; without one the defaults are used.
+ */
+export interface ParamsComponent {
+	type: 'params';
+	params: ParamDef[];
+	bindings: ParamBinding[];
+}
+
+/**
+ * Like a `loader`, but for a parametric object: builds it under this slot with `values` in the fields its `params` bind (a record's
+ * cover, title and audio, say). Changing a value builds the object again. When it is built, the slot's code block gets `onInstance`.
+ */
+export interface InstancerComponent {
+	type: 'instancer';
+	adapter: ExternalAdapter;
+	id?: string;
+	key?: string;
+	values?: Record<string, ParamValue>;
 }
 
 /**
@@ -800,6 +866,7 @@ export type Component =
 	| MirrorComponent
 	| CameraComponent
 	| AudioPlayerComponent
+	| StereoImageComponent
 	| HtmlViewComponent
 	| CodeBlockComponent
 	| ExpiresComponent
@@ -814,6 +881,8 @@ export type Component =
 	| LightVolumeComponent
 	| FragmentComponent
 	| LoaderComponent
+	| InstancerComponent
+	| ParamsComponent
 	| WorldSettingsComponent
 	| PlayerMovementComponent
 	| CharacterControllerComponent

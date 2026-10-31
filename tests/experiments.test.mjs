@@ -14,8 +14,7 @@ const byId = (id) => {
 
 test('every experiment shows in dev; a player build only sees the ones listed for production', () => {
 	assert.ok(visibleExperiments(true).length === EXPERIMENTS.length);
-	// None ships to players today; the capability is what is tested here.
-	assert.deepEqual(visibleExperiments(false), []);
+	assert.deepEqual(visibleExperiments(false).map((e) => e.id).sort(), ['avatarHalfRate', 'dashGuiHalfRate', 'fewerLights', 'freezeStatics', 'mirrorHalfRate', 'slowFarScripts']);
 	assert.equal(experimentVisible({ id: 'a', label: 'a', description: 'a', apply() {} }, false), false, 'dev-only by default');
 	assert.equal(experimentVisible({ id: 'a', label: 'a', description: 'a', environments: ['dev', 'prod'], apply() {} }, false), true, 'listed for prod');
 	assert.equal(experimentVisible({ id: 'a', label: 'a', description: 'a', apply() {} }, true), true, 'dev sees everything');

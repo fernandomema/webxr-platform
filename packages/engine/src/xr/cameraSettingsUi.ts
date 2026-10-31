@@ -4,10 +4,18 @@ import { THEME } from './ui/theme.ts';
 
 export type CameraQuality = 'low' | 'medium' | 'high';
 export type CameraMode = 'photo' | 'video';
-/** `2d`: one picture. `3d`: a stereo pair, left eye then right eye side by side, the form 3D viewers and the converters to spatial photos take. */
-export type CameraFormat = '2d' | '3d';
+/**
+ * `2d`: one picture. `3d`: a stereo pair, left eye then right eye side by side, the form 3D viewers and the converters to spatial photos take.
+ * `spatial`: a picture with its depth, which an instant print shows with parallax (the parts shift against each other as it is moved).
+ * Only a print can show it; a download of a spatial photo is the plain picture.
+ */
+export type CameraFormat = '2d' | '3d' | 'spatial';
+
+/** What a photo becomes: `download` is a file saved on the device; `instax` is an instant print that appears in the world (see `CameraHost.onPrint`). */
+export type CameraOutput = 'download' | 'instax';
 
 export interface CameraSettings {
+	output: CameraOutput;
 	quality: CameraQuality;
 	format: CameraFormat;
 	mode: CameraMode;
@@ -25,12 +33,13 @@ export function qualityFor(longSide: number): CameraQuality {
 }
 
 /** What a device remembers between sessions; anything missing or odd falls back to the defaults. */
-export function loadSettings(fallback: CameraQuality): CameraSettings {
-	const settings: CameraSettings = { quality: fallback, format: '2d', mode: 'photo' };
+export function loadSettings(fallback: CameraQuality, output: CameraOutput = 'download'): CameraSettings {
+	const settings: CameraSettings = { quality: fallback, format: '2d', mode: 'photo', output };
 	try {
 		const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as Partial<CameraSettings>;
 		if (parsed.quality === 'low' || parsed.quality === 'medium' || parsed.quality === 'high') settings.quality = parsed.quality;
-		if (parsed.format === '2d' || parsed.format === '3d') settings.format = parsed.format;
+		if (parsed.format === '2d' || parsed.format === '3d' || parsed.format === 'spatial') settings.format = parsed.format;
+		if (parsed.output === 'download' || parsed.output === 'instax') settings.output = parsed.output;
 	} catch {
 		// private window or blocked storage: the defaults stand
 	}
@@ -39,7 +48,7 @@ export function loadSettings(fallback: CameraQuality): CameraSettings {
 
 export function saveSettings(settings: CameraSettings): void {
 	try {
-		localStorage.setItem(STORAGE_KEY, JSON.stringify({ quality: settings.quality, format: settings.format }));
+		localStorage.setItem(STORAGE_KEY, JSON.stringify({ quality: settings.quality, format: settings.format, output: settings.output }));
 	} catch {
 		// not remembered
 	}
@@ -79,6 +88,30 @@ export function createCameraUi(scene: Scene, screen: AbstractMesh, aspect: numbe
 	plane.material = material;
 
 	const texture = AdvancedDynamicTexture.CreateForMesh(plane, WIDTH, height, true);
+
+	// What an instant print leaves out, dimmed: the print is the square in the middle of the picture, and the screen keeps its own
+	// shape (the picture is never stretched to fit the print).
+	const shade = (name: string) => {
+		const bar = new Rectangle(name);
+		bar.thickness = 0;
+		bar.background = 'rgba(0, 0, 0, 0.6)';
+		bar.isPointerBlocker = false;
+		bar.isVisible = false;
+		texture.addControl(bar);
+		return bar;
+	};
+	const shades = [shade('camera-print-shade-a'), shade('camera-print-shade-b')];
+	const frameThePrint = (on: boolean) => {
+		const wide = WIDTH >= height;
+		const margin = Math.round(Math.abs(WIDTH - height) / 2);
+		shades.forEach((bar, index) => {
+			bar.isVisible = on && margin > 0;
+			bar.width = wide ? `${margin}px` : '100%';
+			bar.height = wide ? '100%' : `${margin}px`;
+			bar.horizontalAlignment = wide ? (index === 0 ? Control.HORIZONTAL_ALIGNMENT_LEFT : Control.HORIZONTAL_ALIGNMENT_RIGHT) : Control.HORIZONTAL_ALIGNMENT_CENTER;
+			bar.verticalAlignment = wide ? Control.VERTICAL_ALIGNMENT_CENTER : (index === 0 ? Control.VERTICAL_ALIGNMENT_TOP : Control.VERTICAL_ALIGNMENT_BOTTOM);
+		});
+	};
 
 	const style = (button: Button, selected: boolean, enabled = true) => {
 		button.background = selected ? THEME.accent : THEME.surface;
@@ -141,6 +174,7 @@ export function createCameraUi(scene: Scene, screen: AbstractMesh, aspect: numbe
 	const qualityButtons = new Map<CameraQuality, Button>();
 	const formatButtons = new Map<CameraFormat, Button>();
 	const modeButtons = new Map<CameraMode, Button>();
+	const outputButtons = new Map<CameraOutput, Button>();
 
 	stack.addControl(heading('Quality'));
 	const qualityRow = row('camera-quality-row');
@@ -155,12 +189,21 @@ export function createCameraUi(scene: Scene, screen: AbstractMesh, aspect: numbe
 
 	stack.addControl(heading('Photo format'));
 	const formatRow = row('camera-format-row');
-	for (const [format, label] of [['2d', '2D'], ['3d', '3D side by side']] as const) {
-		const button = makeButton(`camera-format-${format}`, label, () => hooks.set({ format }), format === '2d' ? '200px' : '420px');
+	for (const [format, label, buttonWidth] of [['2d', '2D', '140px'], ['3d', '3D side by side', '350px'], ['spatial', 'Spatial', '220px']] as const) {
+		const button = makeButton(`camera-format-${format}`, label, () => hooks.set({ format }), buttonWidth);
 		formatButtons.set(format, button);
 		formatRow.addControl(button);
 	}
 	stack.addControl(formatRow);
+
+	stack.addControl(heading('Photo output'));
+	const outputRow = row('camera-output-row');
+	for (const [output, label] of [['download', 'Download'], ['instax', 'Instax print']] as const) {
+		const button = makeButton(`camera-output-${output}`, label, () => hooks.set({ output }), '300px');
+		outputButtons.set(output, button);
+		outputRow.addControl(button);
+	}
+	stack.addControl(outputRow);
 
 	stack.addControl(heading('Trigger'));
 	const modeRow = row('camera-mode-row');
@@ -181,9 +224,11 @@ export function createCameraUi(scene: Scene, screen: AbstractMesh, aspect: numbe
 		const settings = hooks.get();
 		const recording = hooks.isRecording();
 		panel.isVisible = open;
+		frameThePrint(settings.output === 'instax' && settings.mode === 'photo');
 		(gear.textBlock as TextBlock).text = open ? '✕' : '⚙';
 		for (const [quality, button] of qualityButtons) style(button, settings.quality === quality, !recording);
 		for (const [format, button] of formatButtons) style(button, settings.format === format);
+		for (const [output, button] of outputButtons) style(button, settings.output === output);
 		for (const [mode, button] of modeButtons) style(button, settings.mode === mode, !recording);
 	};
 	refresh();
